@@ -395,6 +395,22 @@ Used to answer:
 
 > Which sources are likely to contain the necessary knowledge?
 
+Knee detection applies here too. A broad query may activate all books; a narrow query may activate only one. The knee determines how many book-level candidates to pass to chapter retrieval.
+
+```text
+candidate_k = 10
+
+minimum_books = 1
+maximum_books = 4
+
+if knee exists:
+    retain books through knee
+
+always:
+    at least 1
+    at most 4
+```
+
 ---
 
 ### Index 2 — Chapter index
@@ -409,6 +425,22 @@ Used to determine:
 
 > Where inside the selected books should we search?
 
+Knee detection applies here. Within each selected book, the knee determines how many chapters to pass to topic retrieval. This prevents a broad query from flooding the system with every chapter in every matched book.
+
+```text
+candidate_k = 15
+
+minimum_chapters = 1
+maximum_chapters = 6
+
+if knee exists:
+    retain chapters through knee
+
+always:
+    at least 1
+    at most 6
+```
+
 ---
 
 ### Index 3 — Topic index
@@ -422,6 +454,22 @@ TOPIC_VECTOR
 Used to determine:
 
 > What conceptual unit is relevant?
+
+Knee detection applies here. The knee determines how many topics to expand into full topic text and how many to pass to paragraph-level search. This prevents a moderate query from expanding dozens of tangentially related topics.
+
+```text
+candidate_k = 20
+
+minimum_topics = 1
+maximum_topics = 8
+
+if knee exists:
+    retain topics through knee
+
+always:
+    at least 1
+    at most 8
+```
 
 ---
 
@@ -446,41 +494,56 @@ This is fundamentally different from a flat vector DB.
 The nominal pipeline is:
 
 ```text
-                         USER QUERY
-                              │
-                              ▼
-                    Query Understanding
-                              │
-                              ▼
-                     Book Retrieval
-                              │
-                              ▼
+                          USER QUERY
+                               │
+                               ▼
+                     Query Understanding
+                               │
+                               ▼
+                    Book Retrieval
+                               │
+                         knee detection
+                               │
+                               ▼
                     Chapter Retrieval
-                              │
-                              ▼
-                     Topic Retrieval
-                              │
-                    ┌─────────┴─────────┐
-                    │                   │
-                    ▼                   ▼
-             Full Topic Text      Global Paragraph
-                                  Vector Search
-                    │                   │
-                    └─────────┬─────────┘
-                              ▼
-                       Context Builder
-                              │
-                              ▼
-                              LLM
+                               │
+                         knee detection
+                               │
+                               ▼
+                      Topic Retrieval
+                               │
+                         knee detection
+                               │
+                     ┌─────────┴─────────┐
+                     │                   │
+                     ▼                   ▼
+              Full Topic Text      Global Paragraph
+                                   Vector Search
+                               │
+                         knee detection
+                               │
+                     ┌─────────┴─────────┐
+                     │                   │
+                     ▼                   ▼
+              Topic Expansion       Paragraph Selection
+                     │                   │
+                     └─────────┬─────────┘
+                               ▼
+                        Context Builder
+                               │
+                               ▼
+                               LLM
 ```
 
 But there is an important nuance:
 
-**The number of paragraph chunks should not be fixed.**
+**The number of results at every index level should not be fixed.**
 
 ---
 
 # 10. Dynamic retrieval via the similarity-score curve
+
+This mechanism applies uniformly across all four indices. A similarity curve exists at each level, and a knee determines how many candidates to pass to the next stage.
 
 Suppose paragraph search returns:
 
@@ -515,7 +578,7 @@ A fixed:
 top_k = 10
 ```
 
-would unnecessarily expose four irrelevant chunks.
+would unnecessarily expose four irrelevant chunks. The same problem exists at every index level: a fixed top-k books, chapters, or topics would either starve narrow queries or flood broad ones.
 
 Instead, let retrieval determine:
 
@@ -563,14 +626,36 @@ means there is a drop between candidates \(i\) and \(i+1\).
 
 # 12. Knee detection
 
+Knee detection is the universal mechanism for dynamic evidence selection at **every** index level. The same algorithm applies to Book, Chapter, Topic, and Paragraph indices — only the candidate pool sizes and bounds differ.
+
 A simple and robust method for this project is:
 
-1. retrieve a reasonably large candidate pool, e.g. 30–50;
+1. retrieve a reasonably large candidate pool (size depends on index level);
 2. sort descending by similarity;
 3. normalize rank and score;
 4. determine the point of maximum curvature / largest normalized drop;
 5. use that as the retrieval boundary;
 6. enforce sensible minimum and maximum bounds.
+
+Index-level candidate pools and bounds:
+
+```text
+Book index:
+    candidate_k = 10
+    min = 1, max = 4
+
+Chapter index:
+    candidate_k = 15
+    min = 1, max = 6
+
+Topic index:
+    candidate_k = 20
+    min = 1, max = 8
+
+Paragraph index:
+    candidate_k = 30–50
+    min = 3, max = 20
+```
 
 Conceptually:
 
@@ -601,7 +686,7 @@ rank = 6
 
 # 13. Important caveat about "the knee"
 
-You should **not blindly use the mathematical knee as truth**.
+You should **not blindly use the mathematical knee as truth** at any index level.
 
 A similarity curve can look like:
 
@@ -617,7 +702,7 @@ A similarity curve can look like:
 0.83
 ```
 
-There may be no meaningful cutoff.
+There may be no meaningful cutoff. This is especially common at the Book and Chapter levels where all candidates may be broadly relevant to a general query.
 
 Or:
 
@@ -644,7 +729,7 @@ minimum evidence count
 maximum context budget
 ```
 
-Example:
+Example (paragraph level):
 
 ```text
 candidate_k = 40
@@ -662,6 +747,8 @@ if knee exists:
 always:
     at least 3
 ```
+
+Each index level uses its own bounds (defined in Section 12) but the same decision logic: knee detection with threshold fallback and hard minimum/maximum caps.
 
 ---
 
@@ -1013,6 +1100,8 @@ The tool should return structured metadata:
 }
 ```
 
+The tool's paragraph search results also pass through knee detection before being returned to the model, using the same paragraph-level parameters (candidate_k, minimum_chunks, maximum_chunks) as the initial retrieval. The `max_results` parameter acts as an upper bound on the candidate pool size, not as a hard cap on returned results.
+
 ---
 
 # 23. Tool-call loop
@@ -1280,27 +1369,34 @@ Query
 
 Books
 ────────────────────────
-1. Open Data Structures       0.84
-2. CP Algorithms              0.79
+1. Open Data Structures       0.84  ✓ selected (knee at rank 1)
+2. CP Algorithms              0.79  ✓ selected (knee at rank 1)
+
+Knee: selected through rank 2 of 3 candidates
 
 Chapters
 ────────────────────────
-Graphs / Shortest Paths       0.91
+Graphs / Shortest Paths       0.91  ✓ selected
+Graphs / MST                  0.72  ✗ excluded by knee
+
+Knee: selected through rank 1 of 5 candidates
 
 Topics
 ────────────────────────
-Dijkstra's Algorithm          0.94
+Dijkstra's Algorithm          0.94  ✓ selected
+Shortest Paths Overview       0.88  ✓ selected
+Bellman-Fail                  0.41  ✗ excluded by knee
+
+Knee: selected through rank 2 of 7 candidates
 
 Paragraph retrieval
 ────────────────────────
-S1  0.93
-S2  0.91
-S3  0.88
-S4  0.61  ← excluded by knee
+S1  0.93  ✓ selected
+S2  0.91  ✓ selected
+S3  0.88  ✓ selected
+S4  0.61  ✗ excluded by knee
 
-Knee
-────────────────────────
-selected through rank 3
+Knee: selected through rank 3 of 40 candidates
 ```
 
 This makes the project **demonstrable**.
@@ -1416,13 +1512,31 @@ experiment:
     endpoint: ...
 
   retrieval:
-    candidate_k: 40
-    minimum_chunks: 3
-    maximum_chunks: 20
     knee_method: ...
     similarity_threshold: ...
     neighbor_window: 1
     max_context_tokens: ...
+
+    # Per-index knee detection settings
+    book_knee:
+      candidate_k: 10
+      minimum: 1
+      maximum: 4
+
+    chapter_knee:
+      candidate_k: 15
+      minimum: 1
+      maximum: 6
+
+    topic_knee:
+      candidate_k: 20
+      minimum: 1
+      maximum: 8
+
+    paragraph_knee:
+      candidate_k: 40
+      minimum: 3
+      maximum: 20
 
   agentic_retrieval:
     enabled: true
@@ -2155,10 +2269,26 @@ paragraphs[]
 expanded_topics[]
 
 knee:
-    candidate_k
-    selected_k
-    knee_index
-    threshold
+    book_knee:
+        candidate_k
+        selected_k
+        knee_index
+        threshold
+    chapter_knee:
+        candidate_k
+        selected_k
+        knee_index
+        threshold
+    topic_knee:
+        candidate_k
+        selected_k
+        knee_index
+        threshold
+    paragraph_knee:
+        candidate_k
+        selected_k
+        knee_index
+        threshold
 
 tool_calls[]
 
@@ -2193,8 +2323,12 @@ Example:
     "chapters": [...],
     "topics": [...],
     "paragraphs": [...],
-    "selected_k": 7,
-    "knee": 6
+    "knee": {
+      "book": { "candidate_k": 10, "selected_k": 2, "knee_index": 2 },
+      "chapter": { "candidate_k": 15, "selected_k": 1, "knee_index": 1 },
+      "topic": { "candidate_k": 20, "selected_k": 3, "knee_index": 3 },
+      "paragraph": { "candidate_k": 40, "selected_k": 7, "knee_index": 6 }
+    }
   },
 
   "tool_calls": [
@@ -2858,75 +2992,82 @@ This isolates the contribution of every major idea.
 The full system should look like this:
 
 ```text
-                         ┌──────────────────────┐
-                         │   Knowledge Corpus   │
-                         │ PDFs / MD / TXT      │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │ Structural Parser    │
-                         │ book/chapter/topic   │
-                         │ paragraph hierarchy  │
-                         └──────────┬───────────┘
-                                    │
-             ┌──────────────────────┼────────────────────────┐
-             │                      │                        │
-             ▼                      ▼                        ▼
-        Book Index            Chapter Index             Topic Index
-                                                             │
-                                                             │
-                                                             ▼
-                                                      Paragraph Index
+                          ┌──────────────────────┐
+                          │   Knowledge Corpus   │
+                          │ PDFs / MD / TXT      │
+                          └──────────┬───────────┘
+                                     │
+                                     ▼
+                          ┌──────────────────────┐
+                          │ Structural Parser    │
+                          │ book/chapter/topic   │
+                          │ paragraph hierarchy  │
+                          └──────────┬───────────┘
+                                     │
+              ┌──────────────────────┼────────────────────────┐
+              │                      │                        │
+              ▼                      ▼                        ▼
+         Book Index            Chapter Index             Topic Index
+                                                              │
+                                                              │
+                                                              ▼
+                                                       Paragraph Index
 
 
-                           USER QUESTION
-                                │
-                                ▼
-                       Conversation resolver
-                                │
-                                ▼
-                       Query understanding
-                                │
-                                ▼
-                         Book retrieval
-                                │
-                                ▼
-                       Chapter retrieval
-                                │
-                                ▼
-                        Topic retrieval
-                                │
-                   ┌────────────┴─────────────┐
-                   │                          │
-                   ▼                          ▼
-             Topic expansion            Global paragraph
-                   │                     vector search
-                   │                          │
-                   │                     similarity curve
-                   │                          │
-                   │                       knee point
-                   │                          │
-                   │                     dynamic chunks
-                   │                          │
-                   └────────────┬─────────────┘
-                                ▼
-                         context builder
-                                │
-                                ▼
-                               LLM
-                                │
-                   ┌────────────┴─────────────┐
-                   │                          │
-                answer                   retrieval tool
-                                              │
-                                              ▼
-                                         vector DB
-                                              │
-                                              ▼
-                                         more evidence
-                                              │
-                                              └──────► LLM
+                            USER QUESTION
+                                 │
+                                 ▼
+                        Conversation resolver
+                                 │
+                                 ▼
+                        Query understanding
+                                 │
+                                 ▼
+                          Book retrieval
+                                 │
+                         knee detection
+                                 │
+                                 ▼
+                        Chapter retrieval
+                                 │
+                         knee detection
+                                 │
+                                 ▼
+                         Topic retrieval
+                                 │
+                         knee detection
+                                 │
+                    ┌────────────┴─────────────┐
+                    │                          │
+                    ▼                          ▼
+              Topic expansion            Global paragraph
+                    │                     vector search
+                    │                          │
+                    │                     similarity curve
+                    │                          │
+                    │                       knee point
+                    │                          │
+                    │                     dynamic chunks
+                    │                          │
+                    └────────────┬─────────────┘
+                                 ▼
+                          context builder
+                                 │
+                                 ▼
+                                LLM
+                                 │
+                    ┌────────────┴─────────────┐
+                    │                          │
+                 answer                   retrieval tool
+                                               │
+                                               ▼
+                                          vector DB
+                                         knee detection
+                                               │
+                                               ▼
+                                          more evidence
+                                               │
+                                               └──────► LLM
 ```
 
 ---
