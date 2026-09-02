@@ -1,0 +1,746 @@
+Source: https://www.geeksforgeeks.org/dsa/find-median-row-wise-sorted-matrix/
+Title: Median in row wise sorted matrix
+
+Given a row-wise sorted matrix mat[][] of size n x m , where the number of rows and columns is always odd . Return the median of the matrix.
+
+Examples:
+
+> Input: mat[][] =  [[1 3 5], [2 6 9], [3 6 9]] Output: 5 Explanation: Elements in sorted order: 1 2 3 3 5 6 6 9 9. There are total 9 elements, thus the median is the element at index 5 (1-based) i.e. 5. Input: mat[][] = [[1 3 4], [2 5 6], [3 7 9]] Output: 4 Explanation: Elements in sorted order: 1 2 3 3 4 5 6 7 9. There are total 9 elements, thus the median is the element at index 5 (1-based) i.e. 4.
+
+Table of Content
+
+- [Naive Approach] Using Sorting - O(n × m × log(n × m)) Time and O(n × m) Space
+- [Better Approach] Using Priority Queue
+- [Expected Approach] Using Binary Search
+
+### [Naive Approach] Using Sorting - O(n × m × log(n × m)) Time and O(n × m) Space
+
+> The idea is to first flatten the 2D matrix into a 1D array by collecting all its elements. Then, the array is sorted to bring all elements into order. Since the total number of elements is odd, the median is the middle element of the sorted array.
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int median(vector<vector<int>> &mat) {
+
+    // flatten the matrix into a 1-dimensional array
+    vector<int> arr;
+    for (int i = 0; i < mat.size(); i++) {
+        for (int j = 0; j < mat[0].size(); j++) {
+            arr.push_back(mat[i][j]);
+        }
+    }
+
+    // sort the array
+    sort(arr.begin(), arr.end());
+
+    // find the median element
+    int mid = arr.size() / 2;
+    return arr[mid];
+}
+
+int main() {
+    vector<vector<int>> matrix =
+                        {{1, 3, 5},
+                         {2, 6, 9},
+                         {3, 6, 9}};
+    cout << median(matrix) << endl;
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+class GFG {
+    static int median(int mat[][])
+    {
+
+        // flatten the matrix into a 1D array
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < mat.length; i++) {
+            for (int j = 0; j < mat[0].length; j++) {
+                list.add(mat[i][j]);
+            }
+        }
+
+        // sort the list
+        Collections.sort(list);
+
+        // find and return the median element
+        int mid = list.size() / 2;
+        return list.get(mid);
+    }
+
+    public static void main(String[] args)
+    {
+        int[][] matrix
+            = { { 1, 3, 5 }, { 2, 6, 9 }, { 3, 6, 9 } };
+        System.out.println(median(matrix));
+    }
+}
+
+def median(mat):
+    # flatten the matrix into a 1D array
+    arr = []
+    for i in range(len(mat)):
+        for j in range(len(mat[0])):
+            arr.append(mat[i][j])
+
+    # sort the array
+    arr.sort()
+
+    # find the median element
+    mid = len(arr) // 2
+    return arr[mid]
+
+if __name__ == "__main__":
+    mat = [[1, 3, 5],
+           [2, 6, 9],
+           [3, 6, 9]]
+    print(median(mat))
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class GFG {
+    static int median(int[, ] mat)
+    {
+
+        // flatten the matrix into a 1D list
+        List<int> arr = new List<int>();
+        for (int i = 0; i < mat.GetLength(0); i++) {
+            for (int j = 0; j < mat.GetLength(1); j++) {
+                arr.Add(mat[i, j]);
+            }
+        }
+
+        // sort the array
+        arr.Sort();
+
+        // find the median element
+        int mid = arr.Count / 2;
+        return arr[mid];
+    }
+
+    static void Main(string[] args)
+    {
+        int[, ] mat
+            = { { 1, 3, 5 }, { 2, 6, 9 }, { 3, 6, 9 } };
+
+        Console.WriteLine(median(mat));
+    }
+}
+
+function median(mat)
+{
+
+    // flatten the matrix into a 1D array
+    const arr
+        = mat.reduce((acc, row) => acc.concat(row), []);
+
+    // sort the array
+    arr.sort((a, b) => a - b);
+
+    // find the median element
+    const mid = Math.floor(arr.length / 2);
+    return arr[mid];
+}
+
+// Driver Code
+const mat = [ [ 1, 3, 5 ], [ 2, 6, 9 ], [ 3, 6, 9 ] ];
+console.log(median(mat));
+
+5
+
+### [Better Approach] Using Priority Queue
+
+> The idea is to use a min-heap–like structure to efficiently find the median without flattening or sorting the entire matrix. Since each row is already sorted, we start by inserting the first element of each row into a heap (simulated with a sorted map). Then we repeatedly extract the smallest element and push the next element from the same row, simulating the merging of sorted rows. This continues until we reach the median position. It avoids full sorting and leverages the sorted rows for efficiency.
+
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+
+int median(vector<vector<int>> &mat) {
+    int rows = mat.size();
+    int cols = mat[0].size();
+
+    // min-heap storing {value, row, col}
+    priority_queue<vector<int>,
+            vector<vector<int>>, greater<vector<int>>> minHeap;
+
+    int medianIndex = (rows * cols) / 2;
+    int count = 0, result = -1;
+
+    // push the first element of each row into the min-heap
+    for (int i = 0; i < rows; i++) {
+        minHeap.push({mat[i][0], i, 0});
+    }
+
+    // extract the smallest elements until reaching the median
+    while (count <= medianIndex) {
+        vector<int> top = minHeap.top();
+        minHeap.pop();
+
+        int val = top[0], row = top[1], col = top[2];
+        result = val;
+        count++;
+
+        // if more elements are left in the current
+        // row, push next
+        if (col + 1 < cols) {
+            minHeap.push({mat[row][col + 1], row, col + 1});
+        }
+    }
+
+    return result;
+}
+
+int main() {
+    vector<vector<int>> matrix = {
+        {1, 3, 5},
+        {2, 6, 9},
+        {3, 6, 9}
+    };
+    cout << median(matrix) << endl;
+    return 0;
+}
+
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+class GFG {
+    public static int median(int[][] mat)
+    {
+        int rows = mat.length;
+        int cols = mat[0].length;
+
+        // min-heap storing {value, row, col}
+        PriorityQueue<int[]> minHeap = new PriorityQueue<>(
+            Comparator.comparingInt(a -> a[0]));
+
+        int medianIndex = (rows * cols) / 2;
+        int count = 0, result = -1;
+
+        // push the first element of each row into the
+        // min-heap
+        for (int i = 0; i < rows; i++) {
+            minHeap.add(new int[] { mat[i][0], i, 0 });
+        }
+
+        // extract the smallest elements until reaching the
+        // median
+        while (count <= medianIndex) {
+            int[] top = minHeap.poll();
+            int val = top[0], row = top[1], col = top[2];
+            result = val;
+            count++;
+
+            // if more elements are left in the current
+            // row, push next
+            if (col + 1 < cols) {
+                minHeap.add(new int[] { mat[row][col + 1],
+                                        row, col + 1 });
+            }
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args)
+    {
+        int[][] matrix
+            = { { 1, 3, 5 }, { 2, 6, 9 }, { 3, 6, 9 } };
+        System.out.println(median(matrix));
+    }
+}
+
+import heapq
+
+def median(mat):
+    rows = len(mat)
+    cols = len(mat[0])
+
+    # min-heap storing [value, row, col]
+    minHeap = []
+    medianIndex = (rows * cols) // 2
+    count = 0
+    result = -1
+
+    # push the first element of each row into
+    # the min-heap
+    for i in range(rows):
+        heapq.heappush(minHeap, [mat[i][0], i, 0])
+
+    # extract the smallest elements until reaching
+    # the median
+    while count <= medianIndex:
+        val, row, col = heapq.heappop(minHeap)
+        result = val
+        count += 1
+
+        # if more elements are left in the current
+        # row, push next
+        if col + 1 < cols:
+            heapq.heappush(minHeap,
+                           [mat[row][col + 1], row, col + 1])
+
+    return result
+
+if __name__ == "__main__":
+    matrix = [
+        [1, 3, 5],
+        [2, 6, 9],
+        [3, 6, 9]
+    ]
+    print(median(matrix))
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    class Position {
+        public int row;
+        public int col;
+        public Position(int r, int c) {
+            row = r;
+            col = c;
+        }
+    }
+
+    public static int median(int[,] mat) {
+        int rows = mat.GetLength(0);
+        int cols = mat.GetLength(1);
+
+        // simulate min-heap using SortedDictionary
+        SortedDictionary<int, Queue<Position>> heap =
+            new SortedDictionary<int, Queue<Position>>();
+
+        int medianIndex = (rows * cols) / 2;
+        int count = 0, result = -1;
+
+        // push the first element of each row into the map
+        for (int i = 0; i < rows; i++) {
+            int val = mat[i, 0];
+            if (!heap.ContainsKey(val))
+                heap[val] = new Queue<Position>();
+            heap[val].Enqueue(new Position(i, 0));
+        }
+
+        // extract the smallest elements until reaching the median
+        while (count <= medianIndex) {
+            int minKey = getFirstKey(heap);
+            Position pos = heap[minKey].Dequeue();
+            if (heap[minKey].Count == 0)
+                heap.Remove(minKey);
+
+            result = minKey;
+            count++;
+
+            int row = pos.row;
+            int col = pos.col;
+
+            // push next element in the same row if it exists
+            if (col + 1 < cols) {
+                int nextVal = mat[row, col + 1];
+                if (!heap.ContainsKey(nextVal))
+                    heap[nextVal] = new Queue<Position>();
+                heap[nextVal].Enqueue(new Position(row, col + 1));
+            }
+        }
+
+        return result;
+    }
+
+    private static int getFirstKey
+        (SortedDictionary<int, Queue<Position>> map) {
+        foreach (var kvp in map)
+            return kvp.Key;
+        return -1;
+    }
+
+    public static void Main(string[] args) {
+        int[,] matrix = {
+            {1, 3, 5},
+            {2, 6, 9},
+            {3, 6, 9}
+        };
+
+        Console.WriteLine(median(matrix));
+    }
+}
+
+function median(mat)
+{
+    const rows = mat.length;
+    const cols = mat[0].length;
+
+    // min-heap storing [value, row, col]
+    const minHeap = [];
+    const medianIndex = Math.floor((rows * cols) / 2);
+    let count = 0, result = -1;
+
+    // push the first element of each row into
+    // the min-heap
+    for (let i = 0; i < rows; i++) {
+        minHeap.push([ mat[i][0], i, 0 ]);
+    }
+
+    minHeap.sort((a, b) => a[0] - b[0]);
+
+    // extract the smallest elements until
+    // reaching the median
+    while (count <= medianIndex) {
+        const [val, row, col] = minHeap.shift();
+        result = val;
+        count++;
+
+        // if more elements are left in the current
+        // row, push next
+        if (col + 1 < cols) {
+            minHeap.push(
+                [ mat[row][col + 1], row, col + 1 ]);
+            minHeap.sort((a, b) => a[0] - b[0]);
+        }
+    }
+
+    return result;
+}
+
+// Driver Code
+const matrix = [ [ 1, 3, 5 ], [ 2, 6, 9 ], [ 3, 6, 9 ] ];
+
+console.log(median(matrix));
+
+5
+
+Time complexity: O(n × m × log(n)), since we are going to insert and remove the top element in priority queue (n × m) / 2 times and every time the priority queue will be having elements in it. Auxiliary Space: O(n), the min-heap stores at most one element per row of the matrix at any point in time.
+
+### [Expected Approach] Using Binary Search
+
+> The key idea is that for a number x to be the median in an n x m matrix, there must be exactly (n * m) / 2 elements less than or equal to x. We perform binary search over the range [minElement, maxElement], where minElement and maxElement are the smallest and largest elements in the matrix. At each step, we compute the number of elements less than or equal to the current mid. => If this count is less than or equal to (n * m) / 2, we search in the upper half of the range to increase the candidate value. => Otherwise, we search in the lower half to reduce it
+
+#include <algorithm>
+#include <iostream>
+#include <climits>
+#include <vector>
+using namespace std;
+
+int median(vector<vector<int>> &mat) {
+    int n = mat.size();
+    int m = mat[0].size();
+
+    int minVal = INT_MAX, maxVal = INT_MIN;
+
+    // finding the minimum and maximum elements
+    // in the matrix
+    for (int i = 0; i < n; i++) {
+        if (mat[i][0] < minVal)
+            minVal = mat[i][0];
+        if (mat[i][m - 1] > maxVal)
+            maxVal = mat[i][m - 1];
+    }
+
+    int desired = (n * m + 1) / 2;
+	int lo = minVal, hi = maxVal;
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        int place = 0;
+
+        // count elements smaller than or equal to mid
+        for (int i = 0; i < n; ++i)
+            place +=
+            upper_bound(mat[i].begin(), mat[i].end(), mid)
+                     - mat[i].begin();
+
+        // adjust the range based on the count of
+        // elements found
+        if (place < desired)
+            lo = mid + 1;
+        else
+            hi = mid;
+    }
+    return lo;
+}
+int main() {
+    vector<vector<int>> mat = {{1, 3, 5},
+                               {2, 6, 9},
+                               {3, 6, 9}};
+    cout << median(mat) << endl;
+    return 0;
+}
+
+import java.util.Arrays;
+class GFG {
+
+    static int median(int mat[][]) {
+        int n = mat.length;
+        int m = mat[0].length;
+
+        // initializing the minimum and maximum values
+        int min = Integer.MAX_VALUE,
+            max = Integer.MIN_VALUE;
+
+        // iterating through each row of the matrix
+        for (int i = 0; i < n; i++) {
+
+            // updating the minimum value if current
+            // element is smaller
+            if (mat[i][0] < min)
+              	min = mat[i][0];
+
+            // updating the maximum value if current
+            // element is larger
+            if (mat[i][m - 1] > max)
+              	max = mat[i][m - 1];
+        }
+
+        // calculating the desired position of the median
+        int desired = (n * m + 1) / 2;
+
+        // using binary search to find the median value
+        while (min < max) {
+
+            // calculating the middle value
+            int mid = min + (max - min) / 2;
+
+            // counting the number of elements less than
+            // or equal to mid
+            int place = 0;
+            for (int i = 0; i < n; i++) {
+                place += upperBound(mat[i], mid);
+            }
+
+            // updating the search range based on the count
+            if (place < desired) {
+                min = mid + 1;
+            } else {
+                max = mid;
+            }
+        }
+
+        // returning the median value
+        return min;
+    }
+
+    // helper function to find the upper bound of a
+    // number in a row
+    static int upperBound(int[] row, int num) {
+        int low = 0, high = row.length;
+        while (low < high) {
+            int mid = low + (high - low) / 2;
+            if (row[mid] <= num) {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        return low;
+    }
+
+    public static void main(String[] args) {
+        int mat[][] =  {{ 1, 3, 5 },
+                        { 2, 6, 9 },
+                        { 3, 6, 9 }};
+        System.out.println(median(mat));
+    }
+}
+
+from bisect import bisect_right
+
+def median(mat):
+    n = len(mat)
+    m = len(mat[0])
+
+    minVal = float('inf')
+    maxVal = float('-inf')
+
+    # finding the minimum and maximum elements
+    # in the matrix
+    for i in range(n):
+        minVal = min(minVal, mat[i][0])
+        maxVal = max(maxVal, mat[i][m - 1])
+
+    desired = (n * m + 1) // 2
+    lo = minVal
+    hi = maxVal
+
+    # binary search to find the median
+    while lo < hi:
+        mid = lo + (hi - lo) // 2
+        place = 0
+
+        # count elements smaller than or equal to mid
+        # using bisect_right
+        for i in range(n):
+            place += bisect_right(mat[i], mid)
+
+        if place < desired:
+            lo = mid + 1
+        else:
+            hi = mid
+
+    return lo
+
+if __name__ == "__main__":
+    mat = [[1, 3, 5],
+           [2, 6, 9],
+           [3, 6, 9]]
+    print(median(mat))
+
+using System;
+
+class GFG {
+
+    static int median(int[,] mat) {
+        int n = mat.GetLength(0);
+        int m = mat.GetLength(1);
+
+        // initializing the minimum and maximum values
+        int min = int.MaxValue, max = int.MinValue;
+
+        // iterating through each row of the matrix
+        for (int i = 0; i < n; i++) {
+
+            // updating the minimum value if current
+            // element is smaller
+            if (mat[i, 0] < min)
+                min = mat[i, 0];
+
+            // updating the maximum value if current element
+            // is larger
+            if (mat[i, m - 1] > max)
+                max = mat[i, m - 1];
+        }
+
+        // calculating the desired position of the median
+        int desired = (n * m + 1) / 2;
+
+        // using binary search to find the median value
+        int lo = min, hi = max;
+        while (lo < hi)
+        {
+            // calculating the middle value
+            int mid = lo + (hi - lo) / 2;
+
+            // counting the number of elements less than or
+            // equal to mid
+            int place = 0;
+            for (int i = 0; i < n; i++)
+                place += upperBound(mat, i, mid);
+
+            // updating the search range based on the count
+            if (place < desired)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+
+        // returning the median value
+        return lo;
+    }
+
+    // helper function to find the upper bound of
+    // a number in a row
+    static int upperBound(int[,] mat, int r, int num) {
+        int lo = 0, hi = mat.GetLength(1);
+        while (lo < hi) {
+            int mid = lo + (hi - lo) / 2;
+            if (mat[r, mid] <= num)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+        return lo;
+    }
+
+    static void Main(string[] args) {
+        int[,] mat = {
+            { 1, 3, 5 },
+            { 2, 6, 9 },
+            { 3, 6, 9 }
+        };
+        Console.WriteLine(median(mat));
+    }
+}
+
+function median(mat) {
+    const n = mat.length;
+    const m = mat[0].length;
+
+    // initializing the minimum and maximum values
+    let min = Number.MAX_VALUE, max = Number.MIN_VALUE;
+
+    // iterating through each row of the matrix
+    for (let i = 0; i < n; i++) {
+        // updating the minimum value if current element
+        // is smaller
+        if (mat[i][0] < min)
+            min = mat[i][0];
+
+        // updating the maximum value if current element
+        // is larger
+        if (mat[i][m - 1] > max)
+            max = mat[i][m - 1];
+    }
+
+    // calculating the desired position of the median
+    const desired = Math.floor((n * m + 1) / 2);
+
+    // using binary search to find the median value
+    let lo = min, hi = max;
+    while (lo < hi) {
+
+        // calculating the middle value
+        const mid = Math.floor(lo + (hi - lo) / 2);
+
+        // counting the number of elements less than or
+        // equal to mid
+        let place = 0;
+        for (let i = 0; i < n; i++) {
+            place += upperBound(mat[i], mid);
+        }
+
+        // updating the search range based on the count
+        if (place < desired) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+
+    // returning the median value
+    return lo;
+}
+
+// helper function to find the upper bound of a
+// number in a row
+function upperBound(row, num) {
+    let lo = 0, hi = row.length;
+    while (lo < hi) {
+        const mid = Math.floor(lo + (hi - lo) / 2);
+        if (row[mid] <= num) {
+            lo = mid + 1;
+        }
+        else {
+            hi = mid;
+        }
+    }
+    return lo;
+}
+
+// Driver Code
+const mat = [
+    [1, 3, 5],
+    [2, 6, 9],
+    [3, 6, 9]
+];
+console.log(median(mat));
+
+5
+
+Time Complexity: O(n × log(m) × log(maxVal - minVal)), the upper bound function will take log(m) time and is performed for each row. And binary search is performed from minVal to maxVal. Auxiliary Space: O(1)

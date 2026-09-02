@@ -1,0 +1,919 @@
+Source: https://www.geeksforgeeks.org/dsa/find-a-repeating-and-a-missing-number/
+Title: Missing and Repeating in an Array
+
+Given an unsorted array arr[] of size n , containing elements from the range 1 to n , it is known that one number in this range is missing, and another number occurs twice in the array, find both the duplicate number and the missing number.
+
+Examples:
+
+> Input: arr[] = [3, 1, 3] Output: [3, 2] Explanation: 3 is occurs twice and 2 is missing. Input: arr[] = [4, 3, 6, 2, 1, 1] Output: [1, 5] Explanation: 1 is occurs twice and 5 is missing.
+
+Table of Content
+
+- [Approach 1] Using Visited Array - O(n) Time and O(n) Space
+- [Approach 2] Using Array Marking - O(n) Time and O(1) Space
+- [Approach 3] Making Two Math Equations - O(n) Time and O(1) Space
+- [Approach 4] Using XOR - O(n) Time and O(1) Space
+
+### [Approach 1] Using Visited Array - O(n) Time and O(n) Space
+
+> The idea is to use a frequency array to keep track of how many times each number appears in the original array. Since we know the numbers should range from 1 to n with each appearing exactly once, any number appearing twice is our repeating number, and any number with zero frequency is our missing number.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<int> findTwoElement(vector<int>& arr) {
+
+    int n = arr.size();
+    // frequency array to count occurrences
+    vector<int> freq(n + 1, 0);
+    int repeating = -1, missing = -1;
+
+    // count frequency of each element
+    for (int i = 0; i < n; i++) {
+        freq[arr[i]]++;
+    }
+
+    // identify repeating and missing elements
+    for (int i = 1; i <= n; i++) {
+        if (freq[i] == 0) missing = i;
+        else if (freq[i] == 2) repeating = i;
+    }
+
+    return {repeating, missing};
+}
+
+int main() {
+    vector<int> arr = {3, 1, 3};
+    vector<int> ans = findTwoElement(arr);
+    cout << ans[0] << " " << ans[1] << endl;
+    return 0;
+}
+
+import java.util.ArrayList;
+
+class GfG {
+
+    static ArrayList<Integer> findTwoElement(int[] arr) {
+        int n = arr.length;
+
+        // frequency array to count occurrences
+        int[] freq = new int[n + 1];
+        int repeating = -1;
+        int missing = -1;
+
+        // count frequency of each element
+        for (int i = 0; i < n; i++) {
+            freq[arr[i]]++;
+        }
+
+        // identify missing and repeating numbers
+        for (int i = 1; i <= n; i++) {
+            if (freq[i] == 0) missing = i;
+            else if (freq[i] == 2) repeating = i;
+        }
+
+        ArrayList<Integer> result = new ArrayList<>();
+        result.add(repeating);
+        result.add(missing);
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {3, 1, 3};
+        ArrayList<Integer> ans = findTwoElement(arr);
+
+        System.out.println(ans.get(0) + " " + ans.get(1));
+    }
+}
+
+def findTwoElement(arr):
+    n = len(arr)
+
+    # frequency array to count occurrences
+    freq = [0] * (n + 1)
+    repeating = -1
+    missing = -1
+
+    # count frequency of each element
+    for num in arr:
+        freq[num] += 1
+
+    # identify missing and repeating numbers
+    for i in range(1, n + 1):
+        if freq[i] == 0:
+            missing = i
+        elif freq[i] == 2:
+            repeating = i
+
+    return [repeating, missing]
+
+if __name__ == "__main__":
+    arr = [3, 1, 3]
+    ans = findTwoElement(arr)
+    print(ans[0], ans[1])
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static List<int> findTwoElement(int[] arr) {
+        int n = arr.Length;
+
+        // frequency array to count occurrences
+        int[] freq = new int[n + 1];
+        int repeating = -1, missing = -1;
+
+        // count frequency of each element
+        for (int i = 0; i < n; i++) {
+            freq[arr[i]]++;
+        }
+
+        // identify missing and repeating numbers
+        for (int i = 1; i <= n; i++) {
+            if (freq[i] == 0) missing = i;
+            else if (freq[i] == 2) repeating = i;
+        }
+
+        return new List<int> { repeating, missing };
+    }
+
+    static void Main() {
+        int[] arr = {3, 1, 3};
+        List<int> ans = findTwoElement(arr);
+
+        Console.WriteLine(ans[0] + " " + ans[1]);
+    }
+}
+
+function findTwoElement(arr) {
+    let n = arr.length;
+
+    // frequency array to count occurrences
+    let freq = new Array(n + 1).fill(0);
+    let repeating = -1, missing = -1;
+
+    // count frequency of each element
+    for (let i = 0; i < n; i++) {
+        freq[arr[i]]++;
+    }
+
+    // identify missing and repeating numbers
+    for (let i = 1; i <= n; i++) {
+        if (freq[i] === 0) missing = i;
+        else if (freq[i] === 2) repeating = i;
+    }
+
+    return [repeating, missing];
+}
+
+// Driver Code
+let arr = [3, 1, 3];
+let ans = findTwoElement(arr);
+console.log(ans[0], ans[1]);
+
+3 2
+
+### [Approach 2] Using Array Marking - O(n) Time and O(1) Space
+
+> The main idea is to use the input array itself for tracking: it negates the value at the index corresponding to each element to mark it as visited. If it encounters a value that has already been negated, it identifies that number as the repeating one. In a second pass, it finds the index that remains positive, which corresponds to the missing number.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<int> findTwoElement(vector<int>& arr) {
+    int n = arr.size();
+    int repeating = -1;
+
+    // mark visited indices by negating the value at
+    // that index
+    for (int i = 0; i < n; i++) {
+        int val = abs(arr[i]);
+
+        if (arr[val - 1] > 0) {
+            arr[val - 1] = -arr[val - 1];
+        } else {
+            // found the repeating element
+            repeating = val;
+        }
+    }
+
+    int missing = -1;
+
+    // the index with a positive value is the
+    // missing number
+    for (int i = 0; i < n; i++) {
+        if (arr[i] > 0) {
+            missing = i + 1;
+            break;
+        }
+    }
+
+    return {repeating, missing};
+}
+
+int main() {
+    vector<int> arr = {3, 1, 3};
+    vector<int> ans = findTwoElement(arr);
+
+    cout << ans[0] << " " << ans[1] << endl;
+    return 0;
+}
+
+import java.util.ArrayList;
+
+class GfG {
+
+    static ArrayList<Integer> findTwoElement(int[] arr) {
+        int n = arr.length;
+        int repeating = -1;
+
+        // traverse the array and mark visited indices
+        // by negating the value at index arr[i] - 1
+        for (int i = 0; i < n; i++) {
+            int val = Math.abs(arr[i]);
+
+            // if the value at index val - 1 is already negative
+            // it means we've seen this value before
+            if (arr[val - 1] > 0) {
+                arr[val - 1] = -arr[val - 1];
+            } else {
+                // if it's already negative, this value is
+                // the repeating one
+                repeating = val;
+            }
+        }
+
+        int missing = -1;
+
+        // after marking, the index with a positive value
+        // corresponds to the missing number
+        for (int i = 0; i < n; i++) {
+            if (arr[i] > 0) {
+                missing = i + 1;
+                break;
+            }
+        }
+
+        // return result: first repeating, then missing
+        ArrayList<Integer> result = new ArrayList<>();
+        result.add(repeating);
+        result.add(missing);
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {3, 1, 3};
+        ArrayList<Integer> ans = findTwoElement(arr);
+
+        System.out.println(ans.get(0) + " " + ans.get(1));
+    }
+}
+
+def findTwoElement(arr):
+    n = len(arr)
+    repeating = -1
+
+    # mark visited indices by negating the value
+    # at that index
+    for i in range(n):
+        val = abs(arr[i])
+
+        # if value at index val - 1 is already negative,
+        # val is repeating
+        if arr[val - 1] > 0:
+            arr[val - 1] = -arr[val - 1]
+        else:
+            # Already visited → repeating element
+            repeating = val
+
+    missing = -1
+
+    # the index with a positive value corresponds
+    # to the missing number
+    for i in range(n):
+        if arr[i] > 0:
+            missing = i + 1
+            break
+
+    return [repeating, missing]
+
+if __name__ == "__main__":
+    arr = [3, 1, 3]
+    ans = findTwoElement(arr)
+    print(ans[0], ans[1])
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static List<int> findTwoElement(int[] arr) {
+        int n = arr.Length;
+        int repeating = -1;
+
+        // Mark visited indices by negating the
+        // value at that index
+        for (int i = 0; i < n; i++) {
+            int val = Math.Abs(arr[i]);
+
+            // If already negative, this value is repeating
+            if (arr[val - 1] > 0) {
+                arr[val - 1] = -arr[val - 1];
+            }
+            else {
+                // Repeated element found
+                repeating = val;
+            }
+        }
+
+        int missing = -1;
+
+        // the index with a positive value corresponds
+        // to the missing number
+        for (int i = 0; i < n; i++) {
+            if (arr[i] > 0) {
+                missing = i + 1;
+                break;
+            }
+        }
+
+        return new List<int> { repeating, missing };
+    }
+
+    static void Main() {
+        int[] arr = {3, 1, 3};
+        List<int> ans = findTwoElement(arr);
+
+        Console.WriteLine(ans[0] + " " + ans[1]);
+    }
+}
+
+function findTwoElement(arr) {
+    let n = arr.length;
+    let repeating = -1;
+
+    // Mark visited indices by negating the value
+    // at the target index
+    for (let i = 0; i < n; i++) {
+        let val = Math.abs(arr[i]);
+
+        // If already negative, the number is repeating
+        if (arr[val - 1] > 0) {
+            arr[val - 1] = -arr[val - 1];
+        } else {
+            repeating = val;
+        }
+    }
+
+    let missing = -1;
+
+    // The index with a positive value corresponds
+    // to the missing number
+    for (let i = 0; i < n; i++) {
+        if (arr[i] > 0) {
+            missing = i + 1;
+            break;
+        }
+    }
+
+    return [repeating, missing];
+}
+
+// Driver Code
+let arr = [3, 1, 3];
+let ans = findTwoElement(arr);
+console.log(ans[0], ans[1]);
+
+3 2
+
+### [Approach 3] Making Two Math Equations - O(n) Time and O(1) Space
+
+> The idea is to use mathematical equations based on the sum and sum of squares of numbers from 1 to n. The difference between expected and actual sums will give us one equation, and the difference between expected and actual sum of squares will give us another equation. Solving these equations yields our missing and repeating numbers.
+
+Illustration:
+
+Note: This method can cause arithmetic overflow as we calculate the sum of squares (or product) and sum of all array elements.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<int> findTwoElement(vector<int>& arr) {
+    int n = arr.size();
+
+    // Sum of first n natural numbers
+    int  s = (n * (n + 1)) / 2;
+    // Sum of squares of first n natural numbers
+    int ssq = (n * (n + 1) * (2 * n + 1)) / 6;
+
+    // Subtract actual values from expected sums
+    for (int i = 0; i < n; i++) {
+        s -= arr[i];
+        ssq -= arr[i] * arr[i];
+    }
+
+    // Using the equations: missing - repeating = s
+    // missing^2 - repeating^2 = ssq
+    int missing = (s + ssq / s) / 2;
+    int repeating = missing - s;
+
+    return {repeating, missing};
+}
+
+int main() {
+    vector<int> arr = {3, 1, 3};
+    vector<int> ans = findTwoElement(arr);
+
+    cout << ans[0] << " " << ans[1] << endl;
+    return 0;
+}
+
+import java.util.ArrayList;
+
+class GfG {
+    static ArrayList<Integer> findTwoElement(int[] arr) {
+        int n = arr.length;
+
+        // Expected sum and sum of squares for numbers from 1 to n
+        int s = (n * (n + 1)) / 2;
+        int ssq = (n * (n + 1) * (2 * n + 1)) / 6;
+
+        int missing = 0, repeating = 0;
+
+        // Subtract actual values from expected sums
+        for (int i = 0; i < n; i++) {
+            s -= arr[i];
+            ssq -= arr[i] * arr[i];
+        }
+
+        // Let x = missing, y = repeating
+        // s = x - y
+        // ssq = x^2 - y^2 = (x - y)(x + y) = s * (x + y)
+        // => x + y = ssq / s
+        // => x = (s + ssq / s) / 2
+        // => y = x - s
+        missing = (s + ssq / s) / 2;
+        repeating = missing - s;
+
+        ArrayList<Integer> res = new ArrayList<>();
+        res.add(repeating);
+        res.add(missing);
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {3, 1, 3};
+        ArrayList<Integer> ans = findTwoElement(arr);
+
+        System.out.println(ans.get(0) + " " + ans.get(1));
+    }
+}
+
+def findTwoElement(arr):
+    n = len(arr)
+
+    # Expected sum and sum of squares for numbers from 1 to n
+    s = (n * (n + 1)) // 2
+    ssq = (n * (n + 1) * (2 * n + 1)) // 6
+
+    missing = 0
+    repeating = 0
+
+    # Subtract actual sum and sum of squares from expected values
+    for num in arr:
+        s -= num
+        ssq -= num * num
+
+    # Let s = x - y and ssq = x^2 - y^2 = (x - y)(x + y)
+    # => x = (s + ssq // s) // 2, y = x - s
+    missing = (s + ssq // s) // 2
+    repeating = missing - s
+
+    return [repeating, missing]
+
+if __name__ == "__main__":
+    arr = [3, 1, 3]
+    ans = findTwoElement(arr)
+
+    print(ans[0], ans[1])
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static List<int> findTwoElement(int[] arr) {
+        int n = arr.Length;
+
+        // Expected sum and sum of squares from 1 to n
+        int s = (n * (n + 1)) / 2;
+        int ssq = (n * (n + 1) * (2 * n + 1)) / 6;
+
+        int missing = 0, repeating = 0;
+
+        // Subtract actual values from expected ones
+        for (int i = 0; i < n; i++) {
+            s -= arr[i];
+            ssq -= arr[i] * arr[i];
+        }
+
+        // Let s = x - y, ssq = x^2 - y^2 = (x - y)(x + y)
+        // => x = (s + ssq / s) / 2, y = x - s
+        missing = (s + ssq / s) / 2;
+        repeating = missing - s;
+
+        return new List<int> { repeating, missing };
+    }
+
+    static void Main() {
+        int[] arr = { 3, 1, 3 };
+        List<int> ans = findTwoElement(arr);
+
+        Console.WriteLine(ans[0] + " " + ans[1]);
+    }
+}
+
+function findTwoElement(arr) {
+    let n = arr.length;
+
+    // Expected sum and sum of squares from 1 to n
+    let s = (n * (n + 1)) / 2;
+    let ssq = (n * (n + 1) * (2 * n + 1)) / 6;
+
+    let missing = 0, repeating = 0;
+
+    // Subtract actual values from the expected ones
+    for (let i = 0; i < n; i++) {
+        s -= arr[i];
+        ssq -= arr[i] * arr[i];
+    }
+
+    // Let s = x - y, ssq = x^2 - y^2 = (x - y)(x + y)
+    // Solve: x = (s + ssq / s) / 2, y = x - s
+    missing = (s + ssq / s) / 2;
+    repeating = missing - s;
+
+    return [repeating, missing];
+}
+
+// Driver Code
+let arr = [3, 1, 3];
+let ans = findTwoElement(arr);
+console.log(ans[0], ans[1]);
+
+3 2
+
+An Alternate way to make two equations:
+
+- Let x be the missing and y be the repeating element.
+- Get the sum of all numbers using formula S = n(n+1)/2 - x + y
+- Get product of all numbers using formula P = 1*2*3*...*n * y / x
+- The above two steps give us two equations, we can solve the equations and get the values of x and y.
+
+### [Approach 4] Using XOR - O(n) Time and O(1) Space
+
+> The idea is to use XOR operations to isolate the missing and repeating numbers. By XORing all array elements with numbers 1 to n, we get the XOR of our missing and repeating numbers. Then, using a set bit in this XOR result, we can divide all numbers into two groups, which helps us separate the missing and repeating numbers.
+
+Refer to Find the two numbers with odd occurrences in an unsorted array to understand how groups will be created.
+
+Step by step approach:
+
+- XOR all array elements and numbers from 1 to n to get XOR of missing and repeating numbers.
+- Find the rightmost set bit in this XOR result using xorVal & ~(xorVal-1).
+- Use this set bit to divide array elements and numbers 1 to n into two groups.
+- XOR elements of first group to get x and second group to get y.
+- Count occurrences of x in original array to determine which is missing and which is repeating.
+- If x appears in array, x is repeating and y is missing; otherwise vice versa.
+- Return both the repeating and missing numbers.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<int> findTwoElement(vector<int>& arr) {
+    int n = arr.size();
+    int xorVal = 0;
+
+    // get the xor of all array elements
+    // and numbers from 1 to n
+    for (int i = 0; i < n; i++) {
+        xorVal ^= arr[i];
+        xorVal ^= (i + 1);  // 1 to n numbers
+    }
+
+    // get the rightmost set bit in xorVal
+    int setBitIndex = xorVal & ~(xorVal - 1);
+
+    int x = 0, y = 0;
+
+    // now divide elements into two sets
+    // by comparing rightmost set bit
+    for (int i = 0; i < n; i++) {
+
+        // decide whether arr[i] is in first set
+        // or second
+        if (arr[i] & setBitIndex) {
+            x ^= arr[i];
+        }
+        else {
+            y ^= arr[i];
+        }
+
+        // decide whether (i+1) is in first set
+        // or second
+        if ((i+1) & setBitIndex) {
+            x ^= (i + 1);
+        }
+        else {
+            y ^= (i + 1);
+        }
+    }
+
+    // x and y are the repeating and missing values.
+    // to know which one is what, traverse the array
+    int missing, repeating;
+
+    int xCnt = 0;
+    for (int i=0; i<n; i++) {
+        if (arr[i] == x) {
+            xCnt++;
+        }
+    }
+
+    if (xCnt == 0) {
+        missing = x;
+        repeating = y;
+    }
+    else {
+        missing = y;
+        repeating = x;
+    }
+
+    return {repeating, missing};
+}
+
+int main() {
+    vector<int> arr = {3, 1, 3};
+    vector<int> ans = findTwoElement(arr);
+
+    cout << ans[0] << " " << ans[1] << endl;
+    return 0;
+}
+
+import java.util.ArrayList;
+
+class GfG {
+
+    static ArrayList<Integer> findTwoElement(int[] arr) {
+        int n = arr.length;
+        int xorVal = 0;
+
+        // get the xor of all array elements
+        // And numbers from 1 to n
+        for (int i = 0; i < n; i++) {
+            xorVal ^= arr[i];
+            xorVal ^= (i + 1);  // 1 to n numbers
+        }
+
+        // get the rightmost set bit in xorVal
+        int setBitIndex = xorVal & ~(xorVal - 1);
+
+        int x = 0, y = 0;
+
+        // now divide elements into two sets
+        // by comparing rightmost set bit
+        for (int i = 0; i < n; i++) {
+
+            // decide whether arr[i] is in first set
+            // or second
+            if ((arr[i] & setBitIndex) != 0) {
+                x ^= arr[i];
+            }
+            else {
+                y ^= arr[i];
+            }
+
+            // decide whether (i+1) is in first set
+            // or second
+            if (((i + 1) & setBitIndex) != 0) {
+                x ^= (i + 1);
+            }
+            else {
+                y ^= (i + 1);
+            }
+        }
+
+        // x and y are the repeating and missing values.
+        // to know which one is what, traverse the array
+        int missing, repeating;
+
+        int xCnt = 0;
+        for (int i = 0; i < n; i++) {
+            if (arr[i] == x) {
+                xCnt++;
+            }
+        }
+
+        if (xCnt == 0) {
+            missing = x;
+            repeating = y;
+        }
+        else {
+            missing = y;
+            repeating = x;
+        }
+
+        ArrayList<Integer> result = new ArrayList<>();
+        result.add(repeating);
+        result.add(missing);
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {3, 1, 3};
+        ArrayList<Integer> ans = findTwoElement(arr);
+
+        System.out.println(ans.get(0) +" "+ ans.get(1));
+    }
+}
+
+def findTwoElement(arr):
+    n = len(arr)
+    xorVal = 0
+
+    # get the xor of all array elements
+    # And numbers from 1 to n
+    for i in range(n):
+        xorVal ^= arr[i]
+        xorVal ^= (i + 1)  # 1 to n numbers
+
+    # get the rightmost set bit in xorVal
+    setBitIndex = xorVal & ~(xorVal - 1)
+
+    x, y = 0, 0
+
+    # now divide elements into two sets
+    # by comparing rightmost set bit
+    for i in range(n):
+
+        # decide whether arr[i] is in first set
+        # or second
+        if arr[i] & setBitIndex:
+            x ^= arr[i]
+        else:
+            y ^= arr[i]
+
+        # decide whether (i+1) is in first set
+        # or second
+        if (i + 1) & setBitIndex:
+            x ^= (i + 1)
+        else:
+            y ^= (i + 1)
+
+    # x and y are the repeating and missing values.
+    # to know which one is what, traverse the array
+    xCnt = sum(1 for num in arr if num == x)
+
+    if xCnt == 0:
+        missing, repeating = x, y
+    else:
+        missing, repeating = y, x
+
+    return [repeating, missing]
+
+if __name__ == "__main__":
+    arr = [3, 1, 3]
+    ans = findTwoElement(arr)
+
+    print(ans[0], ans[1])
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static List<int> findTwoElement(int[] arr) {
+        int n = arr.Length;
+        int xorVal = 0;
+
+        // get the xor of all array elements
+        // And numbers from 1 to n
+        for (int i = 0; i < n; i++) {
+            xorVal ^= arr[i];
+            xorVal ^= (i + 1);  // 1 to n numbers
+        }
+
+        // get the rightmost set bit in xorVal
+        int setBitIndex = xorVal & ~(xorVal - 1);
+
+        int x = 0, y = 0;
+
+        // now divide elements into two sets
+        // by comparing rightmost set bit
+        for (int i = 0; i < n; i++) {
+
+            // decide whether arr[i] is in first set
+            // or second
+            if ((arr[i] & setBitIndex) != 0) {
+                x ^= arr[i];
+            }
+            else {
+                y ^= arr[i];
+            }
+
+            // decide whether (i+1) is in first set
+            // or second
+            if (((i + 1) & setBitIndex) != 0) {
+                x ^= (i + 1);
+            }
+            else {
+                y ^= (i + 1);
+            }
+        }
+
+        // x and y are the repeating and missing values.
+        // to know which one is what, traverse the array
+        int missing, repeating;
+
+        int xCnt = 0;
+        for (int i = 0; i < n; i++) {
+            if (arr[i] == x) {
+                xCnt++;
+            }
+        }
+
+        if (xCnt == 0) {
+            missing = x;
+            repeating = y;
+        }
+        else {
+            missing = y;
+            repeating = x;
+        }
+
+        return new List<int> { repeating, missing };
+    }
+
+    static void Main() {
+        int[] arr = {3, 1, 3};
+        List<int> ans = findTwoElement(arr);
+
+        Console.WriteLine(ans[0] + " " + ans[1]);
+    }
+}
+
+function findTwoElement(arr) {
+    let n = arr.length;
+    let xorVal = 0;
+
+    // Get the xor of all array elements
+    // And numbers from 1 to n
+    for (let i = 0; i < n; i++) {
+        xorVal ^= arr[i];
+        xorVal ^= (i + 1);  // 1 to n numbers
+    }
+
+    // Get the rightmost set bit in xorVal
+    let setBitIndex = xorVal & ~(xorVal - 1);
+
+    let x = 0, y = 0;
+
+    // Now divide elements into two sets
+    // by comparing rightmost set bit
+    for (let i = 0; i < n; i++) {
+
+        // Decide whether arr[i] is in first set
+        // or second
+        if (arr[i] & setBitIndex) {
+            x ^= arr[i];
+        }
+        else {
+            y ^= arr[i];
+        }
+
+        // Decide whether (i+1) is in first set
+        // or second
+        if ((i + 1) & setBitIndex) {
+            x ^= (i + 1);
+        }
+        else {
+            y ^= (i + 1);
+        }
+    }
+
+    let xCnt = arr.filter(num => num === x).length;
+
+    let missing = xCnt === 0 ? x : y;
+    let repeating = xCnt === 0 ? y : x;
+
+    return [repeating, missing];
+}
+
+// Driver Code
+let arr = [3, 1, 3];
+let ans = findTwoElement(arr);
+console.log(ans[0], ans[1]);
+
+3 2

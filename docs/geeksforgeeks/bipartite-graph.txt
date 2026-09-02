@@ -1,0 +1,1186 @@
+Source: https://www.geeksforgeeks.org/dsa/bipartite-graph/
+Title: Check whether a given graph is Bipartite or not
+
+Given a Graph with V vertices (Numbered from 0 to V-1 ) and E edges. Check whether the graph is bipartite or not.
+
+A bipartite graph can be colored with two colors such that no two adjacent vertices share the same color. This means we can divide the graph’s vertices into two distinct sets where:
+
+- All edges connect vertices from one set to vertices in the other set.
+- No edges exist between vertices within the same set.
+
+Examples:
+
+> Input: V = 3, edges[][] = [[0, 1], [1,2]] Output: true Explanation: The given graph can be colored in two colors so, it is a bipartite graph. Input: V = 4, edges[][] = [[0, 3], [1, 2], [3, 2], [0, 2]] Output: false Explanation: The given graph cannot be colored in two colors such that color of adjacent vertices differs.
+
+Table of Content
+
+- [Naive Approach] Using Brute Force Two Coloring - O(2^V × (V + E)) Time and O(V + E) Space
+- [Expected Approach - 1] Using BFS Graph Traversal with Two Coloring - O(V + E) Time and O(V + E) Space
+- [Expected Approach - 2] Using DFS Graph Traversal with Two Coloring - O(V + E) Time and O(V + E) Space
+
+### [Naive Approach] Using Brute Force Two Coloring - O(2^V × (V + E)) Time and O(V + E) Space
+
+> The idea is to recursively assign one of the two colors to every vertex. Before assigning a color, check whether any adjacent vertex already has the same color. If no valid coloring is possible after trying both colors, the graph is not bipartite.
+
+Working of Approach:
+
+- Create an adjacency list from the given edges.
+- Recursively assign either color 0 or 1 to every uncolored vertex.
+- Before assigning a color, ensure that none of its adjacent vertices has the same color.
+- If a color leads to a conflict, backtrack and try the other color.
+- If all vertices are colored successfully, return true; otherwise, return false.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to create adjacency list.
+vector<vector<int>> constructAdj(int V, vector<vector<int>> &edges)
+{
+    vector<vector<int>> adj(V);
+
+    for (auto &e : edges)
+    {
+        adj[e[0]].push_back(e[1]);
+        adj[e[1]].push_back(e[0]);
+    }
+
+    return adj;
+}
+
+// Function to check whether assigning the color is safe.
+bool isSafe(int node, int clr, vector<int> &color, vector<vector<int>> &adj)
+{
+    // Check all adjacent vertices.
+    for (int neigh : adj[node])
+    {
+        if (color[neigh] == clr)
+            return false;
+    }
+
+    return true;
+}
+
+// Backtracking function.
+bool solve(int node, int V, vector<int> &color, vector<vector<int>> &adj)
+{
+    // All vertices are colored.
+    if (node == V)
+        return true;
+
+    // Skip already colored vertices.
+    if (color[node] != -1)
+        return solve(node + 1, V, color, adj);
+
+    // Try both colors.
+    for (int clr = 0; clr <= 1; clr++)
+    {
+        if (isSafe(node, clr, color, adj))
+        {
+            // Assign color.
+            color[node] = clr;
+
+            // Recur for next vertex.
+            if (solve(node + 1, V, color, adj))
+                return true;
+
+            // Backtrack.
+            color[node] = -1;
+        }
+    }
+
+    return false;
+}
+
+// Function to check if graph is bipartite.
+bool isBipartite(int V, vector<vector<int>> &edges)
+{
+    // Create adjacency list.
+    vector<vector<int>> adj = constructAdj(V, edges);
+
+    // -1 means vertex is uncolored.
+    vector<int> color(V, -1);
+
+    return solve(0, V, color, adj);
+}
+
+int main()
+{
+    int V = 3;
+    vector<vector<int>> edges = {{0, 1}, {1, 2}};
+
+    if (isBipartite(V, edges))
+        cout << "true";
+    else
+        cout << "false";
+
+    return 0;
+}
+
+import java.util.*;
+
+class GFG {
+
+    // Function to create adjacency list.
+    static ArrayList<ArrayList<Integer> >
+    constructAdj(int V, int[][] edges)
+    {
+        ArrayList<ArrayList<Integer> > adj
+            = new ArrayList<>();
+
+        for (int i = 0; i < V; i++)
+            adj.add(new ArrayList<>());
+
+        for (int[] e : edges) {
+            adj.get(e[0]).add(e[1]);
+            adj.get(e[1]).add(e[0]);
+        }
+
+        return adj;
+    }
+
+    // Function to check whether assigning the color is
+    // safe.
+    static boolean
+    isSafe(int node, int clr, int[] color,
+           ArrayList<ArrayList<Integer> > adj)
+    {
+
+        // Check all adjacent vertices.
+        for (int neigh : adj.get(node)) {
+            if (color[neigh] == clr)
+                return false;
+        }
+
+        return true;
+    }
+
+    // Backtracking function.
+    static boolean solve(int node, int V, int[] color,
+                         ArrayList<ArrayList<Integer> > adj)
+    {
+
+        // All vertices are colored.
+        if (node == V)
+            return true;
+
+        // Skip already colored vertices.
+        if (color[node] != -1)
+            return solve(node + 1, V, color, adj);
+
+        // Try both colors.
+        for (int clr = 0; clr <= 1; clr++) {
+            if (isSafe(node, clr, color, adj)) {
+
+                // Assign color.
+                color[node] = clr;
+
+                // Recur for next vertex.
+                if (solve(node + 1, V, color, adj))
+                    return true;
+
+                // Backtrack.
+                color[node] = -1;
+            }
+        }
+
+        return false;
+    }
+
+    // Function to check if graph is bipartite.
+    static boolean isBipartite(int V, int[][] edges)
+    {
+
+        // Create adjacency list.
+        ArrayList<ArrayList<Integer> > adj
+            = constructAdj(V, edges);
+
+        // -1 means vertex is uncolored.
+        int[] color = new int[V];
+        Arrays.fill(color, -1);
+
+        return solve(0, V, color, adj);
+    }
+
+    public static void main(String[] args)
+    {
+
+        int V = 3;
+        int[][] edges = { { 0, 1 }, { 1, 2 } };
+
+        System.out.println(isBipartite(V, edges));
+    }
+}
+
+def constructAdj(V, edges):
+    adj = [[] for _ in range(V)]
+    for e in edges:
+        adj[e[0]].append(e[1])
+        adj[e[1]].append(e[0])
+    return adj
+
+def isSafe(node, clr, color, adj):
+    for neigh in adj[node]:
+        if color[neigh] == clr:
+            return False
+    return True
+
+def solve(node, V, color, adj):
+    if node == V:
+        return True
+    if color[node] != -1:
+        return solve(node + 1, V, color, adj)
+    for clr in range(2):
+        if isSafe(node, clr, color, adj):
+            color[node] = clr
+            if solve(node + 1, V, color, adj):
+                return True
+            color[node] = -1
+    return False
+
+def isBipartite(V, edges):
+    adj = constructAdj(V, edges)
+    color = [-1] * V
+    return solve(0, V, color, adj)
+
+if __name__ == '__main__':
+    V = 3
+    edges = [[0, 1], [1, 2]]
+    if isBipartite(V, edges):
+        print('true')
+    else:
+        print('false')
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    // Function to create adjacency list.
+    static List<int>[] ConstructAdj(int V, int[, ] edges)
+    {
+        List<int>[] adj = new List<int>[ V ];
+
+        for (int i = 0; i < V; i++)
+            adj[i] = new List<int>();
+
+        int m = edges.GetLength(0);
+
+        for (int i = 0; i < m; i++) {
+            int u = edges[i, 0];
+            int v = edges[i, 1];
+
+            adj[u].Add(v);
+            adj[v].Add(u);
+        }
+
+        return adj;
+    }
+
+    // Function to check whether assigning the color is
+    // safe.
+    static bool IsSafe(int node, int clr, int[] color,
+                       List<int>[] adj)
+    {
+        // Check all adjacent vertices.
+        foreach(int neigh in adj[node])
+        {
+            if (color[neigh] == clr)
+                return false;
+        }
+
+        return true;
+    }
+
+    // Backtracking function.
+    static bool Solve(int node, int V, int[] color,
+                      List<int>[] adj)
+    {
+        // All vertices are colored.
+        if (node == V)
+            return true;
+
+        // Skip already colored vertices.
+        if (color[node] != -1)
+            return Solve(node + 1, V, color, adj);
+
+        // Try both colors.
+        for (int clr = 0; clr <= 1; clr++) {
+            if (IsSafe(node, clr, color, adj)) {
+                // Assign color.
+                color[node] = clr;
+
+                // Recur for next vertex.
+                if (Solve(node + 1, V, color, adj))
+                    return true;
+
+                // Backtrack.
+                color[node] = -1;
+            }
+        }
+
+        return false;
+    }
+
+    // Function to check if graph is bipartite.
+    static bool isBipartite(int V, int[, ] edges)
+    {
+        // Create adjacency list.
+        List<int>[] adj = ConstructAdj(V, edges);
+
+        // -1 means vertex is uncolored.
+        int[] color = new int[V];
+        Array.Fill(color, -1);
+
+        return Solve(0, V, color, adj);
+    }
+
+    static void Main()
+    {
+        int V = 3;
+        int[, ] edges = { { 0, 1 }, { 1, 2 } };
+
+        Console.WriteLine(
+            isBipartite(V, edges).ToString().ToLower());
+    }
+}
+
+function constructAdj(V, edges)
+{
+    let adj = Array.from({length : V}, () => []);
+    for (let e of edges) {
+        adj[e[0]].push(e[1]);
+        adj[e[1]].push(e[0]);
+    }
+    return adj;
+}
+
+function isSafe(node, clr, color, adj)
+{
+    for (let neigh of adj[node]) {
+        if (color[neigh] === clr)
+            return false;
+    }
+    return true;
+}
+
+function solve(node, V, color, adj)
+{
+    if (node === V)
+        return true;
+    if (color[node] !== -1)
+        return solve(node + 1, V, color, adj);
+    for (let clr = 0; clr <= 1; clr++) {
+        if (isSafe(node, clr, color, adj)) {
+            color[node] = clr;
+            if (solve(node + 1, V, color, adj))
+                return true;
+            color[node] = -1;
+        }
+    }
+    return false;
+}
+
+function isBipartite(V, edges)
+{
+    let adj = constructAdj(V, edges);
+    let color = Array(V).fill(-1);
+    return solve(0, V, color, adj);
+}
+
+// Driver Code
+let V = 3;
+let edges = [ [ 0, 1 ], [ 1, 2 ] ];
+if (isBipartite(V, edges))
+    console.log("true");
+else
+    console.log("false");
+
+true
+
+Time Complexity: O(2^V × (V + E)), since each vertex can be assigned one of two colors, and every assignment checks adjacent vertices. Space Complexity: O(V + E), The adjacency list requires O(V + E) space, while the color array and recursion stack require O(V) space.
+
+### [Expected Approach - 1] Using BFS Graph Traversal with Two Coloring - O(V + E) Time and O(V + E) Space
+
+> The idea is to perform a BFS traversal and color each vertex with one of two colors. Every adjacent vertex is assigned the opposite color. If two adjacent vertices are found with the same color, the graph is not bipartite.
+
+Working of Approach:
+
+- Create an adjacency list from the given edges.
+- Start BFS from every unvisited vertex to handle disconnected graphs.
+- Assign the starting vertex color 0 and color every neighbor with the opposite color.
+- If an already colored neighbor has the same color as the current vertex, return false.
+- If BFS finishes without any conflict, return true.
+
+Let us understand with an example: Input: V = 3, edges[][] = [[0, 1], [1,2]]
+
+- Create the adjacency list as 0 -> {1}, 1 -> {0, 2}, and 2 -> {1}.
+- Initialize the color array as [-1, -1, -1] and start BFS from vertex 0.
+- Assign color 0 to vertex 0 and push it into the queue.
+- Visit vertex 1, assign it the opposite color 1, and push it into the queue.
+- Visit vertex 2 from vertex 1 and assign it color 0.
+- Every adjacent pair of vertices has different colors, so no conflict is found.
+- Therefore, the graph is bipartite, and the answer is true.
+
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+
+vector<vector<int>> constructadj(int V, vector<vector<int>> &edges)
+{
+
+    vector<vector<int>> adj(V);
+    for (auto it : edges)
+    {
+        adj[it[0]].push_back(it[1]);
+        adj[it[1]].push_back(it[0]);
+    }
+    return adj;
+}
+
+// Function to check if the graph is bipartite or not
+bool isBipartite(int V, vector<vector<int>> &edges)
+{
+    // Vector to store colors of vertices.
+    // Initialize all as -1 (uncolored)
+    vector<int> color(V, -1);
+
+    // create adjacency list
+    vector<vector<int>> adj = constructadj(V, edges);
+    // Queue for BFS
+    queue<int> q;
+
+    // Iterate through all vertices to handle disconnected graphs
+    for (int i = 0; i < V; i++)
+    {
+
+        // If the vertex is uncolored, start BFS from it
+        if (color[i] == -1)
+        {
+
+            // Assign first color (0) to the starting vertex
+            color[i] = 0;
+            q.push(i);
+
+            // Perform BFS
+            while (!q.empty())
+            {
+                int u = q.front();
+                q.pop();
+
+                // Traverse all adjacent vertices
+                for (auto &v : adj[u])
+                {
+
+                    // If the adjacent vertex is uncolored,
+                    // assign alternate color
+                    if (color[v] == -1)
+                    {
+                        color[v] = 1 - color[u];
+                        q.push(v);
+                    }
+
+                    // If the adjacent vertex has the same color,
+                    // graph is not bipartite
+                    else if (color[v] == color[u])
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    // If no conflicts in coloring, graph is bipartite
+    return true;
+}
+
+int main()
+{
+
+    int V = 3;
+    vector<vector<int>> edges = {{0, 1}, {1, 2}};
+
+    if (isBipartite(V, edges))
+        cout << "true";
+    else
+        cout << "false";
+
+    return 0;
+}
+
+import java.util.*;
+
+class GFG {
+
+    static ArrayList<ArrayList<Integer> >
+    constructAdj(int V, int[][] edges)
+    {
+
+        ArrayList<ArrayList<Integer> > adj
+            = new ArrayList<>();
+
+        for (int i = 0; i < V; i++)
+            adj.add(new ArrayList<>());
+
+        for (int[] it : edges) {
+            adj.get(it[0]).add(it[1]);
+            adj.get(it[1]).add(it[0]);
+        }
+
+        return adj;
+    }
+
+    // Function to check if the graph is bipartite or not
+    static boolean isBipartite(int V, int[][] edges)
+    {
+
+        // Vector to store colors of vertices.
+        // Initialize all as -1 (uncolored)
+        int[] color = new int[V];
+        Arrays.fill(color, -1);
+
+        // Create adjacency list
+        ArrayList<ArrayList<Integer> > adj
+            = constructAdj(V, edges);
+
+        // Queue for BFS
+        Queue<Integer> q = new LinkedList<>();
+
+        // Iterate through all vertices to handle
+        // disconnected graphs
+        for (int i = 0; i < V; i++) {
+
+            // If the vertex is uncolored, start BFS from it
+            if (color[i] == -1) {
+
+                // Assign first color (0) to the starting
+                // vertex
+                color[i] = 0;
+                q.offer(i);
+
+                // Perform BFS
+                while (!q.isEmpty()) {
+
+                    int u = q.poll();
+
+                    // Traverse all adjacent vertices
+                    for (int v : adj.get(u)) {
+
+                        // If the adjacent vertex is
+                        // uncolored, assign alternate color
+                        if (color[v] == -1) {
+                            color[v] = 1 - color[u];
+                            q.offer(v);
+                        }
+
+                        // If the adjacent vertex has the
+                        // same color, graph is not
+                        // bipartite
+                        else if (color[v] == color[u]) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // If no conflicts in coloring, graph is bipartite
+        return true;
+    }
+
+    public static void main(String[] args)
+    {
+
+        int V = 3;
+        int[][] edges = { { 0, 1 }, { 1, 2 } };
+
+        if (isBipartite(V, edges))
+            System.out.println("true");
+        else
+            System.out.println("false");
+    }
+}
+
+from collections import deque, defaultdict
+
+def constructadj(V, edges):
+    adj = defaultdict(list)
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    return adj
+
+# Function to check if the graph is bipartite or not
+def isBipartite(V, edges):
+    # List to store colors of vertices.
+    # Initialize all as -1 (uncolored)
+    color = [-1] * V
+
+    # create adjacency list
+    adj = constructadj(V, edges)
+    # Queue for BFS
+    q = deque()
+
+    # Iterate through all vertices to handle disconnected graphs
+    for i in range(V):
+
+        # If the vertex is uncolored, start BFS from it
+        if color[i] == -1:
+
+            # Assign first color (0) to the starting vertex
+            color[i] = 0
+            q.append(i)
+
+            # Perform BFS
+            while q:
+                u = q.popleft()
+
+                # Traverse all adjacent vertices
+                for v in adj[u]:
+
+                    # If the adjacent vertex is uncolored,
+                    # assign alternate color
+                    if color[v] == -1:
+                        color[v] = 1 - color[u]
+                        q.append(v)
+
+                    # If the adjacent vertex has the same color,
+                    # graph is not bipartite
+                    elif color[v] == color[u]:
+                        return False
+
+    # If no conflicts in coloring, graph is bipartite
+    return True
+
+if __name__ == "__main__":
+    V = 3
+    edges = [[0, 1], [1, 2]]
+
+    if isBipartite(V, edges):
+        print("true")
+    else:
+        print("false")
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static List<int>[] ConstructAdj(int V, int[, ] edges)
+    {
+        List<int>[] adj = new List<int>[ V ];
+
+        for (int i = 0; i < V; i++)
+            adj[i] = new List<int>();
+
+        int m = edges.GetLength(0);
+
+        for (int i = 0; i < m; i++) {
+            adj[edges[i, 0]].Add(edges[i, 1]);
+            adj[edges[i, 1]].Add(edges[i, 0]);
+        }
+
+        return adj;
+    }
+
+    // Function to check if the graph is bipartite or not
+    static bool isBipartite(int V, int[, ] edges)
+    {
+        // Vector to store colors of vertices.
+        // Initialize all as -1 (uncolored)
+        int[] color = new int[V];
+        Array.Fill(color, -1);
+
+        // Create adjacency list
+        List<int>[] adj = ConstructAdj(V, edges);
+
+        // Queue for BFS
+        Queue<int> q = new Queue<int>();
+
+        // Iterate through all vertices to handle
+        // disconnected graphs
+        for (int i = 0; i < V; i++) {
+            // If the vertex is uncolored, start BFS from it
+            if (color[i] == -1) {
+                // Assign first color (0) to the starting
+                // vertex
+                color[i] = 0;
+                q.Enqueue(i);
+
+                // Perform BFS
+                while (q.Count > 0) {
+                    int u = q.Dequeue();
+
+                    // Traverse all adjacent vertices
+                    foreach(int v in adj[u])
+                    {
+                        // If the adjacent vertex is
+                        // uncolored, assign alternate color
+                        if (color[v] == -1) {
+                            color[v] = 1 - color[u];
+                            q.Enqueue(v);
+                        }
+
+                        // If the adjacent vertex has the
+                        // same color, graph is not
+                        // bipartite
+                        else if (color[v] == color[u]) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // If no conflicts in coloring, graph is bipartite
+        return true;
+    }
+
+    static void Main()
+    {
+        int V = 3;
+        int[, ] edges = { { 0, 1 }, { 1, 2 } };
+
+        if (isBipartite(V, edges))
+            Console.WriteLine("true");
+        else
+            Console.WriteLine("false");
+    }
+}
+
+function constructadj(V, edges)
+{
+
+    let adj = Array.from({length : V}, () => []);
+    for (let it of edges) {
+        adj[it[0]].push(it[1]);
+        adj[it[1]].push(it[0]);
+    }
+    return adj;
+}
+
+// Function to check if the graph is bipartite or not
+function isBipartite(V, edges)
+{
+    // Array to store colors of vertices.
+    // Initialize all as -1 (uncolored)
+    let color = Array(V).fill(-1);
+
+    // create adjacency list
+    let adj = constructadj(V, edges);
+    // Queue for BFS
+    let q = [];
+
+    // Iterate through all vertices to handle disconnected
+    // graphs
+    for (let i = 0; i < V; i++) {
+        // If the vertex is uncolored, start BFS from it
+        if (color[i] === -1) {
+            // Assign first color (0) to the starting vertex
+            color[i] = 0;
+            q.push(i);
+
+            // Perform BFS
+            while (q.length > 0) {
+                let u = q.shift();
+
+                // Traverse all adjacent vertices
+                for (let v of adj[u]) {
+                    // If the adjacent vertex is uncolored,
+                    // assign alternate color
+                    if (color[v] === -1) {
+                        color[v] = 1 - color[u];
+                        q.push(v);
+                    }
+
+                    // If the adjacent vertex has the same
+                    // color, graph is not bipartite
+                    else if (color[v] === color[u]) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    // If no conflicts in coloring, graph is bipartite
+    return true;
+}
+
+// Driver Code
+let V = 3;
+let edges = [ [ 0, 1 ], [ 1, 2 ] ];
+
+if (isBipartite(V, edges))
+    console.log("true");
+else
+    console.log("false");
+
+true
+
+Time Complexity: O(V + E), as every vertex is visited at most once and every edge is traversed at most twice during the BFS traversal. Space Complexity: O(V + E), The adjacency list requires O(V + E) space, while the color array and BFS queue require O(V) space.
+
+### [Expected Approach - 2] Using DFS Graph Traversal with Two Coloring - O(V + E) Time and O(V + E) Space
+
+> The idea is to perform a DFS traversal and color each vertex with one of two colors. During DFS, every adjacent vertex is assigned the opposite color. If two adjacent vertices receive the same color, the graph is not bipartite.
+
+Working of Approach:
+
+- Create an adjacency list from the given edges.
+- Start DFS from every unvisited vertex.
+- Assign alternate colors while visiting adjacent vertices.
+- If an adjacent vertex already has the same color, return false.
+- If all components are colored successfully, return true.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to create adjacency list.
+vector<vector<int>> constructAdj(int V, vector<vector<int>> &edges)
+{
+    vector<vector<int>> adj(V);
+
+    for (auto &e : edges)
+    {
+        adj[e[0]].push_back(e[1]);
+        adj[e[1]].push_back(e[0]);
+    }
+
+    return adj;
+}
+
+// DFS function to color vertices.
+bool dfs(int node, int clr, vector<int> &color,
+         vector<vector<int>> &adj)
+{
+    // Assign color to current vertex.
+    color[node] = clr;
+
+    // Visit all adjacent vertices.
+    for (int neigh : adj[node])
+    {
+        // If the adjacent vertex is uncolored,
+        // assign alternate color.
+        if (color[neigh] == -1)
+        {
+            if (!dfs(neigh, 1 - clr, color, adj))
+                return false;
+        }
+
+        // If the adjacent vertex has the same color,
+        // graph is not bipartite.
+        else if (color[neigh] == clr)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Function to check if graph is bipartite.
+bool isBipartite(int V, vector<vector<int>> &edges)
+{
+    // Create adjacency list.
+    vector<vector<int>> adj = constructAdj(V, edges);
+
+    // -1 means vertex is uncolored.
+    vector<int> color(V, -1);
+
+    // Traverse every connected component.
+    for (int i = 0; i < V; i++)
+    {
+        if (color[i] == -1)
+        {
+            if (!dfs(i, 0, color, adj))
+                return false;
+        }
+    }
+
+    return true;
+}
+
+int main()
+{
+    int V = 3;
+    vector<vector<int>> edges = {{0, 1}, {1, 2}};
+
+    if (isBipartite(V, edges))
+        cout << "true";
+    else
+        cout << "false";
+
+    return 0;
+}
+
+import java.util.*;
+
+class GFG {
+
+    // Function to create adjacency list.
+    static ArrayList<ArrayList<Integer> >
+    constructAdj(int V, int[][] edges)
+    {
+
+        ArrayList<ArrayList<Integer> > adj
+            = new ArrayList<>();
+
+        for (int i = 0; i < V; i++)
+            adj.add(new ArrayList<>());
+
+        for (int[] e : edges) {
+            adj.get(e[0]).add(e[1]);
+            adj.get(e[1]).add(e[0]);
+        }
+
+        return adj;
+    }
+
+    // DFS function to color vertices.
+    static boolean dfs(int node, int clr, int[] color,
+                       ArrayList<ArrayList<Integer> > adj)
+    {
+
+        // Assign color to current vertex.
+        color[node] = clr;
+
+        // Visit all adjacent vertices.
+        for (int neigh : adj.get(node)) {
+
+            // If the adjacent vertex is uncolored,
+            // assign alternate color.
+            if (color[neigh] == -1) {
+                if (!dfs(neigh, 1 - clr, color, adj))
+                    return false;
+            }
+
+            // If the adjacent vertex has the same color,
+            // graph is not bipartite.
+            else if (color[neigh] == clr) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Function to check if graph is bipartite.
+    static boolean isBipartite(int V, int[][] edges)
+    {
+
+        // Create adjacency list.
+        ArrayList<ArrayList<Integer> > adj
+            = constructAdj(V, edges);
+
+        // -1 means vertex is uncolored.
+        int[] color = new int[V];
+        Arrays.fill(color, -1);
+
+        // Traverse every connected component.
+        for (int i = 0; i < V; i++) {
+            if (color[i] == -1) {
+                if (!dfs(i, 0, color, adj))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static void main(String[] args)
+    {
+
+        int V = 3;
+        int[][] edges = { { 0, 1 }, { 1, 2 } };
+
+        if (isBipartite(V, edges))
+            System.out.println("true");
+        else
+            System.out.println("false");
+    }
+}
+
+# Function to create adjacency list.
+def constructAdj(V, edges):
+    adj = [[] for _ in range(V)]
+    for e in edges:
+        adj[e[0]].append(e[1])
+        adj[e[1]].append(e[0])
+    return adj
+
+# DFS function to color vertices.
+
+def dfs(node, clr, color, adj):
+    # Assign color to current vertex.
+    color[node] = clr
+    # Visit all adjacent vertices.
+    for neigh in adj[node]:
+        # If the adjacent vertex is uncolored, assign alternate color.
+        if color[neigh] == -1:
+            if not dfs(neigh, 1 - clr, color, adj):
+                return False
+        # If the adjacent vertex has the same color, graph is not bipartite.
+        elif color[neigh] == clr:
+            return False
+    return True
+
+# Function to check if graph is bipartite.
+
+def isBipartite(V, edges):
+    # Create adjacency list.
+    adj = constructAdj(V, edges)
+    # -1 means vertex is uncolored.
+    color = [-1] * V
+    # Traverse every connected component.
+    for i in range(V):
+        if color[i] == -1:
+            if not dfs(i, 0, color, adj):
+                return False
+    return True
+
+if __name__ == '__main__':
+    V = 3
+    edges = [[0, 1], [1, 2]]
+    print('true' if isBipartite(V, edges) else 'false')
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    // Function to create adjacency list.
+    static List<int>[] ConstructAdj(int V, int[, ] edges)
+    {
+        List<int>[] adj = new List<int>[ V ];
+
+        for (int i = 0; i < V; i++)
+            adj[i] = new List<int>();
+
+        int m = edges.GetLength(0);
+
+        for (int i = 0; i < m; i++) {
+            adj[edges[i, 0]].Add(edges[i, 1]);
+            adj[edges[i, 1]].Add(edges[i, 0]);
+        }
+
+        return adj;
+    }
+
+    // DFS function to color vertices.
+    static bool Dfs(int node, int clr, int[] color,
+                    List<int>[] adj)
+    {
+        // Assign color to current vertex.
+        color[node] = clr;
+
+        // Visit all adjacent vertices.
+        foreach(int neigh in adj[node])
+        {
+            // If the adjacent vertex is uncolored,
+            // assign alternate color.
+            if (color[neigh] == -1) {
+                if (!Dfs(neigh, 1 - clr, color, adj))
+                    return false;
+            }
+
+            // If the adjacent vertex has the same color,
+            // graph is not bipartite.
+            else if (color[neigh] == clr) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Function to check if graph is bipartite.
+    static bool isBipartite(int V, int[, ] edges)
+    {
+        // Create adjacency list.
+        List<int>[] adj = ConstructAdj(V, edges);
+
+        // -1 means vertex is uncolored.
+        int[] color = new int[V];
+        Array.Fill(color, -1);
+
+        // Traverse every connected component.
+        for (int i = 0; i < V; i++) {
+            if (color[i] == -1) {
+                if (!Dfs(i, 0, color, adj))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    static void Main()
+    {
+        int V = 3;
+        int[, ] edges = { { 0, 1 }, { 1, 2 } };
+
+        if (isBipartite(V, edges))
+            Console.WriteLine("true");
+        else
+            Console.WriteLine("false");
+    }
+}
+
+// Function to create adjacency list.
+function constructAdj(V, edges)
+{
+    let adj = Array.from({length : V}, () => []);
+    for (let e of edges) {
+        adj[e[0]].push(e[1]);
+        adj[e[1]].push(e[0]);
+    }
+    return adj;
+}
+
+// DFS function to color vertices.
+function dfs(node, clr, color, adj)
+{
+    // Assign color to current vertex.
+    color[node] = clr;
+    // Visit all adjacent vertices.
+    for (let neigh of adj[node]) {
+        // If the adjacent vertex is uncolored, assign
+        // alternate color.
+        if (color[neigh] === -1) {
+            if (!dfs(neigh, 1 - clr, color, adj))
+                return false;
+        }
+        // If the adjacent vertex has the same color, graph
+        // is not bipartite.
+        else if (color[neigh] === clr) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Function to check if graph is bipartite.
+function isBipartite(V, edges)
+{
+    // Create adjacency list.
+    let adj = constructAdj(V, edges);
+    // -1 means vertex is uncolored.
+    let color = Array(V).fill(-1);
+    // Traverse every connected component.
+    for (let i = 0; i < V; i++) {
+        if (color[i] === -1) {
+            if (!dfs(i, 0, color, adj))
+                return false;
+        }
+    }
+    return true;
+}
+
+// Driver Code
+let V = 3;
+let edges = [ [ 0, 1 ], [ 1, 2 ] ];
+console.log(isBipartite(V, edges) ? "true" : "false");
+
+true
+
+Time Complexity: O(V + E), Every vertex and every edge is visited at most once during the traversal. Space Complexity : O(V + E), The adjacency list requires O(V + E) space, while the color array and DFS recursion stack require O(V) space.

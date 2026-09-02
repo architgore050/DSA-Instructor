@@ -1,0 +1,930 @@
+Source: https://www.geeksforgeeks.org/dsa/decode-string-recursively-encoded-count-followed-substring/
+Title: Decode String
+
+Given an encoded string s, decode it by expanding the pattern k[substring], where the substring inside brackets is written k times. k is guaranteed to be a positive integer, and encodedString contains only lowercase english alphabets. Return the final decoded string.
+
+Note: The test cases are generated so that the length of the output string will never exceed 10 5 .
+
+Examples:
+
+> Input: s = "3[b2[ca]]" Output: "bcacabcacabcaca" Explanation: Inner substring “2[ca]” breakdown into “caca”. Now, new string becomes “3[bcaca]” Similarly “3[bcaca]” becomes “bcacabcacabcaca” which is final result. Input: s = "3[ab]" Output: "ababab" Explanation: The substring "ab" is repeated 3 times giving "ababab".
+
+Table of Content
+
+- Using Two Stacks - O(n) Time and O(n) Space
+- Using Single Stack - O(n) Time and O(n) Space
+- Without Using Stack - O(n) Time and O(n) Space
+
+### Using Two Stacks - O(n) Time and O(n) Space
+
+> The idea is to use two stacks: one to store the repeat counts and another to store the characters. Whenever a closing bracket ] is encountered, extract the substring inside the matching [ and repeat it according to the stored count. Push the expanded substring back into the character stack. Finally, pop all characters from the stack to obtain the decoded string.
+
+Working of Approach:
+
+- Traverse the string character by character.
+- If a digit is found, form the complete number and push it into the number stack.
+- Push all letters and opening brackets [ into the character stack.
+- When ] is encountered, pop characters until [ is found, repeat the extracted substring using the top count from the number stack, and push the expanded string back into the character stack.
+- After processing the entire string, pop all characters from the stack to build the final decoded string.
+
+Illustration:
+
+#include <iostream>
+#include <stack>
+#include <string>
+using namespace std;
+
+string decodedString(string &s) {
+    stack<int> numStack;
+    stack<char> charStack;
+    string temp = "";
+    string res = "";
+
+    for (int i = 0; i < s.length(); i++) {
+        int cnt = 0;
+
+        // If Digit, convert it into number and
+      	// push it into integerstack.
+        if (s[i] >= '0' && s[i] <= '9') {
+            while (s[i] >= '0' && s[i] <= '9') {
+                cnt = cnt * 10 + s[i] - '0';
+                i++;
+            }
+            i--;
+            numStack.push(cnt);
+        }
+
+        // If closing bracket ']' is encountered
+        else if (s[i] == ']') {
+            temp = "";
+
+            cnt = numStack.top();
+            numStack.pop();
+
+          	// pop element till opening bracket '[' is not found in the
+        	// character stack.
+            while (charStack.top() != '[') {
+                temp = charStack.top() + temp;
+                charStack.pop();
+            }
+            charStack.pop();
+
+            // Repeating the popped string 'temp' count number of times.
+            for (int j = 0; j < cnt; j++)
+                res = res.append(temp);
+
+            // Push it in the character stack.
+            for (int j = 0; j < res.length(); j++)
+                charStack.push(res[j]);
+
+            res = "";
+        }
+        else
+            charStack.push(s[i]);
+    }
+
+    // Pop all the element, make a string and return.
+    while (!charStack.empty()) {
+        res = charStack.top() + res;
+        charStack.pop();
+    }
+
+    return res;
+}
+
+int main() {
+    string s = "3[b2[ca]]";
+    cout << decodedString(s) << endl;
+    return 0;
+}
+
+import java.util.Stack;
+
+class GFG {
+
+    static String decodedString(String s) {
+        Stack<Integer> numStack = new Stack<>();
+        Stack<Character> charStack = new Stack<>();
+        String temp = "";
+        StringBuilder res = new StringBuilder();
+
+        for (int i = 0; i < s.length(); i++) {
+            int cnt = 0;
+
+            // If Digit, convert it into a number and
+            // push it into the integer stack.
+            if (Character.isDigit(s.charAt(i))) {
+                while (Character.isDigit(s.charAt(i))) {
+                    cnt = cnt * 10 + (s.charAt(i) - '0');
+                    i++;
+                }
+                i--;
+                numStack.push(cnt);
+            }
+
+            // If closing bracket ']' is encountered
+            else if (s.charAt(i) == ']') {
+                temp = "";
+
+                cnt = numStack.pop();
+
+                // Pop elements till the opening bracket '[' is found
+                // in the character stack.
+                while (charStack.peek() != '[') {
+                    temp = charStack.pop() + temp;
+                }
+                charStack.pop();
+
+                // Repeating the popped string 'temp' count number of times.
+                StringBuilder repeated = new StringBuilder();
+                for (int j = 0; j < cnt; j++) {
+                    repeated.append(temp);
+                }
+
+                // Push it into the character stack.
+                for (int j = 0; j < repeated.length(); j++) {
+                    charStack.push(repeated.charAt(j));
+                }
+            } else {
+                charStack.push(s.charAt(i));
+            }
+        }
+
+        // Pop all the elements, make a string, and return.
+        while (!charStack.isEmpty()) {
+            res.insert(0, charStack.pop());
+        }
+
+        return res.toString();
+    }
+
+    public static void main(String[] args) {
+        String s = "3[b2[ca]]";
+        System.out.println(decodedString(s));
+    }
+}
+
+def decodedString(s):
+    numStack = []
+    charStack = []
+    temp = ""
+    res = ""
+
+    i = 0
+    while i < len(s):
+        cnt = 0
+
+        # If Digit, convert it into number and
+        # push it into integer stack.
+        if s[i].isdigit():
+            while i < len(s) and s[i].isdigit():
+                cnt = cnt * 10 + int(s[i])
+                i += 1
+            i -= 1
+            numStack.append(cnt)
+
+        # If closing bracket ']' is encountered
+        elif s[i] == ']':
+            temp = ""
+
+            cnt = numStack.pop()
+
+            # Pop element till opening bracket '[' is not found
+            # in the character stack.
+            while charStack[-1] != '[':
+                temp = charStack.pop() + temp
+            charStack.pop()
+
+            # Repeating the popped string 'temp' count number of times.
+            res = temp * cnt
+
+            # Push it in the character stack.
+            for c in res:
+                charStack.append(c)
+
+            res = ""
+        else:
+            charStack.append(s[i])
+        i += 1
+
+    # Pop all the elements, make a string and return.
+    while charStack:
+        res = charStack.pop() + res
+
+    return res
+
+if __name__ == "__main__":
+    s = "3[b2[ca]]"
+    print(decodedString(s))
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+class GFG {
+
+    static string decodedString(string s) {
+        Stack<int> numStack = new Stack<int>();
+        Stack<char> charStack = new Stack<char>();
+        string temp = "";
+        StringBuilder res = new StringBuilder();
+
+        for (int i = 0; i < s.Length; i++) {
+            int cnt = 0;
+
+            // If Digit, convert it into a number and
+            // push it into the integer stack.
+            if (char.IsDigit(s[i])) {
+                while (char.IsDigit(s[i])) {
+                    cnt = cnt * 10 + (s[i] - '0');
+                    i++;
+                }
+                i--;
+                numStack.Push(cnt);
+            }
+
+            // If closing bracket ']' is encountered
+            else if (s[i] == ']') {
+                temp = "";
+
+                cnt = numStack.Pop();
+
+                // Pop elements till the opening bracket '[' is found
+                // in the character stack.
+                while (charStack.Peek() != '[') {
+                    temp = charStack.Pop() + temp;
+                }
+                charStack.Pop();
+
+                // Repeating the popped string 'temp' count number of times.
+                StringBuilder repeated = new StringBuilder();
+                for (int j = 0; j < cnt; j++) {
+                    repeated.Append(temp);
+                }
+
+                // Push it into the character stack.
+                foreach (char c in repeated.ToString()) {
+                    charStack.Push(c);
+                }
+            } else {
+                charStack.Push(s[i]);
+            }
+        }
+
+        // Pop all the elements, make a string, and return.
+        while (charStack.Count > 0) {
+            res.Insert(0, charStack.Pop());
+        }
+
+        return res.ToString();
+    }
+
+    static void Main(string[] args) {
+        string s = "3[b2[ca]]";
+        Console.WriteLine(decodedString(s));
+    }
+}
+
+function decodedString(s) {
+    const numStack = [];
+    const charStack = [];
+    let temp = "";
+    let res = "";
+
+    for (let i = 0; i < s.length; i++) {
+        let cnt = 0;
+
+        // If Digit, convert it into number and
+        // push it into integer stack.
+        if (!isNaN(s[i])) {
+            while (!isNaN(s[i])) {
+                cnt = cnt * 10 + (s[i] - '0');
+                i++;
+            }
+            i--;
+            numStack.push(cnt);
+        }
+
+        // If closing bracket ']' is encountered
+        else if (s[i] === ']') {
+            temp = "";
+
+            cnt = numStack.pop();
+
+            // Pop element till opening bracket '[' is not found
+            // in the character stack.
+            while (charStack[charStack.length - 1] !== '[') {
+                temp = charStack.pop() + temp;
+            }
+            charStack.pop();
+
+            // Repeating the popped string 'temp' count number of times.
+            res = temp.repeat(cnt);
+
+            // Push it in the character stack.
+            for (const c of res) {
+                charStack.push(c);
+            }
+
+            res = "";
+        }
+        else {
+            charStack.push(s[i]);
+        }
+    }
+
+    // Pop all the elements, make a string and return.
+    while (charStack.length > 0) {
+        res = charStack.pop() + res;
+    }
+
+    return res;
+}
+
+// Driver Code
+const s = "3[b2[ca]]";
+console.log(decodedString(s));
+
+bcacabcacabcaca
+
+### Using Single Stack - O(n) Time and O(n) Space
+
+> The idea is to use a single stack to process the encoded string. Whenever a closing bracket ] is encountered, extract the substring and its repetition count from the stack, repeat the substring accordingly, and push the expanded string back into the stack. The remaining characters in the stack form the decoded string.
+
+Working of Approach:
+
+- Traverse the string and push every character into the stack until ] is encountered.
+- When ] is found, pop characters until [ to extract the encoded substring.
+- Pop the preceding digits to obtain the repetition count.
+- Repeat the extracted substring the required number of times and push it back into the stack.
+- After processing the entire string, pop all characters from the stack and reverse them to obtain the final decoded string.
+
+Let us understand with an example: Input: s = "3[b2[ca]]"
+
+- Traverse the string and push characters into the stack until the first ] is encountered. The stack becomes: 3[b2[ca.
+- On the first ], extract "ca", read the count 2, expand it to "caca", and push it back. Stack becomes: 3[bcaca.
+- On the next ], extract "bcaca", read the count 3, expand it to "bcacabcacabcaca", and push it back into the stack.
+- After the traversal is complete, pop all characters from the stack and reverse them.
+- The final decoded string is bcacabcacabcaca.
+
+#include <iostream>
+#include <stack>
+#include <algorithm>
+using namespace std;
+
+string decodedString(string &s) {
+    stack<char> st;
+
+    // Traverse the input string
+    for (int i = 0; i < s.length(); i++) {
+
+        // Push characters into the stack until ']' is encountered
+        if (s[i] != ']') {
+            st.push(s[i]);
+        }
+
+        // Decode when ']' is found
+        else {
+            string temp;
+
+            // Pop characters until '[' is found
+            while (!st.empty() && st.top() != '[') {
+                temp.push_back(st.top());
+                st.pop();
+            }
+
+            // Reverse the string
+            reverse(temp.begin(), temp.end());
+            st.pop();
+
+            string num;
+
+            // Extract the number (repetition count) from the stack
+            while (!st.empty() && isdigit(st.top())) {
+                num = st.top() + num;
+                st.pop();
+            }
+
+            // Convert extracted number to integer
+            int number = stoi(num);
+            string repeat;
+
+            // Repeat the extracted string 'number' times
+            for (int j = 0; j < number; j++)
+                repeat.append(temp);
+
+            // Push the expanded string back onto the stack
+            for (char c : repeat)
+                st.push(c);
+        }
+    }
+
+    string res;
+
+    // Pop all characters from stack to form the final result
+    while (!st.empty()) {
+        res.push_back(st.top());
+        st.pop();
+    }
+
+    // Reverse to get the correct order
+    reverse(res.begin(), res.end());
+    return res;
+}
+
+int main() {
+    string str = "3[b2[ca]]";
+    cout << decodedString(str);
+    return 0;
+}
+
+import java.util.Stack;
+
+class GFG {
+
+    static String decodedString(String s) {
+        Stack<Character> st = new Stack<>();
+
+        for (int i = 0; i < s.length(); i++) {
+
+            // Push characters into the stack until ']' is encountered
+            if (s.charAt(i) != ']') {
+                st.push(s.charAt(i));
+            }
+
+            // Decode when ']' is found
+            else {
+                StringBuilder temp = new StringBuilder();
+
+                // Pop characters until '[' is found
+                while (!st.isEmpty() && st.peek() != '[') {
+                    temp.append(st.pop());
+                }
+
+                //Reverse the string
+                temp.reverse();
+                st.pop();
+
+                StringBuilder num = new StringBuilder();
+
+                // Extract the number (repetition count) from the stack
+                while (!st.isEmpty() && Character.isDigit(st.peek())) {
+                    num.insert(0, st.pop());
+                }
+
+                // Convert extracted number to integer
+                int number = Integer.parseInt(num.toString());
+                StringBuilder repeat = new StringBuilder();
+
+                // Repeat the extracted string 'number' times
+                for (int j = 0; j < number; j++)
+                    repeat.append(temp);
+
+                // Push the expanded string back onto the stack
+                for (char c : repeat.toString().toCharArray())
+                    st.push(c);
+            }
+        }
+
+        StringBuilder res = new StringBuilder();
+
+        // Pop all characters from stack to form the final result
+        while (!st.isEmpty()) {
+            res.append(st.pop());
+        }
+
+        // Reverse to get the correct order
+        res.reverse();
+        return res.toString();
+    }
+
+    public static void main(String[] args) {
+        String str = "3[b2[ca]]";
+        System.out.println(decodedString(str));
+    }
+}
+
+def decodedString(s: str) -> str:
+    st = []
+
+    for i in range(len(s)):
+
+        # Push characters into the stack until ']' is encountered
+        if s[i] != ']':
+            st.append(s[i])
+
+        # Decode when ']' is found
+        else:
+            temp = []
+
+            # Pop characters until '[' is found
+            while st and st[-1] != '[':
+                temp.append(st.pop())
+            temp.reverse()
+            st.pop()
+
+            num = []
+
+            # Extract the number (repetition count) from the stack
+            while st and st[-1].isdigit():
+                num.insert(0, st.pop())
+
+            # Convert extracted number to integer
+            number = int("".join(num))
+            repeat = "".join(temp) * number
+
+            # Push the expanded string back onto the stack
+            st.extend(repeat)
+
+    # Pop all characters from stack to form the final result
+    return "".join(st)
+
+if __name__ == "__main__":
+    str_val = "3[b2[ca]]"
+    print(decodedString(str_val))
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+class GFG {
+
+    static string decodedString(string s) {
+        Stack<char> st = new Stack<char>();
+
+        // Traverse the input string
+        for (int i = 0; i < s.Length; i++) {
+
+            // Push characters into the stack until ']' is encountered
+            if (s[i] != ']') {
+                st.Push(s[i]);
+            }
+
+            // Decode when ']' is found
+            else {
+                StringBuilder temp = new StringBuilder();
+
+                // Pop characters until '[' is found
+                while (st.Count > 0 && st.Peek() != '[') {
+                    temp.Insert(0, st.Pop());
+                }
+
+                // Remove '[' from the stack
+                st.Pop();
+
+                StringBuilder num = new StringBuilder();
+
+                // Extract the number (repetition count) from the stack
+                while (st.Count > 0 && char.IsDigit(st.Peek())) {
+                    num.Insert(0, st.Pop());
+                }
+
+                // Convert extracted number to integer
+                int number = int.Parse(num.ToString());
+                StringBuilder repeat = new StringBuilder();
+
+                // Repeat the extracted string 'number' times
+                for (int j = 0; j < number; j++)
+                    repeat.Append(temp);
+
+                // Push the expanded string back onto the stack
+                foreach (char c in repeat.ToString())
+                    st.Push(c);
+            }
+        }
+
+        StringBuilder res = new StringBuilder();
+
+        // Pop all characters from stack to form the final result
+        while (st.Count > 0) {
+
+            // Insert at beginning to maintain order
+            res.Insert(0, st.Pop());
+        }
+
+        return res.ToString();
+    }
+
+    static void Main(string[] args) {
+        string str = "3[b2[ca]]";
+        Console.WriteLine(decodedString(str));
+    }
+}
+
+function decodedString(s) {
+    let stack = [];
+    let temp = "";
+    let res = "";
+
+    for (let i = 0; i < s.length; i++) {
+        let cnt = 0;
+
+        // If number, convert it into number
+        if (s[i] >= '0' && s[i] <= '9') {
+            while (s[i] >= '0' && s[i] <= '9') {
+                cnt = cnt * 10 + (s[i] - '0');
+                i++;
+            }
+
+            i--;
+
+            // converting the integer into
+            // char in order to store in a stack.
+            stack.push(cnt.toString());
+        }
+
+        // If closing bracket ']', pop element until
+        // '[' opening bracket is not found in the
+        // stack.
+        else if (s[i] === ']') {
+            temp = "";
+            while (stack[stack.length - 1] !== '[') {
+                temp = stack.pop() + temp;
+            }
+
+            // Now top element of stack is '['.
+            // Let's pop it to get the integer
+            stack.pop();
+
+            // Top element of stack will give the integer in char form.
+            // converting into integer.
+            cnt = parseInt(stack.pop(), 10);
+
+            // Repeating the popped string 'temp' count number of times.
+            for (let j = 0; j < cnt; j++) {
+                res += temp;
+            }
+
+            // Push it in the character stack.
+            for (let j = 0; j < res.length; j++) {
+                stack.push(res[j]);
+            }
+
+            res = "";
+        }
+        else {
+            stack.push(s[i]);
+        }
+    }
+
+    // Pop all the element, make a string and return.
+    while (stack.length > 0) {
+        res = stack.pop() + res;
+    }
+
+    return res;
+}
+
+// Driver code
+const s = "3[b2[ca]]";
+console.log(decodedString(s));
+
+bcacabcacabcaca
+
+### Without Using Stack - O(n) Time and O(n) Space
+
+> The idea is to use the result string as a stack while traversing the encoded string. Whenever a closing bracket ] is encountered, extract the substring and its repetition count from the end of the result string, repeat the substring accordingly, and append it back. This naturally handles nested encodings without using an explicit stack.
+
+Working of Approach:
+
+- Traverse the string and append every character to the result string until ] is encountered.
+- When ] is found, extract the substring by removing characters until [ is reached.
+- Remove the opening bracket and extract the preceding digits to obtain the repetition count.
+- Repeat the extracted substring the required number of times and append it back to the result string.
+- After processing the entire string, the result string itself contains the decoded string.
+
+#include <algorithm>
+#include <iostream>
+#include <string>
+using namespace std;
+
+string decodedString(string &s) {
+    string res = "";
+
+    for (int i = 0; i < s.length(); i++) {
+
+        // If the current character is not a clostring
+        // bracket, append it to the result string.
+        if (s[i] != ']') {
+            res.push_back(s[i]);
+        }
+
+        else {
+            string temp = "";
+            while (!res.empty() && res.back() != '[') {
+                temp.push_back(res.back());
+                res.pop_back();
+            }
+
+            // Reverse the temporary string to obtain the
+            // correct substring.
+            reverse(temp.begin(), temp.end());
+
+            // Remove the opening bracket from the result
+            // string.
+            res.pop_back();
+
+            // Extract the preceding number and convert it
+            // to an integer.
+            string num = "";
+            while (!res.empty() && res.back() >= '0' && res.back() <= '9') {
+                num.push_back(res.back());
+                res.pop_back();
+            }
+            reverse(num.begin(), num.end());
+            int p = stoi(num);
+
+            // Append the substring to the result string,
+            // repeat it to the required number of times.
+            while (p--) {
+                res.append(temp);
+            }
+        }
+    }
+
+    // Return the decoded string.
+    return res;
+}
+
+int main() {
+    string s = "3[b2[ca]]";
+    cout << decodedString(s);
+    return 0;
+}
+
+class GFG {
+
+    static String decodedString(String s) {
+
+        StringBuilder res = new StringBuilder();
+
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) != ']') {
+                res.append(s.charAt(i));
+            }
+            else {
+                StringBuilder temp = new StringBuilder();
+                while (res.length() > 0
+                       && res.charAt(res.length() - 1)
+                              != '[') {
+                    temp.insert(
+                        0, res.charAt(res.length() - 1));
+                    res.deleteCharAt(res.length() - 1);
+                }
+
+                // Remove the opening bracket from the
+                // result string.
+                res.deleteCharAt(res.length() - 1);
+
+                // Extract the preceding number and convert
+                // it to an integer.
+                StringBuilder num = new StringBuilder();
+                while (res.length() > 0
+                       && Character.isDigit(
+                           res.charAt(res.length() - 1))) {
+                    num.insert(
+                        0, res.charAt(res.length() - 1));
+                    res.deleteCharAt(res.length() - 1);
+                }
+                int p = Integer.parseInt(num.toString());
+
+                // Append the substring to the result
+                // string, repeat it to the required number
+                // of times.
+                for (int j = 0; j < p; j++) {
+                    res.append(temp.toString());
+                }
+            }
+        }
+
+        return res.toString();
+    }
+
+    public static void main(String[] args) {
+        String s = "3[b2[ca]]";
+        System.out.println(decodedString(s));
+    }
+}
+
+def decodedString(s):
+    res = ""
+
+    for i in range(len(s)):
+
+        if s[i] != ']':
+            res += s[i]
+
+        else:
+            temp = ""
+            while res and res[-1] != '[':
+                temp = res[-1] + temp
+                res = res[:-1]
+
+            # Remove the opening bracket from the result string.
+            res = res[:-1]
+
+            # Extract the preceding number and convert it to an integer.
+            num = ""
+            while res and res[-1].isdigit():
+                num = res[-1] + num
+                res = res[:-1]
+            p = int(num)
+
+            # Append the substring to the result
+            #string, repeat it to the required number of times.
+            res += temp * p
+
+    return res
+
+if __name__ == "__main__":
+    s = "3[b2[ca]]"
+    print(decodedString(s))
+
+using System;
+using System.Text;
+
+class GFG {
+  static string decodedString(string s) {
+        StringBuilder res = new StringBuilder();
+
+        for (int i = 0; i < s.Length; i++) {
+
+            if (s[i] != ']')
+                res.Append(s[i]);
+
+            else {
+                StringBuilder temp = new StringBuilder();
+                while (res.Length > 0 && res[res.Length - 1] != '[') {
+                    temp.Insert(0, res[res.Length - 1]);
+                    res.Length--;
+                }
+
+                // Remove the opening bracket from the result string.
+                res.Length--;
+
+                // Extract the preceding number and convert it to an integer.
+                StringBuilder num = new StringBuilder();
+                while (res.Length > 0 && char.IsDigit(res[res.Length - 1])) {
+                    num.Insert(0, res[res.Length - 1]);
+                    res.Length--;
+                }
+
+                int p = int.Parse(num.ToString());
+
+                // Append the substring to the result string,
+                // repeat it to the required number of times.
+                for (int j = 0; j < p; j++)
+                    res.Append(temp.ToString());
+            }
+        }
+
+        // Return the decoded string.
+        return res.ToString();
+    }
+
+    static void Main(string[] args) {
+        string s = "3[b2[ca]]";
+        Console.WriteLine(decodedString(s));
+    }
+}
+
+function decodedString(s) {
+    let res = "";
+
+    for (let i = 0; i < s.length; i++) {
+        if (s[i] !== ']') {
+            res += s[i];
+        }
+        else {
+            let temp = "";
+            while (res.length > 0 && res[res.length - 1] !== '[') {
+                temp = res[res.length - 1] + temp;
+                res = res.slice(0, -1);
+            }
+
+            // Remove the opening bracket from the result string.
+            res = res.slice(0, -1);
+
+            // Extract the preceding number and convert it to an integer.
+            let num = "";
+            while (res.length > 0 && !isNaN(res[res.length - 1])) {
+                num = res[res.length - 1] + num;
+                res = res.slice(0, -1);
+            }
+            let p = parseInt(num);
+
+            // Append the substring to the result string,
+            // repeat it to the required number of times.
+            res += temp.repeat(p);
+        }
+    }
+
+    // Return the decoded string.
+    return res;
+}
+
+// Driver Code
+let s = "3[b2[ca]]";
+console.log(decodedString(s));
+
+bcacabcacabcaca

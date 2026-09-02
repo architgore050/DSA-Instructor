@@ -1,0 +1,449 @@
+Source: https://www.geeksforgeeks.org/dsa/count-possible-paths-top-left-bottom-right-nxm-matrix/
+Title: Count Unique Paths in a Grid
+
+Given two integers m and n representing the number of rows and columns of a grid, respectively, find the number of distinct paths from the top-left cell (0, 0) to the bottom-right cell (m - 1, n - 1). From any cell, you can move only right or down.
+
+Note: The answer is guaranteed to fit within a 32-bit integer.
+
+> Input: m = 2, n = 3 Output: 3 Explanation: There are three distinct paths from the top-left cell to the bottom-right cell. Input: m = 1, n = 4 Output: 1 Explanation: There is only one possible path from the top-left cell to the bottom-right cell.
+
+Table of Content
+
+- [Naive Approach] Using Recursion - O(2^(m+n)) Time and O(m+n) Space
+- [Better Approach] Using  DP - O(m*n) Time and O(n) Space
+- [Expected Approach] Using Combinatorics - O(min(m, n)) Time and O(1) Space
+
+### [Naive Approach] Using Recursion - O(2^(m+n)) Time and O(m+n) Space
+
+> The idea is to start from the top-left cell and recursively explore all possible paths to reach the bottom-right cell. From any cell, we can move either down or right. The total number of paths from the current cell is the sum of the paths obtained by making these two moves.
+
+Base Cases:
+
+- If i == m - 1 and j == n - 1, we have reached the destination cell, so return 1.
+- If i >= m or j >= n, the current position is outside the grid, so return 0.
+
+The recurrence relation will be: solve(i, j, m, n) = solve(i + 1, j, m, n) + solve(i, j + 1, m, n)
+
+#include <iostream>
+using namespace std;
+
+int solve(int i, int j, int m, int n) {
+
+    // Base case - reached bottom-right cell
+    if (i == m - 1 && j == n - 1)
+        return 1;
+
+    // Out of bounds
+    if (i >= m || j >= n)
+        return 0;
+
+    // Move down or right
+    return solve(i + 1, j, m, n) + solve(i, j + 1, m, n);
+}
+
+int numberOfPaths(int m, int n) {
+    return solve(0, 0, m, n);
+}
+
+int main() {
+    int m = 2, n = 3;
+    cout << numberOfPaths(m, n);
+    return 0;
+}
+
+class GfG {
+
+    static int solve(int i, int j, int m, int n) {
+
+        // Base case - reached bottom-right cell
+        if (i == m - 1 && j == n - 1)
+            return 1;
+
+        // Out of bounds
+        if (i >= m || j >= n)
+            return 0;
+
+        // Move down or right
+        return solve(i + 1, j, m, n)
+             + solve(i, j + 1, m, n);
+    }
+
+    static int numberOfPaths(int m, int n) {
+        return solve(0, 0, m, n);
+    }
+
+    public static void main(String[] args) {
+        int m = 2, n = 3;
+        System.out.println(numberOfPaths(m, n));
+    }
+}
+
+def solve(i, j, m, n):
+
+    # Base case - reached bottom-right cell
+    if i == m - 1 and j == n - 1:
+        return 1
+
+    # Out of bounds
+    if i >= m or j >= n:
+        return 0
+
+    # Move down or right
+    return solve(i + 1, j, m, n) + solve(i, j + 1, m, n)
+
+def numberOfPaths(m, n):
+    return solve(0, 0, m, n)
+
+if __name__ == "__main__":
+    m, n = 2, 3
+    print(numberOfPaths(m, n))
+
+using System;
+
+class GFG {
+
+    static int solve(int i, int j, int m, int n) {
+
+        // Base case - reached bottom-right cell
+        if (i == m - 1 && j == n - 1)
+            return 1;
+
+        // Out of bounds
+        if (i >= m || j >= n)
+            return 0;
+
+        // Move down or right
+        return solve(i + 1, j, m, n)
+             + solve(i, j + 1, m, n);
+    }
+
+    static int numberOfPaths(int m, int n) {
+        return solve(0, 0, m, n);
+    }
+
+    static void Main() {
+        int m = 2, n = 3;
+        Console.WriteLine(numberOfPaths(m, n));
+    }
+}
+
+function solve(i, j, m, n) {
+
+    // Base case - reached bottom-right cell
+    if (i === m - 1 && j === n - 1)
+        return 1;
+
+    // Out of bounds
+    if (i >= m || j >= n)
+        return 0;
+
+    // Move down or right
+    return solve(i + 1, j, m, n)
+         + solve(i, j + 1, m, n);
+}
+
+function numberOfPaths(m, n) {
+    return solve(0, 0, m, n);
+}
+
+//Driver Code
+let m = 2, n = 3;
+console.log(numberOfPaths(m, n));
+
+3
+
+### [Better Approach] Using  DP - O(m*n) Time and O(n) Space
+
+> The above recursive solution has overlapping subproblems and can be optimized using Dynamic Programming. Since the number of paths to a cell depends only on the cell directly above it and the cell to its left, we do not need to store the entire m × n DP table. We use a 1D array dp[], where dp[j] stores the number of paths to reach the current cell in the current row. Initially, there is exactly one way to reach every cell in the first row, so the array is initialized with 1s.
+
+Traverse the grid row by row and update the array from left to right:
+
+- dp[j] represents the number of paths from the cell above.
+- dp[j - 1] represents the number of paths from the cell to the left.
+- The sum of these two values gives the number of paths to the current cell.
+
+The recurrence relation is: dp[j] = dp[j] + dp[j - 1]
+
+#include <iostream>
+using namespace std;
+
+int numberOfPaths(int m, int n) {
+
+    // dp[j] stores paths to current cell in the row
+    int dp[n] = {1};
+
+    // Only one way to reach first column
+    dp[0] = 1;
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 1; j < n; j++) {
+
+            // Paths from top (dp[j]) + left (dp[j-1])
+            dp[j] += dp[j - 1];
+        }
+    }
+
+    // Paths to bottom-right cell
+    return dp[n - 1];
+}
+
+int main() {
+    int res = numberOfPaths(2, 3);
+    cout << res << endl;
+}
+
+class GFG {
+
+    static int numberOfPaths(int m, int n) {
+
+        // dp[j] stores paths to current cell in the row
+        int[] dp = new int[n];
+
+        // Only one way to reach first column
+        dp[0] = 1;
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+
+                // Paths from top (dp[j]) + left (dp[j-1])
+                dp[j] += dp[j - 1];
+            }
+        }
+
+        // Paths to bottom-right cell
+        return dp[n - 1];
+    }
+
+    public static void main(String[] args) {
+        int res = numberOfPaths(2, 3);
+        System.out.println(res);
+    }
+}
+
+def numberOfPaths(m, n):
+
+    # dp[j] stores paths to current cell in the row
+    dp = [0] * n
+
+    # Only one way to reach first column
+    dp[0] = 1
+
+    for i in range(m):
+        for j in range(1, n):
+
+            # Paths from top (dp[j]) + left (dp[j-1])
+            dp[j] += dp[j - 1]
+
+    # Paths to bottom-right cell
+    return dp[n - 1]
+
+if __name__ == "__main__":
+    res = numberOfPaths(2, 3)
+    print(res)
+
+using System;
+
+class GFG {
+
+    static int numberOfPaths(int m, int n) {
+
+        // dp[j] stores paths to current cell in the row
+        int[] dp = new int[n];
+
+        // Only one way to reach first column
+        dp[0] = 1;
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+
+                // Paths from top (dp[j]) + left (dp[j-1])
+                dp[j] += dp[j - 1];
+            }
+        }
+
+        // Paths to bottom-right cell
+        return dp[n - 1];
+    }
+
+    static void Main() {
+        int res = numberOfPaths(2, 3);
+        Console.WriteLine(res);
+    }
+}
+
+function numberOfPaths(m, n) {
+
+    // dp[j] stores paths to current cell in the row
+    let dp = new Array(n).fill(0);
+
+    // Only one way to reach first column
+    dp[0] = 1;
+
+    for (let i = 0; i < m; i++) {
+        for (let j = 1; j < n; j++) {
+
+            // Paths from top (dp[j]) + left (dp[j-1])
+            dp[j] += dp[j - 1];
+        }
+    }
+
+    // Paths to bottom-right cell
+    return dp[n - 1];
+}
+
+let res = numberOfPaths(2, 3);
+console.log(res);
+
+3
+
+### [Expected Approach] Using Combinatorics - O(min(m, n)) Time and O(1) Space
+
+> Instead of computing paths for every cell, we can directly count the number of valid paths using combinatorics. Every path from the top-left cell to the bottom-right cell consists of a fixed number of right and down moves. To reach cell (m-1, n-1) from (0, 0): We must make exactly (m - 1) down moves. We must make exactly (n - 1) right moves. Therefore, the total number of moves is: (m - 1) + (n - 1) = m + n - 2 .
+
+Each unique path corresponds to a unique arrangement of these moves.  So, the problem reduces to choosing positions for either:
+
+- (m - 1) down moves among (m + n - 2) total moves, or
+- (n - 1) right moves among (m + n - 2) total moves.
+
+Hence, the answer is:  C(m + n - 2, m - 1) or equivalently, C(m + n - 2, n - 1)
+
+#include <iostream>
+using namespace std;
+
+int numberOfPaths(int m, int n)
+{
+
+    // Stores the total number of unique paths
+    long long paths = 1;
+
+    // Total moves needed to reach the destination
+    int totalMoves = m + n - 2;
+
+    // Compute C(totalMoves, r), where r is smaller
+    // because C(n, r) = C(n, n - r)
+    int r = min(m - 1, n - 1);
+
+    // Calculate the binomial coefficient iteratively
+    for (int i = 1; i <= r; i++)
+    {
+        paths = paths * (totalMoves - r + i) / i;
+    }
+
+    return (int)paths;
+}
+
+int main()
+{
+    int res = numberOfPaths(2, 3);
+    cout << res << endl;
+    return 0;
+}
+
+class GFG {
+
+     public static int numberOfPaths(int m, int n) {
+
+        // Stores the total number of unique paths
+        long paths = 1;
+
+        // Total moves needed to reach the destination
+        int totalMoves = m + n - 2;
+
+        // Compute C(totalMoves, r), where r is smaller
+        // because C(n, r) = C(n, n - r)
+        int r = Math.min(m - 1, n - 1);
+
+        // Calculate the binomial coefficient iteratively
+        for (int i = 1; i <= r; i++) {
+            paths = paths * (totalMoves - r + i) / i;
+        }
+
+        return (int)paths;
+    }
+
+    public static void main(String[] args) {
+        int res = numberOfPaths(2, 3);
+        System.out.println(res);
+    }
+}
+
+def numberOfPaths(m, n):
+
+    # Stores the total number of unique paths
+    paths = 1
+
+    # Total moves needed to reach the destination
+    totalMoves = m + n - 2
+
+    # Compute C(totalMoves, r), where r is smaller
+    # because C(n, r) = C(n, n - r)
+    r = min(m - 1, n - 1)
+
+    # Calculate the binomial coefficient iteratively
+    for i in range(1, r + 1):
+        paths = paths * (totalMoves - r + i) // i
+
+    return int(paths)
+
+if __name__ == "__main__":
+    res = numberOfPaths(2, 3)
+    print(res)
+
+using System;
+
+class GFG
+{
+    static int numberOfPaths(int m, int n)
+    {
+
+        // Stores the total number of unique paths
+        long paths = 1;
+
+        // Total moves needed to reach the destination
+        int totalMoves = m + n - 2;
+
+        // Compute C(totalMoves, r), where r is smaller
+        // because C(n, r) = C(n, n - r)
+        int r = Math.Min(m - 1, n - 1);
+
+        // Calculate the binomial coefficient iteratively
+        for (int i = 1; i <= r; i++)
+        {
+            paths = paths * (totalMoves - r + i) / i;
+        }
+
+        return (int)paths;
+    }
+
+    static void Main()
+    {
+        int res = numberOfPaths(2, 3);
+        Console.WriteLine(res);
+    }
+}
+
+function numberOfPaths(m, n) {
+
+    // Stores the total number of unique paths
+    let paths = 1n;
+
+    // Total moves needed to reach the destination
+    let totalMoves = m + n - 2;
+
+    // Compute C(totalMoves, r), where r is smaller
+    // because C(n, r) = C(n, n - r)
+    let r = Math.min(m - 1, n - 1);
+
+    // Calculate the binomial coefficient iteratively
+    for (let i = 1; i <= r; i++) {
+        paths = paths * BigInt(totalMoves - r + i) / BigInt(i);
+    }
+
+    return Number(paths);
+}
+
+// Driver code
+let res = numberOfPaths(2, 3);
+console.log(res);
+
+3

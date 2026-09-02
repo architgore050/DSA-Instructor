@@ -1,0 +1,833 @@
+Source: https://www.geeksforgeeks.org/dsa/count-number-binary-strings-without-consecutive-1s/
+Title: Count binary strings without consecutive 1's
+
+Given a positive integer n , count all possible distinct binary strings of length n such that there are no consecutive 1's.
+
+Examples:
+
+> Input: n = 3 Output: 5 Explanation: 5 strings are ("000", "001", "010", "100", "101"). Input: n = 2 Output: 3 Explanation: 3 strings are ("00", "01", "10").
+
+Table of Content
+
+- Using Recursion - O(2^n) Time and O(n) Space
+- Using Top-Down DP (Memoization) - O(n) Time and O(n) Space
+- Using Bottom-Up DP (Tabulation) - O(n) Time and O(n) Space
+- Using Space Optimized DP - O(n) Time and O(1) Space
+- Using Matrix Exponentiation - O(logn) Time and O(logn) Space
+
+### Using Recursion - O(2^n) Time and O(n) Space
+
+The idea is to explore two possible choices at each step of building the binary string. At each index, we have two choices: either place a 0 or place a 1.
+
+- If we choose 0, we can proceed to the next index.
+- If we choose 1, we must ensure that the next index does not contain a 1, so we skip the next index.
+
+#include <iostream>
+using namespace std;
+
+int countRecur(int i, int n) {
+
+    // Base case
+    if (i >= n) return 1;
+
+    // If we take 1 at ith index,
+    // we cannot have 1 at (i-1)
+    int take = countRecur(i+2, n);
+
+    // If we skip 1, we can consider
+    // 1 at i-1.
+    int noTake = countRecur(i+1, n);
+
+    return take + noTake;
+}
+
+int countStrings(int n) {
+    return countRecur(0, n);
+}
+
+int main() {
+    int n = 3;
+    cout << countStrings(n);
+
+    return 0;
+}
+
+class GfG {
+    static int countRecur(int i, int n) {
+
+        // Base case
+        if (i >= n) return 1;
+
+        // If we take 1 at ith index,
+        // we cannot have 1 at (i-1)
+        int take = countRecur(i + 2, n);
+
+        // If we skip 1, we can consider
+        // 1 at i-1.
+        int noTake = countRecur(i + 1, n);
+
+        return take + noTake;
+    }
+
+    static int countStrings(int n) {
+        return countRecur(0, n);
+    }
+
+    public static void main(String[] args) {
+        int n = 3;
+        System.out.println(countStrings(n));
+    }
+}
+
+def countRecur(i, n):
+
+    # Base case
+    if i >= n:
+        return 1
+
+    # If we take 1 at ith index,
+    # we cannot have 1 at (i-1)
+    take = countRecur(i + 2, n)
+
+    # If we skip 1, we can consider
+    # 1 at i-1.
+    noTake = countRecur(i + 1, n)
+
+    return take + noTake
+
+def countStrings(n):
+    return countRecur(0, n)
+
+if __name__ == "__main__":
+    n = 3
+    print(countStrings(n))
+
+using System;
+
+class GfG {
+    static int countRecur(int i, int n) {
+
+        // Base case
+        if (i >= n) return 1;
+
+        // If we take 1 at ith index,
+        // we cannot have 1 at (i-1)
+        int take = countRecur(i + 2, n);
+
+        // If we skip 1, we can consider
+        // 1 at i-1.
+        int noTake = countRecur(i + 1, n);
+
+        return take + noTake;
+    }
+
+    static int countStrings(int n) {
+        return countRecur(0, n);
+    }
+
+    static void Main(string[] args) {
+        int n = 3;
+        Console.WriteLine(countStrings(n));
+    }
+}
+
+function countRecur(i, n) {
+
+    // Base case
+    if (i >= n) return 1;
+
+    // If we take 1 at ith index,
+    // we cannot have 1 at (i-1)
+    let take = countRecur(i + 2, n);
+
+    // If we skip 1, we can consider
+    // 1 at i-1.
+    let noTake = countRecur(i + 1, n);
+
+    return take + noTake;
+}
+
+function countStrings(n) {
+    return countRecur(0, n);
+}
+
+//Driver Code
+const n = 3;
+console.log(countStrings(n));
+
+5
+
+### Using Top-Down DP (Memoization) - O(n) Time and O(n) Space
+
+If we notice carefully, we can observe that the above recursive solution holds the following two properties of Dynamic Programming :
+
+> 1. Optimal Substructure: Number of ways to make binary string at i'th index depends on the optimal solutions of countStrings(i+1) and countStrings(i+2). By combining these substructures, we can efficiently calculate number of ways to make binary strings with consecutive 1's at index i. 2. Overlapping Subproblems: While applying a recursive approach in this problem, we notice that certain subproblems are computed multiple times. For example, while calculating countStrings(3), countStrings(4) and countStrings(5) are called. countStrings(4) will again call countStrings(5) which will lead to Overlapping Subproblems.
+
+- There is only one parameter: i that changes in the recursive solution. So we create a 1D array of size n for memoization .
+- We initialize this array as -1 to indicate nothing is computed initially.
+- Now we modify our recursive solution to first check if the value is -1, then only make recursive calls. This way, we avoid re-computations of the same subproblems.
+
+#include <iostream>
+using namespace std;
+
+int countRecur(int i, int n, vector<int> &memo) {
+
+    // Base case
+    if (i >= n) return 1;
+
+    // If value is memoized
+    if (memo[i]!=-1) return memo[i];
+
+    // If we take 1 at ith index,
+    // we cannot have 1 at (i-1)
+    int take = countRecur(i+2, n, memo);
+
+    // If we skip 1, we can consider
+    // 1 at i-1.
+    int noTake = countRecur(i+1, n, memo);
+
+    return memo[i] = take + noTake;
+}
+
+int countStrings(int n) {
+
+    vector<int> memo(n, -1);
+    return countRecur(0, n, memo);
+}
+
+int main() {
+    int n = 3;
+    cout << countStrings(n);
+
+    return 0;
+}
+
+class GfG {
+    static int countRecur(int i, int n, int[] memo) {
+
+        // Base case
+        if (i >= n) return 1;
+
+        // If value is memoized
+        if (memo[i] != -1) return memo[i];
+
+        // If we take 1 at ith index,
+        // we cannot have 1 at (i-1)
+        int take = countRecur(i + 2, n, memo);
+
+        // If we skip 1, we can consider
+        // 1 at i-1.
+        int noTake = countRecur(i + 1, n, memo);
+
+        return memo[i] = take + noTake;
+    }
+
+    static int countStrings(int n) {
+        int[] memo = new int[n];
+        for (int j = 0; j < n; j++) memo[j] = -1;
+        return countRecur(0, n, memo);
+    }
+
+    public static void main(String[] args) {
+        int n = 3;
+        System.out.println(countStrings(n));
+    }
+}
+
+def countRecur(i, n, memo):
+
+    # Base case
+    if i >= n:
+        return 1
+
+    # If value is memoized
+    if memo[i] != -1:
+        return memo[i]
+
+    # If we take 1 at ith index,
+    # we cannot have 1 at (i-1)
+    take = countRecur(i + 2, n, memo)
+
+    # If we skip 1, we can consider
+    # 1 at i-1.
+    noTake = countRecur(i + 1, n, memo)
+
+    memo[i] = take + noTake
+    return memo[i]
+
+def countStrings(n):
+    memo = [-1] * n
+    return countRecur(0, n, memo)
+
+if __name__ == "__main__":
+    n = 3
+    print(countStrings(n))
+
+using System;
+
+class GfG {
+    static int countRecur(int i, int n, int[] memo) {
+
+        // Base case
+        if (i >= n) return 1;
+
+        // If value is memoized
+        if (memo[i] != -1) return memo[i];
+
+        // If we take 1 at ith index,
+        // we cannot have 1 at (i-1)
+        int take = countRecur(i + 2, n, memo);
+
+        // If we skip 1, we can consider
+        // 1 at i-1.
+        int noTake = countRecur(i + 1, n, memo);
+
+        return memo[i] = take + noTake;
+    }
+
+    static int countStrings(int n) {
+        int[] memo = new int[n];
+        for (int j = 0; j < n; j++) memo[j] = -1;
+        return countRecur(0, n, memo);
+    }
+
+    static void Main(string[] args) {
+        int n = 3;
+        Console.WriteLine(countStrings(n));
+    }
+}
+
+function countRecur(i, n, memo) {
+
+    // Base case
+    if (i >= n) return 1;
+
+    // If value is memoized
+    if (memo[i] !== -1) return memo[i];
+
+    // If we take 1 at ith index,
+    // we cannot have 1 at (i-1)
+    let take = countRecur(i + 2, n, memo);
+
+    // If we skip 1, we can consider
+    // 1 at i-1.
+    let noTake = countRecur(i + 1, n, memo);
+
+    return memo[i] = take + noTake;
+}
+
+function countStrings(n) {
+    let memo = Array(n).fill(-1);
+    return countRecur(0, n, memo);
+}
+
+//Driver Code
+const n = 3;
+console.log(countStrings(n));
+
+5
+
+### Using Bottom-Up DP (Tabulation) - O(n) Time and O(n) Space
+
+> The idea is to fill the DP table based on next values. For each index, we can either place 1 or 0. The array is filled in an iterative manner from i = n-1 to i = 0.
+
+#include <iostream>
+using namespace std;
+
+int countStrings(int n) {
+    if (n == 1)
+        return 2;
+    if (n == 2)
+        return 3;
+
+    vector<int> dp(n);
+    dp[n - 1] = 2;
+    dp[n - 2] = 3;
+
+    for (int i = n - 3; i >= 0; i--) {
+        dp[i] = dp[i + 1] + dp[i + 2];
+    }
+
+    return dp[0];
+}
+
+int main() {
+
+    int n = 3;
+    cout << countStrings(n);
+
+    return 0;
+}
+
+// Java program to count number of binary
+// strings without consecutive 1's using tabulation
+
+class GfG {
+    static int countStrings(int n) {
+        if (n == 1) return 2;
+        if (n == 2) return 3;
+
+        int[] dp = new int[n];
+        dp[n - 1] = 2;
+        dp[n - 2] = 3;
+
+        for (int i = n - 3; i >= 0; i--) {
+            dp[i] = dp[i + 1] + dp[i + 2];
+        }
+
+        return dp[0];
+    }
+
+    public static void main(String[] args) {
+        int n = 3;
+        System.out.println(countStrings(n));
+    }
+}
+
+def countStrings(n):
+    if n == 1:
+        return 2
+    if n == 2:
+        return 3
+
+    dp = [0] * n
+    dp[n - 1] = 2
+    dp[n - 2] = 3
+
+    for i in range(n - 3, -1, -1):
+        dp[i] = dp[i + 1] + dp[i + 2]
+
+    return dp[0]
+
+if __name__ == "__main__":
+    n = 3
+    print(countStrings(n))
+
+using System;
+
+class GfG {
+    static int countStrings(int n) {
+        if (n == 1) return 2;
+        if (n == 2) return 3;
+
+        int[] dp = new int[n];
+        dp[n - 1] = 2;
+        dp[n - 2] = 3;
+
+        for (int i = n - 3; i >= 0; i--) {
+            dp[i] = dp[i + 1] + dp[i + 2];
+        }
+
+        return dp[0];
+    }
+
+    static void Main(string[] args) {
+        int n = 3;
+        Console.WriteLine(countStrings(n));
+    }
+}
+
+function countStrings(n) {
+    if (n === 1) return 2;
+    if (n === 2) return 3;
+
+    const dp = new Array(n).fill(0);
+    dp[n - 1] = 2;
+    dp[n - 2] = 3;
+
+    for (let i = n - 3; i >= 0; i--) {
+        dp[i] = dp[i + 1] + dp[i + 2];
+    }
+
+    return dp[0];
+}
+
+//Driver Code
+const n = 3;
+console.log(countStrings(n));
+
+5
+
+### Using Space Optimized DP - O(n) Time and O(1) Space
+
+> In previous approach of dynamic programming we have derive the relation between states as given below: dp[i] = dp[i+1] + dp[i+2] We observe that for calculating dp[i] state we only need dp[i+1] and dp[i+2]. There is no need to store all the next states.
+
+#include <iostream>
+using namespace std;
+
+int countStrings(int n) {
+    if (n == 1)
+        return 2;
+    if (n == 2)
+        return 3;
+
+    int prev1 = 3, prev2 = 2;
+
+    for (int i = n - 3; i >= 0; i--) {
+        int curr = prev1 + prev2;
+
+        prev2 = prev1;
+        prev1 = curr;
+    }
+
+    return prev1;
+}
+
+int main() {
+    int n = 3;
+    cout << countStrings(n);
+
+    return 0;
+}
+
+class GfG {
+    static int countStrings(int n) {
+        if (n == 1)
+            return 2;
+        if (n == 2)
+            return 3;
+
+        int prev1 = 3, prev2 = 2;
+
+        for (int i = n - 3; i >= 0; i--) {
+            int curr = prev1 + prev2;
+
+            prev2 = prev1;
+            prev1 = curr;
+        }
+
+        return prev1;
+    }
+
+    public static void main(String[] args) {
+        int n = 3;
+        System.out.println(countStrings(n));
+    }
+}
+
+def countStrings(n):
+    if n == 1:
+        return 2
+    if n == 2:
+        return 3
+
+    prev1, prev2 = 3, 2
+
+    for i in range(n - 3, -1, -1):
+        curr = prev1 + prev2
+
+        prev2 = prev1
+        prev1 = curr
+
+    return prev1
+
+if __name__ == "__main__":
+    n = 3
+    print(countStrings(n))
+
+using System;
+
+class GfG {
+    static int countStrings(int n) {
+        if (n == 1)
+            return 2;
+        if (n == 2)
+            return 3;
+
+        int prev1 = 3, prev2 = 2;
+
+        for (int i = n - 3; i >= 0; i--) {
+            int curr = prev1 + prev2;
+
+            prev2 = prev1;
+            prev1 = curr;
+        }
+
+        return prev1;
+    }
+
+    static void Main(string[] args) {
+        int n = 3;
+        Console.WriteLine(countStrings(n));
+    }
+}
+
+function countStrings(n) {
+    if (n === 1)
+        return 2;
+    if (n === 2)
+        return 3;
+
+    let prev1 = 3, prev2 = 2;
+
+    for (let i = n - 3; i >= 0; i--) {
+        let curr = prev1 + prev2;
+
+        prev2 = prev1;
+        prev1 = curr;
+    }
+
+    return prev1;
+}
+
+//Driver Code
+const n = 3;
+console.log(countStrings(n));
+
+5
+
+### Using Matrix Exponentiation - O(logn) Time and O(logn) Space
+
+> The recurrence relation to count binary strings of length i is: F(i) = F(i-1) + F(i-2) with bases cases F(1) = 2 and F(2) = 3. This is similar to Fibonacci Numbers . Matrix exponentiation can be used to solve this problem in O(logn) time. Refer to Matrix Exponentiation for detailed approach.
+
+#include <iostream>
+using namespace std;
+
+// Function to mutiply two matrices
+vector<vector<int>> multiply(vector<vector<int>>& v1, vector<vector<int>>& v2) {
+    vector<vector<int>> ans(2, vector<int>(2, 0));
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            for (int k = 0; k < 2; k++) {
+                ans[i][j] += v1[i][k] * v2[k][j];
+            }
+        }
+    }
+
+    return ans;
+}
+
+// Function to find matrix to the power n.
+vector<vector<int>> power(vector<vector<int>> &v, int n) {
+    if (n == 0) {
+        return {{1, 0}, {0, 1}};
+    }
+
+    vector<vector<int>> res = power(v, n / 2);
+
+    res = multiply(res, res);
+
+    if (n % 2 == 1)
+        res = multiply(res, v);
+
+    return res;
+}
+
+int countStrings(int n) {
+    if (n == 2)
+        return 3;
+    if (n == 1)
+        return 2;
+    vector<vector<int>> v = {{1, 1}, {1, 0}};
+    vector<vector<int>> p = power(v, n - 2);
+
+    int ans = p[0][0] * 3 + p[0][1] * 2;
+    return ans;
+}
+
+int main() {
+    int n = 3;
+    cout << countStrings(n);
+
+    return 0;
+}
+
+class GfG {
+
+    // Function to multiply two matrices
+    static int[][] multiply(int[][] v1, int[][] v2) {
+        int[][] ans = new int[2][2];
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                for (int k = 0; k < 2; k++) {
+                    ans[i][j] += v1[i][k] * v2[k][j];
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    // Function to find matrix to the power n
+    static int[][] power(int[][] v, int n) {
+        if (n == 0) {
+            return new int[][] { { 1, 0 }, { 0, 1 } };
+        }
+
+        int[][] res = power(v, n / 2);
+        res = multiply(res, res);
+
+        if (n % 2 == 1) {
+            res = multiply(res, v);
+        }
+
+        return res;
+    }
+
+    static int countStrings(int n) {
+        if (n == 2)
+            return 3;
+        if (n == 1)
+            return 2;
+
+        int[][] v = { { 1, 1 }, { 1, 0 } };
+        int[][] p = power(v, n - 2);
+
+        int ans = p[0][0] * 3 + p[0][1] * 2;
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int n = 3;
+        System.out.println(countStrings(n));
+    }
+}
+
+# Function to multiply two matrices
+def multiply(v1, v2):
+    ans = [[0, 0], [0, 0]]
+
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                ans[i][j] += v1[i][k] * v2[k][j]
+
+    return ans
+
+# Function to find matrix to the power n
+def power(v, n):
+    if n == 0:
+        return [[1, 0], [0, 1]]
+
+    res = power(v, n // 2)
+    res = multiply(res, res)
+
+    if n % 2 == 1:
+        res = multiply(res, v)
+
+    return res
+
+def countStrings(n):
+    if n == 2:
+        return 3
+    if n == 1:
+        return 2
+
+    v = [[1, 1], [1, 0]]
+    p = power(v, n - 2)
+
+    ans = p[0][0] * 3 + p[0][1] * 2
+    return ans
+
+if __name__ == "__main__":
+    n = 3
+    print(countStrings(n))
+
+using System;
+
+class GfG {
+
+    // Function to multiply two matrices
+    static int[, ] multiply(int[, ] v1, int[, ] v2) {
+        int[, ] ans = new int[2, 2];
+
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                for (int k = 0; k < 2; k++) {
+                    ans[i, j] += v1[i, k] * v2[k, j];
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    // Function to find matrix to the power n
+    static int[, ] power(int[, ] v, int n) {
+        if (n == 0) {
+            return new int[, ] { { 1, 0 }, { 0, 1 } };
+        }
+
+        int[, ] res = power(v, n / 2);
+        res = multiply(res, res);
+
+        if (n % 2 == 1) {
+            res = multiply(res, v);
+        }
+
+        return res;
+    }
+
+    static int countStrings(int n) {
+        if (n == 2)
+            return 3;
+        if (n == 1)
+            return 2;
+
+        int[, ] v = { { 1, 1 }, { 1, 0 } };
+        int[, ] p = power(v, n - 2);
+
+        int ans = p[0, 0] * 3 + p[0, 1] * 2;
+        return ans;
+    }
+
+    static void Main(string[] args) {
+        int n = 3;
+        Console.WriteLine(countStrings(n));
+    }
+}
+
+// Function to multiply two matrices
+function multiply(v1, v2) {
+    let ans = [ [ 0, 0 ], [ 0, 0 ] ];
+
+    for (let i = 0; i < 2; i++) {
+        for (let j = 0; j < 2; j++) {
+            for (let k = 0; k < 2; k++) {
+                ans[i][j] += v1[i][k] * v2[k][j];
+            }
+        }
+    }
+
+    return ans;
+}
+
+// Function to find matrix to the power n
+function power(v, n) {
+    if (n === 0) {
+        return [ [ 1, 0 ], [ 0, 1 ] ];
+    }
+
+    let res = power(v, Math.floor(n / 2));
+    res = multiply(res, res);
+
+    if (n % 2 === 1) {
+        res = multiply(res, v);
+    }
+
+    return res;
+}
+
+function countStrings(n) {
+    if (n === 2)
+        return 3;
+    if (n === 1)
+        return 2;
+
+    let v = [ [ 1, 1 ], [ 1, 0 ] ];
+    let p = power(v, n - 2);
+
+    let ans = p[0][0] * 3 + p[0][1] * 2;
+    return ans;
+}
+
+const n = 3;
+console.log(countStrings(n));
+
+5
+
+Related article:
+
+- 1 to n bit numbers with no consecutive 1s in binary representation.

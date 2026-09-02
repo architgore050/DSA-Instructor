@@ -1,0 +1,556 @@
+Source: https://www.geeksforgeeks.org/dsa/maximize-the-minimum-difference-between-any-element-pair-by-selecting-k-elements-from-given-array/
+Title: Pick k such that the pair wise min diff is maximized
+
+Given an array arr[] of integers, select k elements such that the minimum absolute difference between any two of the selected elements is as large as possible. Out of all possible combinations of k elements from the array, choose the one where the smallest absolute difference between any pair of selected elements is the maximum possible across all combinations. Return this maximum possible value of the minimum absolute difference .
+
+Examples:
+
+> Input: arr = [2, 6, 2, 5], k = 3 Output: 1 Explanation: One possible selection is [2, 5, 6], where the minimum difference between any two is 1. No selection of 3 elements can give a higher minimum gap. Input: arr = [1, 4, 9, 0, 2, 13, 3], k = 4 Output: 4 Explanation: Selecting [0, 4, 9, 13] gives minimum pairwise difference 4, which is the largest possible under the given constraints.
+
+Table of Content
+
+- [Approach] Top-Down DP with 3D Memoization
+- [Expected Approach] Binary Search on Answer with Greedy Feasibility Check
+
+### [Approach] Top-Down DP with 3D Memoization
+
+> The idea is to use top-down DP with memoization to explore all combinations of selecting k elements from the sorted array. Sorting helps ensure that differences are non-negative and simplifies computing abs(arr[i] - arr[prev]) as just arr[i] - arr[prev]. The DP state dp[i][remk][prev] stores the maximum achievable minimum absolute difference when starting from index i, having selected remk elements so far, and the last selected index as prev. At each step, we either skip the current element or take it and update the minimum difference. We return the maximum of the two choices. This is a DP problem due to o ptimal substructure and overlapping subproblems , which we avoid recomputing using memoization.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+using namespace std;
+
+// returns the maximum achievable minimum
+// absolute difference
+int helper(int i, int remk, int prev,
+                vector<int>& arr, int k,
+                vector<vector<vector<int>>>& memo) {
+
+    // no more comparisons needed, neutral value
+    if (remk == k)
+        return INT_MAX;
+
+    // invalid, ran out of elements
+    if (i == arr.size())
+        return -1;
+
+    if (memo[i][remk][prev + 1] != -2)
+        return memo[i][remk][prev + 1];
+
+    // skip current element
+    int skip =
+        helper(i + 1, remk, prev, arr, k, memo);
+
+    // take current element
+    int diff =
+        (prev == -1) ? INT_MAX : abs(arr[i] - arr[prev]);
+    int next = helper(i + 1, remk + 1, i, arr, k, memo);
+    int take = (next == -1) ? -1 : min(diff, next);
+
+    // store and return the max of both choices
+    return memo[i][remk][prev + 1] = max(skip, take);
+}
+
+int maxMinDiff(vector<int>& arr, int k) {
+
+    sort(arr.begin(), arr.end());
+    int n = arr.size();
+
+    // initialize 3D memo with -2 (uncomputed)
+    vector<vector<vector<int>>> memo(n + 1,
+        vector<vector<int>>(k + 1, vector<int>(n + 1, -2)));
+
+    return helper(0, 0, -1, arr, k, memo);
+}
+
+int main() {
+
+    vector<int> arr = {1, 4, 9, 0, 2, 13, 3};
+    int k = 4;
+    cout << maxMinDiff(arr, k) << endl;
+
+    return 0;
+}
+
+import java.util.Arrays;
+
+class GfG {
+
+    // returns the maximum achievable minimum
+    // absolute difference
+    static int helper(int i, int remk, int prev,
+                      int[] arr, int k,
+                      int[][][] memo) {
+
+        // no more comparisons needed, neutral value
+        if (remk == k)
+            return Integer.MAX_VALUE;
+
+        // invalid, ran out of elements
+        if (i == arr.length)
+            return -1;
+
+        if (memo[i][remk][prev + 1] != -2)
+            return memo[i][remk][prev + 1];
+
+        // skip current element
+        int skip = helper(i + 1, remk, prev, arr, k, memo);
+
+        // take current element
+        int diff = (prev == -1) ?
+                Integer.MAX_VALUE : Math.abs(arr[i] - arr[prev]);
+        int next = helper(i + 1, remk + 1, i, arr, k, memo);
+        int take = (next == -1) ? -1 : Math.min(diff, next);
+
+        // store and return the max of both choices
+        return memo[i][remk][prev + 1] = Math.max(skip, take);
+    }
+
+    static int maxMinDiff(int[] arr, int k) {
+        Arrays.sort(arr);
+        int n = arr.length;
+
+        // initialize 3D memo with -2 (uncomputed)
+        int[][][] memo = new int[n + 1][k + 1][n + 1];
+        for (int[][] matrix : memo)
+            for (int[] row : matrix)
+                Arrays.fill(row, -2);
+
+        return helper(0, 0, -1, arr, k, memo);
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 4, 9, 0, 2, 13, 3};
+        int k = 4;
+        System.out.println(maxMinDiff(arr, k));
+    }
+}
+
+import sys
+
+# returns the maximum achievable minimum
+# absolute difference
+def helper(i, remk, prev, arr, k, memo):
+    # no more comparisons needed, neutral value
+    if remk == k:
+        return sys.maxsize
+
+    # invalid, ran out of elements
+    if i == len(arr):
+        return -1
+
+    if memo[i][remk][prev + 1] != -2:
+        return memo[i][remk][prev + 1]
+
+    # skip current element
+    skip = helper(i + 1, remk, prev, arr, k, memo)
+
+    # take current element
+    diff = sys.maxsize \
+        if prev == -1 else abs(arr[i] - arr[prev])
+    next_val = helper(i + 1, remk + 1, i, arr, k, memo)
+    take = -1 if next_val == -1 else min(diff, next_val)
+
+    # store and return the max of both choices
+    memo[i][remk][prev + 1] = max(skip, take)
+    return memo[i][remk][prev + 1]
+
+def maxMinDiff(arr, k):
+    arr.sort()
+    n = len(arr)
+
+    # initialize 3D memo with -2 (uncomputed)
+    memo = [[[-2] * (n + 1) \
+        for _ in range(k + 1)] for _ in range(n + 1)]
+
+    return helper(0, 0, -1, arr, k, memo)
+
+if __name__ == "__main__":
+    arr = [1, 4, 9, 0, 2, 13, 3]
+    k = 4
+    print(maxMinDiff(arr, k))
+
+using System;
+
+class GfG {
+
+    // returns the maximum achievable minimum
+    // absolute difference
+    static int helper(int i, int remk, int prev,
+                      int[] arr, int k,
+                      int[,,] memo) {
+
+        // no more comparisons needed, neutral value
+        if (remk == k)
+            return int.MaxValue;
+
+        // invalid, ran out of elements
+        if (i == arr.Length)
+            return -1;
+
+        if (memo[i, remk, prev + 1] != -2)
+            return memo[i, remk, prev + 1];
+
+        // skip current element
+        int skip = helper(i + 1, remk, prev, arr, k, memo);
+
+        // take current element
+        int diff = (prev == -1) ?
+                int.MaxValue : Math.Abs(arr[i] - arr[prev]);
+        int next = helper(i + 1, remk + 1, i, arr, k, memo);
+        int take = (next == -1) ? -1 : Math.Min(diff, next);
+
+        // store and return the max of both choices
+        return memo[i, remk, prev + 1] = Math.Max(skip, take);
+    }
+
+    static int maxMinDiff(int[] arr, int k) {
+        Array.Sort(arr);
+        int n = arr.Length;
+
+        // initialize 3D memo with -2 (uncomputed)
+        int[,,] memo = new int[n + 1, k + 1, n + 1];
+        for (int i = 0; i <= n; i++)
+            for (int j = 0; j <= k; j++)
+                for (int l = 0; l <= n; l++)
+                    memo[i, j, l] = -2;
+
+        return helper(0, 0, -1, arr, k, memo);
+    }
+
+    public static void Main() {
+        int[] arr = {1, 4, 9, 0, 2, 13, 3};
+        int k = 4;
+        Console.WriteLine(maxMinDiff(arr, k));
+    }
+}
+
+// returns the maximum achievable minimum
+// absolute difference
+function helper(i, remk, prev, arr, k, memo) {
+
+    // no more comparisons needed, neutral value
+    if (remk === k)
+        return Number.MAX_SAFE_INTEGER;
+
+    // invalid, ran out of elements
+    if (i === arr.length)
+        return -1;
+
+    if (memo[i][remk][prev + 1] !== -2)
+        return memo[i][remk][prev + 1];
+
+    // skip current element
+    let skip = helper(i + 1, remk, prev, arr, k, memo);
+
+    // take current element
+    let diff = (prev === -1) ?
+        Number.MAX_SAFE_INTEGER : Math.abs(arr[i] - arr[prev]);
+    let next = helper(i + 1, remk + 1, i, arr, k, memo);
+    let take = (next === -1) ? -1 : Math.min(diff, next);
+
+    // store and return the max of both choices
+    return memo[i][remk][prev + 1] = Math.max(skip, take);
+}
+
+function maxMinDiff(arr, k) {
+    arr.sort((a, b) => a - b);
+    let n = arr.length;
+
+    // initialize 3D memo with -2 (uncomputed)
+    let memo = Array.from({ length: n + 1 }, () =>
+        Array.from({ length: k + 1 }, () =>
+            Array(n + 1).fill(-2)
+        )
+    );
+
+    return helper(0, 0, -1, arr, k, memo);
+}
+
+// Driver Code
+const arr = [1, 4, 9, 0, 2, 13, 3];
+const k = 4;
+console.log(maxMinDiff(arr, k));
+
+4
+
+Time Complexity: O(n × k × n), we use a 3D DP with states defined by i (index), remk (picked count), and prev (last picked index). Each state is computed once and does constant work, giving a total of O(n × k × n) states. Auxiliary Space: O(n × n × k)
+
+### [Expected Approach] Binary Search on Answer with Greedy Feasibility Check
+
+> We want to select k elements such that the minimum absolute difference between any two selected elements is maximized. To find the best such minimum difference, we binary search on the answer space (possible min differences). For each candidate difference mid, we greedily try to pick k elements such that the absolute difference between every consecutive pick is at least mid. Sorting the array first is essential because it ensures that once we pick a number, we only need to check increasing values for valid selections.
+
+Why the Problem is Monotonic (in Binary Search + Greedy):
+
+This problem exhibits monotonic behavior in terms of the minimum difference (mid) we are trying to maximize — which makes it a perfect candidate for binary search on the answer.
+
+- If a particular minimum difference d is possible (i.e., we can select k elements with at least d absolute gap between each),
+- Then all smaller values of d (d - 1, d - 2, ..., 0) are also guaranteed to be possible.
+- Conversely, if d is not possible, then all larger values of d (d + 1, d + 2, ...) will also be impossible.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// checks if it's possible to pick k elements
+// with at least 'mid' difference
+bool isPossible(vector<int>& arr, int k, int mid){
+    int count = 1;
+    int last = arr[0];
+
+    for (int i = 1; i < arr.size(); i++) {
+        if (arr[i] - last >= mid) {
+            count++;
+            last = arr[i];
+        }
+        if (count == k)
+            return true;
+    }
+
+    return false;
+}
+
+int maxMinDiff(vector<int>& arr, int k){
+    // sort the array
+    sort(arr.begin(), arr.end());
+
+    // define binary search range
+    int low = 0;
+    int high = arr.back() - arr.front();
+    int answer = 0;
+
+    // binary search to find max valid min-diff
+    while (low <= high) {
+        int mid = (low + high) / 2;
+
+        if (isPossible(arr, k, mid)) {
+            answer = mid;
+            low = mid + 1;
+        }
+        else {
+            high = mid - 1;
+        }
+    }
+
+    // return the maximum feasible
+    // minimum difference
+    return answer;
+}
+
+int main() {
+
+    vector<int> arr = {1, 4, 9, 0, 2, 13, 3};
+    int k = 4;
+    cout << maxMinDiff(arr, k) << endl;
+
+    return 0;
+}
+
+import java.util.Arrays;
+
+class GfG {
+
+    // checks if it's possible to pick k elements
+    // with at least 'mid' difference
+    static boolean isPossible(int[] arr, int k, int mid) {
+        int count = 1;
+        int last = arr[0];
+
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i] - last >= mid) {
+                count++;
+                last = arr[i];
+            }
+            if (count == k)
+                return true;
+        }
+
+        return false;
+    }
+
+    static int maxMinDiff(int[] arr, int k) {
+        // sort the array
+        Arrays.sort(arr);
+
+        // define binary search range
+        int low = 0;
+        int high = arr[arr.length - 1] - arr[0];
+        int answer = 0;
+
+        // binary search to find max valid min-diff
+        while (low <= high) {
+            int mid = (low + high) / 2;
+
+            if (isPossible(arr, k, mid)) {
+                answer = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        // return the maximum feasible
+        // minimum difference
+        return answer;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 4, 9, 0, 2, 13, 3};
+        int k = 4;
+        System.out.println(maxMinDiff(arr, k));
+    }
+}
+
+# checks if it's possible to pick k elements
+# with at least 'mid' difference
+def isPossible(arr, k, mid):
+    count = 1
+    last = arr[0]
+
+    for i in range(1, len(arr)):
+        if arr[i] - last >= mid:
+            count += 1
+            last = arr[i]
+        if count == k:
+            return True
+
+    return False
+
+def maxMinDiff(arr, k):
+    # sort the array
+    arr.sort()
+
+    # define binary search range
+    low = 0
+    high = arr[-1] - arr[0]
+    answer = 0
+
+    # binary search to find max valid min-diff
+    while low <= high:
+        mid = (low + high) // 2
+
+        if isPossible(arr, k, mid):
+            answer = mid
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    # return the maximum feasible
+    # minimum difference
+    return answer
+
+if __name__ == "__main__":
+    arr = [1, 4, 9, 0, 2, 13, 3]
+    k = 4
+    print(maxMinDiff(arr, k))
+
+using System;
+
+class GfG {
+
+    // checks if it's possible to pick k elements
+    // with at least 'mid' difference
+    static bool isPossible(int[] arr, int k, int mid){
+        int count = 1;
+        int last = arr[0];
+
+        for (int i = 1; i < arr.Length; i++) {
+            if (arr[i] - last >= mid) {
+                count++;
+                last = arr[i];
+            }
+            if (count == k)
+                return true;
+        }
+
+        return false;
+    }
+
+    static int maxMinDiff(int[] arr, int k){
+        // sort the array
+        Array.Sort(arr);
+
+        // define binary search range
+        int low = 0;
+        int high = arr[arr.Length - 1] - arr[0];
+        int answer = 0;
+
+        // binary search to find max valid min-diff
+        while (low <= high) {
+            int mid = (low + high) / 2;
+
+            if (isPossible(arr, k, mid)) {
+                answer = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        // return the maximum feasible
+        // minimum difference
+        return answer;
+    }
+
+    public static void Main() {
+        int[] arr = {1, 4, 9, 0, 2, 13, 3};
+        int k = 4;
+        Console.WriteLine(maxMinDiff(arr, k));
+    }
+}
+
+// checks if it's possible to pick k elements
+// with at least 'mid' difference
+function isPossible(arr, k, mid) {
+    let count = 1;
+    let last = arr[0];
+
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] - last >= mid) {
+            count++;
+            last = arr[i];
+        }
+        if (count === k)
+            return true;
+    }
+
+    return false;
+}
+
+function maxMinDiff(arr, k) {
+    // sort the array
+    arr.sort((a, b) => a - b);
+
+    // define binary search range
+    let low = 0;
+    let high = arr[arr.length - 1] - arr[0];
+    let answer = 0;
+
+    // binary search to find max valid min-diff
+    while (low <= high) {
+        let mid = Math.floor((low + high) / 2);
+
+        if (isPossible(arr, k, mid)) {
+            answer = mid;
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    // return the maximum feasible
+    // minimum difference
+    return answer;
+}
+
+// Driver Code
+let arr = [1, 4, 9, 0, 2, 13, 3];
+let k = 4;
+console.log(maxMinDiff(arr, k));
+
+4
+
+Time Complexity: O(n log n + n log D) the array is first sorted in O(n log n) time. Then, binary search is applied on the possible minimum difference values ranging from 0 to D = max(arr) - min(arr), which gives O(log D) iterations. In each iteration, the isPossible function performs a single linear scan of the array in O(n) time. Auxiliary Space: O(1), the solution uses only a constant number of variables regardless of input size, so the extra space usage is constant.

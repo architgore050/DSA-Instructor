@@ -1,0 +1,1079 @@
+Source: https://www.geeksforgeeks.org/dsa/shortest-path-with-one-curved-edge-in-an-undirected-graph/
+Title: Shortest path with one curved edge in an undirected Graph
+
+Given an undirected connected graph represented using an adjacency list adj[][][] . For each vertex i, the list adj[i] contains entries of the form {u, w1, w2}, where u is the neighboring vertex, w1 is the weight of the straight edge between i and u, and w2 is the weight of the curved edge between them. Thus, every pair of connected vertices has two parallel edges: one straight and one curved. We are also given two vertices a and b , and we need to determine the minimum cost required to travel from a to b under the constraint that:
+
+- we may use any number of straight edges
+- we may use at most one curved edge in the entire path.
+
+If no such path exists that satisfies this restriction, we must return -1.
+
+Examples:
+
+> Input : a = 1, b = 3, adj[][][] = [[[1, 1, 4], [2, 2, 4], [3, 3, 1]], [[0, 1, 4], [3, 6, 5]], [[0, 2, 4]], [[0, 3, 1], [1, 6, 5]]] Output : 2 Explanation : We can follow the path 1->0->3. This gives a distance of 1+3 = 4 if we follow all straight paths. But we can take the curved path  from 0-> 3, which costs 1. This will result in a cost of 1+1 = 2 Input : a = 0, b = 1, adj[][][] = [[[1, 4, 1]], [[0, 4, 1]]] Output : 1 Explanation : Take the curved path from 0 to 1 which costs 1.
+
+Table of Content
+
+- [Approach 1] Using Dijkstra with State Compression - O((V+E) log V) Time and O(V+E) Space
+- [Approach 2] Using Two-Dijkstra Method with Curved-Edge Relaxation - O((V+E) log V) Time and O(V+E) Space
+
+To solve this problem, our goal is to find the shortest path from node a to node b using any number of straight edges but at most one curved edge. Since all edge weights in the graph are positive, the best algorithm for finding shortest paths is Dijkstra’s algorithm , because it always picks the node with the smallest distance first and guarantees the minimum distance to every node it processes.
+
+### [Approach 1] Using Dijkstra with State Compression - O((V+E) log V) Time and O(V+E) Space
+
+To handle the rule of using at most one curved edge, we track whether we have already used the curved edge while reaching each node. For this, we use a 2D distance array:
+
+- dist[node][0] -> shortest distance to node without using any curved edge
+- dist[node][1] -> shortest distance to node after using one curved edge
+
+This allows us to maintain two separate states for every node and correctly compute paths that use zero or one curved edge.
+
+> We push states in the priority queue in the form (distance, node, usedCurve) and always process the smallest one first. When we explore edges from a node, we do two types of relaxations. Straight edge - always allowed, updates dist[next][usedCurve]. Curved edge - allowed only if usedCurve == 0, and it updates dist[next][1] since after using it we cannot use another curved edge. Finally, the answer is min(dist[b][0], dist[b][1]), because the shortest path may or may not use a curved edge. If both values are infinite, no valid path exists.
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <array>
+using namespace std;
+//Driver Code Ends
+
+int shortestPath(int a, int b, vector<vector<array<int, 3>>>& adj) {
+
+    int n = adj.size();
+    int INF = 1e9;
+
+    vector<vector<int>> dist(n, vector<int>(2, INF));
+
+    // PQ stores state in form of {distance, node, usedCurve}
+    using State = array<int, 3>;
+    priority_queue<State, vector<State>, greater<State>> pq;
+
+    // Start from 'a' without using any curved edge
+    dist[a][0] = 0;
+    pq.push({0, a, 0});
+
+    while (!pq.empty()) {
+
+        auto cur = pq.top();
+        pq.pop();
+
+        int d = cur[0];
+        int node = cur[1];
+        int used = cur[2];
+
+        if (d != dist[node][used]) continue;
+
+        // Explore all neighbors of 'node'
+        for (auto &it : adj[node]) {
+            int nxt = it[0];
+            int w1  = it[1];
+            int w2  = it[2];
+
+            // Take straight edge - usedCurve remains same
+            if (dist[nxt][used] > d + w1) {
+                dist[nxt][used] = d + w1;
+                pq.push({dist[nxt][used], nxt, used});
+            }
+
+            // Use curved edge (only if not used before)
+            if (used == 0) {
+                if (dist[nxt][1] > d + w2) {
+                    dist[nxt][1] = d + w2;
+                    pq.push({dist[nxt][1], nxt, 1});
+                }
+            }
+        }
+    }
+
+    // Minimum of both possibilities (curved used or not used)
+    int ans = min(dist[b][0], dist[b][1]);
+
+    return ans >= INF ? -1 : ans;
+}
+
+//Driver Code Starts
+
+int main() {
+
+    vector<vector<array<int, 3>>> adj = {
+        {{1,1,4}, {2,2,4}, {3,3,1}},
+        {{0,1,4}, {3,6,5}},
+        {{0,2,4}},
+        {{0,3,1}, {1,6,5}}
+    };
+
+    int a = 1, b = 3;
+
+    cout << shortestPath(a, b, adj);
+
+    return 0;
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+import java.util.ArrayList;
+import java.util.PriorityQueue;
+import java.util.Comparator;
+
+public class GFG {
+//Driver Code Ends
+
+     static int shortestPath(int a, int b, ArrayList<ArrayList<int[]>> adj) {
+
+        int n = adj.size();
+        int INF = (int)1e9;
+
+        // dist[node][usedCurve]
+        int[][] dist = new int[n][2];
+        for (int i = 0; i < n; i++) {
+            dist[i][0] = INF;
+            dist[i][1] = INF;
+        }
+
+        // PQ stores state in form of {distance, node, usedCurve}
+        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(o -> o[0]));
+
+        // Start from 'a' without using any curved edge
+        dist[a][0] = 0;
+        pq.add(new int[]{0, a, 0});
+
+        while (!pq.isEmpty()) {
+
+            int[] cur = pq.poll();
+
+            int d = cur[0];
+            int node = cur[1];
+            int used = cur[2];
+
+            if (d != dist[node][used]) continue;
+
+            // Explore all neighbors of 'node'
+            for (int[] it : adj.get(node)) {
+                int nxt = it[0];
+                int w1 = it[1];
+                int w2 = it[2];
+
+                // Take straight edge - usedCurve remains same
+                if (dist[nxt][used] > d + w1) {
+                    dist[nxt][used] = d + w1;
+                    pq.add(new int[]{dist[nxt][used], nxt, used});
+                }
+
+                // Use curved edge (only if not used before)
+                if (used == 0) {
+                    if (dist[nxt][1] > d + w2) {
+                        dist[nxt][1] = d + w2;
+                        pq.add(new int[]{dist[nxt][1], nxt, 1});
+                    }
+                }
+            }
+        }
+
+        // Minimum of both possibilities (curved used or not used)
+        int ans = Math.min(dist[b][0], dist[b][1]);
+
+        return ans >= INF ? -1 : ans;
+    }
+
+//Driver Code Starts
+
+    static void addEdge(ArrayList<ArrayList<int[]>> adj, int x, int y, int w1, int w2) {
+        adj.get(x).add(new int[]{y, w1, w2});
+        adj.get(y).add(new int[]{x, w1, w2});
+    }
+
+    public static void main(String[] args) {
+
+        int n = 4;
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+
+        for (int i = 0; i < n; i++)
+            adj.add(new ArrayList<>());
+
+        addEdge(adj, 0, 1, 1, 4);
+        addEdge(adj, 0, 2, 2, 4);
+        addEdge(adj, 0, 3, 3, 1);
+        addEdge(adj, 1, 3, 6, 5);
+
+        int a = 1, b = 3;
+
+        System.out.println(shortestPath(a, b, adj));
+    }
+}
+
+//Driver Code Ends
+
+#Driver Code Starts
+import heapq
+#Driver Code Ends
+
+def shortestPath(a, b, adj):
+
+    n = len(adj)
+    INF = 10**9
+
+    # dist[node][usedCurveFlag]
+    dist = [[INF, INF] for _ in range(n)]
+
+    # PQ stores state in the form of (distance, node, usedCurve)
+    pq = []
+
+    # Start from 'a' without using any curved edge
+    dist[a][0] = 0
+    heapq.heappush(pq, (0, a, 0))
+
+    while pq:
+
+        d, node, used = heapq.heappop(pq)
+
+        if d != dist[node][used]:
+            continue
+
+        # Explore all neighbors of 'node'
+        for nxt, w1, w2 in adj[node]:
+
+            # Take straight edge - usedCurve remains same
+            if dist[nxt][used] > d + w1:
+                dist[nxt][used] = d + w1
+                heapq.heappush(pq, (dist[nxt][used], nxt, used))
+
+            # Use curved edge (only if not used before)
+            if used == 0:
+                if dist[nxt][1] > d + w2:
+                    dist[nxt][1] = d + w2
+                    heapq.heappush(pq, (dist[nxt][1], nxt, 1))
+
+    # Minimum of both possibilities (curved edge used or not)
+    ans = min(dist[b][0], dist[b][1])
+
+    return -1 if ans >= INF else ans
+
+#Driver Code Starts
+
+if __name__ == "__main__":
+
+    adj = [
+        [(1,1,4), (2,2,4), (3,3,1)],
+        [(0,1,4), (3,6,5)],
+        [(0,2,4)],
+        [(0,3,1), (1,6,5)]
+    ]
+
+    a = 1
+    b = 3
+
+    print(shortestPath(a, b, adj))
+
+#Driver Code Ends
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+public class MinHeap
+{
+    private List<int[]> heap = new List<int[]>();
+    // each element = {distance, node, usedFlag}
+
+    private void Swap(int i, int j)
+    {
+        var temp = heap[i];
+        heap[i] = heap[j];
+        heap[j] = temp;
+    }
+
+    public void Push(int[] item)
+    {
+        heap.Add(item);
+        int idx = heap.Count - 1;
+
+        // bubble up
+        while (idx > 0)
+        {
+            int parent = (idx - 1) / 2;
+            if (heap[parent][0] <= heap[idx][0]) break;
+            Swap(parent, idx);
+            idx = parent;
+        }
+    }
+
+    public int[] Pop()
+    {
+        var top = heap[0];
+        var last = heap[heap.Count - 1];
+        heap[0] = last;
+        heap.RemoveAt(heap.Count - 1);
+
+        // bubble down
+        int idx = 0;
+        while (true)
+        {
+            int left = idx * 2 + 1;
+            int right = idx * 2 + 2;
+            int smallest = idx;
+
+            if (left < heap.Count && heap[left][0] < heap[smallest][0])
+                smallest = left;
+            if (right < heap.Count && heap[right][0] < heap[smallest][0])
+                smallest = right;
+
+            if (smallest == idx) break;
+            Swap(idx, smallest);
+            idx = smallest;
+        }
+
+        return top;
+    }
+
+    public int Count { get { return heap.Count; } }
+}
+
+public class GFG
+{
+//Driver Code Ends
+
+    public int shortestPath(int a, int b, List<List<int[]>> adj)
+    {
+        int n = adj.Count;
+        int INF = (int)1e9;
+
+        // dist[node][usedCurveFlag]
+        int[][] dist = new int[n][];
+        for (int i = 0; i < n; i++)
+        {
+            dist[i] = new int[] { INF, INF };
+        }
+
+        // MinHeap stores in form of  {distance, node, usedCurveFlag}
+        MinHeap pq = new MinHeap();
+
+        // Start from a (without using curved edge)
+        dist[a][0] = 0;
+        pq.Push(new int[] { 0, a, 0 });
+
+        while (pq.Count > 0)
+        {
+            int[] cur = pq.Pop();
+            int d = cur[0];
+            int node = cur[1];
+            int used = cur[2];
+
+            if (d != dist[node][used]) continue;
+
+            // Explore neighbours
+            foreach (var it in adj[node])
+            {
+                int nxt = it[0];
+                int w1 = it[1];
+                int w2 = it[2];
+
+                // Straight edge
+                if (dist[nxt][used] > d + w1)
+                {
+                    dist[nxt][used] = d + w1;
+                    pq.Push(new int[] { dist[nxt][used], nxt, used });
+                }
+
+                // Curved edge only once
+                if (used == 0)
+                {
+                    if (dist[nxt][1] > d + w2)
+                    {
+                        dist[nxt][1] = d + w2;
+                        pq.Push(new int[] { dist[nxt][1], nxt, 1 });
+                    }
+                }
+            }
+        }
+
+        int ans = Math.Min(dist[b][0], dist[b][1]);
+        return ans >= INF ? -1 : ans;
+    }
+
+//Driver Code Starts
+
+    public static void addEdge(List<List<int[]>> adj, int u, int v, int w1, int w2)
+    {
+        adj[u].Add(new int[] { v, w1, w2 });
+        adj[v].Add(new int[] { u, w1, w2 });
+    }
+
+    public static void Main()
+    {
+        int V = 4;
+
+        List<List<int[]>> adj = new List<List<int[]>>();
+        for (int i = 0; i < V; i++)
+        {
+            adj.Add(new List<int[]>());
+        }
+
+        addEdge(adj, 0, 1, 1, 4);
+        addEdge(adj, 0, 2, 2, 4);
+        addEdge(adj, 0, 3, 3, 1);
+        addEdge(adj, 1, 3, 6, 5);
+
+        int a = 1, b = 3;
+
+        GFG obj = new GFG();
+        Console.WriteLine(obj.shortestPath(a, b, adj));
+    }
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+
+class MinHeap {
+    constructor() {
+        this.data = [];
+    }
+
+    push(item) {
+        this.data.push(item);
+        this._up(this.data.length - 1);
+    }
+
+    pop() {
+        if (this.data.length === 0) return null;
+        let top = this.data[0];
+        let last = this.data.pop();
+        if (this.data.length > 0) {
+            this.data[0] = last;
+            this._down(0);
+        }
+        return top;
+    }
+
+    _up(i) {
+        while (i > 0) {
+            let p = Math.floor((i - 1) / 2);
+            if (this.data[p][0] <= this.data[i][0]) break;
+            [this.data[p], this.data[i]] = [this.data[i], this.data[p]];
+            i = p;
+        }
+    }
+
+    _down(i) {
+        let n = this.data.length;
+        while (true) {
+            let left = 2 * i + 1;
+            let right = 2 * i + 2;
+            let smallest = i;
+
+            if (left < n && this.data[left][0] < this.data[smallest][0])
+                smallest = left;
+
+            if (right < n && this.data[right][0] < this.data[smallest][0])
+                smallest = right;
+
+            if (smallest === i) break;
+
+            [this.data[smallest], this.data[i]] = [this.data[i], this.data[smallest]];
+            i = smallest;
+        }
+    }
+
+    empty() {
+        return this.data.length === 0;
+    }
+}
+//Driver Code Ends
+
+function shortestPath(a, b, adj) {
+
+    let n = adj.length;
+    let INF = 1e9;
+
+    // dist[node][usedCurve]
+    let dist = Array.from({ length: n }, () => [INF, INF]);
+
+    // PQ stores state in form of [distance, node, usedCurve]
+    let pq = new MinHeap();
+
+    // Start from 'a' without using any curved edge
+    dist[a][0] = 0;
+    pq.push([0, a, 0]);
+
+    while (!pq.empty()) {
+
+        let cur = pq.pop();
+
+        let d = cur[0];
+        let node = cur[1];
+        let used = cur[2];
+
+        if (d !== dist[node][used]) continue;
+
+        // Explore all neighbors of 'node'
+        for (let it of adj[node]) {
+            let nxt = it[0];
+            let w1 = it[1];
+            let w2 = it[2];
+
+            // Take straight edge - usedCurve remains same
+            if (dist[nxt][used] > d + w1) {
+                dist[nxt][used] = d + w1;
+                pq.push([dist[nxt][used], nxt, used]);
+            }
+
+            // Use curved edge (only if not used before)
+            if (used === 0) {
+                if (dist[nxt][1] > d + w2) {
+                    dist[nxt][1] = d + w2;
+                    pq.push([dist[nxt][1], nxt, 1]);
+                }
+            }
+        }
+    }
+
+    // Minimum of both possibilities (curved used or not used)
+    let ans = Math.min(dist[b][0], dist[b][1]);
+
+    return ans >= INF ? -1 : ans;
+}
+
+//Driver Code Starts
+
+// Driver Code
+let adj = [
+    [[1,1,4], [2,2,4], [3,3,1]],
+    [[0,1,4], [3,6,5]],
+    [[0,2,4]],
+    [[0,3,1], [1,6,5]]
+];
+
+let a = 1, b = 3;
+
+console.log(shortestPath(a, b, adj));
+
+//Driver Code Ends
+
+2
+
+### [Approach 2] Using Two-Dijkstra Method with Curved-Edge Relaxation - O((V+E) log V) Time and O(V+E) Space
+
+We want to travel from a to b, and the main challenge is deciding where to use the one curved edge. To simplify this, we first compute the shortest straight-edge distances from a to every node and from b to every node. Once we have distances, we can easily try placing the curved edge between any two connected nodes.
+
+> We know the distance from a -> every node, and the distance from b -> every node. Now for each curved edge we can form two possible paths: a -> u (straight) + u -> v (curved edge) + v -> b (straight) a -> v (straight) + v -> u (curved edge) + u -> b (straight) These two combinations represent both ways of using the curved edge exactly once. However, the problem states that we may use at most one curved edge. Therefore, we also need to consider the case where we do not use any curved edge at all. This normal straight-path distance from a -> b is simply da[b]. So, the final answer will be the minimum among all these cases.
+
+//Driver Code Starts
+#include <iostream>
+#include<vector>
+using namespace std;
+//Driver Code Ends
+
+vector<int> dijkstra(int src, int n, vector<vector<array<int,3>>> &adj) {
+    int INF = 1e9;
+    vector<int> dist(n, INF);
+    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<pair<int,int>>> pq;
+
+    dist[src] = 0;
+    pq.push({0, src});
+
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+
+        // Explore all neighbors of u
+        for (auto &x : adj[u]) {
+            int v = x[0];
+            int straight = x[1];
+
+            // Relaxation step
+            if (dist[v] > d + straight) {
+                dist[v] = d + straight;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;
+}
+
+// Function to find shortest path from a to b using at most one curved edge
+int shortestPath(int a, int b, vector<vector<array<int,3>>> &adj) {
+    int n = adj.size();
+
+    // Shortest distances using only straight edges
+    //from source and destination
+    vector<int> da = dijkstra(a, n, adj);
+    vector<int> db = dijkstra(b, n, adj);
+
+    int ans = da[b];
+
+    // Check all curved edges to see if using one improves the answer
+    for (int u = 0; u < n; u++) {
+        for (auto &x : adj[u]) {
+            int v = x[0];
+            int curved = x[2];
+
+            // Two possible paths using the curved edge
+            ans = min(ans, da[u] + curved + db[v]);
+            ans = min(ans, da[v] + curved + db[u]);
+        }
+    }
+
+    if (ans >= 1e9) ans = -1;
+    return ans;
+}
+
+//Driver Code Starts
+
+int main() {
+    int a = 1, b = 3;
+
+    vector<vector<array<int,3>>> adj = {
+        { {1,1,4}, {2,2,4}, {3,3,1} },
+        { {0,1,4}, {3,6,5} },
+        { {0,2,4} },
+        { {0,3,1}, {1,6,5} }
+    };
+
+    cout << shortestPath(a, b, adj) << endl;
+
+    return 0;
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+import java.util.ArrayList;
+import java.util.PriorityQueue;
+import java.util.Comparator;
+
+public class GFG {
+//Driver Code Ends
+
+    static ArrayList<Integer> dijkstra(int src, int n, ArrayList<ArrayList<int[]>> adj) {
+         int INF = (int)1e9;
+        ArrayList<Integer> dist = new ArrayList<>();
+        for (int i = 0; i < n; i++) dist.add(INF);
+
+        PriorityQueue<int[]> pq = new PriorityQueue<>(Comparator.comparingInt(x -> x[0]));
+
+        dist.set(src, 0);
+        pq.offer(new int[]{0, src});
+
+        while (!pq.isEmpty()) {
+            int[] cur = pq.poll();
+            int d = cur[0];
+            int u = cur[1];
+
+            // Explore all neighbors of u
+            for (int[] x : adj.get(u)) {
+                int v = x[0];
+                int straight = x[1];
+
+                // Relaxation step
+                if (dist.get(v) > d + straight) {
+                    dist.set(v, d + straight);
+                    pq.offer(new int[]{dist.get(v), v});
+                }
+            }
+        }
+        return dist;
+    }
+
+    // Function to find shortest path from a to b using at most one curved edge
+    static int shortestPath(int a, int b, ArrayList<ArrayList<int[]>> adj) {
+        int n = adj.size();
+
+        // Shortest distances using only straight edges
+        //from source and destination
+        ArrayList<Integer> da = dijkstra(a, n, adj);
+        ArrayList<Integer> db = dijkstra(b, n, adj);
+
+        int ans = da.get(b);
+
+        // Check all curved edges to see if using one improves the answer
+        for (int u = 0; u < n; u++) {
+            for (int[] x : adj.get(u)) {
+                int v = x[0];
+                int curved = x[2];
+
+                // Two possible paths using the curved edge
+                ans = Math.min(ans, da.get(u) + curved + db.get(v));
+                ans = Math.min(ans, da.get(v) + curved + db.get(u));
+            }
+        }
+
+        if (ans >= 1000000000) ans = -1;
+        return ans;
+    }
+
+//Driver Code Starts
+
+    // Add an undirected edge
+    static void addEdge(ArrayList<ArrayList<int[]>> adj, int u, int v, int straight, int curved) {
+        adj.get(u).add(new int[]{v, straight, curved});
+        adj.get(v).add(new int[]{u, straight, curved});
+    }
+
+    public static void main(String[] args) {
+
+        int a = 1, b = 3;
+        int V = 4;
+
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) adj.add(new ArrayList<>());
+
+        addEdge(adj, 0, 1, 1, 4);
+        addEdge(adj, 0, 2, 2, 4);
+        addEdge(adj, 0, 3, 3, 1);
+        addEdge(adj, 1, 3, 6, 5);
+
+        System.out.println(shortestPath(a, b, adj));
+    }
+}
+
+//Driver Code Ends
+
+#Driver Code Starts
+import heapq
+#Driver Code Ends
+
+def dijkstra(src, n, adj):
+
+    # Distance array initialized with INF
+    dist = [10**9] * n
+
+    # Min-heap priority queue: (distance_so_far, node)
+    pq = []
+
+    dist[src] = 0
+    heapq.heappush(pq, (0, src))
+
+    while pq:
+        d, u = heapq.heappop(pq)
+
+        # Explore all neighbors of u
+        for v, straight, curved in adj[u]:
+
+            # Relaxation step
+            if dist[v] > d + straight:
+                dist[v] = d + straight
+                heapq.heappush(pq, (dist[v], v))
+
+    return dist
+
+# Function to find shortest path from a to b using at most one curved edge
+def shortestPath(a, b, adj):
+    n = len(adj)
+
+    # Shortest distances using only straight edges
+    # from source and destination
+    da = dijkstra(a, n, adj)
+    db = dijkstra(b, n, adj)
+
+    ans = da[b]
+
+    # Check all curved edges to see if using one improves the answer
+    for u in range(n):
+        for v, straight, curved in adj[u]:
+
+            # Two possible paths using the curved edge
+            ans = min(ans, da[u] + curved + db[v])
+            ans = min(ans, da[v] + curved + db[u])
+
+    if ans >= 10**9:
+        return -1
+
+    return ans
+
+#Driver Code Starts
+
+if __name__ == "__main__":
+    a = 1
+    b = 3
+
+    adj = [
+        [(1,1,4), (2,2,4), (3,3,1)],
+        [(0,1,4), (3,6,5)],
+        [(0,2,4)],
+        [(0,3,1), (1,6,5)]
+    ]
+
+    print(shortestPath(a, b, adj))
+
+#Driver Code Ends
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+class MinHeap {
+    private List<int[]> heap = new List<int[]>();
+
+    private void Swap(int i, int j) {
+        var temp = heap[i];
+        heap[i] = heap[j];
+        heap[j] = temp;
+    }
+
+    private bool Compare(int[] a, int[] b) {
+        return a[0] < b[0];
+    }
+
+    public void Enqueue(int[] val) {
+        heap.Add(val);
+        int i = heap.Count - 1;
+
+        while (i > 0) {
+            int parent = (i - 1) / 2;
+            if (Compare(heap[i], heap[parent])) {
+                Swap(i, parent);
+                i = parent;
+            } else break;
+        }
+    }
+
+    public int[] Dequeue() {
+        if (heap.Count == 0) return null;
+
+        int[] top = heap[0];
+        heap[0] = heap[heap.Count - 1];
+        heap.RemoveAt(heap.Count - 1);
+
+        int i = 0;
+
+        while (true) {
+            int left = 2 * i + 1;
+            int right = 2 * i + 2;
+            int smallest = i;
+
+            if (left < heap.Count && Compare(heap[left], heap[smallest]))
+                smallest = left;
+            if (right < heap.Count && Compare(heap[right], heap[smallest]))
+                smallest = right;
+
+            if (smallest != i) {
+                Swap(i, smallest);
+                i = smallest;
+            } else break;
+        }
+
+        return top;
+    }
+
+    public int Count => heap.Count;
+}
+
+class GFG {
+//Driver Code Ends
+
+    static List<int> dijkstra(int src, int n, List<List<int[]>> adj) {
+        int INF = (int)1e9;
+        List<int> dist = new List<int>();
+        for (int i = 0; i < n; i++) dist.Add(INF);
+
+        // PriorityQueue stores {distance, node}
+        MinHeap pq = new MinHeap();
+        dist[src] = 0;
+        pq.Enqueue(new int[]{0, src});
+
+        while (pq.Count > 0) {
+            var cur = pq.Dequeue();
+            int d = cur[0];
+            int u = cur[1];
+
+            // Explore all neighbors of u
+            foreach (var x in adj[u]) {
+                int v = x[0];
+                int straight = x[1];
+
+                // Relaxation step
+                if (dist[v] > d + straight) {
+                    dist[v] = d + straight;
+                    pq.Enqueue(new int[]{dist[v], v});
+                }
+            }
+        }
+        return dist;
+    }
+
+    // Function to find shortest path from a to b using at most one curved edge
+    static int shortestPath(int a, int b, List<List<int[]>> adj) {
+        int n = adj.Count;
+
+        // Shortest distances using only straight edges
+        // from source and destination
+        List<int> da = dijkstra(a, n, adj);
+        List<int> db = dijkstra(b, n, adj);
+
+        int ans = da[b];
+
+        // Check all curved edges to see if using one improves the answer
+        for (int u = 0; u < n; u++) {
+            foreach (var x in adj[u]) {
+                int v = x[0];
+                int curved = x[2];
+
+                // Two possible paths using the curved edge
+                ans = Math.Min(ans, da[u] + curved + db[v]);
+                ans = Math.Min(ans, da[v] + curved + db[u]);
+            }
+        }
+
+        if (ans >= 1000000000) ans = -1;
+        return ans;
+    }
+
+//Driver Code Starts
+
+    // Add an undirected edge
+    static void addEdge(List<List<int[]>> adj, int u, int v, int straight, int curved) {
+        adj[u].Add(new int[]{v, straight, curved});
+        adj[v].Add(new int[]{u, straight, curved});
+    }
+
+    static void Main() {
+        int a = 1, b = 3;
+        int V = 4;
+
+        List<List<int[]>> adj = new List<List<int[]>>();
+        for (int i = 0; i < V; i++) adj.Add(new List<int[]>());
+
+        addEdge(adj, 0, 1, 1, 4);
+        addEdge(adj, 0, 2, 2, 4);
+        addEdge(adj, 0, 3, 3, 1);
+        addEdge(adj, 1, 3, 6, 5);
+
+        Console.WriteLine(shortestPath(a, b, adj));
+    }
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+
+class MinHeap {
+    constructor() {
+        this.heap = [];
+    }
+
+    push(item) {
+        this.heap.push(item);
+        this._siftUp(this.heap.length - 1);
+    }
+
+    pop() {
+        if (this.heap.length === 0) return null;
+        const top = this.heap[0];
+        const last = this.heap.pop();
+        if (this.heap.length > 0) {
+            this.heap[0] = last;
+            this._siftDown(0);
+        }
+        return top;
+    }
+
+    isEmpty() {
+        return this.heap.length === 0;
+    }
+
+    _siftUp(i) {
+        while (i > 0) {
+            let p = Math.floor((i - 1) / 2);
+            if (this.heap[p][0] <= this.heap[i][0]) break;
+            [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
+            i = p;
+        }
+    }
+
+    _siftDown(i) {
+        const n = this.heap.length;
+        while (true) {
+            let left = 2 * i + 1;
+            let right = 2 * i + 2;
+            let smallest = i;
+
+            if (left < n && this.heap[left][0] < this.heap[smallest][0])
+                smallest = left;
+            if (right < n && this.heap[right][0] < this.heap[smallest][0])
+                smallest = right;
+
+            if (smallest === i) break;
+            [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+            i = smallest;
+        }
+    }
+}
+//Driver Code Ends
+
+function dijkstra(src, n, adj) {
+    let INF = 1e9;
+    let dist = Array(n).fill(INF);
+
+    // Min-heap priority queue: [distance_so_far, node]
+    let pq = new MinHeap();
+
+    dist[src] = 0;
+    pq.push([0, src]);
+
+    while (!pq.isEmpty()) {
+
+        let [d, u] = pq.pop();
+
+        // Explore all neighbors of u
+        for (let x of adj[u]) {
+            let v = x[0];
+            let straight = x[1];
+
+            // Relaxation step
+            if (dist[v] > d + straight) {
+                dist[v] = d + straight;
+                pq.push([dist[v], v]);
+            }
+        }
+    }
+
+    return dist;
+}
+
+function shortestPath(a, b, adj) {
+
+    let n = adj.length;
+
+    // Shortest distances using only straight edges
+    // from source and destination
+    let da = dijkstra(a, n, adj);
+    let db = dijkstra(b, n, adj);
+
+    let ans = da[b];
+
+    // Check all curved edges to see if using one improves the answer
+    for (let u = 0; u < n; u++) {
+        for (let x of adj[u]) {
+            let v = x[0];
+            let curved = x[2];
+
+            // Two possible paths using the curved edge
+            ans = Math.min(ans, da[u] + curved + db[v]);
+            ans = Math.min(ans, da[v] + curved + db[u]);
+        }
+    }
+
+    if (ans >= 1e9) ans = -1;
+
+    return ans;
+}
+
+//Driver Code Starts
+
+//Driver Code
+let a = 1, b = 3;
+
+let adj = [
+    [ [1,1,4], [2,2,4], [3,3,1] ],
+    [ [0,1,4], [3,6,5] ],
+    [ [0,2,4] ],
+    [ [0,3,1], [1,6,5] ]
+];
+
+console.log(shortestPath(a, b, adj));
+
+//Driver Code Ends
+
+2

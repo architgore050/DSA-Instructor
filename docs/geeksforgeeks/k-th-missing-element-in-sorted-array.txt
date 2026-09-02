@@ -1,0 +1,423 @@
+Source: https://www.geeksforgeeks.org/dsa/k-th-missing-element-in-sorted-array/
+Title: Kth Missing Positive Number in a Sorted Array
+
+Given a sorted array of distinct positive integers arr[] and an integer k , find the kth positive integer that is missing from the array.
+
+Examples :
+
+> Input : arr[] = [2, 3, 4, 7, 11], k = 5 Output : 9 Explanation : Missing are 1, 5, 6, 8, 9, 10, ... and 5th missing number is 9. Input : arr[] = [1, 2, 3], k = 2 Output : 5 Explanation : Missing are 4, 5, 6.... and 2nd missing number is 5. Input: arr[] = [3, 5, 9, 10, 11, 12], k = 2 Output : 2 Explanation : Missing are 1, 2, 4, 6, 7, 8, 13,...  and 2nd missing number is 2.
+
+Table of Content
+
+- [Naive Approach] Using Hash Set - O(n + k) Time and O(n) Space
+- [Better Approach] Using Index Comparison - O(n) Time and O(1) Space
+- [Expected Approach] Using Binary Search - O(log n) Time and O(1) Space
+
+### [Naive Approach] Using Hash Set - O(n + k) Time and O(n) Space
+
+> The idea is to insert all elements of the array into a set for constant-time lookups. Then, we iterate starting from 1, checking whether each number is missing from the set. For every number not found, we increment a counter. Once we reach the k-th missing number, we return it as the result.
+
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+using namespace std;
+
+int kthMissing(vector<int>& arr, int k) {
+
+    // insert all array elements into a set
+    unordered_set<int> s(arr.begin(), arr.end());
+
+    // loop until we find the k-th missing number
+    int count = 0, curr = 0;
+    while (count < k) {
+        curr++;
+
+        // increment missing count if current
+        // element is missing
+        if (s.find(curr) == s.end()) {
+            count++;
+        }
+    }
+    return curr;
+}
+
+int main() {
+    vector<int> arr = {2, 3, 4, 7, 11};
+    int k = 5;
+    cout << kthMissing(arr, k);
+    return 0;
+}
+
+import java.util.HashSet;
+import java.util.Set;
+
+class GFG {
+
+    static int kthMissing(int[] arr, int k) {
+
+        // insert all array elements into a set
+        Set<Integer> set = new HashSet<>();
+        for (int num : arr) {
+            set.add(num);
+        }
+
+        int count = 0, curr = 0;
+
+        // loop until we find the k-th missing number
+        while (count < k) {
+            curr++;
+
+            // increment missing count if current
+            // element is missing
+            if (!set.contains(curr)) {
+                count++;
+            }
+        }
+        return curr;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {2, 3, 4, 7, 11};
+        int k = 5;
+        System.out.println(kthMissing(arr, k));
+    }
+}
+
+def kthMissing(arr, k):
+    # insert all array elements into a set
+    s = set(arr)
+
+    count = 0
+    curr = 0
+
+    # loop until we find the k-th missing number
+    while count < k:
+        curr += 1
+
+        # increment missing count if current
+        # element is missing
+        if curr not in s:
+            count += 1
+
+    return curr
+
+if __name__ == "__main__":
+    arr = [2, 3, 4, 7, 11]
+    k = 5
+    print(kthMissing(arr, k))
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+      static int kthMissing(int[] arr, int k) {
+
+        // insert all array elements into a HashSet
+        HashSet<int> set = new HashSet<int>(arr);
+
+        int count = 0, curr = 0;
+
+        // loop until we find the k-th missing number
+        while (count < k) {
+            curr++;
+
+            // increment missing count if current
+            // element is missing
+            if (!set.Contains(curr))
+                count++;
+        }
+
+        return curr;
+    }
+
+    static void Main() {
+        int[] arr = { 2, 3, 4, 7, 11 };
+        int k = 5;
+        Console.WriteLine(kthMissing(arr, k));
+    }
+}
+
+function kthMissing(arr, k) {
+
+    // insert all array elements into a set
+    let s = new Set(arr);
+
+    let count = 0;
+    let curr = 0;
+
+    // loop until we find the k-th missing number
+    while (count < k) {
+        curr++;
+
+        // increment missing count if current
+        // element is missing
+        if (!s.has(curr)) {
+            count++;
+        }
+    }
+    return curr;
+}
+
+// driver code
+let arr = [2, 3, 4, 7, 11];
+let k = 5;
+console.log(kthMissing(arr, k));
+
+9
+
+### [Better Approach] Using Index Comparison - O(n) Time and O(1) Space
+
+> The idea is based on the observation that in a perfect sequence without missing numbers, the i-th element should be i + 1. If any number is missing, then arr[i] becomes greater than i + 1, and the number of missing elements before arr[i] is arr[i] - (i + 1). So, at each index i, we check if the number of missing elements so far is at least k. The first index where arr[i] > k + i indicates that the k-th missing number is before that index and equals k + i. If no such index is found, it means the k-th missing number lies beyond the last element and is simply k + n.
+
+For example, for [1, 3, 5] and k = 2.
+
+- For i = 0, we have arr[i] less than 2 + i.
+- For i = 1, we have arr[i] equal to 2 + i.
+- For i = 2, we have arr[i] more than 2 + i. So we return 2 + i which is 4.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int kthMissing(vector<int> &arr, int k) {
+    int n = arr.size();
+    for (int i = 0; i < n; i++) {
+        if (arr[i] > (k + i))
+            return (k + i);
+    }
+
+    // if all numbers from 1 to n are present
+    // in arr[], return k + n
+    return k + n;
+}
+
+int main() {
+    vector<int> arr = {2, 3, 4, 7, 11};
+    int k = 5;
+    cout << kthMissing(arr, k);
+    return 0;
+}
+
+class GFG {
+    static int kthMissing(int[] arr, int k) {
+
+        int n = arr.length;
+        for (int i = 0; i < n; i++) {
+            if (arr[i] > (k + i)) {
+                return (k + i);
+            }
+        }
+
+        // if all numbers from 1 to n are present
+        // in arr[], return k + n
+        return k + n;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {2, 3, 4, 7, 11};
+        int k = 5;
+        System.out.println(kthMissing(arr, k));
+    }
+}
+
+def kthMissing(arr, k):
+    n = len(arr)
+    for i in range(n):
+        if arr[i] > (k + i):
+            return k + i
+
+    # if all numbers from 1 to n are present
+    # in arr[], return k + n
+    return k + n
+
+if __name__ == '__main__':
+    arr = [2, 3, 4, 7, 11]
+    k = 5
+    print(kthMissing(arr, k))
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static int kthMissing(int[] arr, int k) {
+        int n = arr.Length;
+        for (int i = 0; i < n; i++) {
+            if (arr[i] > (k + i)) {
+                return k + i;
+            }
+        }
+
+        // if all numbers from 1 to n are present
+        // in arr[], return k + n
+        return k + n;
+    }
+
+    static void Main() {
+        int[] arr = {2, 3, 4, 7, 11};
+        int k = 5;
+
+        Console.WriteLine(kthMissing(arr, k));
+    }
+}
+
+function kthMissing(arr, k) {
+    let n = arr.length;
+    for (let i = 0; i < n; i++) {
+        if (arr[i] > (k + i)) {
+            return k + i;
+        }
+    }
+
+    // if all numbers from 1 to n are present
+    // in arr[], return k + n
+    return k + n;
+}
+
+// Driver code
+let arr = [2, 3, 4, 7, 11];
+let k = 5;
+console.log(kthMissing(arr, k));
+
+9
+
+### [Expected Approach] Using Binary Search - O(log n) Time and O(1) Space
+
+> In the previous approach, we used linear search to find the first index where arr[i] > (k + i). Since the input array is sorted, once we have found the index i such that arr[i] > (k + i), then for all indices j (j > i), arr[j] will also be greater than (k + j). So, we can optimize the previous approach using binary search to find the index i so that the k-th missing element is k + i.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int kthMissing(vector<int> &arr, int k) {
+    int lo = 0, hi = arr.size() - 1;
+    int res = arr.size() + k;
+
+    // binary Search for index where
+    // arr[i] > (i + k)
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2;
+        if (arr[mid] > mid + k) {
+            res = mid + k;
+            hi = mid - 1;
+        }
+        else {
+            lo = mid + 1;
+        }
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> arr = {2, 3, 4, 7, 11};
+    int k = 5;
+    cout << kthMissing(arr, k);
+    return 0;
+}
+
+class GFG {
+
+    static int kthMissing(int[] arr, int k) {
+        int lo = 0, hi = arr.length - 1;
+        int res = arr.length + k;
+
+        // binary Search for index where
+        // arr[i] > (i + k)
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+            if (arr[mid] > mid + k) {
+                res = mid + k;
+                hi = mid - 1;
+            } else {
+                lo = mid + 1;
+            }
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {2, 3, 4, 7, 11};
+        int k = 5;
+        System.out.println(kthMissing(arr, k));
+    }
+}
+
+def kthMissing(arr, k):
+    lo = 0
+    hi = len(arr) - 1
+    res = len(arr) + k
+
+    # binary Search for index where
+    # arr[i] > (i + k)
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if arr[mid] > mid + k:
+            res = mid + k
+            hi = mid - 1
+        else:
+            lo = mid + 1
+
+    return res
+
+if __name__ == "__main__":
+    arr = [2, 3, 4, 7, 11]
+    k = 5
+    print(kthMissing(arr, k))
+
+using System;
+
+class GFG {
+    static int kthMissing(int[] arr, int k) {
+        int lo = 0, hi = arr.Length - 1;
+        int res = arr.Length + k;
+
+        // binary Search for index where
+        // arr[i] > (i + k)
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+            if (arr[mid] > mid + k) {
+                res = mid + k;
+                hi = mid - 1;
+            }
+            else {
+                lo = mid + 1;
+            }
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = { 2, 3, 4, 7, 11 };
+        int k = 5;
+        Console.WriteLine(kthMissing(arr, k));
+    }
+}
+
+function kthMissing(arr, k) {
+    let lo = 0, hi = arr.length - 1;
+    let res = arr.length + k;
+
+    // binary Search for index where
+    // arr[i] > (i + k)
+    while (lo <= hi) {
+        let mid = Math.floor((lo + hi) / 2);
+        if (arr[mid] > mid + k) {
+            res = mid + k;
+            hi = mid - 1;
+        } else {
+            lo = mid + 1;
+        }
+    }
+
+    return res;
+}
+
+// Driver Code
+const arr = [2, 3, 4, 7, 11];
+const k = 5;
+console.log(kthMissing(arr, k));
+
+9

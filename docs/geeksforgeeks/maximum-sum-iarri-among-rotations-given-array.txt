@@ -1,0 +1,606 @@
+Source: https://www.geeksforgeeks.org/dsa/maximum-sum-iarri-among-rotations-given-array/
+Title: Maximum sum of i*arr[i] among all rotations of a given array
+
+Given an integer array arr[] of size n , find the maximum value of the expression i * arr[i] (for all i from 0 to n-1) after rotating the array any number of times.
+
+Examples:
+
+> Input: arr[] = [8, 3, 1, 2] Output: 29 Explanation: Out of all the possible configurations by rotating the elements: arr[] = [3, 1, 2, 8] here (3*0) + (1*1) + (2*2) + (8*3) sum is maximum i.e. 29. Input: arr[] = [1, 2, 3] Output: 8 Explanation: Out of all the possible configurations by rotating the elements: arr[] = [1, 2, 3] here (1*0) + (2*1) + (3*2) sum is maximum i.e. 8.
+
+Table of Content
+
+- [Naive Approach] Using Nested Loops - O(n ^ 2) Time and O(1) Space
+- [Expected Approach] Using Mathematics - O(n) Time and O(1) Space
+- [Alternate Approach] Using Pivot - O(n) Time and O(1) Space
+
+### [Naive Approach] Using Nested Loops - O(n ^ 2) Time and O(1) Space
+
+> The idea is to find the sum of all the elements of the array for each possible rotation, and store the maximum of them as answer. To do so, use nested loops, where the outer loop marks the starting point of the array, and the inner loop iterates through each of the element, and store the sum of i * arr[i]. Check if the maximum sum is greater than the current sum then update the maximum sum.
+
+#include <iostream>
+#include <vector>
+#include <limits.h>
+using namespace std;
+
+int maxSum(vector<int> &arr) {
+    int n = arr.size();
+
+    int res = INT_MIN;
+
+    // Consider rotation beginning with i
+    // for all possible values of i.
+    for (int i = 0; i < n; i++) {
+
+        // Initialize sum of current rotation
+        int sum = 0;
+
+        // Compute sum of all values
+        for (int j = 0; j < n; j++) {
+
+            // compute the rotated index
+            int index = (i + j) % n;
+            sum += j * arr[index];
+        }
+
+        // Update the maximum value
+        res = max(res, sum);
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> arr = {8, 3, 1, 2};
+    cout << maxSum(arr);
+    return 0;
+}
+
+class GfG {
+
+    static int maxSum(int[] arr) {
+
+        int n = arr.length;
+
+        // Initialize result
+        int res = Integer.MIN_VALUE;
+
+        // Consider rotation beginning with i
+        // for all possible values of i.
+        for (int i = 0; i < n; i++) {
+
+            // Initialize sum of current rotation
+            int sum = 0;
+
+            // Compute sum of all values
+            for (int j = 0; j < n; j++) {
+
+                // compute the rotated index
+                int index = (i + j) % n;
+                sum += j * arr[index];
+            }
+
+            // Update the maximum value
+            res = Math.max(res, sum);
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {8, 3, 1, 2};
+        System.out.println(maxSum(arr));
+    }
+}
+
+def maxSum(arr):
+    n = len(arr)
+
+    # Initialize result
+    res = -float('inf')
+
+    # Consider rotation beginning with i
+    # for all possible values of i.
+    for i in range(n):
+
+        # Initialize sum of current rotation
+        sum = 0
+
+        # Compute sum of all values
+        for j in range(n):
+
+            # compute the rotated index
+            index = (i + j) % n
+            sum += j * arr[index]
+
+        # Update the maximum value
+        res = max(res, sum)
+
+    return res
+
+if __name__ == "__main__":
+    arr = [8, 3, 1, 2]
+    print(maxSum(arr))
+
+using System;
+
+class GfG {
+
+    static int maxSum(int[] arr) {
+        int n = arr.Length;
+
+        // Initialize result
+        int res = int.MinValue;
+
+        // Consider rotation beginning with i
+        // for all possible values of i.
+        for (int i = 0; i < n; i++) {
+
+            // Initialize sum of current rotation
+            int sum = 0;
+
+            // Compute sum of all values
+            for (int j = 0; j < n; j++) {
+
+                // compute the rotated index
+                int index = (i + j) % n;
+                sum += j * arr[index];
+            }
+
+            // Update the maximum value
+            res = Math.Max(res, sum);
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {8, 3, 1, 2};
+        Console.WriteLine(maxSum(arr));
+    }
+}
+
+function maxSum(arr) {
+    let n = arr.length;
+
+    // Initialize result
+    let res = -Infinity;
+
+    // Consider rotation beginning with i
+    // for all possible values of i.
+    for (let i = 0; i < n; i++) {
+
+        // Initialize sum of current rotation
+        let sum = 0;
+
+        // Compute sum of all values
+        for (let j = 0; j < n; j++) {
+
+            // compute the rotated index
+            let index = (i + j) % n;
+            sum += j * arr[index];
+        }
+
+        // Update the maximum value
+        res = Math.max(res, sum);
+    }
+
+    return res;
+}
+
+// Driver Code
+let arr = [8, 3, 1, 2];
+console.log(maxSum(arr));
+
+29
+
+### [Expected Approach] Using Mathematics - O(n) Time and O(1) Space
+
+> The main idea is to Instead of recalculating the weighted sum from scratch for each rotation, it first computes the total sum of the array and the initial rotation value. Then, for each subsequent rotation, it derives the new value using a formula based on the previous value and the total sum. and find the maximum value of the sum across all rotations of the array.
+
+We can calculate the value of the next rotation using the value of the current one. Let curSum be the total sum of all elements in the array, and currVal be the value of the current rotation. Then, the value of the next rotation can be derived from currVal by adjusting it based on the shift in element positions.
+
+finding NextVal Using currVal:
+
+We can compute the value of the i th rotation using the value of the (i-1) th rotation:
+
+> Nextval = currVal - (curSum - arr[i-1]) + arr[i-1] * (n-1)
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int maxSum(vector<int> &arr) {
+
+    int n = arr.size();
+
+    // Compute sum of all array elements
+    int curSum = 0;
+    for (int i = 0; i < n; i++)
+        curSum += arr[i];
+
+    // Compute sum of i*arr[i] for initial
+    // configuration.
+    int currVal = 0;
+
+    for (int i = 0; i < n; i++)
+        currVal += i * arr[i] ;
+
+    // Initialize result
+    int res = currVal ;
+
+    // Compute values for other iterations
+    for (int i = 1; i < n; i++) {
+
+        // Compute next value using previous
+        int nextVal = currVal - (curSum - arr[i - 1]) +
+                        arr[i - 1] * (n - 1);
+
+        // Update current value
+        currVal = nextVal;
+
+        // Update result if required
+        res = max(res, nextVal);
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> arr = {8, 3, 1, 2};
+    cout << maxSum(arr);
+    return 0;
+}
+
+class GfG {
+    static int maxSum(int[] arr) {
+        int n = arr.length;
+
+        // Compute sum of all array elements
+        int curSum = 0;
+        for (int i = 0; i < n; i++)
+            curSum += arr[i];
+
+        // Compute sum of i*arr[i] for initial
+        // configuration.
+        int currVal = 0;
+
+        for (int i = 0; i < n; i++)
+            currVal += i * arr[i];
+
+        // Initialize result
+        int res = currVal;
+
+        // Compute values for other iterations
+        for (int i = 1; i < n; i++) {
+
+            // Compute next value using previous
+            int nextVal = currVal - (curSum - arr[i - 1]) +
+                        arr[i - 1] * (n - 1);
+
+            // Update current value
+            currVal = nextVal;
+
+            // Update result if required
+            res = Math.max(res, nextVal);
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {8, 3, 1, 2};
+        System.out.println(maxSum(arr));
+    }
+}
+
+def maxSum(arr):
+    n = len(arr)
+
+    # Compute sum of all array elements
+    curSum = 0
+    for i in range(n):
+        curSum += arr[i]
+
+    # Compute sum of i*arr[i] for initial
+    # configuration.
+    currVal = 0
+    for i in range(n):
+        currVal += i * arr[i]
+
+    # Initialize result
+    res = currVal
+
+    # Compute values for other iterations
+    for i in range(1, n):
+
+        # Compute next value using previous
+        nextVal = currVal - (curSum - arr[i - 1]) \
+                                    + arr[i - 1] * (n - 1)
+
+        # Update current value
+        currVal = nextVal
+
+        # Update result if required
+        res = max(res, nextVal)
+
+    return res
+
+if __name__ == "__main__":
+    arr = [8, 3, 1, 2]
+    print(maxSum(arr))
+
+using System;
+
+class GfG {
+    static int maxSum(int[] arr) {
+        int n = arr.Length;
+
+        // Compute sum of all array elements
+        int curSum = 0;
+        for (int i = 0; i < n; i++)
+            curSum += arr[i];
+
+        // Compute sum of i*arr[i] for initial
+        // configuration.
+        int currVal = 0;
+        for (int i = 0; i < n; i++)
+            currVal += i * arr[i];
+
+        // Initialize result
+        int res = currVal;
+
+        // Compute values for other iterations
+        for (int i = 1; i < n; i++) {
+
+            // Compute next value using previous
+            int nextVal = currVal - (curSum - arr[i - 1]) +
+                        arr[i - 1] * (n - 1);
+
+            // Update current value
+            currVal = nextVal;
+
+            // Update result if required
+            res = Math.Max(res, nextVal);
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {8, 3, 1, 2};
+        Console.WriteLine(maxSum(arr));
+    }
+}
+
+function maxSum(arr) {
+    let n = arr.length;
+
+    // Compute sum of all array elements
+    let curSum = 0;
+    for (let i = 0; i < n; i++)
+        curSum += arr[i];
+
+    // Compute sum of i*arr[i] for initial
+    // configuration.
+    let currVal = 0;
+    for (let i = 0; i < n; i++)
+        currVal += i * arr[i];
+
+    // Initialize result
+    let res = currVal;
+
+    // Compute values for other iterations
+    for (let i = 1; i < n; i++) {
+
+        // Compute next value using previous
+        let nextVal = currVal - (curSum - arr[i - 1]) +
+                                    arr[i - 1] * (n - 1);
+
+        // Update current value
+        currVal = nextVal;
+
+        // Update result if required
+        res = Math.max(res, nextVal);
+    }
+
+    return res;
+}
+
+// Driver Code
+let arr = [8, 3, 1, 2];
+console.log(maxSum(arr));
+
+29
+
+### [Alternate Approach] Using Pivot - O(n) Time and O(1) Space
+
+Note: This approach works only for sorted or rotated sorted arrays.
+
+> We know for an array the maximum sum will be when the array is sorted in ascending order. In case of a sorted rotated array, we can rotate the array to make it in ascending order. So, in this case, the pivot element is needed to be found following which the maximum sum can be calculated. Find the pivot of the array: if arr[i] > arr[(i+1)%n] then it is the pivot element. (i+1)%n is used to check for the last and first element. After getting pivot the sum can be calculated by finding the difference with the pivot which will be the multiplier and multiply it with the current element while calculating the sum
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to find pivot
+int findPivot(vector<int> &arr)  {
+    int n = arr.size();
+
+    for(int i = 0; i < n; i++) {
+        if(arr[i] > arr[(i + 1) % n])
+            return i;
+    }
+
+    return 0;
+}
+
+// Function to find maximum sum rotation
+int maxSum(vector<int> &arr) {
+    int n = arr.size();
+
+    // initialize result
+    int res = 0;
+    int pivot = findPivot(arr);
+
+    // difference in pivot and index of
+    // last element of array
+    int diff = n - 1 - pivot;
+
+    // compute the sum
+    for(int i = 0; i < n; i++) {
+        res = res + ((i + diff) % n) * arr[i];
+    }
+    return res;
+}
+
+int main() {
+    vector<int> arr = {8, 3, 1, 2};
+    cout << maxSum(arr);
+    return 0;
+}
+
+class GfG {
+
+    // Function to find pivot
+    static int findPivot(int[] arr) {
+        int n = arr.length;
+
+        for (int i = 0; i < n; i++) {
+            if (arr[i] > arr[(i + 1) % n])
+                return i;
+        }
+
+        return 0;
+    }
+
+    // Function to find maximum sum rotation
+    static int maxSum(int[] arr) {
+        int n = arr.length;
+
+        // initialize result
+        int res = 0;
+        int pivot = findPivot(arr);
+
+        // difference in pivot and index of
+        // last element of array
+        int diff = n - 1 - pivot;
+
+        // compute the sum
+        for (int i = 0; i < n; i++) {
+            res = res + ((i + diff) % n) * arr[i];
+        }
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {8, 3, 1, 2};
+        System.out.println(maxSum(arr));
+    }
+}
+
+def findPivot(arr):
+    n = len(arr)
+
+    for i in range(n):
+        if arr[i] > arr[(i + 1) % n]:
+            return i
+
+    return 0
+
+# Function to find maximum sum rotation
+def maxSum(arr):
+    n = len(arr)
+
+    # initialize result
+    res = 0
+    pivot = findPivot(arr)
+
+    # difference in pivot and index of
+    # last element of array
+    diff = n - 1 - pivot
+
+    # compute the sum
+    for i in range(n):
+        res = res + ((i + diff) % n) * arr[i]
+    return res
+
+if __name__ == "__main__":
+    arr = [8, 3, 1, 2]
+    print(maxSum(arr))
+
+using System;
+
+class GfG {
+
+    // Function to find pivot
+    static int findPivot(int[] arr) {
+        int n = arr.Length;
+
+        for (int i = 0; i < n; i++) {
+            if (arr[i] > arr[(i + 1) % n])
+                return i;
+        }
+
+        return 0;
+    }
+
+    // Function to find maximum sum rotation
+    static int maxSum(int[] arr) {
+        int n = arr.Length;
+
+        // initialize result
+        int res = 0;
+        int pivot = findPivot(arr);
+
+        // difference in pivot and index of
+        // last element of array
+        int diff = n - 1 - pivot;
+
+        // compute the sum
+        for (int i = 0; i < n; i++) {
+            res = res + ((i + diff) % n) * arr[i];
+        }
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {8, 3, 1, 2};
+        Console.WriteLine(maxSum(arr));
+    }
+}
+
+function findPivot(arr) {
+    let n = arr.length;
+
+    for (let i = 0; i < n; i++) {
+        if (arr[i] > arr[(i + 1) % n])
+            return i;
+    }
+
+    return 0;
+}
+
+// Function to find maximum sum rotation
+function maxSum(arr) {
+    let n = arr.length;
+
+    // initialize result
+    let res = 0;
+    let pivot = findPivot(arr);
+
+    // difference in pivot and index of
+    // last element of array
+    let diff = n - 1 - pivot;
+
+    // compute the sum
+    for (let i = 0; i < n; i++) {
+        res = res + ((i + diff) % n) * arr[i];
+    }
+    return res;
+}
+
+// Driver Code
+let arr = [8, 3, 1, 2];
+console.log(maxSum(arr));
+
+29

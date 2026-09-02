@@ -1,0 +1,683 @@
+Source: https://www.geeksforgeeks.org/dsa/find-course-schedule-ii/
+Title: Find Course Schedule II
+
+Given n courses, labeled from 0 to n - 1 and an array prerequisites[] where prerequisites[i] = [x, y] indicates that we need to take course y first if we want to take course x .
+
+Find the ordering of courses we should take to complete all courses. If there are multiple solutions, return any of them. If it is impossible to finish all courses, return an empty array.
+
+Examples:
+
+> Input: n = 3, prerequisites[][] = [[1, 0], [2, 1]] Output: [0, 1, 2] Explanation: To take course 1, you must finish course 0. To take course 2, you must finish course 1. So the only valid order is [0, 1, 2]. Input: n = 4, prerequisites = [[2, 0], [2, 1], [3, 2]] Output: [1, 0, 2, 3] Explanation: Course 2 requires both 0 and 1. Course 3 requires course 2. Hence, both [0, 1, 2, 3] and [1, 0, 2, 3] are valid.
+
+Table of Content
+
+- [Approach 1]  Using Kahn's Algorithm
+- [Approach 2]  Using DFS - O(m+n) Time and O(m+n) Space
+
+### [Approach 1]  Using Kahn's Algorithm
+
+We  can solve this using Kahn’s Algorithm for Topological Sorting . We can think of each course as a node in a directed graph, and each prerequisite pair [a, b] as a directed edge from b → a .
+
+This means:
+
+- To take course a, you must complete course b first.
+- So, there is a directed edge from b (the prerequisite) to a (the dependent course).
+
+Once this graph is built, we have to find an ordering of courses such that every course appears after all its prerequisites this is exactly what topological sorting provides.
+
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+vector<int> findOrder(int n, vector<vector<int>>& prerequisites) {
+
+    // Initialize graph and in-degree array
+    vector<vector<int>> adj(n);
+    vector<int> inDegree(n, 0);
+
+    // Build the graph
+    for (auto& pre : prerequisites) {
+        int dest = pre[0];
+        int src = pre[1];
+        adj[src].push_back(dest);
+        inDegree[dest]++;
+    }
+
+    // Initialize the queue with
+    // courses having in-degree 0
+    queue<int> q;
+    for (int i = 0; i < n; i++) {
+        if (inDegree[i] == 0) {
+            q.push(i);
+        }
+    }
+
+    vector<int> order;
+
+    // Process nodes with BFS
+    while (!q.empty()) {
+        int current = q.front();
+        q.pop();
+        order.push_back(current);
+
+        // Reduce in-degree for neighbors
+        for (int neighbor : adj[current]) {
+            inDegree[neighbor]--;
+            if (inDegree[neighbor] == 0) {
+                q.push(neighbor);
+            }
+        }
+    }
+
+    // Check if the topological sort
+    // is possible (i.e., no cycle)
+    if (order.size() == n) {
+        return order;
+    }
+
+    return {};
+
+}
+
+int main() {
+    int n = 4;
+    vector<vector<int>> prerequisites = { {2, 0}, {2, 1}, {3, 2} };
+
+    vector<int> order = findOrder(n, prerequisites);
+
+    for (int course : order) {
+        cout << course << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.Queue;
+import java.util.LinkedList;
+
+ class GFG {
+
+     static ArrayList<Integer> findOrder(int n, int[][] prerequisites) {
+
+        // Initialize adjacency list
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<>());
+        }
+
+        int[] inDegree = new int[n];
+
+        // Build graph
+        for (int[] pre : prerequisites) {
+            int dest = pre[0];
+            int src = pre[1];
+            adj.get(src).add(dest);
+            inDegree[dest]++;
+        }
+
+        // Queue for BFS
+        Queue<Integer> q = new LinkedList<>();
+        for (int i = 0; i < n; i++) {
+            if (inDegree[i] == 0) {
+                q.add(i);
+            }
+        }
+
+        ArrayList<Integer> order = new ArrayList<>();
+
+        // Topological Sort using BFS
+        while (!q.isEmpty()) {
+            int current = q.poll();
+            order.add(current);
+
+            for (int neighbor : adj.get(current)) {
+                inDegree[neighbor]--;
+                if (inDegree[neighbor] == 0) {
+                    q.add(neighbor);
+                }
+            }
+        }
+
+        // Return result only if all courses can be completed
+        if (order.size() == n) {
+            return order;
+        }
+
+        return new ArrayList<>();
+    }
+
+    public static void main(String[] args) {
+        int n = 4;
+        int[][] prerequisites = {  {2, 0}, {2, 1}, {3, 2}  };
+
+        ArrayList<Integer> result = findOrder(n, prerequisites);
+
+        for (int course : result) {
+            System.out.print(course + " ");
+        }
+        System.out.println();
+    }
+}
+
+from collections import deque
+
+def findOrder(n, prerequisites):
+
+    # Initialize graph and in-degree array
+    adj = [[] for _ in range(n)]
+    inDegree = [0] * n
+
+    # Build the graph
+    for dest, src in prerequisites:
+        adj[src].append(dest)
+        inDegree[dest] += 1
+
+    # Initialize the queue with
+    # courses having in-degree 0
+    q = deque([i for i in range(n) if inDegree[i] == 0])
+
+    order = []
+
+    # Process nodes with BFS
+    while q:
+        current = q.popleft()
+        order.append(current)
+
+        # Reduce in-degree for neighbors
+        for neighbor in adj[current]:
+            inDegree[neighbor] -= 1
+            if inDegree[neighbor] == 0:
+                q.append(neighbor)
+
+    # Check if the topological sort
+    # is possible (i.e., no cycle)
+    if len(order) == n:
+        return order
+
+    return []
+
+if __name__ == "__main__":
+    n = 4
+    prerequisites = [[2, 0], [2, 1], [3, 2]]
+
+    order = findOrder(n, prerequisites)
+
+    print(" ".join(map(str, order)))
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    static List<int> findOrder(int n, int[,] prerequisites) {
+
+        // Initialize graph and in-degree array
+        List<List<int>> adj = new List<List<int>>();
+        for (int i = 0; i < n; i++) {
+            adj.Add(new List<int>());
+        }
+        int[] inDegree = new int[n];
+
+        // Build the graph
+        int m = prerequisites.GetLength(0);
+        for (int i = 0; i < m; i++) {
+            int dest = prerequisites[i, 0];
+            int src = prerequisites[i, 1];
+            adj[src].Add(dest);
+            inDegree[dest]++;
+        }
+
+        // Initialize the queue with courses having in-degree 0
+        Queue<int> q = new Queue<int>();
+        for (int i = 0; i < n; i++) {
+            if (inDegree[i] == 0) {
+                q.Enqueue(i);
+            }
+        }
+
+        List<int> order = new List<int>();
+
+        // Process nodes with BFS
+        while (q.Count > 0) {
+            int current = q.Dequeue();
+            order.Add(current);
+
+            // Reduce in-degree for neighbors
+            foreach (int neighbor in adj[current]) {
+                inDegree[neighbor]--;
+                if (inDegree[neighbor] == 0) {
+                    q.Enqueue(neighbor);
+                }
+            }
+        }
+
+        // Check if the topological sort is possible (i.e., no cycle)
+        if (order.Count == n) {
+            return order;
+        }
+
+        return new List<int>();
+    }
+
+    static void Main() {
+        int n = 4;
+        int[,] prerequisites = { {2, 0}, {2, 1}, {3, 2} };
+
+        var order = findOrder(n, prerequisites);
+
+        foreach (var course in order) {
+            Console.Write(course + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+const Denque = require("denque");
+
+function findOrder(n, prerequisites) {
+
+    // Initialize graph and in-degree array
+    const adj = Array.from({ length: n }, () => []);
+    const inDegree = Array(n).fill(0);
+
+    // Build the graph
+    for (const [dest, src] of prerequisites) {
+        adj[src].push(dest);
+        inDegree[dest]++;
+    }
+
+    // Initialize queue with courses having in-degree 0
+    const q = new Denque();
+    for (let i = 0; i < n; i++) {
+        if (inDegree[i] === 0) {
+            q.push(i);
+        }
+    }
+
+    const order = [];
+
+    // Process nodes with BFS
+    while (!q.isEmpty()) {
+        const current = q.shift();
+        order.push(current);
+
+        // Reduce in-degree for neighbors
+        for (const neighbor of adj[current]) {
+            inDegree[neighbor]--;
+            if (inDegree[neighbor] === 0) {
+                q.push(neighbor);
+            }
+        }
+    }
+
+    // Check if topological sort is possible (no cycle)
+    return order.length === n ? order : [];
+}
+
+// Driver Code
+const n = 4;
+const prerequisites = [[2, 0], [2, 1], [3, 2]];
+
+const order = findOrder(n, prerequisites);
+
+console.log(order.join(" "));
+
+0 1 2 3
+
+Time Complexity: O(n+m), where n is the number of courses and m is the size of prerequisite array . Auxiliary Space: O(n+m)
+
+### [Approach 2]  Using DFS - O(m+n) Time and O(m+n) Space
+
+> We can use DFS for topological sorting by treating courses as nodes and prerequisites as edges (b → a). DFS visits all prerequisites before a course, ensuring dependencies come first. By tracking visiting nodes, we can detect cycles. Adding courses to a stack after visiting dependencies and then reversing it gives a valid course order.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+// DFS to detect cycle and find topological order
+bool dfs(int node, vector<vector<int>>& adj,
+                vector<int>& visited, vector<int>& stack) {
+
+    // mark as visiting
+    visited[node] = 1;
+
+    for (int neighbor : adj[node]) {
+        if (visited[neighbor] == 1) {
+
+            // cycle detected
+            return false;
+        } else if (visited[neighbor] == 0) {
+            if (!dfs(neighbor, adj, visited, stack)) {
+
+                // cycle in deeper recursion
+                return false;
+            }
+        }
+    }
+
+    // mark as visited
+    visited[node] = 2;
+    stack.push_back(node);
+    return true;
+}
+
+// Function to find the topological order
+vector<int> findOrder(int n, vector<vector<int>>& prerequisites) {
+    vector<vector<int>> adj(n);
+    for (auto& pre : prerequisites) {
+        int dest = pre[0];
+        int src = pre[1];
+        adj[src].push_back(dest);
+    }
+
+     // 0 = unvisited, 1 = visiting, 2 = visited
+    vector<int> visited(n, 0);
+    vector<int> stack;
+
+    for (int i = 0; i < n; i++) {
+        if (visited[i] == 0) {
+            if (!dfs(i, adj, visited, stack)) {
+
+                // cycle detected
+                return {};
+            }
+        }
+    }
+
+    // reverse stack to get correct order
+    reverse(stack.begin(), stack.end());
+    return stack;
+}
+
+int main() {
+    int n = 4;
+    vector<vector<int>> prerequisites = {  {2, 0}, {2, 1}, {3, 2}  };
+
+    vector<int> order = findOrder(n, prerequisites);
+
+        for (int course : order) {
+            cout << course << " ";
+        }
+        cout << endl;
+
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+class GFG {
+
+     // DFS to detect cycle and find topological order
+     static boolean dfs(int node, ArrayList<ArrayList<Integer>> adj,
+                               int[] visited, ArrayList<Integer> stack) {
+
+        // mark as visiting
+        visited[node] = 1;
+
+        for (int neighbor : adj.get(node)) {
+            if (visited[neighbor] == 1) {
+
+                // cycle detected
+                return false;
+            } else if (visited[neighbor] == 0) {
+                if (!dfs(neighbor, adj, visited, stack)) {
+
+                    // cycle in deeper recursion
+                    return false;
+                }
+            }
+        }
+
+        // mark as visited
+        visited[node] = 2;
+        stack.add(node);
+        return true;
+    }
+
+    // Function to find the topological order
+    static ArrayList<Integer> findOrder(int n, int[][] prerequisites) {
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+        for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
+
+        for (int[] pre : prerequisites) {
+            int dest = pre[0];
+            int src = pre[1];
+            adj.get(src).add(dest);
+        }
+
+        int[] visited = new int[n];
+        ArrayList<Integer> stack = new ArrayList<>();
+
+        for (int i = 0; i < n; i++) {
+            if (visited[i] == 0) {
+                if (!dfs(i, adj, visited, stack)) {
+
+                    // cycle detected
+                    return new ArrayList<>();
+                }
+            }
+        }
+
+        // reverse to get the correct order
+        Collections.reverse(stack);
+        return stack;
+    }
+
+    public static void main(String[] args) {
+        int n = 4;
+        int[][] prerequisites = {  {2, 0}, {2, 1}, {3, 2}  };
+
+        ArrayList<Integer> order = findOrder(n, prerequisites);
+
+        for (int course : order) {
+            System.out.print(course + " ");
+        }
+        System.out.println();
+    }
+}
+
+# DFS to detect cycle and find topological order
+def dfs(node, adj, visited, stack):
+
+    # mark as visiting
+    visited[node] = 1
+
+    for neighbor in adj[node]:
+        if visited[neighbor] == 1:
+
+            # cycle detected
+            return False
+        elif visited[neighbor] == 0:
+            if not dfs(neighbor, adj, visited, stack):
+
+                # cycle in deeper recursion
+                return False
+
+    # mark as visited
+    visited[node] = 2
+    stack.append(node)
+    return True
+
+# Function to find the topological order
+def findOrder(n, prerequisites):
+    adj = [[] for _ in range(n)]
+    for pre in prerequisites:
+        dest, src = pre
+        adj[src].append(dest)
+
+     # 0 = unvisited, 1 = visiting, 2 = visited
+    visited = [0] * n
+    stack = []
+
+    for i in range(n):
+        if visited[i] == 0:
+            if not dfs(i, adj, visited, stack):
+
+                # cycle detected
+                return []
+
+    # reverse stack to get correct order
+    stack.reverse()
+    return stack
+
+if __name__ == "__main__":
+    n = 4
+    prerequisites = [[2, 0], [2, 1], [3, 2]]
+
+    order = findOrder(n, prerequisites)
+
+    for course in order:
+        print(course, end=" ")
+    print()
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // DFS to detect cycle and find topological order
+    static bool dfs(int node, List<List<int>> adj,
+                         int[] visited, List<int> stack) {
+
+        // mark as visiting
+        visited[node] = 1;
+
+        foreach (int neighbor in adj[node]) {
+            // cycle detected
+            if (visited[neighbor] == 1)
+                return false;
+            else if (visited[neighbor] == 0)
+            {
+                // cycle in deeper recursion
+                if (!dfs(neighbor, adj, visited, stack))
+                    return false;
+            }
+        }
+
+        visited[node] = 2; // mark as visited
+        stack.Add(node);
+        return true;
+    }
+
+    // Function to find the topological order
+    static List<int> findOrder(int n, int[,] prerequisites) {
+
+        // Adjacency list for the graph
+        var adj = new List<List<int>>(n);
+        for (int i = 0; i < n; i++)
+            adj.Add(new List<int>());
+
+        // Fill the adjacency list from prerequisites
+        for (int i = 0; i < prerequisites.GetLength(0); i++)
+        {
+            int dest = prerequisites[i, 0];
+            int src = prerequisites[i, 1];
+            adj[src].Add(dest);
+        }
+
+        // Visited array (0 = unvisited, 1 = visiting, 2 = visited)
+        var visited = new int[n];
+        var stack = new List<int>();
+
+        // Perform DFS for each node
+        for (int i = 0; i < n; i++) {
+            if (visited[i] == 0) {
+                if (!dfs(i, adj, visited, stack)) {
+
+                    // Cycle detected
+                    return new List<int>();
+                }
+            }
+        }
+
+        // Reverse the stack to get the correct order
+        stack.Reverse();
+        return stack;
+    }
+
+    static void Main() {
+
+        int n = 4;
+        int[,] prerequisites = { {2, 0}, {2, 1}, {3, 2} };
+
+        var order = findOrder(n, prerequisites);
+
+        foreach (var course in order) {
+            Console.Write(course + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+// DFS to detect cycle and find topological order
+function dfs(node, adj, visited, stack) {
+
+    // mark as visiting
+    visited[node] = 1;
+
+    for (let neighbor of adj[node]) {
+        if (visited[neighbor] === 1) {
+
+            // cycle detected
+            return false;
+        } else if (visited[neighbor] === 0) {
+            if (!dfs(neighbor, adj, visited, stack)) {
+
+                // cycle in deeper recursion
+                return false;
+            }
+        }
+    }
+
+    // mark as visited
+    visited[node] = 2;
+    stack.push(node);
+    return true;
+}
+
+// Function to find the topological order
+function findOrder(n, prerequisites) {
+    let adj = Array.from({ length: n }, () => []);
+    for (let pre of prerequisites) {
+        let dest = pre[0];
+        let src = pre[1];
+        adj[src].push(dest);
+    }
+
+    // 0 = unvisited, 1 = visiting, 2 = visited
+    let visited = new Array(n).fill(0);
+    let stack = [];
+
+    for (let i = 0; i < n; i++) {
+        if (visited[i] === 0) {
+            if (!dfs(i, adj, visited, stack)) {
+
+                // cycle detected
+                return [];
+            }
+        }
+    }
+
+    // reverse stack to get correct order
+    return stack.reverse();
+}
+
+// Driver Code
+let n = 4;
+let prerequisites = [
+        [2, 0],
+        [2, 1],
+        [3, 2]
+];
+
+let order = findOrder(n, prerequisites);
+
+console.log(order.join(" "));
+
+1 0 2 3

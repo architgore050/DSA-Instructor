@@ -1,0 +1,506 @@
+Source: https://www.geeksforgeeks.org/dsa/stable-marriage-problem/
+Title: Stable Marriage Problem
+
+The Stable Marriage Problem involves pairing n men and n women , where each person ranks all members of the opposite group by preference. The input consists of an integer n and two arrays men[] and women[], where men[i] and women[i] store the preference lists of the i-th man and woman respectively.
+
+Form matches such that no man and woman would both prefer each other over their current partners, meaning there is no pair who would rather be with each other than stay in their assigned matches. If no such pair exists, the matching is considered stable.
+
+Return a list of integers where the i-th element represents the index of the woman matched with the i-th man (0-based index).
+
+Grasping the Concept:
+
+Consider two men, m1 and m2 , and two women, w1 and w2 . Their preference lists are as follows:
+
+- m1 prefers w1 over w2 , and m2 prefers w1 over w2 .
+- w1 prefers m1 over m2 , and w2 prefers m1 over m2 .
+
+The matching {(m1, w2), (m2, w1)} is not stable because m1 and w1 prefer each other over their assigned partners. In contrast, the matching {(m1, w1), (m2, w2)} is stable , as no two individuals would rather be with each other than their assigned partners.
+
+Note: There can be multiple stable matching. For the sake of consistency, we need to produce output prioritizing men's preferences over women.
+
+Examples:
+
+> Input: n = 3, men[] = [[1, 0, 2], [2, 1, 0], [0, 2, 1]], women[] = [[1, 0, 2], [2, 1, 0], [0, 2, 1]] Output: [1, 2, 0] Explanation: The output array represents women numbers assigned to men. There are three stable solutions to this matching arrangement: Men get their first choice and women their third – (1, 2, 0) All participants get their second choice – (0, 1, 2); Women get their first choice and men their third – (2, 0, 1). As per the question,  we need to find a match that is best suited for men, so we produce output as [1, 2, 0] Input: n = 2, men[] = [[0, 1], [1, 0]], women[] = [[0, 1], [1, 0]] Output: [0, 1] Input: n = 4, men[] = [[3, 1, 2, 0], [1, 0, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]], women[] = [[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]] Output: [3, 1, 0, 2]
+
+### Gale-Shapley Algorithm - O(n^2) Time and O(n^2) Space
+
+> It is always possible to form stable marriages from lists of preferences to find a stable matching. Iterate through all free men. Each free man proposes to women one by one according to his preference list. If a woman is free, she becomes engaged to him. If she is already engaged, she compares her current partner with the new proposer and chooses the one she prefers more. If she prefers the new proposer, the previous engagement is broken and the rejected man becomes free again. This process continues until all men are engaged. The algorithm guarantees a stable matching.
+
+Finding the Perfect Match
+
+> Initialize all men and women to free while there exist a free man m who still has a woman w to propose to { w = highest-ranked woman on m's preference list to whom he has not yet proposed if w is free (m, w) become engaged else let m' be the man currently engaged to w if w prefers m to m' (m, w) become engaged m' becomes free else w remains engaged with m' }.
+
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+// Check if woman prefers m over current partner m1
+bool prefers(vector<vector<int>> &women, int w, int m, int m1)
+{
+    for (int i = 0; i < women[w].size(); i++)
+    {
+        if (women[w][i] == m)
+            return true;
+        if (women[w][i] == m1)
+            return false;
+    }
+    return false;
+}
+
+vector<int> stableMarriage(vector<vector<int>> &men, vector<vector<int>> &women)
+{
+    int n = men.size();
+
+    // women's current partners
+    vector<int> wPartner(n, -1);
+
+    // man's current partners
+    vector<int> mPartner(n, -1);
+
+    // next proposal index
+    vector<int> next(n, 0);
+
+    // Free Men
+    vector<bool> freeMan(n, true);
+
+    int freeCount = n;
+
+    while (freeCount > 0)
+    {
+        int m;
+        for (m = 0; m < n; m++)
+            if (freeMan[m])
+                break;
+
+        int w = men[m][next[m]];
+        next[m]++;
+
+        // If w is free
+        if (wPartner[w] == -1)
+        {
+            wPartner[w] = m;
+            mPartner[m] = w;
+            freeMan[m] = false;
+            freeCount--;
+        }
+        else
+        {
+            int m1 = wPartner[w];
+
+            // If w prefers m over current partner
+            if (prefers(women, w, m, m1))
+            {
+                wPartner[w] = m;
+                mPartner[m] = w;
+
+                freeMan[m] = false;
+                freeMan[m1] = true;
+            }
+        }
+    }
+
+    return mPartner;
+}
+
+int main()
+{
+    int n = 3;
+
+    vector<vector<int>> men = {
+        {1, 0, 2},
+        {2, 1, 0},
+        {0, 2, 1}
+    };
+
+    vector<vector<int>> women = {
+        {1, 0, 2},
+        {2, 1, 0},
+        {0, 2, 1}
+    };
+
+    vector<int> result = stableMarriage(men, women);
+
+    for (int i = 0; i < n; i++)
+    {
+        cout << result[i];
+        if (i != n - 1) cout << " ";
+    }
+
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class GFG {
+
+    // Check if woman prefers m over current partner m1
+    public static boolean prefers(int[][] women, int w, int m, int m1) {
+        for (int i = 0; i < women[w].length; i++) {
+            if (women[w][i] == m)
+                return true;
+            if (women[w][i] == m1)
+                return false;
+        }
+        return false;
+    }
+
+    public static int[] stableMarriage(int[][] men, int[][] women) {
+        int n = men.length;
+
+        int[] wPartner = new int[n];
+
+        // women's current partners
+        for (int i = 0; i < n; i++) wPartner[i] = -1;
+        int[] mPartner = new int[n];
+
+        // man's current partners
+        for (int i = 0; i < n; i++) mPartner[i] = -1;
+
+        // next proposal index
+        int[] next = new int[n];
+        boolean[] freeMan = new boolean[n];
+
+        // Free Men
+        for (int i = 0; i < n; i++) freeMan[i] = true;
+
+        int freeCount = n;
+
+        while (freeCount > 0) {
+            int m;
+            for (m = 0; m < n; m++)
+                if (freeMan[m])
+                    break;
+
+            int w = men[m][next[m]];
+            next[m]++;
+
+            // If w is free
+            if (wPartner[w] == -1) {
+                wPartner[w] = m;
+                mPartner[m] = w;
+                freeMan[m] = false;
+                freeCount--;
+            }
+            else {
+                int m1 = wPartner[w];
+
+                // If w prefers m over current partner
+                if (prefers(women, w, m, m1)) {
+                    wPartner[w] = m;
+                    mPartner[m] = w;
+
+                    freeMan[m] = false;
+                    freeMan[m1] = true;
+                }
+            }
+        }
+
+        return mPartner;
+    }
+
+    public static void main(String[] args) {
+        int n = 3;
+
+        int[][] men = {
+            {1, 0, 2},
+            {2, 1, 0},
+            {0, 2, 1}
+        };
+
+        int[][] women = {
+            {1, 0, 2},
+            {2, 1, 0},
+            {0, 2, 1}
+        };
+
+        int[] result = stableMarriage(men, women);
+
+        for (int i = 0; i < n; i++) {
+            System.out.print(result[i]);
+            if (i!= n - 1) System.out.print(" ");
+        }
+    }
+}
+
+from typing import List
+
+# Check if woman prefers m over current partner m1
+def prefers(women: List[List[int]], w: int, m: int, m1: int) -> bool:
+    for i in range(len(women[w])):
+        if women[w][i] == m:
+            return True
+        if women[w][i] == m1:
+            return False
+    return False
+
+def stableMarriage(men: List[List[int]], women: List[List[int]]) -> List[int]:
+    n = len(men)
+
+    # women's current partners
+    w_partner = [-1] * n
+
+    # man's current partners
+    m_partner = [-1] * n
+
+    # next proposal index
+    next_proposal = [0] * n
+
+    # Free Men
+    free_man = [True] * n
+
+    free_count = n
+
+    while free_count > 0:
+        m = next((m for m in range(n) if free_man[m]), None)
+
+        w = men[m][next_proposal[m]]
+        next_proposal[m] += 1
+
+        # If w is free
+        if w_partner[w] == -1:
+            w_partner[w] = m
+            m_partner[m] = w
+            free_man[m] = False
+            free_count -= 1
+        else:
+            m1 = w_partner[w]
+
+            # If w prefers m over current partner
+            if prefers(women, w, m, m1):
+                w_partner[w] = m
+                m_partner[m] = w
+
+                free_man[m] = False
+                free_man[m1] = True
+
+    return m_partner
+
+if __name__ == '__main__':
+    n = 3
+
+    men = [
+        [1, 0, 2],
+        [2, 1, 0],
+        [0, 2, 1]
+    ]
+
+    women = [
+        [1, 0, 2],
+        [2, 1, 0],
+        [0, 2, 1]
+    ]
+
+    result = stableMarriage(men, women)
+
+    for i in range(n):
+        print(result[i], end=''if i!= n - 1 else '\n')
+
+using System;
+using System.Collections.Generic;
+
+public class GFG
+{
+    // Check if woman prefers m over current partner m1
+    public static bool Prefers(List<List<int>> women, int w, int m, int m1)
+    {
+        for (int i = 0; i < women[w].Count; i++)
+        {
+            if (women[w][i] == m)
+                return true;
+            if (women[w][i] == m1)
+                return false;
+        }
+        return false;
+    }
+
+    public static List<int> stableMarriage(List<List<int>> men, List<List<int>> women)
+    {
+        int n = men.Count;
+
+        // women's current partners
+        List<int> wPartner = new List<int>(new int[n]);
+
+        // man's current partners
+        List<int> mPartner = new List<int>(new int[n]);
+
+        // next proposal index
+        List<int> next = new List<int>(new int[n]);
+
+        // Free Men
+        List<bool> freeMan = new List<bool>(new bool[n]);
+
+        for (int i = 0; i < n; i++)
+        {
+            wPartner[i] = -1;
+            mPartner[i] = -1;
+            next[i] = 0;
+            freeMan[i] = true;
+        }
+
+        int freeCount = n;
+
+        while (freeCount > 0)
+        {
+            int m = -1;
+            for (int i = 0; i < n; i++)
+            {
+                if (freeMan[i])
+                {
+                    m = i;
+                    break;
+                }
+            }
+
+            int w = men[m][next[m]];
+            next[m]++;
+
+            // If w is free
+            if (wPartner[w] == -1)
+            {
+                wPartner[w] = m;
+                mPartner[m] = w;
+                freeMan[m] = false;
+                freeCount--;
+            }
+            else
+            {
+                int m1 = wPartner[w];
+
+                // If w prefers m over current partner
+                if (Prefers(women, w, m, m1))
+                {
+                    wPartner[w] = m;
+                    mPartner[m] = w;
+
+                    freeMan[m] = false;
+                    freeMan[m1] = true;
+                }
+            }
+        }
+
+        return mPartner;
+    }
+
+    public static void Main()
+    {
+        int n = 3;
+
+        List<List<int>> men = new List<List<int>>
+        {
+            new List<int> { 1, 0, 2 },
+            new List<int> { 2, 1, 0 },
+            new List<int> { 0, 2, 1 }
+        };
+
+        List<List<int>> women = new List<List<int>>
+        {
+            new List<int> { 1, 0, 2 },
+            new List<int> { 2, 1, 0 },
+            new List<int> { 0, 2, 1 }
+        };
+
+        List<int> result = stableMarriage(men, women);
+
+        for (int i = 0; i < n; i++)
+        {
+            Console.Write(result[i]);
+            if (i!= n - 1)
+                Console.Write(" ");
+        }
+    }
+}
+
+// Check if woman prefers m over current partner m1
+function prefers(women, w, m, m1) {
+    for (let i = 0; i < women[w].length; i++) {
+        if (women[w][i] === m) {
+            return true;
+        }
+        if (women[w][i] === m1) {
+            return false;
+        }
+    }
+    return false;
+}
+
+function stableMarriage(men, women) {
+    const n = men.length;
+
+    // women's current partners
+    const wPartner = new Array(n).fill(-1);
+
+    // man's current partners
+    const mPartner = new Array(n).fill(-1);
+
+    // next proposal index
+    const nextProposal = new Array(n).fill(0);
+
+    // Free Men
+    const freeMan = new Array(n).fill(true);
+
+    let freeCount = n;
+
+    while (freeCount > 0) {
+        let m = null;
+        for (let i = 0; i < n; i++) {
+            if (freeMan[i]) {
+                m = i;
+                break;
+            }
+        }
+
+        const w = men[m][nextProposal[m]];
+        nextProposal[m] += 1;
+
+        // If w is free
+        if (wPartner[w] === -1) {
+            wPartner[w] = m;
+            mPartner[m] = w;
+            freeMan[m] = false;
+            freeCount -= 1;
+        } else {
+            const m1 = wPartner[w];
+
+            // If w prefers m over current partner
+            if (prefers(women, w, m, m1)) {
+                wPartner[w] = m;
+                mPartner[m] = w;
+
+                freeMan[m] = false;
+                freeMan[m1] = true;
+            }
+        }
+    }
+    return mPartner;
+}
+
+if (typeof require!== 'undefined' && typeof module!== 'undefined') {
+    const n = 3;
+
+    const men = [
+        [1, 0, 2],
+        [2, 1, 0],
+        [0, 2, 1]
+    ];
+
+    const women = [
+        [1, 0, 2],
+        [2, 1, 0],
+        [0, 2, 1]
+    ];
+
+    const result = stableMarriage(men, women);
+
+    for (let i = 0; i < n; i++) {
+        process.stdout.write(result[i] + (i!== n - 1 ? '' : '\n'));
+    }
+}
+
+1 2 0
+
+Interesting Facts About the Gale-Shapley Algorithm:
+
+- Originally designed to find the optimal matching between employers and employees based on their preferences.
+- The algorithm yields two extreme stable matchings: one favoring women when traversing from the beginning and another favoring men when traversing from the end.

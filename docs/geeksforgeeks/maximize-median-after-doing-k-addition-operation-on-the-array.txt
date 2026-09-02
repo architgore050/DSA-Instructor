@@ -1,0 +1,784 @@
+Source: https://www.geeksforgeeks.org/dsa/maximize-median-after-doing-k-addition-operation-on-the-array/
+Title: Maximize median after doing K addition operation on the Array
+
+Given an array arr[] of positive integers and a value k , you can perform at most k operations. In each operation, you may increment any one element of the array by 1. Find the maximum median that can be achieved after performing at most k such operations. Note: If the array has even length, the median is calculated as (arr[n/2] + arr[n/2 - 1]) / 2 after sorting the array.
+
+Example:
+
+> Input: arr[] = [1, 3, 4, 5], k = 3 Output: 5 Explanation: We can add +2 to the second element and +1 to the third element to get the array [1, 5, 5, 5]. After sorting, the array remains [1, 5, 5, 5]. Since the length is even, the median is (5 + 5) / 2 = 5. Input: arr[] = [1, 3, 6, 4, 2], k = 10 Output: 7 Explanation: After applying operations optimally, we can transform the array to [1, 3, 7, 7, 7] (one possible way). Sorted array becomes [1, 3, 7, 7, 7]. Since the length is odd, the median is the middle element 7.
+
+Table of Content
+
+- [Naive Approach] Linear Scan over Answer Space - O(n × k ) Time and O(1) Space
+- [Expected Approach] Binary Search on Answer
+
+### [Naive Approach] Linear Scan over Answer Space - O(n × k ) Time and O(1) Space
+
+The idea is to try every possible median value from the current median up to currentMedian + k, and check if we can make the median at least that value using ≤ k operations.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// check if we can make median at least 'target'
+// with <= k operations
+bool isPossible(vector<int>& arr, int target, int k){
+    int n = arr.size();
+    int used = 0;
+
+    if (n % 2 == 1) {
+        // for odd-sized array, update elements
+        // from middle to end
+        for (int i = n / 2; i < n; ++i) {
+            if (arr[i] < target)
+                used += (target - arr[i]);
+            if(used > k) break;
+        }
+    } else {
+        // for even-sized array, handle two
+        // middle elements
+        if (arr[n / 2] <= target) {
+            used += (target - arr[n / 2]);
+            used += (target - arr[n / 2 - 1]);
+        }
+        else {
+            used += (2 * target -
+                    (arr[n / 2] + arr[n / 2 - 1]));
+        }
+        // process remaining elements to the right
+        for (int i = n / 2 + 1; i < n; ++i) {
+            if (arr[i] < target)
+                used += (target - arr[i]);
+
+            if(used > k) break;
+        }
+    }
+
+    return used <= k;
+}
+
+int maximizeMedian(vector<int>& arr, int k){
+    int n = arr.size();
+    sort(arr.begin(), arr.end());
+
+    // compute current median
+    int iniMedian = arr[n / 2];
+    if (n % 2 == 0) {
+        iniMedian += arr[n / 2 - 1];
+        iniMedian /= 2;
+    }
+
+    int best = iniMedian;
+
+    // try all possible medians from currMedian
+    // to currMedian + k
+    for (int target = iniMedian;
+                target <= iniMedian + k; ++target){
+        if (isPossible(arr, target, k))
+            best = target;
+    }
+
+    return best;
+}
+
+int main() {
+    vector<int> arr = {1, 3, 4, 5};
+    int k = 3;
+
+    int result = maximizeMedian(arr, k);
+    cout << result << endl;
+
+    return 0;
+}
+
+import java.util.Arrays;
+
+class GfG {
+
+    // check if we can make median at least 'target'
+    // with <= k operations
+    static boolean isPossible(int[] arr, int target, int k) {
+        int n = arr.length;
+        int used = 0;
+
+        if (n % 2 == 1) {
+            // for odd-sized array, update elements
+            // from middle to end
+            for (int i = n / 2; i < n; ++i) {
+                if (arr[i] < target)
+                    used += (target - arr[i]);
+                if(used > k)
+                    break;
+            }
+        } else {
+            // for even-sized array, handle two
+            // middle elements
+            if (arr[n / 2] <= target) {
+                used += (target - arr[n / 2]);
+                used += (target - arr[n / 2 - 1]);
+            } else {
+                used += (2 * target -
+                         (arr[n / 2] + arr[n / 2 - 1]));
+            }
+            // process remaining elements to the right
+            for (int i = n / 2 + 1; i < n; ++i) {
+                if (arr[i] < target)
+                    used += (target - arr[i]);
+                if(used > k)
+                    break;
+            }
+        }
+
+        return used <= k;
+    }
+
+    static int maximizeMedian(int[] arr, int k) {
+        Arrays.sort(arr);
+        int n = arr.length;
+
+        // compute current median
+        int iniMedian = arr[n / 2];
+        if (n % 2 == 0) {
+            iniMedian += arr[n / 2 - 1];
+            iniMedian /= 2;
+        }
+
+        int best = iniMedian;
+
+        // try all possible medians from currMedian
+        // to currMedian + k
+        for (int target = iniMedian; target <= iniMedian + k; ++target) {
+            if (isPossible(arr, target, k))
+                best = target;
+        }
+
+        return best;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 3, 4, 5};
+        int k = 3;
+
+        int result = maximizeMedian(arr, k);
+        System.out.println(result);
+    }
+}
+
+# check if we can make median at least 'target'
+# with <= k operations
+def isPossible(arr, target, k):
+    n = len(arr)
+    used = 0
+
+    if n % 2 == 1:
+        # for odd-sized array, update elements
+        # from middle to end
+        for i in range(n // 2, n):
+            if arr[i] < target:
+                used += target - arr[i]
+            if used > k:
+                break;
+    else:
+        # for even-sized array, handle two
+        # middle elements
+        if arr[n // 2] <= target:
+            used += target - arr[n // 2]
+            used += target - arr[n // 2 - 1]
+        else:
+            used += 2 * target - \
+                    (arr[n // 2] + arr[n // 2 - 1])
+        # process remaining elements to the right
+        for i in range(n // 2 + 1, n):
+            if arr[i] < target:
+                used += target - arr[i]
+            if used > k:
+                break
+
+    return used <= k
+
+def maximizeMedian(arr, k):
+    arr.sort()
+    n = len(arr)
+
+    # compute current median
+    iniMedian = arr[n // 2]
+    if n % 2 == 0:
+        iniMedian += arr[n // 2 - 1]
+        iniMedian //= 2
+
+    best = iniMedian
+
+    # try all possible medians from currMedian
+    # to currMedian + k
+    for target in range(iniMedian, iniMedian + k + 1):
+        if isPossible(arr, target, k):
+            best = target
+
+    return best
+
+if __name__ == "__main__":
+    arr = [1, 3, 4, 5]
+    k = 3
+    result = maximizeMedian(arr, k)
+    print(result)
+
+using System;
+
+class GfG {
+
+    // check if we can make median at least 'target'
+    // with <= k operations
+    static bool isPossible(int[] arr, int target, int k) {
+        int n = arr.Length;
+        int used = 0;
+
+        if (n % 2 == 1) {
+            // for odd-sized array, update elements
+            // from middle to end
+            for (int i = n / 2; i < n; ++i) {
+                if (arr[i] < target)
+                    used += (target - arr[i]);
+
+                if(used > k){
+                    break;
+                }
+            }
+        } else {
+            // for even-sized array, handle two
+            // middle elements
+            if (arr[n / 2] <= target) {
+                used += (target - arr[n / 2]);
+                used += (target - arr[n / 2 - 1]);
+            } else {
+                used += (2 * target -
+                         (arr[n / 2] + arr[n / 2 - 1]));
+            }
+            // process remaining elements to the right
+            for (int i = n / 2 + 1; i < n; ++i) {
+                if (arr[i] < target)
+                    used += (target - arr[i]);
+
+                if(used > k){
+                    break;
+                }
+            }
+        }
+
+        return used <= k;
+    }
+
+    static int maximizeMedian(int[] arr, int k) {
+        Array.Sort(arr);
+        int n = arr.Length;
+
+        // compute current median
+        int iniMedian = arr[n / 2];
+        if (n % 2 == 0) {
+            iniMedian += arr[n / 2 - 1];
+            iniMedian /= 2;
+        }
+
+        int best = iniMedian;
+
+        // try all possible medians from currMedian
+        // to currMedian + k
+        for (int target = iniMedian; target <= iniMedian + k; ++target) {
+            if (isPossible(arr, target, k))
+                best = target;
+        }
+
+        return best;
+    }
+
+    static void Main() {
+        int[] arr = {1, 3, 4, 5};
+        int k = 3;
+
+        int result = maximizeMedian(arr, k);
+        Console.WriteLine(result);
+    }
+}
+
+// check if we can make median at least 'target'
+// with <= k operations
+function isPossible(arr, target, k) {
+    const n = arr.length;
+    let used = 0;
+
+    if (n % 2 === 1) {
+        // for odd-sized array, update elements
+        // from middle to end
+        for (let i = Math.floor(n / 2); i < n; ++i) {
+            if (arr[i] < target)
+                used += (target - arr[i]);
+
+            if(used > k){
+                break;
+            }
+        }
+    } else {
+        // for even-sized array, handle two
+        // middle elements
+        if (arr[n / 2] <= target) {
+            used += (target - arr[n / 2]);
+            used += (target - arr[n / 2 - 1]);
+        } else {
+            used += (2 * target -
+                    (arr[n / 2] + arr[n / 2 - 1]));
+        }
+        // process remaining elements to the right
+        for (let i = n / 2 + 1; i < n; ++i) {
+            if (arr[i] < target)
+                used += (target - arr[i]);
+
+            if(used > k){
+                break;
+            }
+        }
+    }
+
+    return used <= k;
+}
+
+function maximizeMedian(arr, k) {
+    arr.sort((a, b) => a - b);
+    const n = arr.length;
+
+    // compute current median
+    let iniMedian = arr[Math.floor(n / 2)];
+    if (n % 2 === 0) {
+        iniMedian += arr[n / 2 - 1];
+        iniMedian = Math.floor(iniMedian / 2);
+    }
+
+    let best = iniMedian;
+
+    // try all possible medians from currMedian
+    // to currMedian + k
+    for (let target = iniMedian; target <= iniMedian + k; ++target) {
+        if (isPossible(arr, target, k))
+            best = target;
+    }
+
+    return best;
+}
+
+// Driver Code
+const arr = [1, 3, 4, 5];
+const k = 3;
+const result = maximizeMedian(arr, k);
+console.log(result);
+
+5
+
+### [Expected Approach] Binary Search on Answer
+
+> The idea is to maximize the median by optimally using the given k increments. We sort the array so that increasing elements in the right half raises the median. We apply binary search on the answer, i.e., on possible median values from current median to median + k. For each candidate median, we check if it can be achieved within k by incrementing the required elements.
+
+Why the Feasibility Function is Monotonic:
+
+If it's possible to achieve a median value x using ≤ k operations, then it's also possible to achieve any median ≤ x, because it would require equal or fewer increments. Conversely, if it's not possible to achieve x, then any median > x will require more increments, so it will also be infeasible. This increasing/infeasible pattern makes the function monotonic, which is a key condition for applying binary search on the answer.
+
+Step-by-Step Implementation:
+
+- Sort the input array.
+- Compute the initial median (take the lower of the two middle values if even-sized).
+- Set binary search bounds:
+- low = iniMedian, high = iniMedian + k
+- While low <= high: => Compute mid = (low + high) / 2 as a candidate median. => Check if it’s possible to raise the median to mid using ≤ k total increments: -> Odd-sized array: Median is the middle element at index n/2. Increase it and all elements to its right if they are smaller than mid. -> Even-sized array: Median is the average of arr[n/2 - 1] and arr[n/2]. Both must be raised to at least mid. - If both are ≤ mid, add their differences. - If either is > mid, subtract their total from 2 * mid to compute the shortfall. => If possible: set bestMedian = mid, search right (low = mid + 1). => Else: search left (high = mid - 1).
+- Return the best median found.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// check if we can make the median at least
+// 'target' using at most 'k' operation
+bool isPossible(vector<int>& arr, int target, int k){
+    int n = arr.size();
+
+    if (n % 2 == 1) {
+        // for odd-sized array, consider elements from
+        // middle to end
+        for (int i = n / 2; i < n; ++i) {
+            if (arr[i] < target)
+                k -= (target - arr[i]);
+            if(k < 0) break;
+        }
+    }
+    else {
+        // for even-sized array, handle two middle
+        // elements separately
+        if (arr[n / 2] <= target) {
+            k -= (target - arr[n / 2]);
+            k -= (target - arr[n / 2 - 1]);
+        }
+        else {
+            k -= (2 * target -
+                    (arr[n / 2] + arr[n / 2 - 1]));
+        }
+        // process remaining elements to the right
+        for (int i = n / 2 + 1; i < n; ++i) {
+            if (arr[i] < target)
+                k -= (target - arr[i]);
+
+            if(k < 0) break;
+        }
+    }
+
+    return k >= 0;
+}
+
+// function to compute maximum achievable median
+// with given k operation
+int maximizeMedian(vector<int>& arr, int k) {
+    int n = arr.size();
+    sort(arr.begin(), arr.end());
+
+    // compute initial median floor if even length
+    int iniMedian = arr[n / 2];
+    if (n % 2 == 0) {
+        iniMedian += arr[n / 2 - 1];
+        iniMedian /= 2;
+    }
+
+    int low = iniMedian, high = iniMedian + k;
+    int bestMedian = iniMedian;
+
+    // binary search to find maximum
+    // achievable median
+    while (low <= high) {
+        int mid = (low + high) / 2;
+
+        if (isPossible(arr, mid, k)) {
+            bestMedian = mid;
+            low = mid + 1;
+        }
+        else {
+            high = mid - 1;
+        }
+    }
+
+    return bestMedian;
+}
+
+int main() {
+
+    vector<int> arr = {1, 3, 4, 5};
+    int k = 3;
+
+    int result = maximizeMedian(arr, k);
+    cout << result << endl;
+
+    return 0;
+}
+
+import java.util.Arrays;
+
+class GfG {
+
+    // check if we can make the median at least
+    // 'target' using at most 'k' operation
+    static boolean isPossible(int[] arr, int target, int k) {
+        int n = arr.length;
+
+        if (n % 2 == 1) {
+            // for odd-sized array, consider elements from
+            // middle to end
+            for (int i = n / 2; i < n; ++i) {
+                if (arr[i] < target)
+                    k -= (target - arr[i]);
+
+                if(k < 0) break;
+            }
+        } else {
+            // for even-sized array, handle two middle
+            // elements separately
+            if (arr[n / 2] <= target) {
+                k -= (target - arr[n / 2]);
+                k -= (target - arr[n / 2 - 1]);
+            } else {
+                k -= (2 * target - (arr[n / 2] + arr[n / 2 - 1]));
+            }
+            // process remaining elements to the right
+            for (int i = n / 2 + 1; i < n; ++i) {
+                if (arr[i] < target)
+                    k -= (target - arr[i]);
+
+                if(k < 0) break;
+            }
+        }
+
+        return k >= 0;
+    }
+
+    // function to compute maximum achievable median
+    // with given k operation
+    static int maximizeMedian(int[] arr, int k) {
+        int n = arr.length;
+        Arrays.sort(arr);
+
+        // compute initial median floor if even length
+        int iniMedian = arr[n / 2];
+        if (n % 2 == 0) {
+            iniMedian += arr[n / 2 - 1];
+            iniMedian /= 2;
+        }
+
+        int low = iniMedian, high = iniMedian + k;
+        int bestMedian = iniMedian;
+
+        // binary search to find maximum
+        // achievable median
+        while (low <= high) {
+            int mid = (low + high) / 2;
+
+            if (isPossible(arr, mid, k)) {
+                bestMedian = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        return bestMedian;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 3, 4, 5};
+        int k = 3;
+        int result = maximizeMedian(arr, k);
+        System.out.println(result);
+    }
+}
+
+# check if we can make the median at least
+# 'target' using at most 'k' operation
+def isPossible(arr, target, k):
+    n = len(arr)
+
+    if n % 2 == 1:
+        # for odd-sized array, consider elements from
+        # middle to end
+        for i in range(n // 2, n):
+            if arr[i] < target:
+                k -= (target - arr[i])
+
+            if k < 0:
+                break;
+    else:
+        # for even-sized array, handle two middle
+        # elements separately
+        if arr[n // 2] <= target:
+            k -= (target - arr[n // 2])
+            k -= (target - arr[n // 2 - 1])
+        else:
+            k -= (2 * target - (arr[n // 2] + \
+                             arr[n // 2 - 1]))
+        # process remaining elements to the right
+        for i in range(n // 2 + 1, n):
+            if arr[i] < target:
+                k -= (target - arr[i])
+
+            if k < 0:
+                break;
+
+    return k >= 0
+
+# function to compute maximum achievable median
+# with given k operation
+def maximizeMedian(arr, k):
+    arr.sort()
+    n = len(arr)
+
+    # compute initial median floor if even length
+    iniMedian = arr[n // 2]
+    if n % 2 == 0:
+        iniMedian += arr[n // 2 - 1]
+        iniMedian //= 2
+
+    low = iniMedian
+    high = iniMedian + k
+    bestMedian = iniMedian
+
+    # binary search to find maximum
+    # achievable median
+    while low <= high:
+        mid = (low + high) // 2
+
+        if isPossible(arr, mid, k):
+            bestMedian = mid
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return bestMedian
+
+if __name__ == "__main__":
+    arr = [1, 3, 4, 5]
+    k = 3
+    result = maximizeMedian(arr, k)
+    print(result)
+
+using System;
+
+class GfG {
+
+    // check if we can make the median at least
+    // 'target' using at most 'k' operation
+    static bool isPossible(int[] arr, int target, int k) {
+        int n = arr.Length;
+
+        if (n % 2 == 1) {
+            // for odd-sized array, consider elements from
+            // middle to end
+            for (int i = n / 2; i < n; ++i) {
+                if (arr[i] < target)
+                    k -= (target - arr[i]);
+
+                if(k < 0)  break;
+            }
+        } else {
+            // for even-sized array, handle two middle
+            // elements separately
+            if (arr[n / 2] <= target) {
+                k -= (target - arr[n / 2]);
+                k -= (target - arr[n / 2 - 1]);
+            } else {
+                k -= (2 * target -
+                            (arr[n / 2] + arr[n / 2 - 1]));
+            }
+            // process remaining elements to the right
+            for (int i = n / 2 + 1; i < n; ++i) {
+                if (arr[i] < target)
+                    k -= (target - arr[i]);
+
+                if(k < 0) break;
+
+            }
+        }
+
+        return k >= 0;
+    }
+
+    // function to compute maximum achievable median
+    // with given k operation
+    static int maximizeMedian(int[] arr, int k) {
+        Array.Sort(arr);
+        int n = arr.Length;
+
+        // compute initial median floor if even length
+        int iniMedian = arr[n / 2];
+        if (n % 2 == 0) {
+            iniMedian += arr[n / 2 - 1];
+            iniMedian /= 2;
+        }
+
+        int low = iniMedian, high = iniMedian + k;
+        int bestMedian = iniMedian;
+
+        // binary search to find maximum
+        // achievable median
+        while (low <= high) {
+            int mid = (low + high) / 2;
+
+            if (isPossible(arr, mid, k)) {
+                bestMedian = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        return bestMedian;
+    }
+
+    static void Main() {
+        int[] arr = {1, 3, 4, 5};
+        int k = 3;
+        int result = maximizeMedian(arr, k);
+        Console.WriteLine(result);
+    }
+}
+
+// check if we can make the median at least
+// 'target' using at most 'k' operation
+function isPossible(arr, target, k) {
+    let n = arr.length;
+
+    if (n % 2 === 1) {
+        // for odd-sized array, consider elements from
+        // middle to end
+        for (let i = Math.floor(n / 2); i < n; ++i) {
+            if (arr[i] < target)
+                k -= (target - arr[i]);
+
+            if(k < 0)
+                break;
+        }
+    } else {
+        // for even-sized array, handle two middle
+        // elements separately
+        if (arr[n / 2] <= target) {
+            k -= (target - arr[n / 2]);
+            k -= (target - arr[n / 2 - 1]);
+        } else {
+            k -= (2 * target -
+                    (arr[n / 2] + arr[n / 2 - 1]));
+        }
+        // process remaining elements to the right
+        for (let i = n / 2 + 1; i < n; ++i) {
+            if (arr[i] < target)
+                k -= (target - arr[i]);
+
+            if(k < 0)
+                break;
+        }
+    }
+
+    return k >= 0;
+}
+
+// function to compute maximum achievable median
+// with given k operation
+function maximizeMedian(arr, k) {
+    arr.sort((a, b) => a - b);
+    let n = arr.length;
+
+    // compute initial median floor if even length
+    let iniMedian = arr[Math.floor(n / 2)];
+    if (n % 2 === 0) {
+        iniMedian += arr[n / 2 - 1];
+        iniMedian = Math.floor(iniMedian / 2);
+    }
+
+    let low = iniMedian, high = iniMedian + k;
+    let bestMedian = iniMedian;
+
+    // binary search to find maximum
+    // achievable median
+    while (low <= high) {
+        let mid = Math.floor((low + high) / 2);
+
+        if (isPossible(arr, mid, k)) {
+            bestMedian = mid;
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    return bestMedian;
+}
+
+// Driver Code
+const arr = [1, 3, 4, 5];
+const k = 3;
+const result = maximizeMedian(arr, k);
+console.log(result);
+
+5
+
+Time Complexity: O(n × log k), binary search runs in log k steps over the possible median values. Each step calls isPossible, which checks up to n elements to validate the current median. Auxiliary Space: O(1), only a constant amount of extra space is used for variables. All operations are done in-place without additional data structures.

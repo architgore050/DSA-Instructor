@@ -1,0 +1,404 @@
+Source: https://www.geeksforgeeks.org/dsa/rat-in-a-maze/
+Title: Rat in a Maze
+
+Given a binary matrix maze[][] of size n × n containing values 0 and 1, find all possible paths for a rat to travel from the source cell (0, 0) to the destination cell (n - 1, n - 1). The rat can move in four directions: up, down, left, and right.
+
+- 1 represents an open cell through which the rat can move.
+- 0 represents a blocked cell that cannot be traversed.
+
+The rat can move only through open cells and cannot visit the same cell more than once in a path. Return all valid paths as strings consisting of 'U', 'D', 'L', and 'R', representing the sequence of moves taken by the rat.
+
+Note: Return the paths in lexicographically increasing order. If no valid path exists, return an empty list.
+
+Example:
+
+> Input: maze[][] = {{1, 0, 0, 0}, {1, 1, 0, 1}, {1, 1, 0, 0}, {0, 1, 1, 1}} Output: ["DDRDRR", "DRDDRR"] Explanation: There are two valid paths from the source cell (0, 0) to the destination cell (3, 3) Input: maze[][] = {{1, 0}, {0, 1}} Output: [] Explanation: No path exists as the destination cell (1, 1) is blocked.
+
+### [Approach] Using DFS and Backtracking - O(4^(n^2)) Time and O(n^2) Space
+
+> The idea is to use DFS to explore all possible paths from the source cell (0, 0) to the destination cell (n - 1, n - 1). For each cell, we try moving in all four directions: D, L, R, and U. To avoid revisiting a cell in the same path, the current cell is temporarily marked as blocked before exploring its neighbors. After exploring all possible paths through that cell, it is restored to its original value (backtracking). Whenever the destination is reached, the current path is added to the result. Finally, all collected paths are sorted to obtain lexicographical order.
+
+- Start DFS from (0, 0).
+- Temporarily mark the current cell as blocked.
+- Explore all valid neighboring cells in the order D, L, R, U.
+- Append the corresponding direction to the path and recurse.
+- When the destination is reached, store the path.
+- Backtrack by removing the last direction and restoring the current cell.
+- Sort all collected paths before returning the result.
+
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+// Directions: Down, Left, Right, Up
+string dir = "DLRU";
+int dr[4] = {1, 0, 0, -1};
+int dc[4] = {0, -1, 1, 0};
+
+// Check if a cell is valid (inside the maze and open)
+bool isValid(int r, int c, int n, vector<vector<int>>& maze) {
+    return r >= 0 && c >= 0 && r < n && c < n && maze[r][c];
+}
+
+// Function to find all valid paths
+void findPath(int r, int c, vector<vector<int>>& maze, string& path,
+                                vector<string>& res) {
+    int n = maze.size();
+
+    // If destination is reached, store the path
+    if (r == n - 1 && c == n - 1) {
+        res.push_back(path);
+        return;
+    }
+
+    // Mark current cell as visited
+    maze[r][c] = 0;
+
+    for (int i = 0; i < 4; i++) {
+        int nr = r + dr[i], nc = c + dc[i];
+        if (isValid(nr, nc, n, maze)) {
+            path.push_back(dir[i]);
+
+            // Move to the next cell recursively
+            findPath(nr, nc, maze, path, res);
+
+            // Backtrack
+            path.pop_back();
+        }
+    }
+
+    // Unmark current cell
+    maze[r][c] = 1;
+}
+
+// Function to find all paths and return them
+vector<string> ratInMaze(vector<vector<int>>& maze) {
+    vector<string> result;
+    int n = maze.size();
+    string path = "";
+
+    if (maze[0][0] == 1 && maze[n - 1][n - 1] == 1) {
+
+        // Start from (0,0)
+        findPath(0, 0, maze, path, result);
+    }
+
+    // Sort results lexicographically
+    sort(result.begin(), result.end());
+
+    return result;
+}
+
+int main() {
+    vector<vector<int>> maze = {
+        {1, 0, 0, 0},
+        {1, 1, 0, 1},
+        {1, 1, 0, 0},
+        {0, 1, 1, 1}
+    };
+
+    vector<string> result = ratInMaze(maze);
+
+    for (auto p : result) {
+        cout << p << " ";
+    }
+
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+class GFG {
+
+    // Directions: Down, Left, Right, Up
+    static String dir = "DLRU";
+    static int[] dr = {1, 0, 0, -1};
+    static int[] dc = {0, -1, 1, 0};
+
+    // Check if a cell is valid (inside the maze and open)
+    static boolean isValid(int r, int c, int n, int[][] maze) {
+        return r >= 0 && c >= 0 && r < n && c < n && maze[r][c] == 1;
+    }
+
+    // Function to find all valid paths
+    static void findPath(int r, int c, int[][] maze, StringBuilder path,
+                                    ArrayList<String> res) {
+        int n = maze.length;
+
+        // If destination is reached, store the path
+        if (r == n - 1 && c == n - 1) {
+            res.add(path.toString());
+            return;
+        }
+
+        // Mark current cell as visited
+        maze[r][c] = 0;
+
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr[i], nc = c + dc[i];
+            if (isValid(nr, nc, n, maze)) {
+                path.append(dir.charAt(i));
+
+                // Move to the next cell recursively
+                findPath(nr, nc, maze, path, res);
+
+                // Backtrack
+                path.deleteCharAt(path.length() - 1);
+            }
+        }
+
+        // Unmark current cell
+        maze[r][c] = 1;
+    }
+
+    // Function to find all paths and return them
+    static ArrayList<String> ratInMaze(int[][] maze) {
+        ArrayList<String> result = new ArrayList<>();
+        int n = maze.length;
+        StringBuilder path = new StringBuilder();
+
+        if (maze[0][0] == 1 && maze[n - 1][n - 1] == 1) {
+
+            // Start from (0,0)
+            findPath(0, 0, maze, path, result);
+        }
+
+        // Sort results lexicographically
+        Collections.sort(result);
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[][] maze = {
+            {1, 0, 0, 0},
+            {1, 1, 0, 1},
+            {1, 1, 0, 0},
+            {0, 1, 1, 1}
+        };
+
+        ArrayList<String> result = ratInMaze(maze);
+
+        for (String p : result) {
+            System.out.print(p + " ");
+        }
+    }
+}
+
+# Directions: Down, Left, Right, Up
+dir = "DLRU"
+dr = [1, 0, 0, -1]
+dc = [0, -1, 1, 0]
+
+# Check if a cell is valid (inside the maze and open)
+def isValid(r, c, n, maze):
+    return r >= 0 and c >= 0 and r < n and c < n and maze[r][c] == 1
+
+# Function to find all valid paths
+def findPath(r, c, maze, path, res):
+    n = len(maze)
+
+    # If destination is reached, store the path
+    if r == n - 1 and c == n - 1:
+        res.append("".join(path))
+        return
+
+    # Mark current cell as visited
+    maze[r][c] = 0
+
+    for i in range(4):
+        nr, nc = r + dr[i], c + dc[i]
+        if isValid(nr, nc, n, maze):
+            path.append(dir[i])
+
+            # Move to the next cell recursively
+            findPath(nr, nc, maze, path, res)
+
+            # Backtrack
+            path.pop()
+
+    # Unmark current cell
+    maze[r][c] = 1
+
+# Function to find all paths and return them
+def ratInMaze(maze):
+    result = []
+    n = len(maze)
+    path = []
+
+    if maze[0][0] == 1 and maze[n - 1][n - 1] == 1:
+
+        # Start from (0,0)
+        findPath(0, 0, maze, path, result)
+
+    # Sort results lexicographically
+    result.sort()
+
+    return result
+
+if __name__ == "__main__":
+    maze = [
+        [1, 0, 0, 0],
+        [1, 1, 0, 1],
+        [1, 1, 0, 0],
+        [0, 1, 1, 1]
+    ]
+
+    result = ratInMaze(maze)
+
+    for p in result:
+        print(p, end=" ")
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // Directions: Down, Left, Right, Up
+    static string dir = "DLRU";
+    static int[] dr = { 1, 0, 0, -1 };
+    static int[] dc = { 0, -1, 1, 0 };
+
+    // Check if a cell is valid (inside the maze and open)
+    static bool isValid(int r, int c, int n, int[,] maze) {
+        return r >= 0 && c >= 0 && r < n && c < n && maze[r, c] == 1;
+    }
+
+    // Function to find all valid paths
+    static void findPath(int r, int c, int[,] maze, List<char> path, List<string> res) {
+        int n = maze.GetLength(0);
+
+        // If destination is reached, store the path
+        if (r == n - 1 && c == n - 1) {
+            res.Add(new string(path.ToArray()));
+            return;
+        }
+
+        // Mark current cell as visited
+        maze[r, c] = 0;
+
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr[i], nc = c + dc[i];
+            if (isValid(nr, nc, n, maze)) {
+                path.Add(dir[i]);
+
+                // Move to the next cell recursively
+                findPath(nr, nc, maze, path, res);
+
+                // Backtrack
+                path.RemoveAt(path.Count - 1);
+            }
+        }
+
+        // Unmark current cell
+        maze[r, c] = 1;
+    }
+
+    // Function to find all paths and return them
+    static List<string> ratInMaze(int[,] maze) {
+        List<string> result = new List<string>();
+        int n = maze.GetLength(0);
+        List<char> path = new List<char>();
+
+        if (maze[0, 0] == 1 && maze[n - 1, n - 1] == 1)
+        {
+            // Start from (0,0)
+            findPath(0, 0, maze, path, result);
+        }
+
+        // Sort results lexicographically
+        result.Sort();
+
+        return result;
+    }
+
+    public static void Main(string[] args) {
+        int[,] maze = {
+            {1, 0, 0, 0},
+            {1, 1, 0, 1},
+            {1, 1, 0, 0},
+            {0, 1, 1, 1}
+        };
+
+        List<string> result = ratInMaze(maze);
+
+        foreach (string p in result) {
+            Console.Write(p + " ");
+        }
+    }
+}
+
+// Directions: Down, Left, Right, Up
+const dir = "DLRU";
+const dr = [1, 0, 0, -1];
+const dc = [0, -1, 1, 0];
+
+// Check if a cell is valid (inside the maze and open)
+function isValid(r, c, n, maze) {
+    return r >= 0 && c >= 0 && r < n && c < n && maze[r][c] === 1;
+}
+
+// Function to find all valid paths
+function findPath(r, c, maze, path, res) {
+    const n = maze.length;
+
+    // If destination is reached, store the path
+    if (r === n - 1 && c === n - 1) {
+        res.push(path);
+        return;
+    }
+
+    // Mark current cell as visited
+    maze[r][c] = 0;
+
+    for (let i = 0; i < 4; i++) {
+        const nr = r + dr[i], nc = c + dc[i];
+        if (isValid(nr, nc, n, maze)) {
+            path += dir[i];
+
+            // Move to the next cell recursively
+            findPath(nr, nc, maze, path, res);
+
+            // Backtrack
+            path = path.slice(0, -1);
+        }
+    }
+
+    // Unmark current cell
+    maze[r][c] = 1;
+}
+
+// Function to find all paths and return them
+function ratInMaze(maze) {
+    let result = [];
+    const n = maze.length;
+    let path = "";
+
+    if (maze[0][0] === 1 && maze[n - 1][n - 1] === 1) {
+
+        // Start from (0,0)
+        findPath(0, 0, maze, path, result);
+    }
+
+    // Sort results lexicographically
+    result.sort();
+
+    return result;
+}
+
+// Driver Code
+const maze = [
+    [1, 0, 0, 0],
+    [1, 1, 0, 1],
+    [1, 1, 0, 0],
+    [0, 1, 1, 1]
+];
+
+const result = ratInMaze(maze);
+
+console.log(result.join(" "));
+
+DDRDRR DRDDRR

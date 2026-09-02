@@ -1,0 +1,434 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-number-of-deques-required-to-make-the-array-sorted/
+Title: Minimum deques to make array sorted
+
+Given an integer array arr[] . The task is to calculate the minimum number of deques required to make the array sorted .
+
+Example :
+
+> Input : arr[] = [3, 6, 0, 9, 5, 4] Output : 2 Explanation : All elements can be placed into 2 deques while maintaining sorted order: Start deque d1 with 3 → d1 = [3] Start deque d2 with 6 → d2 = [6] Push 0 to the front of d1 → d1 = [0, 3] Push 9 to the back of d2 → d2 = [6, 9] Push 5 to the front of d2 → d2 = [5, 6, 9] Push 4 to the front of d2 → d2 = [4, 5, 6, 9] Input : arr[] = [50, 45, 55, 60, 65, 40, 70, 35, 30, 75] Output : 1 Explanation: All elements can be placed into a single deque while maintaining sorted order: Insert 50 → [50] Push 45 to front → [45, 50] Push 55 to back → [45, 50, 55] Continue pushing to front or back as suitable → Final deque: [30, 35, 40, 45, 50, 55, 60, 65, 70, 75]
+
+### Approach :
+
+> The idea is to use greedy insertion into the minimum number of deques such that each deque maintains a sorted order from front to back. The thought process is to iterate through the array and try to place each element at the front or back of an existing deque, only if doing so won’t violate the potential future placements. This is done by checking if any intervening element would make the insertion invalid. If it can't fit into any existing deque, we create a new one.
+
+Steps to implement the above idea:
+
+- Initialize two arrays: fronts and backs to track front and back values of all current deques.
+- Loop through each element in the input arr and try to insert it into an existing deque.
+- For each arr[i] , first check if it can be pushed at the front of any deque by comparing with fronts[j] .
+- If valid for front insertion, update fronts[j] and mark the element as inserted .
+- If not inserted, check if it can be pushed at the back of any deque using the same logic with backs[j] .
+- If neither insertion is valid, create a new deque by adding the element to both fronts and backs .
+- After traversing the entire array, return the size of fronts , which gives the minimum number of deques required.
+
+// C++ code to find the minimum number of
+// deques required to make the array sorted
+// using greedy approach
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int minDeques(vector<int> &arr) {
+
+    int n = arr.size();
+
+    // Store front and back elements of all active deques
+    vector<int> fronts, backs;
+
+    for (int i = 0; i < n; i++) {
+
+        bool inserted = false;
+
+        // Try to place current element at front of some deque
+        for (int j = 0; j < fronts.size(); j++) {
+
+            // If arr[i] < fronts[j], it's a potential front
+            if (arr[i] < fronts[j]) {
+                bool valid = true;
+
+                // Check all elements between i and j in original array
+                for (int k = i + 1; k < n; k++) {
+                    if (arr[k] > arr[i] && arr[k] < fronts[j]) {
+                        valid = false;
+                        break;
+                    }
+                }
+
+                // Valid front insertion
+                if (valid) {
+                    fronts[j] = arr[i];
+                    inserted = true;
+                    break;
+                }
+            }
+        }
+
+        // Try to place current element at back of some deque
+        if (!inserted) {
+            for (int j = 0; j < backs.size(); j++) {
+
+                // If arr[i] > backs[j], it's a potential back
+                if (arr[i] > backs[j]) {
+                    bool valid = true;
+
+                    // Check all elements between i and j in original array
+                    for (int k = i + 1; k < n; k++) {
+                        if (arr[k] < arr[i] && arr[k] > backs[j]) {
+                            valid = false;
+                            break;
+                        }
+                    }
+
+                    // Valid back insertion
+                    if (valid) {
+                        backs[j] = arr[i];
+                        inserted = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // If not inserted into any existing deque, start a new one
+        if (!inserted) {
+            fronts.push_back(arr[i]);
+            backs.push_back(arr[i]);
+        }
+    }
+
+    return fronts.size();
+}
+
+// Driver code
+int main() {
+
+    vector<int> arr = {3, 6, 0, 9, 5, 4};
+
+    cout << minDeques(arr);
+
+    return 0;
+}
+
+// Java code to find the minimum number of
+// deques required to make the array sorted
+// using greedy approach
+import java.util.*;
+
+class GfG {
+
+    static int minDeques(int[] arr) {
+
+        int n = arr.length;
+
+        // Store front and back elements of all active deques
+        ArrayList<Integer> fronts = new ArrayList<>();
+        ArrayList<Integer> backs = new ArrayList<>();
+
+        for (int i = 0; i < n; i++) {
+
+            boolean inserted = false;
+
+            // Try to place current element at front of some deque
+            for (int j = 0; j < fronts.size(); j++) {
+
+                // If arr[i] < fronts[j], it's a potential front
+                if (arr[i] < fronts.get(j)) {
+                    boolean valid = true;
+
+                    // Check all elements between i and j in original array
+                    for (int k = i + 1; k < n; k++) {
+                        if (arr[k] > arr[i] && arr[k] < fronts.get(j)) {
+                            valid = false;
+                            break;
+                        }
+                    }
+
+                    // Valid front insertion
+                    if (valid) {
+                        fronts.set(j, arr[i]);
+                        inserted = true;
+                        break;
+                    }
+                }
+            }
+
+            // Try to place current element at back of some deque
+            if (!inserted) {
+                for (int j = 0; j < backs.size(); j++) {
+
+                    // If arr[i] > backs[j], it's a potential back
+                    if (arr[i] > backs.get(j)) {
+                        boolean valid = true;
+
+                        // Check all elements between i and j in original array
+                        for (int k = i + 1; k < n; k++) {
+                            if (arr[k] < arr[i] && arr[k] > backs.get(j)) {
+                                valid = false;
+                                break;
+                            }
+                        }
+
+                        // Valid back insertion
+                        if (valid) {
+                            backs.set(j, arr[i]);
+                            inserted = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If not inserted into any existing deque, start a new one
+            if (!inserted) {
+                fronts.add(arr[i]);
+                backs.add(arr[i]);
+            }
+        }
+
+        return fronts.size();
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {3, 6, 0, 9, 5, 4};
+
+        System.out.print(minDeques(arr));
+    }
+}
+
+# Python code to find the minimum number of
+# deques required to make the array sorted
+# using greedy approach
+
+def minDeques(arr):
+
+    n = len(arr)
+
+    # Store front and back elements of all active deques
+    fronts, backs = [], []
+
+    for i in range(n):
+
+        inserted = False
+
+        # Try to place current element at front of some deque
+        for j in range(len(fronts)):
+
+            # If arr[i] < fronts[j], it's a potential front
+            if arr[i] < fronts[j]:
+                valid = True
+
+                # Check all elements between i and j in original array
+                for k in range(i + 1, n):
+                    if arr[k] > arr[i] and arr[k] < fronts[j]:
+                        valid = False
+                        break
+
+                # Valid front insertion
+                if valid:
+                    fronts[j] = arr[i]
+                    inserted = True
+                    break
+
+        # Try to place current element at back of some deque
+        if not inserted:
+            for j in range(len(backs)):
+
+                # If arr[i] > backs[j], it's a potential back
+                if arr[i] > backs[j]:
+                    valid = True
+
+                    # Check all elements between i and j in original array
+                    for k in range(i + 1, n):
+                        if arr[k] < arr[i] and arr[k] > backs[j]:
+                            valid = False
+                            break
+
+                    # Valid back insertion
+                    if valid:
+                        backs[j] = arr[i]
+                        inserted = True
+                        break
+
+        # If not inserted into any existing deque, start a new one
+        if not inserted:
+            fronts.append(arr[i])
+            backs.append(arr[i])
+
+    return len(fronts)
+
+if __name__ == "__main__":
+
+    arr = [3, 6, 0, 9, 5, 4]
+
+    print(minDeques(arr))
+
+// C# code to find the minimum number of
+// deques required to make the array sorted
+// using greedy approach
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static int minDeques(int[] arr) {
+
+        int n = arr.Length;
+
+        // Store front and back elements of all active deques
+        List<int> fronts = new List<int>();
+        List<int> backs = new List<int>();
+
+        for (int i = 0; i < n; i++) {
+
+            bool inserted = false;
+
+            // Try to place current element at front of some deque
+            for (int j = 0; j < fronts.Count; j++) {
+
+                // If arr[i] < fronts[j], it's a potential front
+                if (arr[i] < fronts[j]) {
+                    bool valid = true;
+
+                    // Check all elements between i and j in original array
+                    for (int k = i + 1; k < n; k++) {
+                        if (arr[k] > arr[i] && arr[k] < fronts[j]) {
+                            valid = false;
+                            break;
+                        }
+                    }
+
+                    // Valid front insertion
+                    if (valid) {
+                        fronts[j] = arr[i];
+                        inserted = true;
+                        break;
+                    }
+                }
+            }
+
+            // Try to place current element at back of some deque
+            if (!inserted) {
+                for (int j = 0; j < backs.Count; j++) {
+
+                    // If arr[i] > backs[j], it's a potential back
+                    if (arr[i] > backs[j]) {
+                        bool valid = true;
+
+                        // Check all elements between i and j in original array
+                        for (int k = i + 1; k < n; k++) {
+                            if (arr[k] < arr[i] && arr[k] > backs[j]) {
+                                valid = false;
+                                break;
+                            }
+                        }
+
+                        // Valid back insertion
+                        if (valid) {
+                            backs[j] = arr[i];
+                            inserted = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If not inserted into any existing deque, start a new one
+            if (!inserted) {
+                fronts.Add(arr[i]);
+                backs.Add(arr[i]);
+            }
+        }
+
+        return fronts.Count;
+    }
+
+    static void Main() {
+        int[] arr = {3, 6, 0, 9, 5, 4};
+
+        Console.Write(minDeques(arr));
+    }
+}
+
+// JavaScript code to find the minimum number of
+// deques required to make the array sorted
+// using greedy approach
+
+function minDeques(arr) {
+
+    let n = arr.length;
+
+    // Store front and back elements of all active deques
+    let fronts = [], backs = [];
+
+    for (let i = 0; i < n; i++) {
+
+        let inserted = false;
+
+        // Try to place current element at front of some deque
+        for (let j = 0; j < fronts.length; j++) {
+
+            // If arr[i] < fronts[j], it's a potential front
+            if (arr[i] < fronts[j]) {
+                let valid = true;
+
+                // Check all elements between i and j in original array
+                for (let k = i + 1; k < n; k++) {
+                    if (arr[k] > arr[i] && arr[k] < fronts[j]) {
+                        valid = false;
+                        break;
+                    }
+                }
+
+                // Valid front insertion
+                if (valid) {
+                    fronts[j] = arr[i];
+                    inserted = true;
+                    break;
+                }
+            }
+        }
+
+        // Try to place current element at back of some deque
+        if (!inserted) {
+            for (let j = 0; j < backs.length; j++) {
+
+                // If arr[i] > backs[j], it's a potential back
+                if (arr[i] > backs[j]) {
+                    let valid = true;
+
+                    // Check all elements between i and j in original array
+                    for (let k = i + 1; k < n; k++) {
+                        if (arr[k] < arr[i] && arr[k] > backs[j]) {
+                            valid = false;
+                            break;
+                        }
+                    }
+
+                    // Valid back insertion
+                    if (valid) {
+                        backs[j] = arr[i];
+                        inserted = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // If not inserted into any existing deque, start a new one
+        if (!inserted) {
+            fronts.push(arr[i]);
+            backs.push(arr[i]);
+        }
+    }
+
+    return fronts.length;
+}
+
+// Driver Code
+let arr = [3, 6, 0, 9, 5, 4];
+
+console.log(minDeques(arr));
+
+2
+
+Time Complexity: O(n²), Each element may scan ahead in the array to check valid front/back insertion. Space Complexity: O(n), Arrays fronts and backs may grow up to size n in worst case.

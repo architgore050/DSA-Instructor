@@ -1,0 +1,568 @@
+Source: https://www.geeksforgeeks.org/dsa/minimize-cash-flow-among-given-set-friends-borrowed-money/
+Title: Minimize Cash Flow
+
+Given n number of friends who have to give or take some amount of money from one another. The task is to design an algorithm by which the total cash flow among all the friends is minimized to settle all debts.
+
+Examples:
+
+> Input: transaction = [[0, 1000, 2000], [0, 0, 5000], [0, 0, 0]] Output: [[0, 0, 3000], [0, 0, 4000], [0, 0, 0]] Input: transaction = [[0, 100, 0], [0, 0, 100], [100, 0, 0]] Output: [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+
+Approach:
+
+> The idea is to calculate each person's net balance and then optimizing cash flow between individuals who owe money (debtors) and those who are owed money (creditors), ensuring that money flows directly from the highest debtors to the highest creditors until all debts are settled.
+
+Step by step approach:
+
+1. Calculate the net amount for each person by subtracting outgoing money from incoming money
+2. Separate people into two groups - those who need to pay and those who need to receive
+3. Sort both groups by amount (highest values first) using priority queues
+4. Repeatedly match the highest debtor with the highest creditor
+5. Transfer the minimum of what one needs to pay and what one needs to receive
+6. Continue until all debts are settled with minimized transactions
+
+// C++ program to Minimize Cash Flow among a given set
+// of friends who have borrowed money from each other.
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<vector<int>> minCashFlow(vector<vector<int>> &transaction) {
+    int n = transaction.size();
+
+    // Priority queues to track people who
+    // need to give money and receive money
+    // Vector format: {amount, personIndex}
+    priority_queue<vector<int>> debtors, creditors;
+
+    // Calculate net amount for each person
+    for (int personId = 0; personId < n; personId++) {
+        int netAmount = 0;
+
+        // Add all incoming money
+        for (int fromPerson = 0; fromPerson < n; fromPerson++)
+            netAmount += transaction[fromPerson][personId];
+
+        // Subtract all outgoing money
+        for (int toPerson = 0; toPerson < n; toPerson++)
+            netAmount -= transaction[personId][toPerson];
+
+        // If net amount is negative, person needs to give money
+        if (netAmount < 0)
+            debtors.push({abs(netAmount), personId});
+
+        // If net amount is positive, person needs to receive money
+        else if (netAmount > 0)
+            creditors.push({netAmount, personId});
+    }
+
+    // Initialize result matrix with zeros
+    vector<vector<int>> result(n, vector<int>(n, 0));
+
+    // Process all transactions until no more debtors left
+    while (!debtors.empty()) {
+        int debtAmount = debtors.top()[0];
+        int creditAmount = creditors.top()[0];
+        int debtorId = debtors.top()[1];
+        int creditorId = creditors.top()[1];
+
+        // Remove top entries from both queues
+        debtors.pop();
+        creditors.pop();
+
+        // Find minimum of debt and credit amounts
+        int transferAmount = min(debtAmount, creditAmount);
+
+        // Record the transaction in result matrix
+        result[debtorId][creditorId] = transferAmount;
+
+        // Update remaining amounts
+        debtAmount -= transferAmount;
+        creditAmount -= transferAmount;
+
+        // If debtor still has debt remaining, put back in queue
+        if (debtAmount > 0) {
+            debtors.push({debtAmount, debtorId});
+        }
+
+        // If creditor still needs to receive more, put back in queue
+        else if (creditAmount > 0) {
+            creditors.push({creditAmount, creditorId});
+        }
+    }
+
+    return result;
+}
+
+int main() {
+    int n = 3;
+    vector<vector<int>> transaction = {
+        {0, 1000, 2000},
+        {0, 0, 5000},
+        {0, 0, 0}};
+
+    vector<vector<int>> result = minCashFlow(transaction);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << result[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
+
+// Java program to Minimize Cash Flow among a given set
+// of friends who have borrowed money from each other.
+import java.util.*;
+
+class GfG {
+
+    // Function to minimize cash flow
+    static int[][] minCashFlow(int[][] transaction) {
+        int n = transaction.length;
+
+        // Priority queues to track people who
+        // need to give money and receive money
+        // Array format: {amount, personIndex}
+        PriorityQueue<int[]> debtors =
+        new PriorityQueue<>((a, b) -> b[0] - a[0]);
+        PriorityQueue<int[]> creditors =
+        new PriorityQueue<>((a, b) -> b[0] - a[0]);
+
+        // Calculate net amount for each person
+        for (int personId = 0; personId < n; personId++) {
+            int netAmount = 0;
+
+            // Add all incoming money
+            for (int fromPerson = 0; fromPerson < n; fromPerson++)
+                netAmount += transaction[fromPerson][personId];
+
+            // Subtract all outgoing money
+            for (int toPerson = 0; toPerson < n; toPerson++)
+                netAmount -= transaction[personId][toPerson];
+
+            // If net amount is negative, person needs to give money
+            if (netAmount < 0)
+                debtors.add(new int[]{Math.abs(netAmount), personId});
+
+            // If net amount is positive, person needs to receive money
+            else if (netAmount > 0)
+                creditors.add(new int[]{netAmount, personId});
+        }
+
+        // Initialize result matrix with zeros
+        int[][] result = new int[n][n];
+
+        // Process all transactions until no more debtors left
+        while (!debtors.isEmpty()) {
+            int[] debtor = debtors.poll();
+            int[] creditor = creditors.poll();
+            int debtAmount = debtor[0];
+            int creditAmount = creditor[0];
+            int debtorId = debtor[1];
+            int creditorId = creditor[1];
+
+            // Find minimum of debt and credit amounts
+            int transferAmount = Math.min(debtAmount, creditAmount);
+
+            // Record the transaction in result matrix
+            result[debtorId][creditorId] = transferAmount;
+
+            // Update remaining amounts
+            debtAmount -= transferAmount;
+            creditAmount -= transferAmount;
+
+            // If debtor still has debt remaining, put back in queue
+            if (debtAmount > 0)
+                debtors.add(new int[]{debtAmount, debtorId});
+
+            // If creditor still needs to receive more, put back in queue
+            else if (creditAmount > 0)
+                creditors.add(new int[]{creditAmount, creditorId});
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int n = 3;
+        int[][] transaction = {
+            {0, 1000, 2000},
+            {0, 0, 5000},
+            {0, 0, 0}};
+
+        int[][] result = minCashFlow(transaction);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                System.out.print(result[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+
+# Python program to Minimize Cash Flow among a given set
+# of friends who have borrowed money from each other.
+import heapq
+
+def minCashFlow(transaction):
+    n = len(transaction)
+
+    # Priority queues to track people who
+    # need to give money and receive money
+    # Tuple format: (-amount, personIndex)
+    debtors = []
+    creditors = []
+
+    # Calculate net amount for each person
+    for personId in range(n):
+        netAmount = 0
+
+        # Add all incoming money
+        for fromPerson in range(n):
+            netAmount += transaction[fromPerson][personId]
+
+        # Subtract all outgoing money
+        for toPerson in range(n):
+            netAmount -= transaction[personId][toPerson]
+
+        # If net amount is negative, person needs to give money
+        if netAmount < 0:
+            heapq.heappush(debtors, (-abs(netAmount), personId))
+
+        # If net amount is positive, person needs to receive money
+        elif netAmount > 0:
+            heapq.heappush(creditors, (-netAmount, personId))
+
+    # Initialize result matrix with zeros
+    result = [[0 for _ in range(n)] for _ in range(n)]
+
+    # Process all transactions until no more debtors left
+    while debtors:
+        debtAmount, debtorId = heapq.heappop(debtors)
+        creditAmount, creditorId = heapq.heappop(creditors)
+
+        debtAmount = -debtAmount
+        creditAmount = -creditAmount
+
+        # Find minimum of debt and credit amounts
+        transferAmount = min(debtAmount, creditAmount)
+
+        # Record the transaction in result matrix
+        result[debtorId][creditorId] = transferAmount
+
+        # Update remaining amounts
+        debtAmount -= transferAmount
+        creditAmount -= transferAmount
+
+        # If debtor still has debt remaining, put back in queue
+        if debtAmount > 0:
+            heapq.heappush(debtors, (-debtAmount, debtorId))
+
+        # If creditor still needs to receive more, put back in queue
+        elif creditAmount > 0:
+            heapq.heappush(creditors, (-creditAmount, creditorId))
+
+    return result
+
+if __name__ == "__main__":
+    n = 3
+    transaction = [
+        [0, 1000, 2000],
+        [0, 0, 5000],
+        [0, 0, 0]
+    ]
+
+    result = minCashFlow(transaction)
+    for i in range(n):
+        for j in range(n):
+            print(result[i][j], end=" ")
+        print()
+
+// C# program to Minimize Cash Flow among a given set
+// of friends who have borrowed money from each other.
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to minimize cash flow
+    static int[][] minCashFlow(int[][] transaction) {
+        int n = transaction.Length;
+
+        PriorityQueue<int[]> debtors =
+        new PriorityQueue<int[]>(new Comparer());
+        PriorityQueue<int[]> creditors =
+        new PriorityQueue<int[]>(new Comparer());
+
+        // Calculate net amount for each person
+        for (int personId = 0; personId < n; personId++) {
+            int netAmount = 0;
+
+            // Add all incoming money
+            for (int fromPerson = 0; fromPerson < n; fromPerson++)
+                netAmount += transaction[fromPerson][personId];
+
+            // Subtract all outgoing money
+            for (int toPerson = 0; toPerson < n; toPerson++)
+                netAmount -= transaction[personId][toPerson];
+
+            // If net amount is negative, person needs to give money
+            if (netAmount < 0)
+                debtors.Enqueue(new int[] { Math.Abs(netAmount), personId });
+
+            // If net amount is positive, person needs to receive money
+            else if (netAmount > 0)
+                creditors.Enqueue(new int[] { netAmount, personId });
+        }
+
+        // Initialize result matrix with zeros
+        int[][] result = new int[n][];
+        for (int i = 0; i < n; i++)
+            result[i] = new int[n];
+
+        // Process all transactions until no more debtors left
+        while (debtors.Count > 0) {
+            int[] debtor = debtors.Dequeue();
+            int[] creditor = creditors.Dequeue();
+            int debtAmount = debtor[0];
+            int creditAmount = creditor[0];
+            int debtorId = debtor[1];
+            int creditorId = creditor[1];
+
+            // Find minimum of debt and credit amounts
+            int transferAmount = Math.Min(debtAmount, creditAmount);
+
+            // Record the transaction in result matrix
+            result[debtorId][creditorId] = transferAmount;
+
+            // Update remaining amounts
+            debtAmount -= transferAmount;
+            creditAmount -= transferAmount;
+
+            // If debtor still has debt remaining, put back in queue
+            if (debtAmount > 0)
+                debtors.Enqueue(new int[] { debtAmount, debtorId });
+
+            // If creditor still needs to receive more, put back in queue
+            else if (creditAmount > 0)
+                creditors.Enqueue(new int[] { creditAmount, creditorId });
+        }
+
+        return result;
+    }
+
+    static void Main() {
+        int n = 3;
+        int[][] transaction = new int[][] {
+            new int[] {0, 1000, 2000},
+            new int[] {0, 0, 5000},
+            new int[] {0, 0, 0}
+        };
+
+        int[][] result = minCashFlow(transaction);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                Console.Write(result[i][j] + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+// Custom comparator class for max heap
+class Comparer : IComparer<int[]> {
+    public int Compare(int[] a, int[] b) {
+        return b[0].CompareTo(a[0]);
+    }
+}
+
+// Custom Priority queue
+class PriorityQueue<T> {
+    private List<T> heap;
+    private IComparer<T> comparer;
+
+    public PriorityQueue(IComparer<T> comparer = null) {
+        this.heap = new List<T>();
+        this.comparer = comparer ?? Comparer<T>.Default;
+    }
+
+    public int Count => heap.Count;
+
+    // Enqueue operation
+    public void Enqueue(T item) {
+        heap.Add(item);
+        int i = heap.Count - 1;
+        while (i > 0) {
+            int parent = (i - 1) / 2;
+            if (comparer.Compare(heap[parent], heap[i]) <= 0)
+                break;
+            Swap(parent, i);
+            i = parent;
+        }
+    }
+
+    // Dequeue operation
+    public T Dequeue() {
+        if (heap.Count == 0)
+            throw new InvalidOperationException("Priority queue is empty.");
+        T result = heap[0];
+        int last = heap.Count - 1;
+        heap[0] = heap[last];
+        heap.RemoveAt(last);
+        last--;
+        int i = 0;
+        while (true) {
+            int left = 2 * i + 1;
+            if (left > last)
+                break;
+            int right = left + 1;
+            int minChild = left;
+            if (right <= last && comparer.Compare(heap[right], heap[left]) < 0)
+                minChild = right;
+            if (comparer.Compare(heap[i], heap[minChild]) <= 0)
+                break;
+            Swap(i, minChild);
+            i = minChild;
+        }
+        return result;
+    }
+
+    // Swap two elements in the heap
+    private void Swap(int i, int j) {
+        T temp = heap[i];
+        heap[i] = heap[j];
+        heap[j] = temp;
+    }
+}
+
+// JavaScript program to Minimize Cash Flow among a given set
+// of friends who have borrowed money from each other.
+
+function minCashFlow(transaction) {
+	let n = transaction.length;
+	let debtors = new PriorityQueue(Comparator);
+	let creditors = new PriorityQueue(Comparator);
+
+	for (let personId = 0; personId < n; personId++) {
+		let netAmount = 0;
+		for (let fromPerson = 0; fromPerson < n; fromPerson++)
+			netAmount += transaction[fromPerson][personId];
+		for (let toPerson = 0; toPerson < n; toPerson++)
+			netAmount -= transaction[personId][toPerson];
+
+		if (netAmount < 0)
+			debtors.enqueue([Math.abs(netAmount), personId]);
+		else if (netAmount > 0)
+			creditors.enqueue([netAmount, personId]);
+	}
+
+	let result = Array.from({ length: n }, () => Array(n).fill(0));
+
+	while (debtors.heap.length > 0) {
+		let [debtAmount, debtorId] = debtors.dequeue();
+		let [creditAmount, creditorId] = creditors.dequeue();
+
+		let transferAmount = Math.min(debtAmount, creditAmount);
+		result[debtorId][creditorId] = transferAmount;
+
+		debtAmount -= transferAmount;
+		creditAmount -= transferAmount;
+
+		if (debtAmount > 0)
+			debtors.enqueue([debtAmount, debtorId]);
+		else if (creditAmount > 0)
+			creditors.enqueue([creditAmount, creditorId]);
+	}
+
+	return result;
+}
+
+function Comparator(k1, k2) {
+	if (k1[0] > k2[0]) return 1;
+	if (k1[0] < k2[0]) return -1;
+	return 0;
+}
+
+class PriorityQueue {
+	constructor(compare) {
+		this.heap = [];
+		this.compare = compare;
+	}
+
+	enqueue(value) {
+		this.heap.push(value);
+		this.bubbleUp();
+	}
+
+	bubbleUp() {
+		let index = this.heap.length - 1;
+		while (index > 0) {
+			let element = this.heap[index],
+			    parentIndex = Math.floor((index - 1) / 2),
+			    parent = this.heap[parentIndex];
+			if (this.compare(element, parent) < 0) break;
+			this.heap[index] = parent;
+			this.heap[parentIndex] = element;
+			index = parentIndex;
+		}
+	}
+
+	dequeue() {
+		let max = this.heap[0];
+		let end = this.heap.pop();
+		if (this.heap.length > 0) {
+			this.heap[0] = end;
+			this.sinkDown(0);
+		}
+		return max;
+	}
+
+	sinkDown(index) {
+		let left = 2 * index + 1,
+		    right = 2 * index + 2,
+		    largest = index;
+
+		if (
+		    left < this.heap.length &&
+		    this.compare(this.heap[left], this.heap[largest]) > 0
+		) {
+			largest = left;
+		}
+
+		if (
+		    right < this.heap.length &&
+		    this.compare(this.heap[right], this.heap[largest]) > 0
+		) {
+			largest = right;
+		}
+
+		if (largest !== index) {
+			[this.heap[largest], this.heap[index]] = [
+			            this.heap[index],
+			            this.heap[largest],
+			        ];
+			this.sinkDown(largest);
+		}
+	}
+
+	isEmpty() {
+		return this.heap.length === 0;
+	}
+}
+
+let transaction = [
+	[0, 1000, 2000],
+	[0, 0, 5000],
+	[0, 0, 0]
+];
+
+let result = minCashFlow(transaction);
+for (let i = 0; i < result.length; i++) {
+	console.log(result[i].join(" "));
+}
+
+0 0 3000
+0 0 4000
+0 0 0
+
+Time Complexity: O(n^2) due to nested loops (where n is the number of friends). Auxiliary Space: O(n^2) to store the result.

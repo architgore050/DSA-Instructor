@@ -1,0 +1,826 @@
+Source: https://www.geeksforgeeks.org/dsa/find-the-length-of-the-longest-possible-word-chain/
+Title: Longest String Chain - Chain of words in an Array
+
+Given an  array of words where each word consists of lowercase English letters, we need to find the longest word chain possible.
+
+A word wordA is a predecessor of wordB if and only if we can insert exactly one letter anywhere in wordA without changing the order of the other characters to make it equal to wordB. For example, "abc" is a predecessor of "abac", while "cba" is not a predecessor of "bcad".
+
+A word chain is a sequence of words [word1, word2, ..., wordk] with k ≥ 1 , where:
+
+- word1 is a predecessor of word2
+- word2 is a predecessor of word3 , and so on.
+
+A single word is trivially a word chain with k = 1 .
+
+The task is to return the length of the longest possible word chain with words chosen from the given list of words in any order.
+
+Examples:
+
+> Input: words = ["ba", "b", "a", "bca", "bda", "bdca"] Output: 4 Explanation: One of the longest word chains is ["a", "ba", "bda", "bdca"]. Input: words = ["abcd", "dbqca"] Output: 1 Explanation: The trivial word chain ["abcd"] is one of the longest word chains.
+
+Table of Content
+
+- [Naive Approach] Using Recursion - Exponential Time
+- [Better Approach] Using DP(Tabulation) - O(nlogn + n²m) Time and O(n) Space
+- [Expected Approach] DP + Hashing- O(nlogn + n*m²) Time and O(n*m) Space
+
+### [Naive Approach] Using Recursion - Exponential Time
+
+If we take a closer look, we can notice that this problem is a variation of Longest Increasing Subsequence Problem .   For every word, we find the longest chain ending with it. At the end, we return the maximum of all longest chains.
+
+1. Consider every word w one by one
+2. Find the length of the longest chain where w is the last word (or longest word).  We compute this using a recursive function longestEndCurr().
+3. Return the maximum of all values obtained in step 2.
+
+// C++ code for Longest String Chain
+// using Recursion
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to check if the second string can be obtained
+// by removing one character from the first string
+bool isPred(const string &a, const string &b) {
+    if (a.size() != b.size() + 1) return false;
+    int i = 0, j = 0;
+    while (i < a.size() && j < b.size()) {
+        if (a[i] == b[j]) { i++;  j++; }
+        else { i++; }
+    }
+    return (j == b.size());
+}
+
+// Recursive function to find the length of the longest
+// chain that ends with curr
+int longestEndCurr(vector<string> &words, string &curr) {
+    int maxEnd = 1;
+    for (string &w : words) {
+        if (isPred(curr, w)) {
+            maxEnd = max(maxEnd, 1 + longestEndCurr(words, w));
+        }
+    }
+    return maxEnd;
+}
+
+// Naive function to find the longest string chain
+int longestStringChain(vector<string> &words) {
+
+    // Find the longest chain ending with every
+    // word and return max of all
+    int res = 1;
+    for (string &w : words) {
+        res = max(res, longestEndCurr(words, w));
+    }
+    return res;
+}
+
+// Driver code
+int main() {
+    vector<string> s = { "a", "b", "ba", "bca", "bda", "bdca" };
+    cout << longestStringChain(s);
+    return 0;
+}
+
+// C code for Longest String Chain
+// using Recursion
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+// Function to check if the second string can be obtained
+// by removing one character from the first string
+bool isPred(const char *a, const char *b) {
+    int len_a = strlen(a);
+    int len_b = strlen(b);
+
+    if (len_a != len_b + 1) return false;
+
+    int i = 0, j = 0;
+    while (i < len_a && j < len_b) {
+        if (a[i] == b[j]) { i++; j++; }
+        else { i++; }
+    }
+    return (j == len_b);
+}
+
+// Recursive function to find the length of the longest
+// chain that ends with curr
+int longestEndCurr(char **words, int n, const char *curr) {
+    int maxEnd = 1;
+    for (int i = 0; i < n; i++) {
+        if (isPred(curr, words[i])) {
+            int length = longestEndCurr(words, n, words[i]);
+            if (length + 1 > maxEnd) {
+                maxEnd = length + 1;
+            }
+        }
+    }
+    return maxEnd;
+}
+
+// Naive function to find the longest string chain
+int longestStringChain(char **words, int n) {
+
+    // Find the longest chain ending with every
+    // word and return max of all
+    int res = 1;
+    for (int i = 0; i < n; i++) {
+        int length = longestEndCurr(words, n, words[i]);
+        if (length > res) {
+            res = length;
+        }
+    }
+    return res;
+}
+
+// Driver code
+int main() {
+    char *s[] = { "a", "b", "ba", "bca", "bda", "bdca" };
+    int n = sizeof(s) / sizeof(s[0]);
+    printf("%d\n", longestStringChain(s, n));
+    return 0;
+}
+
+// Java code for Longest String Chain
+// using Recursion
+import java.util.Arrays;
+
+public class GfG {
+
+    // Function to check if b can be obtained by removing
+    // one character from a
+    static boolean isPred(String a, String b) {
+        if (a.length() != b.length() + 1) return false;
+        int i = 0, j = 0;
+
+        // Compare characters of both strings
+        while (i < a.length() && j < b.length()) {
+            if (a.charAt(i) == b.charAt(j)) {
+                i++;
+                j++;
+            } else {
+                i++; // Skip one character in a
+            }
+        }
+        return (j == b.length());
+    }
+
+    // Recursive function to find the longest chain that
+    // ends with the given word 'curr'
+    static int longestEndCurr(String[] words, String curr) {
+        int maxEnd = 1;
+
+        // Check for all words in the array
+        for (String w : words) {
+            if (isPred(curr, w)) {
+                // Recursively find the longest chain
+                maxEnd = Math.max(maxEnd, 1 + longestEndCurr(words, w));
+            }
+        }
+        return maxEnd;
+    }
+
+    // Function to find the length of the longest string chain
+    static int longestStringChain(String[] words) {
+        int res = 1;
+
+        // Find the longest chain ending at each word
+        for (String w : words) {
+            res = Math.max(res, longestEndCurr(words, w));
+        }
+        return res;
+    }
+
+    // Driver code
+    public static void main(String[] args) {
+        String[] s = {"a", "b", "ba", "bca", "bda", "bdca"};
+
+        // Print the length of the longest string chain
+        System.out.println(longestStringChain(s));
+    }
+}
+
+# Python code for Longest String Chain
+# using Recursion
+
+# Function to check if b can be obtained by removing
+# one character from a
+def isPred(a, b):
+    if len(a) != len(b) + 1:
+        return False
+    i = j = 0
+
+    # Compare characters of both strings
+    while i < len(a) and j < len(b):
+        if a[i] == b[j]:
+            i += 1
+            j += 1
+        else:
+            i += 1  # Skip one character in a
+
+    return j == len(b)
+
+# Recursive function to find the longest chain that
+# ends with the given word 'curr'
+def longestEndCurr(words, curr):
+    maxEnd = 1
+
+    # Check for all words in the array
+    for w in words:
+        if isPred(curr, w):
+            # Recursively find the longest chain
+            maxEnd = max(maxEnd, 1 + longestEndCurr(words, w))
+
+    return maxEnd
+
+# Function to find the length of the longest string chain
+def longestStringChain(words):
+    res = 1
+
+    # Find the longest chain ending at each word
+    for w in words:
+        res = max(res, longestEndCurr(words, w))
+
+    return res
+
+# Driver code
+if __name__ == "__main__":
+    s = ["a", "b", "ba", "bca", "bda", "bdca"]
+
+    # Print the length of the longest string chain
+    print(longestStringChain(s))
+
+// C# code for Longest String Chain
+// using Recursion
+using System;
+
+class GfG {
+    // Function to check if b can be obtained by removing
+    // one character from a
+    static bool IsPred(string a, string b) {
+        if (a.Length != b.Length + 1) return false;
+        int i = 0, j = 0;
+
+        // Compare characters of both strings
+        while (i < a.Length && j < b.Length) {
+            if (a[i] == b[j]) {
+                i++;
+                j++;
+            } else {
+                i++; // Skip one character in a
+            }
+        }
+        return j == b.Length;
+    }
+
+    // Recursive function to find the longest chain that
+    // ends with the given word 'curr'
+    static int LongestEndCurr(string[] words, string curr) {
+        int maxEnd = 1;
+
+        // Check for all words in the array
+        foreach (string w in words) {
+            if (IsPred(curr, w)) {
+                // Recursively find the longest chain
+                maxEnd = Math.Max(maxEnd, 1 + LongestEndCurr(words, w));
+            }
+        }
+        return maxEnd;
+    }
+
+    // Function to find the length of the longest string chain
+    static int LongestStringChain(string[] words) {
+        int res = 1;
+
+        // Find the longest chain ending at each word
+        foreach (string w in words) {
+            res = Math.Max(res, LongestEndCurr(words, w));
+        }
+        return res;
+    }
+
+    // Driver code
+    static void Main() {
+        string[] s = { "a", "b", "ba", "bca", "bda", "bdca" };
+
+        // Print the length of the longest string chain
+        Console.WriteLine(LongestStringChain(s));
+    }
+}
+
+// Javascript code for Longest String Chain
+// using Recursion
+
+// Function to check if the second string can be obtained
+// by removing one character from the first string
+function isPred(a, b) {
+    if (a.length !== b.length + 1) return false;
+    let i = 0, j = 0;
+    while (i < a.length && j < b.length) {
+        if (a[i] === b[j]) { i++; j++; }
+        else { i++; }
+    }
+    return j === b.length;
+}
+
+// Recursive function to find the length of the longest
+// chain that ends with curr
+function longestEndCurr(words, curr) {
+    let maxEnd = 1;
+    for (let w of words) {
+        if (isPred(curr, w)) {
+            maxEnd = Math.max(maxEnd, 1 + longestEndCurr(words, w));
+        }
+    }
+    return maxEnd;
+}
+
+// Naive function to find the longest string chain
+function longestStringChain(words) {
+
+    // Find the longest chain ending with every
+    // word and return max of all
+    let res = 1;
+    for (let w of words) {
+        res = Math.max(res, longestEndCurr(words, w));
+    }
+    return res;
+}
+
+// Driver code
+const s = ["a", "b", "ba", "bca", "bda", "bdca"];
+console.log(longestStringChain(s));
+
+4
+
+### [Better Approach] Using DP(Tabulation) - O(nlogn + n²m) Time and O(n) Space
+
+> The idea is to build the longest possible word chain by checking if a word can be formed by adding one letter to a shorter word. First, we sort the words by length to ensure that we process shorter words first. We use a dp array, where dp[i] stores the longest chain ending at words[i]. For each word, we check all previous words to see if they are its predecessor (by removing one character). If a valid predecessor is found, we update dp[i] accordingly. The maximum value in dp gives the longest string chain.
+
+// C++ code for Longest String Chain
+// using Tabulation (Bottom-Up DP)
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to check if b is a predecessor of a
+bool isPred(const string &a, const string &b) {
+    if (a.size() != b.size() + 1) {
+        return false;
+    }
+    int i = 0, j = 0;
+    while (i < a.size() && j < b.size()) {
+        if (a[i] == b[j]) {
+            i++;
+            j++;
+        } else {
+            i++;
+        }
+    }
+    return (j == b.size());
+}
+
+// Function to find the longest string chain using DP
+int longestStringChain(vector<string> &words) {
+
+    // Sort words based on length
+    sort(words.begin(), words.end(), [](const string &a,
+                                        const string &b) {
+        return a.size() < b.size();
+    });
+
+    int n = words.size();
+    vector<int> dp(n, 1);
+    int res = 1;
+
+    // Iterate over each word
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < i; j++) {
+            if (isPred(words[i], words[j])) {
+                dp[i] = max(dp[i], dp[j] + 1);
+            }
+        }
+        res = max(res, dp[i]);
+    }
+    return res;
+}
+
+// Driver code
+int main() {
+    vector<string> s = { "a", "b", "ba", "bca", "bda", "bdca" };
+    cout << longestStringChain(s);
+    return 0;
+}
+
+// Java code for Longest String Chain
+// using Tabulation (Bottom-Up DP)
+import java.util.*;
+
+class GfG {
+
+    // Function to check if b is a predecessor of a
+    private static boolean isPred(String a, String b) {
+        if (a.length() != b.length() + 1) {
+            return false;
+        }
+        int i = 0, j = 0;
+        while (i < a.length() && j < b.length()) {
+            if (a.charAt(i) == b.charAt(j)) {
+                i++;
+                j++;
+            } else {
+                i++;
+            }
+        }
+        return j == b.length();
+    }
+
+    // Function to find the longest string chain using DP
+    public static int longestStringChain(String words[]) {
+
+        // Sort words based on length
+        Arrays.sort(words, Comparator.comparingInt(String::length));
+
+        int n = words.length;
+        int dp[] = new int[n];
+        Arrays.fill(dp, 1);
+        int res = 1;
+
+        // Iterate over each word
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < i; j++) {
+                if (isPred(words[i], words[j])) {
+                    dp[i] = Math.max(dp[i], dp[j] + 1);
+                }
+            }
+            res = Math.max(res, dp[i]);
+        }
+        return res;
+    }
+
+    // Driver code
+    public static void main(String[] args) {
+        String words[] = { "a", "b", "ba", "bca", "bda", "bdca" };
+        System.out.println(longestStringChain(words));
+    }
+}
+
+# Python code for Longest String Chain
+# using Tabulation (Bottom-Up DP)
+
+# Function to check if b is a predecessor of a
+def is_pred(a, b):
+    if len(a) != len(b) + 1:
+        return False
+    i, j = 0, 0
+    while i < len(a) and j < len(b):
+        if a[i] == b[j]:
+            i += 1
+            j += 1
+        else:
+            i += 1
+    return j == len(b)
+
+# Function to find the longest string chain using DP
+def longestStringChain(words):
+
+    # Sort words based on length
+    words.sort(key=len)
+
+    n = len(words)
+    dp = [1] * n
+    res = 1
+
+    # Iterate over each word
+    for i in range(n):
+        for j in range(i):
+            if is_pred(words[i], words[j]):
+                dp[i] = max(dp[i], dp[j] + 1)
+        res = max(res, dp[i])
+
+    return res
+
+# Driver code
+if __name__ == "__main__":
+    words = ["a", "b", "ba", "bca", "bda", "bdca"]
+    print(longestStringChain(words))
+
+// C# code for Longest String Chain
+// using Tabulation (Bottom-Up DP)
+using System;
+
+class GfG {
+
+    // Function to check if b is a predecessor of a
+    static bool IsPred(string a, string b) {
+        if (a.Length != b.Length + 1) {
+            return false;
+        }
+        int i = 0, j = 0;
+        while (i < a.Length && j < b.Length) {
+            if (a[i] == b[j]) {
+                i++;
+                j++;
+            } else {
+                i++;
+            }
+        }
+        return j == b.Length;
+    }
+
+    // Function to find the longest string chain using DP
+    public static int LongestStringChain(string[] words) {
+
+        // Sort words based on length
+        Array.Sort(words, (a, b) => a.Length - b.Length);
+
+        int n = words.Length;
+        int[] dp = new int[n];
+        Array.Fill(dp, 1);
+        int res = 1;
+
+        // Iterate over each word
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < i; j++) {
+                if (IsPred(words[i], words[j])) {
+                    dp[i] = Math.Max(dp[i], dp[j] + 1);
+                }
+            }
+            res = Math.Max(res, dp[i]);
+        }
+        return res;
+    }
+
+    // Driver code
+    public static void Main() {
+        string[] words = { "a", "b", "ba",
+                           "bca", "bda", "bdca" };
+
+        Console.WriteLine(LongestStringChain(words));
+    }
+}
+
+// JavaScript code for Longest String Chain
+// using Tabulation (Bottom-Up DP) without Map
+
+// Function to check if b is a predecessor of a
+function isPred(a, b) {
+    if (a.length !== b.length + 1) {
+        return false;
+    }
+    let i = 0, j = 0;
+    while (i < a.length && j < b.length) {
+        if (a[i] === b[j]) {
+            i++;
+            j++;
+        } else {
+            i++;
+        }
+    }
+    return j === b.length;
+}
+
+// Function to find the longest string chain using DP
+function longestStringChain(words) {
+
+    // Sort words based on length
+    words.sort((a, b) => a.length - b.length);
+
+    let n = words.length;
+    let dp = new Array(n).fill(1);
+    let res = 1;
+
+    // Iterate over each word
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+            if (isPred(words[i], words[j])) {
+                dp[i] = Math.max(dp[i], dp[j] + 1);
+            }
+        }
+        res = Math.max(res, dp[i]);
+    }
+    return res;
+}
+
+// Driver code
+const words = ["a", "b", "ba", "bca", "bda", "bdca"];
+console.log(longestStringChain(words));
+
+Time Complexity: O(nlogn + n²m), as sorting takes O(n log n), and checking predecessors takes O(n^2 * m), where n is the number of words and m is the maximum word length. Auxiliary Space: O(n), as the dp array stores one value per word, requiring O(n) space.
+
+### [Expected Approach] DP + Hashing- O(nlogn + n*m ² ) Time and O(n*m) Space
+
+> Using dynamic programming , we store the longest chain length for each word in a hash table. For each word, we generate possible predecessors by removing one character and check if they exist in the table. If a valid predecessor is found, we update the chain length, ensuring we track the longest possible chain efficiently .
+
+Steps to implement the above idea:
+
+- Sort the words by length to process shorter words first.
+- Use a DP table (array or map) to store the longest chain length for each word.
+- Iterate through each word and initialize its chain length to 1.
+- Generate predecessors by removing one character at a time.
+- Check if the predecessor exists in the DP table and update the chain length.
+- Track the maximum chain length found and return the result.
+
+Below is the implementation of the above approach:
+
+// C++ code for Longest String Chain
+// using DP + Hashing
+#include <bits/stdc++.h>
+using namespace std;
+
+// Custom comparison function to sort strings by their lengths
+bool static cmp(const string& a, const string& b) {
+    return a.size() < b.size();
+}
+
+// Function to find the length of the longest string chain
+int longestStringChain(vector<string>& words) {
+
+    // Sort the words by length
+    sort(words.begin(), words.end(), cmp);
+
+    // Create an unordered map to store the
+    // maximum chain length for each word
+    unordered_map<string, int> dp;
+
+    int res = 1;
+
+    // Iterate through each word in the sorted list of words
+    for (const string& w : words) {
+
+        dp[w] = 1; // Initialize length for the current word
+
+        // Try removing one character at a time to
+       // check if it forms a valid predecessor
+        for (int i = 0; i < w.size(); ++i) {
+            string pred = w.substr(0, i) + w.substr(i + 1);
+            if (dp.find(pred) != dp.end()) {
+                dp[w] = max(dp[w], dp[pred] + 1);
+            }
+        }
+
+        res = max(res, dp[w]);
+    }
+
+    return res;
+}
+
+// Driver code
+int main() {
+    vector<string> words = { "a", "b", "ba", "bca", "bda", "bdca" };
+    cout << longestStringChain(words) << endl;
+    return 0;
+}
+
+// Java code for Longest String Chain
+// using DP + Hashing
+import java.util.Arrays;
+import java.util.HashMap;
+
+class GfG {
+
+    // Custom comparator to sort strings by length
+    public static int longestStringChain(String[] words) {
+
+        // Sort words by length
+        Arrays.sort(words, (a, b) -> a.length() - b.length());
+
+        // HashMap to store the maximum chain length for each word
+        HashMap<String, Integer> dp = new HashMap<>();
+
+        int res = 1;
+
+        // Iterate through each word in the sorted array
+        for (String w : words) {
+            dp.put(w, 1); // Initialize length for current word
+
+            // Try removing one character at a time
+            for (int i = 0; i < w.length(); i++) {
+                String pred = w.substring(0, i) + w.substring(i + 1);
+                if (dp.containsKey(pred)) {
+                    dp.put(w, Math.max(dp.get(w), dp.get(pred) + 1));
+                }
+            }
+
+            res = Math.max(res, dp.get(w));
+        }
+
+        return res;
+    }
+
+    // Driver code
+    public static void main(String[] args) {
+        String[] words = {"a", "b", "ba", "bca", "bda", "bdca"};
+        System.out.println(longestStringChain(words));
+    }
+}
+
+# Python code for Longest String Chain
+# using DP + Hashing
+
+def longestStringChain(words):
+    # Sort words by length
+    words.sort(key=len)
+
+    # Dictionary to store the maximum chain length for each word
+    dp = {}
+
+    res = 1
+
+    # Iterate through each word in the sorted list
+    for w in words:
+        dp[w] = 1  # Initialize length for current word
+
+        # Try removing one character at a time
+        for i in range(len(w)):
+            pred = w[:i] + w[i+1:]
+            if pred in dp:
+                dp[w] = max(dp[w], dp[pred] + 1)
+
+        res = max(res, dp[w])
+
+    return res
+
+# Driver code
+if __name__ == "__main__":
+    words = ["a", "b", "ba", "bca", "bda", "bdca"]
+    print(longestStringChain(words))
+
+// C# code for Longest String Chain
+// using DP + Hashing
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to find the length of the longest string chain
+    public static int LongestStringChain(string[] words) {
+
+        // Sort words by length
+        Array.Sort(words, (a, b) => a.Length - b.Length);
+
+        // Dictionary to store the maximum chain length for each word
+        Dictionary<string, int> dp = new Dictionary<string, int>();
+
+        int res = 1;
+
+        // Iterate through each word in the sorted array
+        foreach (string w in words) {
+            dp[w] = 1; // Initialize length for current word
+
+            // Try removing one character at a time
+            for (int i = 0; i < w.Length; i++) {
+                string pred = w.Substring(0, i) + w.Substring(i + 1);
+                if (dp.ContainsKey(pred)) {
+                    dp[w] = Math.Max(dp[w], dp[pred] + 1);
+                }
+            }
+
+            res = Math.Max(res, dp[w]);
+        }
+
+        return res;
+    }
+
+    // Driver code
+    public static void Main(string[] args) {
+        string[] words = {"a", "b", "ba", "bca", "bda", "bdca"};
+        Console.WriteLine(LongestStringChain(words));
+    }
+}
+
+// Javascript code for Longest String Chain
+// using DP + Hashing
+function longestStringChain(words) {
+    // Sort words by length
+    words.sort((a, b) => a.length - b.length);
+
+    // Map to store the maximum chain length for each word
+    let dp = new Map();
+
+    let res = 1;
+
+    // Iterate through each word in the sorted list
+    for (let w of words) {
+        dp.set(w, 1); // Initialize length for current word
+
+        // Try removing one character at a time
+        for (let i = 0; i < w.length; i++) {
+            let pred = w.slice(0, i) + w.slice(i + 1);
+            if (dp.has(pred)) {
+                dp.set(w, Math.max(dp.get(w), dp.get(pred) + 1));
+            }
+        }
+
+        res = Math.max(res, dp.get(w));
+    }
+
+    return res;
+}
+
+// Driver code
+let words = ["a", "b", "ba", "bca", "bda", "bdca"];
+console.log(longestStringChain(words));
+
+4
+
+Time Complexity: O(n log n + n*m ² ), where n is the number of words and m is the maximum word length (sorting takes O(n * log n), and checking predecessors takes O(n*m²). Auxiliary Space: O(n*m), as we store n words in the DP table, each of length up to m.

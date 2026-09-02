@@ -1,0 +1,603 @@
+Source: https://www.geeksforgeeks.org/dsa/huffman-coding-greedy-algo-3/
+Title: Huffman Coding Algorithm
+
+Huffman coding is a lossless data compression algorithm.
+
+- The idea is to assign variable-length codes to input characters, lengths of the codes are based on the frequencies of characters. The greedy idea is to assign the least length code to the most frequent character.
+- The variable-length codes assigned to input characters are Prefix Codes, means the codes (bit sequences) are assigned in such a way that the code assigned to one character is not the prefix of code assigned to any other character. This is how Huffman Coding makes sure that there is no ambiguity when decoding the generated bitstream.
+
+Let us understand prefix codes with a counter example. Let there be four characters a, b, c and d, and their corresponding variable length codes be 00, 01, 0 and 1. This coding leads to ambiguity because code assigned to c is the prefix of codes assigned to a and b. If the compressed bit stream is 0001, the de-compressed output may be "cccd" or "ccb" or "acd" or "ab".'
+
+Example:
+
+> Input: s = "abcdef", f[] = [5, 9, 12, 13, 16, 45] Output: [0, 100, 101, 1100, 1101, 111] Explanation: Huffman Tree would be Huffman Codes would be: f : 0 c : 100 d : 101 a : 1100 b : 1101 e : 111 These codes are generated using Huffman Tree by considering 0 value for left child and 1 for right.  We get codes by traversing from root to every character and using 0 or 1 for every edge along the path.
+
+There are mainly two major parts in Huffman Coding
+
+1. Build a Huffman Tree from input characters.
+2. Traverse the Huffman Tree and assign codes to characters.
+
+Steps to build Huffman Tree This algorithm builds a tree in bottom up manner using a priority queue (or heap) . Input is an array of unique characters along with their frequency of occurrences and output is Huffman Tree.
+
+1. Create a leaf node for each unique character and build a min heap of all leaf nodes (Min Heap is used as a priority queue. The value of frequency field is used to compare two nodes in min heap. Initially, the least frequent character is at root)
+2. Extract two nodes with the minimum frequency from the min heap.
+3. Create a new internal node with a frequency equal to the sum of the two nodes frequencies. Make the first extracted node as its left child and the other extracted node as its right child. Add this node to the min heap.
+4. Repeat steps#2 and #3 until the heap contains only one node. The remaining node is the root node and the tree is complete. Let us understand the algorithm with an example:
+
+> Characters           Frequencies a                                5 b                                9 c                                12 d                                13 e                                16 f                                 45
+
+Step 1. Build a min heap that contains 6 nodes where each node represents root of a tree with single node. Step 2 Extract two minimum frequency nodes from min heap. Add a new internal node with frequency 5 + 9 = 14. Please note that the below images show partial Huffman Tree to be built.
+
+> Now min heap contains  below 5 nodes where 4 nodes are roots of trees with single element each, and one heap node is root of tree with 3 elements Nodes             Frequencies c                         12 d                         13 Internal                    14 e                         16 f                         45 Note : Here internal means an internal node of the Huffman Tree
+
+Step 3: Extract two minimum frequency nodes from heap. Add a new internal node with frequency 12 + 13 = 25
+
+> Now min heap contains 4 nodes where 2 nodes are roots of trees with single element each, and two heap nodes are root of tree with more than one nodes Nodes                Frequencies Internal                      14 e                          16 Internal                      25 f                          45
+
+Step 4: Extract two minimum frequency nodes. Add a new internal node with frequency 14 + 16 = 30
+
+> Now min heap contains 3 nodes. Nodes        Frequencies Internal             25 Internal             30 f                   45
+
+Step 5: Extract two minimum frequency nodes. Add a new internal node with frequency 25 + 30 = 55
+
+Now min heap contains 2 nodes.
+
+> Nodes             Frequencies f                        45 Internal                   55
+
+Step 6: Extract two minimum frequency nodes. Add a new internal node with frequency 45 + 55 = 100
+
+Now min heap contains only one node.
+
+> Nodes                Frequencies Internal                    100
+
+Since the heap contains only one node, the algorithm stops here.
+
+Steps to print codes from Huffman Tree: Traverse the tree formed starting from the root. Maintain an auxiliary array. While moving to the left child, write 0 to the array. While moving to the right child, write 1 to the array. Print the array when a leaf node is encountered.
+
+The codes are as follows:
+
+> Characters and their Huffman Codes f                 0 c                100 d                101 a                1100 b                1101 e                111
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+//Driver Code Ends
+
+// Class to represent Huffman tree node
+class Node {
+public:
+    // frequency
+    int data;
+
+    // smallest original index in subtree
+    int index;
+
+    // smallest original index in subtree
+    Node *left, *right;
+
+    // Leaf node
+    Node(int d, int i) {
+        data = d;
+        index = i;
+        left = right = nullptr;
+    }
+
+    // Internal node
+    Node(Node* l, Node* r) {
+        data = l->data + r->data;
+
+        // important for tie-break
+        index = min(l->index, r->index);
+        left = l;
+        right = r;
+    }
+};
+
+// Custom min heap for Node class
+class Compare {
+public:
+    bool operator() (Node* a, Node* b) {
+        // smaller freq first
+        if (a->data != b->data)
+            return a->data > b->data;
+        // when freq are equal
+        return a->index > b->index;
+    }
+};
+
+// Function to traverse tree in preorder
+// manner and push the Huffman representation
+// of each character.
+void preOrder(Node* root, vector<string> &ans, string curr) {
+    if (root == nullptr) return;
+
+    // Leaf node represents a character.
+    if (root->left == nullptr && root->right == nullptr) {
+        // single character case
+        if (curr == "") curr = "0";
+        ans.push_back(curr);
+        return;
+    }
+
+    preOrder(root->left, ans, curr + '0');
+    preOrder(root->right, ans, curr + '1');
+}
+
+vector<string> huffmanCodes(string &s, vector<int> freq) {
+
+    int n = s.length();
+
+    // Min heap for Node class.
+    priority_queue<Node*, vector<Node*>, Compare> pq;
+    for (int i = 0; i < n; i++) {
+        // include index
+        Node* tmp = new Node(freq[i], i);
+        pq.push(tmp);
+    }
+
+    // single character
+    if (n == 1)
+        return {"0"};
+
+    // Construct Huffman tree.
+    while (pq.size() >= 2) {
+
+        // Left node
+        Node* l = pq.top();
+        pq.pop();
+
+        // Right node
+        Node* r = pq.top();
+        pq.pop();
+
+        // internal node with freq + index
+        Node* newNode = new Node(l, r);
+        pq.push(newNode);
+    }
+
+    Node* root = pq.top();
+    vector<string> ans;
+    preOrder(root, ans, "");
+    return ans;
+}
+
+//Driver Code Starts
+
+int main() {
+    string s = "abcdef";
+    vector<int> freq = {5, 9, 12, 13, 16, 45};
+    vector<string> ans = huffmanCodes(s, freq);
+    for (int i = 0; i < ans.size(); i++) {
+        cout << ans[i] << " ";
+    }
+
+    return 0;
+}
+//Driver Code Ends
+
+//Driver Code Starts
+import java.util.*;
+
+//Driver Code Ends
+
+// Class to represent Huffman tree node
+class Node {
+
+    // frequency
+    int data;
+
+    // smallest original index in subtree
+    int index;
+
+    // smallest original index in subtree
+    Node left, right;
+
+    // Leaf node
+    Node(int d, int i) {
+        data = d;
+        index = i;
+        left = right = null;
+    }
+
+    // Internal node
+    Node(Node l, Node r) {
+        data = l.data + r.data;
+
+        // important for tie-break
+        index = Math.min(l.index, r.index);
+        left = l;
+        right = r;
+    }
+}
+
+// Custom min heap for Node class
+class Compare implements Comparator<Node> {
+    public int compare(Node a, Node b) {
+
+        // smaller freq first
+        if (a.data != b.data)
+            return a.data - b.data;
+
+        // when freq are equal
+        return a.index - b.index;
+    }
+}
+
+public class GfG {
+
+    // Function to traverse tree in preorder
+    // manner and push the Huffman representation
+    // of each character.
+    static void preOrder(Node root, ArrayList<String> ans, String curr) {
+        if (root == null) return;
+
+        // Leaf node represents a character.
+        if (root.left == null && root.right == null) {
+
+            // single character case
+            if (curr.equals("")) curr = "0";
+            ans.add(curr);
+            return;
+        }
+
+        preOrder(root.left, ans, curr + '0');
+        preOrder(root.right, ans, curr + '1');
+    }
+
+    static ArrayList<String> huffmanCodes(String s, int[] freq) {
+
+        int n = s.length();
+
+        // Min heap for Node class.
+        PriorityQueue<Node> pq = new PriorityQueue<>(new Compare());
+        for (int i = 0; i < n; i++) {
+
+            // include index
+            Node tmp = new Node(freq[i], i);
+            pq.add(tmp);
+        }
+
+        // single character
+        if (n == 1) {
+            ArrayList<String> res = new ArrayList<>();
+            res.add("0");
+            return res;
+        }
+
+        // Construct Huffman tree.
+        while (pq.size() >= 2) {
+
+            // Left node
+            Node l = pq.poll();
+
+            // Right node
+            Node r = pq.poll();
+
+            // internal node with freq + index
+            Node newNode = new Node(l, r);
+            pq.add(newNode);
+        }
+
+        Node root = pq.peek();
+
+//Driver Code Starts
+        ArrayList<String> ans = new ArrayList<>();
+        preOrder(root, ans, "");
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        String s = "abcdef";
+        int[] freq = {5, 9, 12, 13, 16, 45};
+        ArrayList<String> ans = huffmanCodes(s, freq);
+        for (int i = 0; i < ans.size(); i++) {
+            System.out.print(ans.get(i) + " ");
+        }
+    }
+}
+//Driver Code Ends
+
+#Driver Code Starts
+import heapq
+
+#Driver Code Ends
+
+# Class to represent Huffman tree node
+class Node:
+
+    # Leaf node
+    def __init__(self, d, i, left=None, right=None):
+        # frequency
+        self.data = d
+
+        # smallest original index in subtree
+        self.index = i
+
+        # smallest original index in subtree
+        self.left = left
+        self.right = right
+
+# Function to traverse tree in preorder
+# manner and push the Huffman representation
+# of each character.
+def preOrder(root, ans, curr):
+    if root is None:
+        return
+
+    # Leaf node represents a character.
+    if root.left is None and root.right is None:
+        # single character case
+        if curr == "":
+            curr = "0"
+        ans.append(curr)
+        return
+
+    preOrder(root.left, ans, curr + '0')
+    preOrder(root.right, ans, curr + '1')
+
+def huffmanCodes(s, freq):
+
+    n = len(s)
+
+    # Min heap for Node class.
+    pq = []
+
+    for i in range(n):
+        # include index
+        tmp = Node(freq[i], i)
+        heapq.heappush(pq, (tmp.data, tmp.index, tmp))
+
+    # single character
+    if n == 1:
+        return ["0"]
+
+    # Construct Huffman tree.
+    while len(pq) >= 2:
+
+        # Left node
+        f1, i1, l = heapq.heappop(pq)
+
+        # Right node
+        f2, i2, r = heapq.heappop(pq)
+
+        # internal node with freq + index
+        newNode = Node(l.data + r.data, min(l.index, r.index), l, r)
+        heapq.heappush(pq, (newNode.data, newNode.index, newNode))
+
+    root = pq[0][2]
+    ans = []
+    preOrder(root, ans, "")
+    return ans
+
+#Driver Code Starts
+
+# Example usage
+if __name__ == "__main__":
+    s = "abcdef"
+    freq = [5, 9, 12, 13, 16, 45]
+    ans = huffmanCodes(s, freq)
+    for i in range(len(ans)):
+        print(ans[i], end=" ")
+#Driver Code Ends
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+//Driver Code Ends
+
+// Class to represent Huffman tree node
+class Node {
+
+    // frequency
+    public int data;
+
+    // smallest original index in subtree
+    public int index;
+
+    // smallest original index in subtree
+    public Node left, right;
+
+    // Leaf node
+    public Node(int d, int i) {
+        data = d;
+        index = i;
+        left = right = null;
+    }
+
+    // Internal node
+    public Node(Node l, Node r) {
+        data = l.data + r.data;
+
+        // tie-break using smallest index
+        index = Math.Min(l.index, r.index);
+        left = l;
+        right = r;
+    }
+}
+
+class GfG {
+
+    // Traverse tree in preorder and collect Huffman codes
+    static void preOrder(Node root, List<string> ans, string curr) {
+        if (root == null) return;
+
+        // Leaf node
+        if (root.left == null && root.right == null) {
+            if (curr == "") curr = "0";
+            ans.Add(curr);
+            return;
+        }
+
+        preOrder(root.left, ans, curr + "0");
+        preOrder(root.right, ans, curr + "1");
+    }
+
+    static List<string> huffmanCodes(string s, int[] freq) {
+
+        int n = s.Length;
+
+        // Min heap simulation
+        var pq = new List<(int data, int index, Node node)>();
+        for (int i = 0; i < n; i++) {
+            Node tmp = new Node(freq[i], i);
+            pq.Add((tmp.data, tmp.index, tmp));
+        }
+
+        // single character case
+        if (n == 1)
+            return new List<string> { "0" };
+
+        // Build Huffman tree
+        while (pq.Count >= 2) {
+
+            pq.Sort((a, b) => {
+                if (a.data != b.data)
+                    return a.data.CompareTo(b.data);
+                return a.index.CompareTo(b.index);
+            });
+
+            var l = pq[0];
+            pq.RemoveAt(0);
+
+            var r = pq[0];
+            pq.RemoveAt(0);
+
+            Node newNode = new Node(l.node, r.node);
+            pq.Add((newNode.data, newNode.index, newNode));
+        }
+
+        pq.Sort((a, b) => {
+            if (a.data != b.data)
+                return a.data.CompareTo(b.data);
+            return a.index.CompareTo(b.index);
+        });
+
+        Node root = pq[0].node;
+        List<string> ans = new List<string>();
+        preOrder(root, ans, "");
+        return ans;
+    }
+
+//Driver Code Starts
+
+    static void Main() {
+        string s = "abcdef";
+        int[] freq = {5, 9, 12, 13, 16, 45};
+
+        List<string> ans = huffmanCodes(s, freq);
+
+        for (int i = 0; i < ans.Count; i++) {
+            Console.Write(ans[i] + " ");
+        }
+    }
+}
+//Driver Code Ends
+
+// Class to represent Huffman tree node
+class Node {
+    constructor(d, i, left = null, right = null) {
+        // frequency
+        this.data = d;
+
+        // smallest original index in subtree
+        this.index = i;
+
+        this.left = left;
+        this.right = right;
+    }
+}
+
+// Function to traverse tree in preorder
+// manner and push the Huffman representation
+// of each character.
+function preOrder(root, ans, curr) {
+    if (root === null) return;
+
+    // Leaf node represents a character.
+    if (root.left === null && root.right === null) {
+        // single character case
+        if (curr === "") curr = "0";
+        ans.push(curr);
+        return;
+    }
+
+    preOrder(root.left, ans, curr + '0');
+    preOrder(root.right, ans, curr + '1');
+}
+
+// Huffman Codes function
+function huffmanCodes(s, freq) {
+
+    let n = s.length;
+
+    // Min heap simulation
+    let pq = [];
+
+    for (let i = 0; i < n; i++) {
+        pq.push([freq[i], i, new Node(freq[i], i)]);
+    }
+
+    // single character case
+    if (n === 1) return ["0"];
+
+    // Construct Huffman tree
+    while (pq.length > 1) {
+
+        pq.sort((a, b) => {
+            // smaller freq first
+            if (a[0] !== b[0]) return a[0] - b[0];
+            // when freq are equal
+            return a[1] - b[1];
+        });
+
+        // Left node
+        let l = pq.shift();
+
+        // Right node
+        let r = pq.shift();
+
+        // internal node (same as C++)
+        let newNode = new Node(
+            l[0] + r[0],
+            Math.min(l[1], r[1]),
+            l[2],
+            r[2]
+        );
+
+        pq.push([newNode.data, newNode.index, newNode]);
+    }
+
+    let root = pq[0][2];
+
+    let ans = [];
+    preOrder(root, ans, "");
+
+    return ans;
+}
+
+//Driver Code Starts
+// Driver code
+let s = "abcdef";
+let freq = [5, 9, 12, 13, 16, 45];
+
+let ans = huffmanCodes(s, freq);
+console.log(ans.join(" "));
+//Driver Code Ends
+
+0 100 101 1100 1101 111
+
+Time complexity: O(n log n) where n is the number of unique characters Space complexity :- O(n)
+
+#### Applications of Huffman Coding:
+
+1. They are used for transmitting fax and text.
+2. They are used by conventional compression formats like PKZIP, GZIP, etc.
+3. Multimedia codecs like JPEG, PNG, and MP3 use Huffman encoding(to be more precise the prefix codes).
+
+It is useful in cases where there is a series of frequently occurring characters.

@@ -1,0 +1,979 @@
+Source: https://www.geeksforgeeks.org/dsa/design-custom-browser-history-based-on-given-operations/
+Title: Design Browser History
+
+You have a browser of one tab where you start on the homepage and you can visit another URL, get back in the history number of steps or move forward in the history number of steps. The task is to design a data structure and implement the functionality of visiting a URL starting from the homepage and moving back and forward in the history. The following functionalities should be covered:
+
+- visit(url)  : Visits a URL given as string
+- forward(steps) : Takes 'steps' forward.
+- back(steps) : Takes 'steps' backward.
+
+Note: The starting page of the tab will always be the homepage.
+
+Examples:
+
+> Input: homepage = "geeksforgeeks.org" visit("amazon.com"); back(2); Output: geeksforgeeks.org Explanation: We need to move 2 steps back but since only 1 step is available we would land up at the homepage, i.e., geeksforgeeks.org Input: homepage = "gfg.org" visit("google.com"); visit("facebook.com"); visit("youtube.com"); back(1); back(1); forward(1); visit("linkedin.com"); forward(2); back(2); back(7); Output: facebook.com google.com facebook.com linkedin.com google.com gfg.org Explanation: visit("google.com") :  We are at google.com visit("facebook.com"): Now, we are at facebook.com visit("youtube.com"): We are at youtube.com back(1):  We would land up at facebook.com, if we move one step back. back(1):  Moving one step back, takes us to google.com forward(1): Moving a step forward we would be at facebook.com visit("linkedin.com"):  We are at linkedin.com forward(2): We are still at linkedin. since visiting clear the forward history . When we are the current URL, there is no URL to move forward to. back(2): Moving two steps back, takes us to google.com back(7):  We need to move 7 steps back, but only 1 url is available. Therefore we would return gfg.org.
+
+Table of Content
+
+- Naive Approach [Use Two Stacks]
+- Expected Approach [Using a Doubly Linkeded List]
+
+### Brute-Force Approach [Using Two Stacks]
+
+> The idea is to implement a browser history design by employing two stacks . We need a stack to keep track of the previously visited URLs and another stack to store the current URL on the browser tab.
+
+Follow the steps mentioned below to implement the idea:
+
+Create two stacks:
+
+- backStack: Stores the current URL and all previous URLs in the backward navigation.
+- forwardStack: Stores URLs for forward navigation.
+
+BrowserHistory(string homepage):
+
+- Initialize the browser with the given homepage.
+- Push the homepage into backStack to set it as the starting page.
+
+visit(string url):
+
+- While visiting a new URL: Clear the forwardStack because visiting a new page invalidates forward history.
+- Pop all elements from forwardStack.
+- Push the new url into the backStack as it is now the current page.
+
+back(int steps):
+
+- To move backward: Run a while loop for steps number of times.
+- Stop early if backStack has only one element, as we can't go back further.
+- In each step: Push the top element of backStack into forwardStack.
+- Pop the top element from backStack.
+- After moving, return the topmost element of backStack, which is now the current page.
+
+forward(int steps):
+
+- To move forward: Run a while loop for steps number of times.
+- Stop early if forwardStack is empty.
+- In each step: Push the top element of forwardStack into backStack.
+- Pop the top element from forwardStack.
+- After moving, return the topmost element of backStack, which is now the current page.
+
+Follow the below illustration for a better understanding:
+
+Illustration:
+
+> input: homepage = "gfg.org" visit("google.com"); visit("facebook.com"); visit("youtube.com"); back(1); back(1); forward(1); visit("linkedin.com"); forward(2); back(2); back(7); Operations: 1 st operation: Initialising gfg.org as the homepage and pushing it into the backStack . 2 nd , 3 rd and 4 th operation: Visiting google.com, facebook.com, and youtube.com. So, push all of these into the backStack . visit("google.com"), visit("facebook.com"), visit("youtube.com") 5 th operation: Move one step back in the browser history. Take youtube.com from the backStack and push it into the forwardStack to keep track of it. After moving one step back, we would land on facebook.com. So, the current page is facebook.com. back(1) 6 th operation: Again we will move one step back by popping the topmost element of the backStack and pushing the same into the forwardStack . After moving one step back, we will be on google.com. back(1) 7 th operation: Move one step forward. We moved to facebook.com after visiting google.com. Therefore, from the forwardStack , we will pick its top and push it into the backStack . facebook.com now serves as the current page. forward(1) 8 th operation: Now, for visiting another URL, we will push linkedin.com into the backStack . Since this is the most recent URL and there is nothing beyond this, we would clear the forwardStack . visit("linkedin.com") 9 th operation: We cannot move 2 steps forward since there is no URL beyond the current page. We will return linkedin.com. forward(2) 10 th operation: To move 2 steps back, pop linkedin.com and facebook.com and push them into the forwardStack . Now the current page turns out to be google.com. back(2) 11 th operation: We need to move 7 steps back, but we only have one URL after the homepage. We cannot move back in history beyond the homepage. Therefore, the homepage is the current page. We will return gfg.org. back(7)
+
+Below is the implementation of the above approach:
+
+// C++ implementation of browser history
+// using 2 stacks
+#include <bits/stdc++.h>
+using namespace std;
+
+class BrowserHistory {
+public:
+    stack<string> backStack, forwardStack;
+
+    // Constructor to initialize object with homepage
+    BrowserHistory(string homepage) {
+        backStack.push(homepage);
+    }
+
+    // Visit current url
+    void visit(string url) {
+        while (!forwardStack.empty()) {
+            forwardStack.pop();
+        }
+        backStack.push(url);
+    }
+
+    // 'steps' move backward in history and return current page
+    string back(int steps) {
+        while (backStack.size() > 1 && steps--) {
+            forwardStack.push(backStack.top());
+            backStack.pop();
+        }
+        return backStack.top();
+    }
+
+    // 'steps' move forward and return current page
+    string forward(int steps) {
+        while (!forwardStack.empty() && steps--) {
+            backStack.push(forwardStack.top());
+            forwardStack.pop();
+        }
+        return backStack.top();
+    }
+};
+
+int main() {
+
+    // Input case :
+    string homepage;
+    homepage = "gfg.org";
+
+    // Initialise the object of Browser History
+    BrowserHistory obj(homepage);
+
+    string url = "google.com";
+    obj.visit(url);
+
+    url = "facebook.com";
+    obj.visit(url);
+
+    url = "youtube.com";
+    obj.visit(url);
+
+    cout << obj.back(1) << endl;
+
+    cout << obj.back(1) << endl;
+
+    cout << obj.forward(1) << endl;
+
+    obj.visit("linkedin.com");
+
+    cout << obj.forward(2) << endl;
+
+    cout << obj.back(2) << endl;
+
+    cout << obj.back(7) << endl;
+
+    return 0;
+}
+
+// Java implementation of browser history
+// using 2 stacks
+import java.io.*;
+import java.util.*;
+
+class GFG {
+
+    static class BrowserHistory {
+        Stack<String> backStack = new Stack<>();
+        Stack<String> forwardStack = new Stack<>();
+
+        // Constructor to initialize object with homepage
+        BrowserHistory(String homepage) {
+            backStack.push(homepage);
+        }
+
+        // Visit current url
+        void visit(String url) {
+            while (!forwardStack.isEmpty()) {
+                forwardStack.pop();
+            }
+            backStack.push(url);
+        }
+
+        // 'steps' move backward in history and return current page
+        String back(int steps) {
+            while (backStack.size() > 1 && steps-- > 0) {
+                forwardStack.push(backStack.peek());
+                backStack.pop();
+            }
+            return backStack.peek();
+        }
+
+        // 'steps' move forward and return current page
+        String forward(int steps) {
+            while (!forwardStack.isEmpty() && steps-- > 0) {
+                backStack.push(forwardStack.peek());
+                forwardStack.pop();
+            }
+            return backStack.peek();
+        }
+    }
+
+    public static void main(String[] args) {
+
+        // Input case :
+        String homepage = "gfg.org";
+
+        // Initialise the object of Browser History
+        BrowserHistory obj = new BrowserHistory(homepage);
+
+        String url = "google.com";
+        obj.visit(url);
+
+        url = "facebook.com";
+        obj.visit(url);
+
+        url = "youtube.com";
+        obj.visit(url);
+
+        System.out.println(obj.back(1));
+        System.out.println(obj.back(1));
+        System.out.println(obj.forward(1));
+        obj.visit("linkedin.com");
+        System.out.println(obj.forward(2));
+        System.out.println(obj.back(2));
+        System.out.println(obj.back(7));
+    }
+}
+
+# Python implementation of browser history
+# using 2 stacks
+class BrowserHistory:
+
+    # Constructor to initialize object with homepage
+    def __init__(self, homepage: str):
+        self.backStack = [homepage]
+        self.forwardStack = []
+
+    # Visit current url
+    def visit(self, url: str):
+        self.forwardStack.clear()
+        self.backStack.append(url)
+
+    # 'steps' move backward in history and return current page
+    def back(self, steps: int):
+        while len(self.backStack) > 1 and steps > 0:
+            self.forwardStack.append(self.backStack.pop())
+            steps -= 1
+        return self.backStack[-1]
+
+    # 'steps' move forward and return current page
+    def forward(self, steps: int):
+        while len(self.forwardStack) > 0 and steps > 0:
+            self.backStack.append(self.forwardStack.pop())
+            steps -= 1
+        return self.backStack[-1]
+
+if __name__ == "__main__":
+
+    # Input case
+    homepage = "gfg.org"
+    obj = BrowserHistory(homepage)
+
+    url = "google.com"
+    obj.visit(url)
+
+    url = "facebook.com"
+    obj.visit(url)
+
+    url = "youtube.com"
+    obj.visit(url)
+
+    print(obj.back(1))
+    print(obj.back(1))
+    print(obj.forward(1))
+
+    obj.visit("linkedin.com")
+
+    print(obj.forward(2))
+    print(obj.back(2))
+    print(obj.back(7))
+
+// C# implementation of browser history
+// using 2 stacks
+using System;
+using System.Collections.Generic;
+
+public class GFG {
+
+    class BrowserHistory {
+        Stack<string> backStack = new Stack<string>();
+        Stack<string> forwardStack = new Stack<string>();
+
+        // Constructor to initialize object with homepage
+        public BrowserHistory(string homepage) {
+            backStack.Push(homepage);
+        }
+
+        // Visit current url
+        public void Visit(string url) {
+            while (forwardStack.Count > 0) {
+                forwardStack.Pop();
+            }
+            backStack.Push(url);
+        }
+
+        // 'steps' move backward in history and return current page
+        public string Back(int steps) {
+            while (backStack.Count > 1 && steps-- > 0) {
+                forwardStack.Push(backStack.Peek());
+                backStack.Pop();
+            }
+            return backStack.Peek();
+        }
+
+        // 'steps' move forward and return current page
+        public string Forward(int steps) {
+            while (forwardStack.Count > 0 && steps-- > 0) {
+                backStack.Push(forwardStack.Peek());
+                forwardStack.Pop();
+            }
+            return backStack.Peek();
+        }
+    }
+
+    public static void Main() {
+
+        // Input case:
+        string homepage = "gfg.org";
+
+        // Initialize the object of BrowserHistory
+        BrowserHistory obj = new BrowserHistory(homepage);
+
+        string url = "google.com";
+        obj.Visit(url);
+
+        url = "facebook.com";
+        obj.Visit(url);
+
+        url = "youtube.com";
+        obj.Visit(url);
+
+        Console.WriteLine(obj.Back(1));
+        Console.WriteLine(obj.Back(1));
+        Console.WriteLine(obj.Forward(1));
+        obj.Visit("linkedin.com");
+        Console.WriteLine(obj.Forward(2));
+        Console.WriteLine(obj.Back(2));
+        Console.WriteLine(obj.Back(7));
+    }
+}
+
+// JavaScript implementation of browser history
+// using 2 stacks
+class BrowserHistory {
+    constructor(homepage) {
+        this.backStack = [];
+        this.forwardStack = [];
+
+        // Initialize object with homepage
+        this.backStack.push(homepage);
+    }
+
+    // Visit current URL
+    visit(url) {
+        this.forwardStack = [];
+        this.backStack.push(url);
+    }
+
+    // 'steps' move backward in history and
+    // return current page
+    back(steps) {
+        while (this.backStack.length > 1 && steps-- > 0) {
+            this.forwardStack.push(this.backStack[
+                              this.backStack.length - 1]);
+
+            this.backStack.pop();
+        }
+        return this.backStack[this.backStack.length - 1];
+    }
+
+    // 'steps' move forward and return current page
+    forward(steps) {
+        while (this.forwardStack.length > 0 && steps-- > 0) {
+            this.backStack.push(this.forwardStack[
+                             this.forwardStack.length - 1]);
+
+            this.forwardStack.pop();
+        }
+        return this.backStack[this.backStack.length - 1];
+    }
+}
+
+// Input case
+let homepage = "gfg.org";
+
+// Initialize the object of BrowserHistory
+let obj = new BrowserHistory(homepage);
+
+let url = "google.com";
+obj.visit(url);
+
+url = "facebook.com";
+obj.visit(url);
+
+url = "youtube.com";
+obj.visit(url);
+
+console.log(obj.back(1));
+console.log(obj.back(1));
+console.log(obj.forward(1));
+obj.visit("linkedin.com");
+console.log(obj.forward(2));
+console.log(obj.back(2));
+console.log(obj.back(7));
+
+facebook.com
+google.com
+facebook.com
+linkedin.com
+google.com
+gfg.org
+
+Time Complexity: The visit function takes O(f), where f is the size of the forwardStack. The back and forward functions take O(min(steps, b)) and O(min(steps, f)), respectively. Space Complexity: The backStack and forwardStack together use O(n), where n is the total number of visited URLs. No additional auxiliary space is used beyond the stacks.
+
+### Expected Approach [Using a Doubly Linkeded List ]
+
+> The idea is to use a doubly linked list to keep track of the browser's history, where each node stores a URL. By moving forward or backward through the list, we can simulate navigating through previously visited pages, updating the current page accordingly.
+
+Follow the steps mentioned below to implement the idea:
+
+Create a doubly linked list:
+
+- Node class represents each URL visited with references to the previous and next nodes.
+
+BrowserHistory(string homepage):
+
+- Initialize the browser with the given homepage by creating a new node and setting it as the starting page.
+- Set the current pointer (curr) to point to the homepage node.
+
+visit(string url):
+
+- When visiting a new URL, create a new node for the URL.
+- Set the previous pointer of the new node to the current node.
+- Set the next pointer of the current node to the new node.
+- Move the curr pointer to the new node.
+
+back(int steps):
+
+- To move backward, iterate the pointer steps times.
+- In each step, move the pointer to the previous node if it's not null.
+- After moving, update the curr pointer to the new node.
+- Return the URL stored in the curr node.
+
+forward(int steps):
+
+- To move forward, iterate the pointer steps times.
+- In each step, move the pointer to the next node if it's not null.
+- After moving, update the curr pointer to the new node.
+- Return the URL stored in the curr node.
+
+Below is the implementation of the above approach:
+
+// C++ implementation of browser history
+// using Doubly Linked List
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    string data;
+    Node* prev;
+    Node* next;
+
+    Node(string x) {
+        data = x;
+        prev = nullptr;
+        next = nullptr;
+    }
+};
+
+class BrowserHistory {
+public:
+
+    // Pointer to the current URL
+    Node* curr;
+
+    // Constructor to initialize with the homepage
+    BrowserHistory(string homepage) {
+        curr = new Node(homepage);
+    }
+
+    // Function to visit a new URL
+    void visit(string url) {
+
+        // Create a node for this visit
+        Node* urlNode = new Node(url);
+
+        // Set the previous node of the
+        // new node to current
+        urlNode->prev = curr;
+
+        // Update the next of the current
+        // node to the new node
+        curr->next = urlNode;
+
+        // Move the current pointer to the new node
+        curr = urlNode;
+    }
+
+    // Function to move back by 'step' times
+    string back(int step) {
+
+        // Pointer to traverse backward
+        Node* trav = curr;
+
+        // Travel back `step` times if possible
+        while (trav->prev != nullptr && step > 0) {
+            trav = trav->prev;
+            step--;
+        }
+
+        // Update current pointer after moving back
+        curr = trav;
+
+        return curr->data;
+    }
+
+    // Function to move forward by 'step' times
+    string forward(int step) {
+
+        // Pointer to traverse forward
+        Node* trav = curr;
+
+        // Travel forward `step` times if possible
+        while (trav->next != nullptr && step > 0) {
+            trav = trav->next;
+            step--;
+        }
+
+        // Update current pointer after moving forward
+        curr = trav;
+
+        return curr->data;
+    }
+};
+
+int main() {
+
+    // Initialize with the homepage
+    string homepage = "gfg.org";
+    BrowserHistory obj(homepage);
+
+    string url = "google.com";
+    obj.visit(url);
+
+    url = "facebook.com";
+    obj.visit(url);
+
+    url = "youtube.com";
+    obj.visit(url);
+
+    cout << obj.back(1) << endl;
+
+    cout << obj.back(1) << endl;
+
+    cout << obj.forward(1) << endl;
+
+    obj.visit("linkedin.com");
+
+    cout << obj.forward(2) << endl;
+
+    cout << obj.back(2) << endl;
+
+    cout << obj.back(7) << endl;
+
+    return 0;
+}
+
+// Java implementation of browser history
+// using Doubly Linked List
+class Node {
+    String data;
+    Node prev, next;
+
+    Node(String x) {
+        data = x;
+        prev = null;
+        next = null;
+    }
+}
+
+public class GfG {
+
+  static class BrowserHistory {
+
+      // Pointer to the current URL
+      private Node curr;
+
+      // Constructor to initialize with the homepage
+      public BrowserHistory(String homepage) {
+          curr = new Node(homepage);
+      }
+
+      // Function to visit a new URL
+      public void visit(String url) {
+
+          // Create a node for this visit
+          Node urlNode = new Node(url);
+
+          // Set the previous node of the
+          // new node to current
+          urlNode.prev = curr;
+
+          // Update the next of the current
+          // node to the new node
+          curr.next = urlNode;
+
+          // Move the current pointer to the new node
+          curr = urlNode;
+      }
+
+      // Function to move back by 'step' times
+      public String back(int step) {
+
+          // Pointer to traverse backward
+          Node trav = curr;
+
+          // Travel back `step` times if possible
+          while (trav.prev != null && step > 0) {
+              trav = trav.prev;
+              step--;
+          }
+
+          // Update current pointer after moving back
+          curr = trav;
+
+          return curr.data;
+      }
+
+      // Function to move forward by 'step' times
+      public String forward(int step) {
+
+          // Pointer to traverse forward
+          Node trav = curr;
+
+          // Travel forward `step` times if possible
+          while (trav.next != null && step > 0) {
+              trav = trav.next;
+              step--;
+          }
+
+          // Update current pointer after moving forward
+          curr = trav;
+
+          return curr.data;
+       }
+   }
+
+    public static void main(String[] args) {
+
+        // Initialize with the homepage
+        String homepage = "gfg.org";
+        BrowserHistory obj = new BrowserHistory(homepage);
+
+        String url = "google.com";
+        obj.visit(url);
+
+        url = "facebook.com";
+        obj.visit(url);
+
+        url = "youtube.com";
+        obj.visit(url);
+
+        System.out.println(obj.back(1));
+
+        System.out.println(obj.back(1));
+
+        System.out.println(obj.forward(1));
+
+        obj.visit("linkedin.com");
+
+        System.out.println(obj.forward(2));
+
+        System.out.println(obj.back(2));
+
+        System.out.println(obj.back(7));
+    }
+}
+
+# Python implementation of browser history
+# using Doubly Linked List
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.prev = None
+        self.next = None
+
+class BrowserHistory:
+
+    # Constructor to initialize with the homepage
+    def __init__(self, homepage):
+
+        # Pointer to the current URL
+        self.curr = Node(homepage)
+
+    # Function to visit a new URL
+    def visit(self, url):
+
+        # Create a node for this visit
+        url_node = Node(url)
+
+        # Set the previous node of the
+        # new node to current
+        url_node.prev = self.curr
+
+        # Update the next of the current
+        # node to the new node
+        self.curr.next = url_node
+
+        # Move the current pointer to the new node
+        self.curr = url_node
+
+    # Function to move back by 'step' times
+    def back(self, step):
+
+        # Pointer to traverse backward
+        trav = self.curr
+
+        # Travel back `step` times if possible
+        while trav.prev is not None and step > 0:
+            trav = trav.prev
+            step -= 1
+
+        # Update current pointer after moving back
+        self.curr = trav
+
+        return self.curr.data
+
+    # Function to move forward by 'step' times
+    def forward(self, step):
+
+        # Pointer to traverse forward
+        trav = self.curr
+
+        # Travel forward `step` times if possible
+        while trav.next is not None and step > 0:
+            trav = trav.next
+            step -= 1
+
+        # Update current pointer after moving forward
+        self.curr = trav
+
+        return self.curr.data
+
+if __name__ == "__main__":
+
+    # Initialize with the homepage
+    homepage = "gfg.org"
+    obj = BrowserHistory(homepage)
+
+    url = "google.com"
+    obj.visit(url)
+
+    url = "facebook.com"
+    obj.visit(url)
+
+    url = "youtube.com"
+    obj.visit(url)
+
+    print(obj.back(1))
+
+    print(obj.back(1))
+
+    print(obj.forward(1))
+
+    obj.visit("linkedin.com")
+
+    print(obj.forward(2))
+
+    print(obj.back(2))
+
+    print(obj.back(7))
+
+// C# implementation of browser history
+// using Doubly Linked List
+using System;
+
+class Node {
+    public string data;
+    public Node prev, next;
+
+    public Node(string x) {
+        data = x;
+        prev = null;
+        next = null;
+    }
+}
+
+class GfG {
+
+    class BrowserHistory {
+
+        // Pointer to the current URL
+        private Node curr;
+
+        // Constructor to initialize with the homepage
+        public BrowserHistory(string homepage) {
+            curr = new Node(homepage);
+        }
+
+        // Function to visit a new URL
+        public void Visit(string url) {
+
+            // Create a node for this visit
+            Node urlNode = new Node(url);
+
+            // Set the previous node of the
+            // new node to current
+            urlNode.prev = curr;
+
+            // Update the next of the current
+            // node to the new node
+            curr.next = urlNode;
+
+            // Move the current pointer to the new node
+            curr = urlNode;
+        }
+
+        // Function to move back by 'step' times
+        public string Back(int step) {
+
+            // Pointer to traverse backward
+            Node trav = curr;
+
+            // Travel back `step` times if possible
+            while (trav.prev != null && step > 0) {
+                trav = trav.prev;
+                step--;
+            }
+
+            // Update current pointer after moving back
+            curr = trav;
+
+            return curr.data;
+        }
+
+        // Function to move forward by 'step' times
+        public string Forward(int step) {
+
+            // Pointer to traverse forward
+            Node trav = curr;
+
+            // Travel forward `step` times if possible
+            while (trav.next != null && step > 0) {
+                trav = trav.next;
+                step--;
+            }
+
+            // Update current pointer after moving forward
+            curr = trav;
+
+            return curr.data;
+        }
+    }
+
+    static void Main(string[] args) {
+
+        // Initialize with the homepage
+        string homepage = "gfg.org";
+        BrowserHistory obj
+                 = new BrowserHistory(homepage);
+
+        string url = "google.com";
+        obj.Visit(url);
+
+        url = "facebook.com";
+        obj.Visit(url);
+
+        url = "youtube.com";
+        obj.Visit(url);
+
+        Console.WriteLine(obj.Back(1));
+
+        Console.WriteLine(obj.Back(1));
+
+        Console.WriteLine(obj.Forward(1));
+
+        obj.Visit("linkedin.com");
+
+        Console.WriteLine(obj.Forward(2));
+
+        Console.WriteLine(obj.Back(2));
+
+        Console.WriteLine(obj.Back(7));
+    }
+}
+
+// JavaScript implementation of browser history
+// using Doubly Linked List
+
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.prev = null;
+        this.next = null;
+    }
+}
+
+class BrowserHistory {
+
+    // Constructor to initialize with the homepage
+    constructor(homepage) {
+        this.curr = new Node(homepage);
+    }
+
+    // Function to visit a new URL
+    visit(url) {
+
+        // Create a node for this visit
+        const urlNode = new Node(url);
+
+        // Set the previous node of the
+        // new node to current
+        urlNode.prev = this.curr;
+
+        // Update the next of the current
+        // node to the new node
+        this.curr.next = urlNode;
+
+        // Move the current pointer to the new node
+        this.curr = urlNode;
+    }
+
+    // Function to move back by 'step' times
+    back(step) {
+
+        // Pointer to traverse backward
+        let trav = this.curr;
+
+        // Travel back `step` times if possible
+        while (trav.prev !== null && step > 0) {
+            trav = trav.prev;
+            step--;
+        }
+
+        // Update current pointer after moving back
+        this.curr = trav;
+
+        return this.curr.data;
+    }
+
+    // Function to move forward by 'step' times
+    forward(step) {
+
+        // Pointer to traverse forward
+        let trav = this.curr;
+
+        // Travel forward `step` times if possible
+        while (trav.next !== null && step > 0) {
+            trav = trav.next;
+            step--;
+        }
+
+        // Update current pointer after moving forward
+        this.curr = trav;
+
+        return this.curr.data;
+    }
+}
+
+const homepage = "gfg.org";
+const obj = new BrowserHistory(homepage);
+
+obj.visit("google.com");
+obj.visit("facebook.com");
+obj.visit("youtube.com");
+
+console.log(obj.back(1));
+console.log(obj.back(1));
+console.log(obj.forward(1));
+
+obj.visit("linkedin.com");
+
+console.log(obj.forward(2));
+console.log(obj.back(2));
+console.log(obj.back(7));
+
+facebook.com
+google.com
+facebook.com
+linkedin.com
+google.com
+gfg.org
+
+Time Complexity: The visit function takes O(1) as it involves adding a node. The back and forward functions take O(min(steps, b)) and O(min(steps, f)) respectively, where b is the number of steps backward and f is the number of steps forward. Space Complexity: The doubly linked list uses O(n) space, where n is the total number of visited URLs. No additional auxiliary space is used beyond the linked list.

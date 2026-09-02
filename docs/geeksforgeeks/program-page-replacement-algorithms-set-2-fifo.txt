@@ -1,0 +1,447 @@
+Source: https://www.geeksforgeeks.org/dsa/program-page-replacement-algorithms-set-2-fifo/
+Title: FIFO Page Replacement Algorithm
+
+Page Replacement Algorithms are needed to decide which page needed to be replaced when new page comes in. Whenever a new page is referred and not present in memory, page fault occurs and Operating System replaces one of the existing pages with newly needed page. Different page replacement algorithms suggest different ways to decide which page to replace. The target for all algorithms is to reduce number of page faults.
+
+First In First Out (FIFO) page replacement algorithm -
+
+This is the simplest page replacement algorithm. In this algorithm, operating system keeps track of all pages in the memory in a queue, oldest page is in the front of the queue. When a page needs to be replaced page in the front of the queue is selected for removal.
+
+Example -1. Consider page reference string 1, 3, 0, 3, 5, 6 and 3 page slots. Initially all slots are empty, so when 1, 3, 0 came they are allocated to the empty slots —> 3 Page Faults.
+
+when 3 comes, it is already in memory so —> 0 Page Faults. Then 5 comes, it is not available in memory so it replaces the oldest page slot i.e 1. —>1 Page Fault.
+
+Finally 6 comes, it is also not available in memory so it replaces the oldest page slot i.e 3 —>6 Page Fault.
+
+So total page faults = 5 .
+
+Example -2. Consider the following reference string: 0, 2, 1, 6, 4, 0, 1, 0, 3, 1, 2, 1. Using FIFO page replacement algorithm -
+
+So, total number of page faults = 9. Given memory capacity (as number of pages it can hold) and a string representing pages to be referred, write a function to find number of page faults.
+
+Implementation - Let capacity be the number of pages that memory can hold. Let set be the current set of pages in memory.
+
+1- Start traversing the pages. i) If set holds less pages than capacity.   a) Insert page into the set one by one until       the size  of set reaches capacity or all      page requests are processed.   b) Simultaneously maintain the pages in the      queue to perform FIFO.   c) Increment page fault ii) Else    If current page is present in set, do nothing.   Else      a) Remove the first page from the queue        as it was the first to be entered in        the memory     b) Replace the first page in the queue with         the current page in the string.     c) Store current page in the queue.     d) Increment page faults.2. Return page faults.
+
+Implementation:
+
+// C++ implementation of FIFO page replacement
+// in Operating Systems.
+#include<bits/stdc++.h>
+using namespace std;
+
+// Function to find page faults using FIFO
+int pageFaults(int pages[], int n, int capacity)
+{
+    // To represent set of current pages. We use
+    // an unordered_set so that we quickly check
+    // if a page is present in set or not
+    unordered_set<int> s;
+
+    // To store the pages in FIFO manner
+    queue<int> indexes;
+
+    // Start from initial page
+    int page_faults = 0;
+    for (int i=0; i<n; i++)
+    {
+        // Check if the set can hold more pages
+        if (s.size() < capacity)
+        {
+            // Insert it into set if not present
+            // already which represents page fault
+            if (s.find(pages[i])==s.end())
+            {
+                // Insert the current page into the set
+                s.insert(pages[i]);
+
+                // increment page fault
+                page_faults++;
+
+                // Push the current page into the queue
+                indexes.push(pages[i]);
+            }
+        }
+
+        // If the set is full then need to perform FIFO
+        // i.e. remove the first page of the queue from
+        // set and queue both and insert the current page
+        else
+        {
+            // Check if current page is not already
+            // present in the set
+            if (s.find(pages[i]) == s.end())
+            {
+                // Store the first page in the
+                // queue to be used to find and
+                // erase the page from the set
+                int val = indexes.front();
+
+                // Pop the first page from the queue
+                indexes.pop();
+
+                // Remove the indexes page from the set
+                s.erase(val);
+
+                // insert the current page in the set
+                s.insert(pages[i]);
+
+                // push the current page into
+                // the queue
+                indexes.push(pages[i]);
+
+                // Increment page faults
+                page_faults++;
+            }
+        }
+    }
+
+    return page_faults;
+}
+
+// Driver code
+int main()
+{
+    int pages[] = {7, 0, 1, 2, 0, 3, 0, 4,
+                   2, 3, 0, 3, 2};
+    int n = sizeof(pages)/sizeof(pages[0]);
+    int capacity = 4;
+    cout << pageFaults(pages, n, capacity);
+    return 0;
+}
+
+// Java implementation of FIFO page replacement
+// in Operating Systems.
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
+
+class Test
+{
+    // Method to find page faults using FIFO
+    static int pageFaults(int pages[], int n, int capacity)
+    {
+        // To represent set of current pages. We use
+        // an unordered_set so that we quickly check
+        // if a page is present in set or not
+        HashSet<Integer> s = new HashSet<>(capacity);
+
+        // To store the pages in FIFO manner
+        Queue<Integer> indexes = new LinkedList<>() ;
+
+        // Start from initial page
+        int page_faults = 0;
+        for (int i=0; i<n; i++)
+        {
+            // Check if the set can hold more pages
+            if (s.size() < capacity)
+            {
+                // Insert it into set if not present
+                // already which represents page fault
+                if (!s.contains(pages[i]))
+                {
+                    s.add(pages[i]);
+
+                    // increment page fault
+                    page_faults++;
+
+                    // Push the current page into the queue
+                    indexes.add(pages[i]);
+                }
+            }
+
+            // If the set is full then need to perform FIFO
+            // i.e. remove the first page of the queue from
+            // set and queue both and insert the current page
+            else
+            {
+                // Check if current page is not already
+                // present in the set
+                if (!s.contains(pages[i]))
+                {
+                    //Pop the first page from the queue
+                    int val = indexes.peek();
+
+                    indexes.poll();
+
+                    // Remove the indexes page
+                    s.remove(val);
+
+                    // insert the current page
+                    s.add(pages[i]);
+
+                    // push the current page into
+                    // the queue
+                    indexes.add(pages[i]);
+
+                    // Increment page faults
+                    page_faults++;
+                }
+            }
+        }
+
+        return page_faults;
+    }
+
+    // Driver method
+    public static void main(String args[])
+    {
+        int pages[] = {7, 0, 1, 2, 0, 3, 0, 4,
+                        2, 3, 0, 3, 2};
+
+        int capacity = 4;
+        System.out.println(pageFaults(pages, pages.length, capacity));
+    }
+}
+// This code is contributed by Gaurav Miglani
+
+# Python3 implementation of FIFO page
+# replacement in Operating Systems.
+from queue import Queue
+
+# Function to find page faults using FIFO
+def pageFaults(pages, n, capacity):
+
+    # To represent set of current pages.
+    # We use an unordered_set so that we
+    # quickly check if a page is present
+    # in set or not
+    s = set()
+
+    # To store the pages in FIFO manner
+    indexes = Queue()
+
+    # Start from initial page
+    page_faults = 0
+    for i in range(n):
+
+        # Check if the set can hold
+        # more pages
+        if (len(s) < capacity):
+
+            # Insert it into set if not present
+            # already which represents page fault
+            if (pages[i] not in s):
+                s.add(pages[i])
+
+                # increment page fault
+                page_faults += 1
+
+                # Push the current page into
+                # the queue
+                indexes.put(pages[i])
+
+        # If the set is full then need to perform FIFO
+        # i.e. remove the first page of the queue from
+        # set and queue both and insert the current page
+        else:
+
+            # Check if current page is not
+            # already present in the set
+            if (pages[i] not in s):
+
+                # Pop the first page from the queue
+                val = indexes.queue[0]
+
+                indexes.get()
+
+                # Remove the indexes page
+                s.remove(val)
+
+                # insert the current page
+                s.add(pages[i])
+
+                # push the current page into
+                # the queue
+                indexes.put(pages[i])
+
+                # Increment page faults
+                page_faults += 1
+
+    return page_faults
+
+# Driver code
+if __name__ == '__main__':
+    pages = [7, 0, 1, 2, 0, 3, 0,
+                4, 2, 3, 0, 3, 2]
+    n = len(pages)
+    capacity = 4
+    print(pageFaults(pages, n, capacity))
+
+# This code is contributed by PranchalK
+
+// C# implementation of FIFO page replacement
+// in Operating Systems.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+class Test
+{
+    // Method to find page faults using FIFO
+    static int pageFaults(int []pages, int n, int capacity)
+    {
+        // To represent set of current pages. We use
+        // an unordered_set so that we quickly check
+        // if a page is present in set or not
+        HashSet<int> s = new HashSet<int>(capacity);
+
+        // To store the pages in FIFO manner
+        Queue indexes = new Queue() ;
+
+        // Start from initial page
+        int page_faults = 0;
+        for (int i = 0; i < n; i++)
+        {
+            // Check if the set can hold more pages
+            if (s.Count < capacity)
+            {
+                // Insert it into set if not present
+                // already which represents page fault
+                if (!s.Contains(pages[i]))
+                {
+                    s.Add(pages[i]);
+
+                    // increment page fault
+                    page_faults++;
+
+                    // Push the current page into the queue
+                    indexes.Enqueue(pages[i]);
+                }
+            }
+
+            // If the set is full then need to perform FIFO
+            // i.e. Remove the first page of the queue from
+            // set and queue both and insert the current page
+            else
+            {
+                // Check if current page is not already
+                // present in the set
+                if (!s.Contains(pages[i]))
+                {
+                    //Pop the first page from the queue
+                    int val = (int)indexes.Peek();
+
+                    indexes.Dequeue();
+
+                    // Remove the indexes page
+                    s.Remove(val);
+
+                    // insert the current page
+                    s.Add(pages[i]);
+
+                    // push the current page into
+                    // the queue
+                    indexes.Enqueue(pages[i]);
+
+                    // Increment page faults
+                    page_faults++;
+                }
+            }
+        }
+
+        return page_faults;
+    }
+
+    // Driver method
+    public static void Main(String []args)
+    {
+        int []pages = {7, 0, 1, 2, 0, 3, 0, 4,
+                        2, 3, 0, 3, 2};
+
+        int capacity = 4;
+        Console.Write(pageFaults(pages, pages.Length, capacity));
+    }
+}
+
+// This code is contributed by Arnab Kundu
+
+<script>
+        // JavaScript code for the above approach
+
+    // Method to find page faults using FIFO
+    function pageFaults(pages, n, capacity)
+    {
+        // To represent set of current pages. We use
+        // an unordered_set so that we quickly check
+        // if a page is present in set or not
+        let s = new Set();
+
+        // To store the pages in FIFO manner
+         var indexes = [];
+
+        // Start from initial page
+        let page_faults = 0;
+        for (let i=0; i<n; i++)
+        {
+            // Check if the set can hold more pages
+            if (s.size < capacity)
+            {
+                // Insert it into set if not present
+                // already which represents page fault
+                if (!s.has(pages[i]))
+                {
+                    s.add(pages[i]);
+
+                    // increment page fault
+                    page_faults++;
+
+                    // Push the current page into the queue
+                    indexes.push(pages[i]);
+                }
+            }
+
+            // If the set is full then need to perform FIFO
+            // i.e. remove the first page of the queue from
+            // set and queue both and insert the current page
+            else
+            {
+                // Check if current page is not already
+                // present in the set
+                if (!s.has(pages[i]))
+                {
+                    //Pop the first page from the queue
+                    let val = indexes[0];
+
+                    indexes.shift();
+
+                    // Remove the indexes page
+                    s.delete(val);
+
+                    // insert the current page
+                    s.add(pages[i]);
+
+                    // push the current page into
+                    // the queue
+                    indexes.push(pages[i]);
+
+                    // Increment page faults
+                    page_faults++;
+                }
+            }
+        }
+
+        return page_faults;
+    }
+
+// Driver Code
+
+        let pages = [7, 0, 1, 2, 0, 3, 0, 4,
+                        2, 3, 0, 3, 2];
+
+        let capacity = 4;
+        document.write(pageFaults(pages, pages.length, capacity));
+
+    // This code is contributed by sanjoy_62.
+    </script>
+
+7
+
+Note - We can also find the number of page hits. Just have to maintain a separate count. If the current page is already in the memory then that must be count as Page-hit.
+
+Time Complexity: O(n), where n is the number of pages. Space Complexity: O(capacity)
+
+Belady’s anomaly:
+
+Belady’s anomaly proves that it is possible to have more page faults when increasing the number of page frames while using the First in First Out (FIFO) page replacement algorithm. For example, if we consider reference string 3, 2, 1, 0, 3, 2, 4, 3, 2, 1, 0, 4 and 3 slots, we get 9 total page faults, but if we increase slots to 4, we get 10 page faults.

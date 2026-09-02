@@ -1,0 +1,1974 @@
+Source: https://www.geeksforgeeks.org/dsa/least-frequently-used-lfu-cache-implementation/
+Title: Least Frequently Used (LFU) Cache Implementation
+
+Design a data structure for the Least Frequently Used (LFU) Cache.
+
+LFU (Least Frequently Used) Cache is a caching algorithm where the least frequently accessed cache block is removed when the cache reaches its capacity. In LFU, we take into account how often a page is accessed and how recently it was accessed. If a page has a higher frequency than another, it cannot be removed, as it is accessed more frequently if multiple pages share the same frequency, the one that was accessed least recently (the Least Recently Used, or LRU page) is removed. This is typically handled using a FIFO (First-In-First-Out) method, where the oldest page among those with the same frequency is the one to be removed.
+
+It should support the following operations:
+
+- LFUCache (Capacity c): Initialize LFU cache with positive size capacity c.
+- get(key) - Returns the value of the given key if it exists in the cache; otherwise, returns -1.
+- put(key, value) - Inserts or updates the key-value pair in the cache. If the cache reaches capacity , remove the least frequently used item before adding the new item. If there is a tie between keys with the same frequency, the least recently used (LRU) key among them should be removed.
+
+Example:
+
+> Input: [ LFUCache cache = new LFUCache (2), put(1, 1) , put(2, 2) , get(1) , put(3, 3) , get(2), put(4, 4), get(3) , get(4), put(5, 5)] Output: [1 , -1, -1, 4] Explanation: The values mentioned in the output are the values returned by get operations . Initialize LFUCache class with capacity = 2. cache.put(1, 1) : (key, pair) = (1, 1) inserts the key-value pair (1, 1). cache.put(2, 2) : ( key , pair) = (2, 2) inserts the key-value pair (2, 2). cache.get(1) : The cache retrieves the value for key 1, which is 1. After accessing key 1, its frequency increases to 2. cache.put(3, 3) : The cache is now full (capacity = 2). To insert the new key-value pair (3, 3), the least frequently used key must be removed. key 2 have a frequency of 1. As a result, key 2 (the least recently accessed key) is removed and key-value pair (3, 3) is inserted with frequency 1. cache.get(2): cache returns -1 indicating that key 2 is not found. cache.put(4, 4) : key 3 is removed as it has frequency of 1 and key-value pair (4, 4) is inserted with frequency 1. cache.get(3): returns -1 (key 3 not found) cache.get(4) :The cache retrieves the value for key 4, which is 4. After accessing key 4, its frequency increases to 2. cache.put(5, 5) : key 1 and key 4 both have a frequency of 2 . Now, key 1 will be removed as key 4 is most recently used and key-value pair (5, 5) is inserted with frequency 1.
+
+Table of Content
+
+- [Naive Approach – 1] Using an Array of Nodes
+- [Naive Approach - 2] Using Singly Linked List
+- [Expected Approach] Using Doubly Linked List and Hashing
+
+### [Naive Approach - 1] Using an Array of Nodes
+
+> The idea is to implement LFU using an array to store nodes, where each node holds a key-value pair, frequency count and timestamp . The primary operations, get and put , are performed with linear time due to the need to search through the array. The size of the array will be equal to the given capacity of the cache. put(int key, int value) If the cache is full, find the node with the least frequency and replace this node with the new key and value. When there is a tie (i.e., two or more keys with the same frequency), the least recently used key would be replaced. else, simply add the new node to the end of the array with the timestamp of insertion and frequency value 1. Time Complexity: O(n) (because we might have to search for the least frequent node). get(int key) Search through the array for the node with the matching key. If found, update its timestamp and frequency and return its value , else return -1. Time Complexity: O(n) (because we might have to check every node).
+
+We initialize an array of size equal to that of our cache. Here each data element stores extra information to mark with an access timestamp and frequency. Timestamp shows the time at which the key is stored and frequency is count of number of time the key is used. We will use frequency to find the least frequently used element and the timestamp to find out the least recently used element in case of tie between frequency of multiple elements.
+
+// C++ Program to implement LFU Cache
+// using array
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Node {
+    int key, value;
+    int timeStamp, cnt;
+
+    Node(int key, int val, int timeStamp) {
+        this->key = key;
+        this->value = val;
+        this->cnt = 1;
+        this->timeStamp = timeStamp;
+    }
+};
+
+class LFUCache {
+
+  public:
+    int capacity;
+    int curSize;
+    int curTime;
+    vector<Node *> cacheList;
+
+    // Constructor to initialize values
+    LFUCache(int capacity) {
+        this->capacity = capacity;
+        curSize = 0;
+        curTime = 0;
+        cacheList.resize(capacity, nullptr);
+    }
+
+    // Function to get the key's value
+    int get(int key) {
+
+        curTime++;
+        for (int i = 0; i < capacity; i++) {
+            if (cacheList[i] != nullptr && cacheList[i]->key == key) {
+                cacheList[i]->cnt++;
+                cacheList[i]->timeStamp = curTime;
+                return cacheList[i]->value;
+            }
+        }
+        return -1;
+    }
+
+    // Function to put a key-value pair
+    void put(int key, int value) {
+
+        curTime++;
+
+        if (capacity == 0)
+            return;
+
+        for (int i = 0; i < capacity; i++) {
+            if (cacheList[i] != nullptr && cacheList[i]->key == key) {
+                cacheList[i]->value = value;
+                cacheList[i]->cnt++;
+                cacheList[i]->timeStamp = curTime;
+                return;
+            }
+        }
+
+        if (curSize < capacity) {
+
+            curSize++;
+            for (int i = 0; i < capacity; i++) {
+                if (cacheList[i] == nullptr) {
+                    cacheList[i] = new Node(key, value, curTime);
+                    return;
+                }
+            }
+        }
+
+        else {
+            int minCnt = INT_MAX, minTime = INT_MAX, minIndex = -1;
+            for (int i = 0; i < capacity; i++) {
+
+                if (cacheList[i]->cnt < minCnt ||
+                    (cacheList[i]->cnt == minCnt && cacheList[i]->timeStamp < minTime)) {
+                    minCnt = cacheList[i]->cnt;
+                    minTime = cacheList[i]->timeStamp;
+                    minIndex = i;
+                }
+            }
+            cacheList[minIndex] = new Node(key, value, curTime);
+        }
+    }
+};
+
+int main() {
+
+    LFUCache cache(2);
+
+    cache.put(1, 1);
+    cache.put(2, 2);
+    cout << cache.get(1) << " ";
+    cache.put(3, 3);
+    cout << cache.get(2) << " ";
+    cache.put(4, 4);
+    cout << cache.get(3) << " ";
+    cout << cache.get(4) << " ";
+    cache.put(5, 5);
+
+    return 0;
+}
+
+// Java Program to implement LFU Cache
+// using array
+import java.util.*;
+
+class Node {
+    int key, value;
+    int timeStamp, cnt;
+
+    Node(int key, int val, int timeStamp) {
+        this.key = key;
+        this.value = val;
+        this.cnt = 1;
+        this.timeStamp = timeStamp;
+    }
+}
+
+class LFUCache {
+    int capacity;
+    int curSize;
+    int curTime;
+    Node[] cacheList;
+
+    // Constructor to initialize values
+    LFUCache(int capacity) {
+        this.capacity = capacity;
+        curSize = 0;
+        curTime = 0;
+        cacheList = new Node[capacity];
+    }
+
+    // Function to get the key's value
+    int get(int key) {
+        curTime++;
+        for (int i = 0; i < capacity; i++) {
+            if (cacheList[i] != null
+                && cacheList[i].key == key) {
+                cacheList[i].cnt++;
+                cacheList[i].timeStamp = curTime;
+                return cacheList[i].value;
+            }
+        }
+        return -1;
+    }
+
+    // Function to put a key-value pair
+    void put(int key, int value) {
+        curTime++;
+        if (capacity == 0)
+            return;
+
+        for (int i = 0; i < capacity; i++) {
+            if (cacheList[i] != null
+                && cacheList[i].key == key) {
+                cacheList[i].value = value;
+                cacheList[i].cnt++;
+                cacheList[i].timeStamp = curTime;
+                return;
+            }
+        }
+
+        if (curSize < capacity) {
+            curSize++;
+            for (int i = 0; i < capacity; i++) {
+                if (cacheList[i] == null) {
+                    cacheList[i]
+                        = new Node(key, value, curTime);
+                    return;
+                }
+            }
+        }
+        else {
+            int minCnt = Integer.MAX_VALUE;
+            int minTime = Integer.MAX_VALUE;
+            int minIndex = -1;
+            for (int i = 0; i < capacity; i++) {
+                if (cacheList[i].cnt < minCnt
+                    || (cacheList[i].cnt == minCnt
+                        && cacheList[i].timeStamp
+                               < minTime)) {
+                    minCnt = cacheList[i].cnt;
+                    minTime = cacheList[i].timeStamp;
+                    minIndex = i;
+                }
+            }
+            cacheList[minIndex]
+                = new Node(key, value, curTime);
+        }
+    }
+}
+
+class GfG {
+    public static void main(String[] args) {
+        LFUCache cache = new LFUCache(2);
+
+        cache.put(1, 1);
+        cache.put(2, 2);
+        System.out.print(cache.get(1) + " ");
+        cache.put(3, 3);
+        System.out.print(cache.get(2) + " ");
+        cache.put(4, 4);
+        System.out.print(cache.get(3) + " ");
+        System.out.print(cache.get(4) + " ");
+        cache.put(5, 5);
+    }
+}
+
+# Python Program to implement LFU Cache
+# using array
+
+class Node:
+    def __init__(self, key, value, timeStamp):
+        self.key = key
+        self.value = value
+        self.cnt = 1
+        self.timeStamp = timeStamp
+
+# LFU Cache class
+class LFUCache:
+
+    # Constructor to initialize values
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.curSize = 0
+        self.curTime = 0
+        self.cacheList = [None] * capacity
+
+    # Function to get the key's value
+    def get(self, key):
+        self.curTime += 1
+        for i in range(self.capacity):
+            if self.cacheList[i] is not None and self.cacheList[i].key == key:
+                self.cacheList[i].cnt += 1
+                self.cacheList[i].timeStamp = self.curTime
+                return self.cacheList[i].value
+        return -1
+
+    # Function to put a key-value pair
+    def put(self, key, value):
+        self.curTime += 1
+
+        if self.capacity == 0:
+            return
+
+        for i in range(self.capacity):
+            if self.cacheList[i] is not None and self.cacheList[i].key == key:
+                self.cacheList[i].value = value
+                self.cacheList[i].cnt += 1
+                self.cacheList[i].timeStamp = self.curTime
+                return
+
+        if self.curSize < self.capacity:
+            self.curSize += 1
+            for i in range(self.capacity):
+                if self.cacheList[i] is None:
+                    self.cacheList[i] = Node(key, value, self.curTime)
+                    return
+        else:
+            minCnt = float('inf')
+            minTime = float('inf')
+            minIndex = -1
+            for i in range(self.capacity):
+                if self.cacheList[i].cnt < minCnt or (
+                    self.cacheList[i].cnt == minCnt and self.cacheList[i].timeStamp < minTime
+                ):
+                    minCnt = self.cacheList[i].cnt
+                    minTime = self.cacheList[i].timeStamp
+                    minIndex = i
+            self.cacheList[minIndex] = Node(key, value, self.curTime)
+
+if __name__ == "__main__":
+    cache = LFUCache(2)
+
+    cache.put(1, 1)
+    cache.put(2, 2)
+    print(cache.get(1), end=" ")
+    cache.put(3, 3)
+    print(cache.get(2), end=" ")
+    cache.put(4, 4)
+    print(cache.get(3), end=" ")
+    print(cache.get(4), end=" ")
+    cache.put(5, 5)
+
+// C# Program to implement LFU Cache
+// using array
+using System;
+
+class Node {
+    public int key, value, timeStamp, cnt;
+
+    public Node(int key, int value, int timeStamp) {
+        this.key = key;
+        this.value = value;
+        this.cnt = 1;
+        this.timeStamp = timeStamp;
+    }
+}
+
+// LFU Cache class
+class LFUCache {
+
+private int capacity;
+private int curSize;
+private int curTime;
+private Node[] cacheList;
+
+// Constructor to initialize values
+public LFUCache(int capacity) {
+    this.capacity = capacity;
+    curSize = 0;
+    curTime = 0;
+    cacheList = new Node[capacity];
+}
+
+// Function to get the key's value
+public int Get(int key) {
+    curTime++;
+    for (int i = 0; i < capacity; i++) {
+        if (cacheList[i] != null &&
+            	cacheList[i].key == key) {
+            cacheList[i].cnt++;
+            cacheList[i].timeStamp = curTime;
+            return cacheList[i].value;
+        }
+    }
+    return -1;
+}
+
+// Function to put a key-value pair
+public void Put(int key, int value) {
+    curTime++;
+
+    if (capacity == 0) return;
+
+    for (int i = 0; i < capacity; i++) {
+        if (cacheList[i] != null &&
+            	cacheList[i].key == key) {
+            cacheList[i].value = value;
+            cacheList[i].cnt++;
+            cacheList[i].timeStamp = curTime;
+            return;
+        }
+    }
+
+    if (curSize < capacity) {
+        curSize++;
+        for (int i = 0; i < capacity; i++) {
+            if (cacheList[i] == null) {
+                cacheList[i] = new Node(key, value, curTime);
+                return;
+            }
+        }
+    } else {
+        int minCnt = int.MaxValue;
+      	int minTime = int.MaxValue;
+      	int minIndex = -1;
+        for (int i = 0; i < capacity; i++) {
+            if (cacheList[i].cnt < minCnt ||
+                (cacheList[i].cnt == minCnt &&
+                 cacheList[i].timeStamp < minTime)) {
+                minCnt = cacheList[i].cnt;
+                minTime = cacheList[i].timeStamp;
+                minIndex = i;
+            }
+        }
+        cacheList[minIndex] = new Node(key, value, curTime);
+    }
+}
+}
+
+class GfG {
+static void Main() {
+    LFUCache cache = new LFUCache(2);
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+    Console.Write(cache.Get(1) + " ");
+    cache.Put(3, 3);
+    Console.Write(cache.Get(2) + " ");
+    cache.Put(4, 4);
+    Console.Write(cache.Get(3) + " ");
+  	Console.Write(cache.Get(4) + " ");
+    cache.Put(5, 5);
+}
+}
+
+// JavaScript Program to implement LFU Cache
+// using array
+
+class Node {
+    constructor(key, value, timeStamp) {
+        this.key = key;
+        this.value = value;
+        this.cnt = 1;
+        this.timeStamp = timeStamp;
+    }
+}
+
+// LFU Cache class
+class LFUCache {
+
+// Constructor to initialize values
+constructor(capacity) {
+    this.capacity = capacity;
+    this.curSize = 0;
+    this.curTime = 0;
+    this.cacheList = new Array(capacity).fill(null);
+}
+
+// Function to get the key's value
+get(key) {
+    this.curTime++;
+    for (let i = 0; i < this.capacity; i++) {
+        if (this.cacheList[i] !== null &&
+             this.cacheList[i].key === key) {
+            this.cacheList[i].cnt++;
+            this.cacheList[i].timeStamp = this.curTime;
+            return this.cacheList[i].value;
+        }
+    }
+    return -1;
+}
+
+// Function to put a key-value pair
+put(key, value) {
+    this.curTime++;
+
+    if (this.capacity === 0) return;
+
+    for (let i = 0; i < this.capacity; i++) {
+        if (this.cacheList[i] !== null &&
+             this.cacheList[i].key === key) {
+            this.cacheList[i].value = value;
+            this.cacheList[i].cnt++;
+            this.cacheList[i].timeStamp = this.curTime;
+            return;
+        }
+    }
+
+    if (this.curSize < this.capacity) {
+        this.curSize++;
+        for (let i = 0; i < this.capacity; i++) {
+            if (this.cacheList[i] === null) {
+                this.cacheList[i] = new Node(key, value, this.curTime);
+                return;
+            }
+        }
+    } else {
+        let minCnt = Infinity, minTime = Infinity, minIndex = -1;
+        for (let i = 0; i < this.capacity; i++) {
+            if (
+                this.cacheList[i].cnt < minCnt ||
+                (this.cacheList[i].cnt === minCnt &&
+                     this.cacheList[i].timeStamp < minTime)
+            ) {
+                minCnt = this.cacheList[i].cnt;
+                minTime = this.cacheList[i].timeStamp;
+                minIndex = i;
+            }
+        }
+        this.cacheList[minIndex] = new Node(key, value, this.curTime);
+    }
+}
+}
+
+const cache = new LFUCache(2);
+
+cache.put(1, 1);
+cache.put(2, 2);
+console.log(cache.get(1) + " ");
+cache.put(3, 3);
+console.log(cache.get(2) + " ");
+cache.put(4, 4);
+console.log(cache.get(3) + " ");
+console.log(cache.get(4) + " ");
+cache.put(5, 5);
+
+1 -1 -1 4
+
+Time Complexity: O(n), for each get() and put() operations where n is capacity of cache. Auxiliary Space: O(capacity)
+
+### [Naive Approach - 2] Using Singly Linked List
+
+> The approach to implement an LFU (Least Frequently Used) cache involves using a singly linked list to maintain the order of cache entries. get(int key): The cache searches for the node with the requested key by traversing the list from the head. If the key is found, update its timestamp and frequency and return its value , else return -1. This operation has a time complexity of O(n) because it may require scanning through the entire list. put(int key, int value): The cache inserts a new key-value pair at the end of the list if the cache has not reached its capacity. If the key already exists, the corresponding node is found and updated. When the cache reaches its capacity, the least frequently used element, is removed. When there is a tie (i.e., two or more keys with the same frequency), the least recently used node would be removed. The time complexity for this operation is also O(n) due to the traversal and reordering steps involved.
+
+// C++ Program to implement LFU Cache
+// using singly linked list
+#include<bits/stdc++.h>
+using namespace std;
+
+struct Node {
+    int key, value;
+    int timeStamp, cnt;
+    Node *next;
+
+    Node(int key, int val, int timeStamp) {
+        this->key = key;
+        this->value = val;
+        this->cnt = 1;
+        this->timeStamp = timeStamp;
+        this->next = nullptr;
+    }
+};
+
+//LFU Cache class
+class LFUCache {
+public:
+
+int capacity;
+int curSize;
+int curTime;
+Node* head;
+
+// Constructor to initialize values
+LFUCache(int capacity) {
+    this->capacity = capacity;
+    curSize = 0;
+    curTime = 0;
+    head = new Node(-1, -1, -1);
+}
+
+// Function to get the key's value
+int get(int key) {
+
+    curTime++;
+    Node* temp = head;
+
+    while(temp->next != nullptr) {
+        if(temp->next->key == key) {
+            temp->next->cnt++;
+            temp->next->timeStamp = curTime;
+            return temp->next->value;
+        }
+        temp = temp->next;
+    }
+    return -1;
+}
+
+// Function to put a key-value pair
+void put(int key, int value) {
+
+    curTime++;
+    if(capacity == 0) return;
+    Node* temp = head;
+
+    while(temp->next != nullptr) {
+        if(temp->next->key == key) {
+            temp->next->value = value;
+            temp->next->cnt++;
+            temp->next->timeStamp = curTime;
+            return;
+        }
+        temp = temp->next;
+    }
+
+    if(curSize < capacity) {
+
+        curSize++;
+        Node* temp = head;
+
+        while(temp->next != nullptr) {
+            temp = temp->next;
+        }
+        temp->next = new Node(key, value, curTime);
+        return;
+    }
+
+    else {
+        int minCnt = INT_MAX, minTime = INT_MAX;
+        Node* minNode = nullptr;
+        Node* temp = head;
+
+        while(temp->next != nullptr) {
+            if(temp->next->cnt < minCnt ||
+                    (temp->next->cnt == minCnt &&
+                        temp->next->timeStamp < minTime)) {
+                minCnt = temp->next->cnt;
+                minTime = temp->next->timeStamp;
+                minNode = temp;
+            }
+            temp = temp->next;
+        }
+        Node* delNode = minNode->next;
+        minNode->next = minNode->next->next;
+        delete delNode;
+
+        temp = head;
+        while(temp->next != nullptr) {
+            temp = temp->next;
+        }
+        temp->next = new Node(key, value, curTime);
+    }
+}
+};
+
+int main(){
+    LFUCache cache(2);
+
+    cache.put(1, 1);
+    cache.put(2, 2);
+    cout << cache.get(1) << " ";
+    cache.put(3, 3);
+    cout << cache.get(2) << " ";
+    cache.put(4, 4);
+    cout << cache.get(3) << " ";
+  	cout << cache.get(4) << " ";
+    cache.put(5, 5);
+    return 0;
+}
+
+// Java Program to implement LFU Cache
+// using singly linked list
+import java.util.*;
+
+class Node {
+    int key, value;
+    int timeStamp, cnt;
+    Node next;
+
+    Node(int key, int val, int timeStamp) {
+        this.key = key;
+        this.value = val;
+        this.cnt = 1;
+        this.timeStamp = timeStamp;
+        this.next = null;
+    }
+}
+
+class LFUCache {
+int capacity;
+int curSize;
+int curTime;
+Node head;
+
+// Constructor to initialize values
+LFUCache(int capacity) {
+    this.capacity = capacity;
+    curSize = 0;
+    curTime = 0;
+    head = new Node(-1, -1, -1);
+}
+
+// Function to get the key's value
+int get(int key) {
+    curTime++;
+    Node temp = head;
+
+    while(temp.next != null) {
+        if(temp.next.key == key) {
+            temp.next.cnt++;
+            temp.next.timeStamp = curTime;
+            return temp.next.value;
+        }
+        temp = temp.next;
+    }
+    return -1;
+}
+
+// Function to put a key-value pair
+void put(int key, int value) {
+    curTime++;
+    if(capacity == 0) return;
+    Node temp = head;
+
+    while(temp.next != null) {
+        if(temp.next.key == key) {
+            temp.next.value = value;
+            temp.next.cnt++;
+            temp.next.timeStamp = curTime;
+            return;
+        }
+        temp = temp.next;
+    }
+
+    if(curSize < capacity) {
+
+        curSize++;
+        temp = head;
+
+        while(temp.next != null) {
+            temp = temp.next;
+        }
+        temp.next = new Node(key, value, curTime);
+        return;
+    }
+
+    else {
+      	int minCnt = Integer.MAX_VALUE;
+      	int minTime = Integer.MAX_VALUE;
+        Node minNode = null;
+        temp = head;
+
+        while(temp.next != null) {
+            if(temp.next.cnt < minCnt ||
+                    (temp.next.cnt == minCnt &&
+                        temp.next.timeStamp < minTime)) {
+                minCnt = temp.next.cnt;
+                minTime = temp.next.timeStamp;
+                minNode = temp;
+            }
+            temp = temp.next;
+        }
+        minNode.next = minNode.next.next;
+
+        temp = head;
+        while(temp.next != null) {
+            temp = temp.next;
+        }
+        temp.next = new Node(key, value, curTime);
+    }
+}
+}
+
+class GfG {
+public static void main(String[] args) {
+    LFUCache cache = new LFUCache(2);
+
+    cache.put(1, 1);
+    cache.put(2, 2);
+    System.out.print(cache.get(1) + " ");
+    cache.put(3, 3);
+    System.out.print(cache.get(2) + " ");
+    cache.put(4, 4);
+    System.out.print(cache.get(3) + " ");
+  	System.out.print(cache.get(4) + " ");
+    cache.put(5, 5);
+}
+}
+
+# Python Program to implement LFU Cache
+# singly singly linked list
+
+class Node:
+    def __init__(self, key, value, timeStamp):
+        self.key = key
+        self.value = value
+        self.cnt = 1
+        self.timeStamp = timeStamp
+        self.next = None
+
+# LFU Cache class
+class LFUCache:
+
+    # Constructor to initialize values
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.curSize = 0
+        self.curTime = 0
+        self.head = Node(-1, -1, -1)
+
+    # Function to get the key's value
+    def get(self, key):
+        self.curTime += 1
+
+        temp = self.head
+        while temp.next is not None:
+            if temp.next.key == key:
+                temp.next.cnt += 1
+                temp.next.timeStamp = self.curTime
+                return temp.next.value
+            temp = temp.next
+
+        return -1
+
+    # Function to put a key-value pair
+    def put(self, key, value):
+        self.curTime += 1
+
+        if self.capacity == 0:
+            return
+
+        temp = self.head
+        while temp.next is not None:
+            if temp.next.key == key:
+                temp.next.value = value
+                temp.next.cnt += 1
+                temp.next.timeStamp = self.curTime
+                return
+            temp = temp.next
+
+        if self.curSize < self.capacity:
+            self.curSize += 1
+            temp = self.head
+            while temp.next is not None:
+                temp = temp.next
+            temp.next = Node(key, value, self.curTime)
+            return
+
+        else:
+            minCnt = float('inf')
+            minTime = float('inf')
+            minNode = None
+            temp = self.head
+
+            while temp.next is not None:
+                if temp.next.cnt < minCnt or (
+                    temp.next.cnt == minCnt and temp.next.timeStamp < minTime
+                ):
+                    minCnt = temp.next.cnt
+                    minTime = temp.next.timeStamp
+                    minNode = temp
+                temp = temp.next
+
+            minNode.next = minNode.next.next
+
+            temp = self.head
+            while temp.next is not None:
+                temp = temp.next
+            temp.next = Node(key, value, self.curTime)
+
+if __name__ == "__main__":
+    cache = LFUCache(2)
+
+    cache.put(1, 1)
+    cache.put(2, 2)
+    print(cache.get(1), end=" ")
+    cache.put(3, 3)
+    print(cache.get(2), end=" ")
+    cache.put(4, 4)
+    print(cache.get(3), end=" ")
+    print(cache.get(4), end=" ")
+    cache.put(5, 5)
+
+// C# Program to implement LFU Cache
+// using singly linked list
+using System;
+
+class Node {
+    public int key, value, timeStamp, cnt;
+    public Node next;
+
+    public Node(int key, int value, int timeStamp) {
+        this.key = key;
+        this.value = value;
+        this.cnt = 1;
+        this.timeStamp = timeStamp;
+        this.next = null;
+    }
+}
+
+// LFU Cache class
+class LFUCache {
+
+private int capacity;
+private int curSize;
+private int curTime;
+Node head;
+
+// Constructor to initialize values
+public LFUCache(int capacity) {
+    this.capacity = capacity;
+    curSize = 0;
+    curTime = 0;
+    head = new Node(-1, -1, -1);
+}
+
+// Function to get the key's value
+public int Get(int key) {
+    curTime++;
+    Node temp = head;
+
+    while(temp.next != null) {
+        if(temp.next.key == key) {
+            temp.next.cnt++;
+            temp.next.timeStamp = curTime;
+            return temp.next.value;
+        }
+        temp = temp.next;
+    }
+    return -1;
+}
+
+// Function to put a key-value pair
+public void Put(int key, int value) {
+    curTime++;
+    if(capacity == 0) return;
+    Node temp = head;
+
+    while(temp.next != null) {
+        if(temp.next.key == key) {
+            temp.next.value = value;
+            temp.next.cnt++;
+            temp.next.timeStamp = curTime;
+            return;
+        }
+        temp = temp.next;
+    }
+
+    if(curSize < capacity) {
+
+        curSize++;
+        temp = head;
+
+        while(temp.next != null) {
+            temp = temp.next;
+        }
+        temp.next = new Node(key, value, curTime);
+        return;
+    }
+
+    else {
+      	int minCnt = int.MaxValue;
+      	int minTime = int.MaxValue;
+        Node minNode = null;
+        temp = head;
+
+        while(temp.next != null) {
+            if(temp.next.cnt < minCnt ||
+                    (temp.next.cnt == minCnt &&
+                        temp.next.timeStamp < minTime)) {
+                minCnt = temp.next.cnt;
+                minTime = temp.next.timeStamp;
+                minNode = temp;
+            }
+            temp = temp.next;
+        }
+        minNode.next = minNode.next.next;
+
+        temp = head;
+        while(temp.next != null) {
+            temp = temp.next;
+        }
+        temp.next = new Node(key, value, curTime);
+    }
+}
+}
+
+class GfG {
+static void Main() {
+    LFUCache cache = new LFUCache(2);
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+    Console.Write(cache.Get(1) + " ");
+    cache.Put(3, 3);
+    Console.Write(cache.Get(2) + " ");
+    cache.Put(4, 4);
+    Console.Write(cache.Get(3) + " ");
+  	Console.Write(cache.Get(4) + " ");
+  	cache.Put(5, 5);
+}
+}
+
+// JavaScript Program to implement LFU Cache
+// using singly linked list
+
+class Node {
+    constructor(key, value, timeStamp) {
+        this.key = key;
+        this.value = value;
+        this.cnt = 1;
+        this.timeStamp = timeStamp;
+        this.next = null;
+    }
+}
+
+// LFU Cache class
+class LFUCache {
+
+// Constructor to initialize values
+constructor(capacity) {
+    this.capacity = capacity;
+    this.curSize = 0;
+    this.curTime = 0;
+    this.head = new Node(-1, -1, -1);
+}
+
+// Function to get the key's value
+get(key) {
+    this.curTime++;
+
+    let temp = this.head;
+    while (temp.next !== null) {
+        if (temp.next.key === key) {
+            temp.next.cnt++;
+            temp.next.timeStamp = this.curTime;
+            return temp.next.value;
+        }
+        temp = temp.next;
+    }
+    return -1;
+}
+
+// Function to put a key-value pair
+put(key, value) {
+    this.curTime++;
+    if (this.capacity === 0) return;
+
+    let temp = this.head;
+
+    while(temp.next != null) {
+        if(temp.next.key == key) {
+            temp.next.value = value;
+            temp.next.cnt++;
+            temp.next.timeStamp = this.curTime;
+            return;
+        }
+        temp = temp.next;
+    }
+
+    if(this.curSize < this.capacity) {
+
+        this.curSize++;
+        temp = this.head;
+
+        while(temp.next != null) {
+            temp = temp.next;
+        }
+        temp.next = new Node(key, value, this.curTime);
+        return;
+    }
+
+    else {
+        let minCnt = Infinity, minTime = Infinity;
+        let minNode = null;
+        temp = this.head;
+
+        while(temp.next != null) {
+            if(temp.next.cnt < minCnt ||
+                    (temp.next.cnt == minCnt &&
+                        temp.next.timeStamp < minTime)) {
+                minCnt = temp.next.cnt;
+                minTime = temp.next.timeStamp;
+                minNode = temp;
+            }
+            temp = temp.next;
+        }
+        minNode.next = minNode.next.next;
+
+        temp = this.head;
+        while(temp.next != null) {
+            temp = temp.next;
+        }
+        temp.next = new Node(key, value, this.curTime);
+    }
+}
+}
+
+const cache = new LFUCache(2);
+
+cache.put(1, 1);
+cache.put(2, 2);
+console.log(cache.get(1) + " ");
+cache.put(3, 3);
+console.log(cache.get(2) + " ");
+cache.put(4, 4);
+console.log(cache.get(3) + " ");
+console.log(cache.get(4) + " ");
+cache.put(5, 5);
+
+1 -1 -1 4
+
+Time Complexity: O(n), for each get() and put() operations where n is capacity of cache. Auxiliary Space: O(capacity)
+
+### [Expected Approach] Using Doubly Linked List and Hashing
+
+> The idea is to create separate doubly linked list where each D LL stores the nodes with similar frequency from highest to lower priority order. To manage these, create two hash map , first to map the key with its corresponding node and other to map the frequency with head and tail of its corresponding dll . Also, maintain a counter minFreq that keep track of the minimum frequency across all nodes in this cache. get (key): Check if key is present in cacheMap or not. If key is not in cacheMap simply return -1, else increment the frequency freq of key by 1 and add the key's node just after the head of dll of frequency freq+1. Also, remove the node from current dll and return the key's value. put (key, value): If key is present in cacheMap , update the key-value pair and increment the frequency freq of key by 1. And similar to the get() operation, remove the node from current dll and add it to next dll. Else if key is absent and cache is not full, create the new node corresponding to key-value pair and add this node to dll of frequency 1. Else if cache is full, remove the node connected to the tail of dll of minFreq which is the least frequent node with least priority and add the new node to dll of frequency 1.
+
+illustration:
+
+// C++ Program to implement LFU (Least Frequently Used) cache
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int key;
+    int value;
+    int cnt;
+    Node *next;
+    Node *prev;
+
+    Node(int key, int val) {
+        this->key = key;
+        this->value = val;
+
+        // Initial frequency is 1
+        cnt = 1;
+    }
+};
+
+// LFU Cache class
+class LFUCache {
+public:
+
+    // Maps a key to the corresponding Node
+    unordered_map<int, Node *> cacheMap;
+
+    // Maps frequency to a pair of head and tail pointers
+    unordered_map<int, pair<Node *, Node *>> freqMap;
+
+    // Tracks the minimum frequency of the cache
+    int minFreq;
+
+    // Maximum capacity of the cache
+    int capacity;
+
+    // Constructor to initialize LFUCache with a given capacity
+    LFUCache(int capacity) {
+        this->capacity = capacity;
+
+        // Initial minimum frequency is 0
+        minFreq = 0;
+    }
+
+    // Function to get the value associated with a key
+    int get(int key) {
+
+        // Return -1 if key is not found in the cache
+        if (cacheMap.find(key) == cacheMap.end()) {
+            return -1;
+        }
+
+        // Retrieve the Node and update its frequency
+        Node *node = cacheMap[key];
+        int res = node->value;
+        updateFreq(node);
+        return res;
+    }
+
+    // Function to add or update a key-value pair in the cache
+    void put(int key, int value) {
+
+        // Do nothing if the cache has zero capacity
+        if (capacity == 0)
+            return;
+
+        // Update value if key already exists in the cache
+        if (cacheMap.find(key) != cacheMap.end()) {
+
+            Node *node = cacheMap[key];
+            node->value = value;
+            updateFreq(node);
+        }
+
+        // Add a new key-value pair to the cache
+        else {
+
+            // Remove the least frequently used node if cache is full
+            if (cacheMap.size() == capacity) {
+
+                Node *node = freqMap[minFreq].second->prev;
+                cacheMap.erase(node->key);
+                remove(node);
+
+                // Remove the frequency list if it's empty
+                if (freqMap[minFreq].first->next == freqMap[minFreq].second) {
+                    freqMap.erase(minFreq);
+                }
+
+                // Free memory
+                delete node;
+            }
+
+            // Create a new node for the key-value pair
+            Node *node = new Node(key, value);
+            cacheMap[key] = node;
+
+            // Reset minimum frequency to 1
+            minFreq = 1;
+            add(node, 1);
+        }
+    }
+
+    // Add a node to the frequency list
+    void add(Node *node, int freq) {
+
+        // Initialize the frequency list if it doesn't exist
+        if (freqMap.find(freq) == freqMap.end()) {
+
+            // Dummy head node
+            Node *head = new Node(-1, -1);
+
+            // Dummy tail node
+            Node *tail = new Node(-1, -1);
+            head->next = tail;
+            tail->prev = head;
+            freqMap[freq] = {head, tail};
+        }
+
+        // Insert the node right after the head
+        Node *head = freqMap[freq].first;
+        Node *temp = head->next;
+        node->next = temp;
+        node->prev = head;
+        head->next = node;
+        temp->prev = node;
+    }
+
+    // Remove a node from the frequency list
+    void remove(Node *node) {
+
+        // Update pointers to exclude the node
+        Node *delprev = node->prev;
+        Node *delnext = node->next;
+        delprev->next = delnext;
+        delnext->prev = delprev;
+    }
+
+    // Update the frequency of a node
+    void updateFreq(Node *node) {
+
+        // Get the current frequency
+        int oldFreq = node->cnt;
+
+        // Increment the frequency
+        node->cnt++;
+
+        // Remove the node from the current frequency list
+        remove(node);
+
+        // Remove the frequency list if it becomes empty
+        if (freqMap[oldFreq].first->next == freqMap[oldFreq].second) {
+            freqMap.erase(oldFreq);
+
+            // Update minimum frequency if needed
+            if (minFreq == oldFreq) {
+                minFreq++;
+            }
+        }
+
+        // Add the node to the updated frequency list
+        add(node, node->cnt);
+    }
+};
+
+int main() {
+
+    LFUCache cache(2);
+
+    cache.put(1, 1);
+    cache.put(2, 2);
+    cout << cache.get(1) << " ";
+    cache.put(3, 3);
+    cout << cache.get(2) << " ";
+    cache.put(4, 4);
+    cout << cache.get(3) << " ";
+    cout << cache.get(4) << " ";
+    cache.put(5, 5);
+
+    return 0;
+}
+
+// Java program to implement LFU (Least Frequently Used)
+// using hashing
+import java.util.*;
+
+class Node {
+    int key;
+    int value;
+    int cnt;
+    Node next;
+    Node prev;
+
+    Node(int key, int val) {
+        this.key = key;
+        this.value = val;
+
+        // Initial frequency is 1
+        cnt = 1;
+    }
+}
+
+class LFUCache {
+
+    // Maps key to the Node
+    private Map<Integer, Node> cacheMap;
+
+    // Maps frequency to doubly linked list
+    //(head, tail) of Nodes with that frequency
+    private Map<Integer, Pair<Node, Node> > freqMap;
+
+    // Tracks the minimum frequency
+    private int minFreq;
+
+    // Capacity of the LFU cache
+    private int capacity;
+
+    // Constructor to initialize LFUCache with a given capacity
+    LFUCache(int capacity) {
+        this.capacity = capacity;
+
+        // Initial minimum frequency is 0
+        minFreq = 0;
+        cacheMap = new HashMap<>();
+        freqMap = new HashMap<>();
+    }
+
+    // Function to get the value for a given key
+    int get(int key) {
+
+        // Return -1 if key is not found in the cache
+        if (!cacheMap.containsKey(key)) {
+            return -1;
+        }
+
+        // Retrieve the Node and update its frequency
+        Node node = cacheMap.get(key);
+        int res = node.value;
+        updateFreq(node);
+        return res;
+    }
+
+    // Function to put a key-value pair into the cache
+    void put(int key, int value) {
+
+        // Do nothing if the cache has zero capacity
+        if (capacity == 0) {
+            return;
+        }
+
+        // Update value if key already exists in the cache
+        if (cacheMap.containsKey(key)) {
+            Node node = cacheMap.get(key);
+            node.value = value;
+            updateFreq(node);
+        }
+
+        // Add a new key-value pair to the cache
+        else {
+
+            // Remove the least frequently used node if cache is full
+            if (cacheMap.size() == capacity) {
+                Node node
+                    = freqMap.get(minFreq).second.prev;
+                cacheMap.remove(node.key);
+                remove(node);
+
+                // Remove the frequency list if it's empty
+                if (freqMap.get(minFreq).first.next
+                    == freqMap.get(minFreq).second) {
+                    freqMap.remove(minFreq);
+                }
+            }
+
+            // Create a new node for the key-value pair
+            Node node = new Node(key, value);
+            cacheMap.put(key, node);
+
+            // Reset minimum frequency to 1
+            minFreq = 1;
+            add(node, 1);
+        }
+    }
+
+    // Add a node right after the head
+    void add(Node node, int freq) {
+
+        // Initialize the frequency list if it doesn't exist
+        if (!freqMap.containsKey(freq)) {
+
+            // Dummy head node
+            Node head = new Node(-1, -1);
+
+            // Dummy tail node
+            Node tail = new Node(-1, -1);
+            head.next = tail;
+            tail.prev = head;
+            freqMap.put(freq, new Pair<>(head, tail));
+        }
+
+        // Insert the node right after the head
+        Node head = freqMap.get(freq).first;
+        Node temp = head.next;
+        node.next = temp;
+        node.prev = head;
+        head.next = node;
+        temp.prev = node;
+    }
+
+    // Remove a node from the list
+    void remove(Node node) {
+
+        // Update pointers to exclude the node
+        Node delprev = node.prev;
+        Node delnext = node.next;
+        delprev.next = delnext;
+        delnext.prev = delprev;
+    }
+
+    // Update the frequency of a node
+    void updateFreq(Node node) {
+
+        // Get the current frequency
+        int oldFreq = node.cnt;
+
+        // Increment the frequency
+        node.cnt++;
+
+        // Remove the node from the current frequency list
+        remove(node);
+        if (freqMap.get(oldFreq).first.next
+            == freqMap.get(oldFreq).second) {
+            freqMap.remove(oldFreq);
+
+            // Update minimum frequency if needed
+            if (minFreq == oldFreq) {
+                minFreq++;
+            }
+        }
+
+        // Add the node to the updated frequency list
+        add(node, node.cnt);
+    }
+
+    static class Pair<F, S> {
+        F first;
+        S second;
+
+        Pair(F first, S second) {
+            this.first = first;
+            this.second = second;
+        }
+    }
+}
+
+class GfG {
+    public static void main(String[] args) {
+        LFUCache cache = new LFUCache(2);
+
+        cache.put(1, 1);
+        cache.put(2, 2);
+        System.out.print(cache.get(1) + " ");
+        cache.put(3, 3);
+        System.out.print(cache.get(2) + " ");
+        cache.put(4, 4);
+        System.out.print(cache.get(3) + " ");
+        System.out.print(cache.get(4) + " ");
+        cache.put(5, 5);
+    }
+}
+
+# Python program to implement LFU (Least Frequently Used)
+# using hashing
+
+class Node:
+    def __init__(self, key, val):
+        self.key = key
+        self.value = val
+
+        # Initial frequency is 1
+        self.cnt = 1
+        self.next = None
+        self.prev = None
+
+class LFUCache:
+
+    # Constructor to initialize the LFU cache
+    def __init__(self, capacity):
+
+        # Maps key to Node
+        self.cacheMap = {}
+
+        # Maps frequency to doubly linked list
+        # (head, tail) of Nodes
+        self.freqMap = {}
+
+        # Tracks the minimum frequency
+        self.minFreq = 0
+
+        # Capacity of the LFU cache
+        self.capacity = capacity
+
+    # Function to get the value for a given key
+    def get(self, key):
+
+        # Return -1 if key is not found in the cache
+        if key not in self.cacheMap:
+            return -1
+
+        # Retrieve the Node and update its frequency
+        node = self.cacheMap[key]
+        res = node.value
+        self.updateFreq(node)
+        return res
+
+    # Function to put a key-value pair into the cache
+    def put(self, key, value):
+
+        # Do nothing if the cache has zero capacity
+        if self.capacity == 0:
+            return
+
+        # Update value if key already exists in the cache
+        if key in self.cacheMap:
+            node = self.cacheMap[key]
+            node.value = value
+            self.updateFreq(node)
+
+        # Add a new key-value pair to the cache
+        else:
+
+            # Remove the least frequently used node if cache is full
+            if len(self.cacheMap) == self.capacity:
+                node = self.freqMap[self.minFreq][1].prev
+                del self.cacheMap[node.key]
+                self.remove(node)
+
+                # Remove the frequency list if it's empty
+                if self.freqMap[self.minFreq][0].next == self.freqMap[self.minFreq][1]:
+                    del self.freqMap[self.minFreq]
+
+            # Create a new node for the key-value pair
+            node = Node(key, value)
+            self.cacheMap[key] = node
+
+            # Reset minimum frequency to 1
+            self.minFreq = 1
+            self.add(node, 1)
+
+    # Add a node right after the head
+    def add(self, node, freq):
+
+        # Initialize the frequency list if it doesn't exist
+        if freq not in self.freqMap:
+
+            # Dummy head node
+            head = Node(-1, -1)
+
+            # Dummy tail node
+            tail = Node(-1, -1)
+            head.next = tail
+            tail.prev = head
+            self.freqMap[freq] = (head, tail)
+
+        # Insert the node right after the head
+        head = self.freqMap[freq][0]
+        temp = head.next
+        node.next = temp
+        node.prev = head
+        head.next = node
+        temp.prev = node
+
+    # Remove a node from the list
+    def remove(self, node):
+
+        # Update pointers to exclude the node
+        delprev = node.prev
+        delnext = node.next
+        delprev.next = delnext
+        delnext.prev = delprev
+
+    # Update the frequency of a node
+    def updateFreq(self, node):
+
+        # Get the current frequency
+        oldFreq = node.cnt
+
+        # Increment the frequency
+        node.cnt += 1
+
+        # Remove the node from the current frequency list
+        self.remove(node)
+        if self.freqMap[oldFreq][0].next == self.freqMap[oldFreq][1]:
+            del self.freqMap[oldFreq]
+
+            # Update minimum frequency if needed
+            if self.minFreq == oldFreq:
+                self.minFreq += 1
+
+        # Add the node to the updated frequency list
+        self.add(node, node.cnt)
+
+if __name__ == "__main__":
+    cache = LFUCache(2)
+
+    cache.put(1, 1)
+    cache.put(2, 2)
+    print(cache.get(1), end=" ")
+    cache.put(3, 3)
+    print(cache.get(2), end=" ")
+    cache.put(4, 4)
+    print(cache.get(3), end=" ")
+    print(cache.get(4), end=" ")
+    cache.put(5, 5)
+
+// C# program to implement LFU (Least Frequently Used)
+// using hashing
+using System;
+using System.Collections.Generic;
+
+class Node {
+     public int key;
+     public int value;
+     public int cnt;
+     public Node next;
+     public Node prev;
+
+    public Node(int key, int val) {
+        this.key = key;
+        this.value = val;
+
+        // Initial frequency is 1
+        cnt = 1;
+    }
+}
+
+class LFUCache {
+
+    // Maps key to the Node
+    private Dictionary<int, Node> cacheMap;
+
+    // Maps frequency to doubly linked list
+    // (head, tail) of Nodes with that frequency
+    private Dictionary<int, Pair<Node, Node>> freqMap;
+
+    // Tracks the minimum frequency
+    private int minFreq;
+
+    // Capacity of the LFU cache
+    private int capacity;
+
+    // Constructor to initialize LFUCache with a given
+    // capacity
+    public LFUCache(int capacity) {
+        this.capacity = capacity;
+
+        // Initial minimum frequency is 0
+        minFreq = 0;
+        cacheMap = new Dictionary<int, Node>();
+        freqMap = new Dictionary<int, Pair<Node, Node> >();
+    }
+
+    // Function to get the value for a given key
+    public int Get(int key) {
+
+        // Return -1 if key is not found in the cache
+        if (!cacheMap.ContainsKey(key)) {
+            return -1;
+        }
+
+        // Retrieve the Node and update its frequency
+        Node node = cacheMap[key];
+        int res = node.value;
+        UpdateFreq(node);
+        return res;
+    }
+
+    // Function to put a key-value pair into the cache
+    public void Put(int key, int value) {
+
+        // Do nothing if the cache has zero capacity
+        if (capacity == 0) {
+            return;
+        }
+
+        // Update value if key already exists in the cache
+        if (cacheMap.ContainsKey(key)) {
+            Node node = cacheMap[key];
+            node.value = value;
+            UpdateFreq(node);
+        }
+
+        // Add a new key-value pair to the cache
+        else {
+
+            // Remove the least frequently used node if
+            // cache is full
+            if (cacheMap.Count == capacity) {
+                Node node = freqMap[minFreq].second.prev;
+                cacheMap.Remove(node.key);
+                Remove(node);
+
+                // Remove the frequency list if it's empty
+                if (freqMap[minFreq].first.next
+                    == freqMap[minFreq].second) {
+                    freqMap.Remove(minFreq);
+                }
+            }
+
+            // Create a new node for the key-value pair
+            Node newNode = new Node(key, value);
+            cacheMap[key] = newNode;
+
+            // Reset minimum frequency to 1
+            minFreq = 1;
+            Add(newNode, 1);
+        }
+    }
+
+    // Add a node right after the head
+    private void Add(Node node, int freq) {
+
+        // Initialize the frequency list if it doesn't exist
+        if (!freqMap.ContainsKey(freq)) {
+
+            // Dummy head node
+            Node head = new Node(-1, -1);
+
+            // Dummy tail node
+            Node tail = new Node(-1, -1);
+            head.next = tail;
+            tail.prev = head;
+            freqMap[freq]
+                = new Pair<Node, Node>(head, tail);
+        }
+
+        // Insert the node right after the head
+        Node headNode = freqMap[freq].first;
+        Node temp = headNode.next;
+        node.next = temp;
+        node.prev = headNode;
+        headNode.next = node;
+        temp.prev = node;
+    }
+
+    // Remove a node from the list
+    private void Remove(Node node) {
+
+        // Update pointers to exclude the node
+        Node delprev = node.prev;
+        Node delnext = node.next;
+        delprev.next = delnext;
+        delnext.prev = delprev;
+    }
+
+    // Update the frequency of a node
+    private void UpdateFreq(Node node) {
+
+        // Get the current frequency
+        int oldFreq = node.cnt;
+
+        // Increment the frequency
+        node.cnt++;
+
+        // Remove the node from the current frequency list
+        Remove(node);
+        if (freqMap[oldFreq].first.next
+            == freqMap[oldFreq].second) {
+            freqMap.Remove(oldFreq);
+
+            // Update minimum frequency if needed
+            if (minFreq == oldFreq) {
+                minFreq++;
+            }
+        }
+
+        // Add the node to the updated frequency list
+        Add(node, node.cnt);
+    }
+
+    // Helper class to represent a pair of nodes
+    private class Pair<F, S> {
+        public F first;
+        public S second;
+
+        public Pair(F first, S second) {
+            this.first = first;
+            this.second = second;
+        }
+    }
+}
+
+class GfG {
+    static void Main(string[] args) {
+        LFUCache cache = new LFUCache(2);
+
+        cache.Put(1, 1);
+        cache.Put(2, 2);
+        Console.Write(cache.Get(1) + " ");
+        cache.Put(3, 3);
+        Console.Write(cache.Get(2) + " ");
+        cache.Put(4, 4);
+        Console.Write(cache.Get(3) + " ");
+        Console.Write(cache.Get(4) + " ");
+        cache.Put(5, 5);
+    }
+}
+
+// JavaScript program to implement LFU (Least Frequently
+// Used) using hashing
+
+class Node {
+
+    constructor(key, val) {
+        this.key = key;
+        this.value = val;
+
+        // Initial frequency is 1
+        this.cnt = 1;
+        this.next = null;
+        this.prev = null;
+    }
+}
+
+class LFUCache {
+
+    // Constructor to initialize LFUCache with a given
+    // capacity
+    constructor(capacity) {
+
+        // Maps key to the Node
+        this.cacheMap = new Map();
+
+        // Maps frequency to doubly linked list
+        // (head, tail) of Nodes with that frequency
+        this.freqMap = new Map();
+
+        // Tracks the minimum frequency
+        this.minFreq = 0;
+
+        // Capacity of the LFU cache
+        this.capacity = capacity;
+    }
+
+    get(key) {
+
+        // Return -1 if key is not found in the cache
+        if (!this.cacheMap.has(key)) {
+            return -1;
+        }
+
+        // Retrieve the Node and update its frequency
+        const node = this.cacheMap.get(key);
+        const res = node.value;
+        this.updateFreq(node);
+        return res;
+    }
+
+    // Function to put a key-value pair into the cache
+    put(key, value) {
+
+        // Do nothing if the cache has zero capacity
+        if (this.capacity === 0)
+            return;
+
+        // Update value if key already exists in the cache
+        if (this.cacheMap.has(key)) {
+            const node = this.cacheMap.get(key);
+            node.value = value;
+            this.updateFreq(node);
+        }
+
+        // Add a new key-value pair to the cache
+        else {
+
+            // Remove the least frequently used node if
+            // cache is full
+            if (this.cacheMap.size === this.capacity) {
+                const node = this.freqMap.get(this.minFreq)
+                                 .tail.prev;
+                this.cacheMap.delete(node.key);
+                this.remove(node);
+
+                // Remove the frequency list if it's empty
+                if (this.freqMap.get(this.minFreq).head.next
+                    === this.freqMap.get(this.minFreq)
+                            .tail) {
+                    this.freqMap.delete(this.minFreq);
+                }
+            }
+
+            // Create a new node for the key-value pair
+            const node = new Node(key, value);
+            this.cacheMap.set(key, node);
+
+            // Reset minimum frequency to 1
+            this.minFreq = 1;
+            this.add(node, 1);
+        }
+    }
+
+    // Add a node right after the head
+    add(node, freq) {
+
+        // Initialize the frequency list if it doesn't exist
+        if (!this.freqMap.has(freq)) {
+
+            // Dummy head node
+            const head = new Node(-1, -1);
+
+            // Dummy tail node
+            const tail = new Node(-1, -1);
+            head.next = tail;
+            tail.prev = head;
+            this.freqMap.set(freq, {head, tail});
+        }
+
+        // Insert the node right after the head
+        const head = this.freqMap.get(freq).head;
+        const temp = head.next;
+        node.next = temp;
+        node.prev = head;
+        head.next = node;
+        temp.prev = node;
+    }
+
+    // Remove a node from the list
+    remove(node) {
+
+        // Update pointers to exclude the node
+        const delprev = node.prev;
+        const delnext = node.next;
+        delprev.next = delnext;
+        delnext.prev = delprev;
+    }
+
+    // Update the frequency of a node
+    updateFreq(node) {
+
+        // Get the current frequency
+        const oldFreq = node.cnt;
+
+        // Increment the frequency
+        node.cnt++;
+
+        // Remove the node from the current frequency list
+        this.remove(node);
+        if (this.freqMap.get(oldFreq).head.next
+            === this.freqMap.get(oldFreq).tail) {
+            this.freqMap.delete(oldFreq);
+
+            // Update minimum frequency if needed
+            if (this.minFreq === oldFreq) {
+                this.minFreq++;
+            }
+        }
+
+        // Add the node to the updated frequency list
+        this.add(node, node.cnt);
+    }
+}
+
+const cache = new LFUCache(2);
+
+cache.put(1, 1);
+cache.put(2, 2);
+console.log(cache.get(1) + " ");
+cache.put(3, 3);
+console.log(cache.get(2) + " ");
+cache.put(4, 4);
+console.log(cache.get(3) + " ");
+console.log(cache.get(4) + " ");
+cache.put(5, 5);
+
+1 -1 -1 4
+
+Time Complexity : get(key) - O(1) and put(key, value) - O(1) Auxiliary Space : O(capacity)

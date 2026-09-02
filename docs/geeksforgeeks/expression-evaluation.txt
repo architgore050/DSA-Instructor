@@ -1,0 +1,622 @@
+Source: https://www.geeksforgeeks.org/dsa/expression-evaluation/
+Title: Infix Expression Evaluation
+
+Given an array of strings arr[] representing an infix expression, we have to evaluate it. An infix expression is of the form "operand1 operator operand2" (e.g., "a + b"), where the operator is written between the two operands.
+
+Note: Infix expressions follow precedence: ^ (highest, right-to-left), then * and /, and finally + and - (left-to-right). Division / uses floor division.
+
+Examples:
+
+> Input: arr[] = ["100", "+", "200", "/", "2", "*", "5", "+", "7"] Output: 607 Explanation: The expression can be directly read as: (100 + 200 / 2 * 5 + 7). Now, evaluate step by step: 200 / 2 = 100 100 * 5 = 500 500 + 100 = 600 600 + 7 = 607 Final Answer: 607 Input: arr[] = ["2", "^", "3", "^", "2"] Output: 512 Explanation: ^ is right-associative → 2 ^ (3 ^ 2) = 2 ^ 9 = 512. Final Answer: 512
+
+### [Approach] Using Stack - O(n) Time and O(n) Space
+
+To evaluate an infix expression, we must respect operator precedence and associativity. If we try to calculate directly from left to right, the result may be wrong because * and / should come before + and -.
+
+> The idea is to use two stacks : one stack to store operands (numbers) and another to store operators. By processing the expression from left to right and applying operators in the correct order, we ensure the evaluation follows precedence and associativity rules.
+
+How Expression is Evaluated?
+
+- Traverse the expression from left to right.
+- If it’s an operand , push it onto the operand stack.
+- If it’s an operator , compare its precedence (and associativity) with the operator on top of the stack: If the new operator has higher precedence , or same precedence but is right-associative , push it. Otherwise, apply the operator from the stack on the top two operands until the condition is satisfied, then push the new operator.
+- After scanning the whole expression, apply the remaining operators on the stack to the operands stack to get the result.
+
+#include <iostream>
+#include <stack>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+// Function to perform calculation on two numbers
+int applyOperation(int a, int b, string op) {
+    if (op == "+") return a + b;
+    if (op == "-") return a - b;
+    if (op == "*") return a * b;
+
+    if (op == "/") {
+        if (a * b < 0 && a % b != 0)
+            return (a / b) - 1;
+        return a / b;
+    }
+
+    if (op == "^") return pow(a, b);
+    return 0;
+}
+
+// Function to return precedence of operators
+int precedence(string op) {
+    if (op == "+" || op == "-") return 1;
+    if (op == "*" || op == "/") return 2;
+    if (op == "^") return 3;
+    return 0;
+}
+
+// Function to check if operator is right-associative
+bool isRightAssociative(string op) {
+    return (op == "^");
+}
+
+bool isNumber(string& token) {
+    if (token.empty()) return false;
+    int start = (token[0] == '-') ? 1 : 0;
+    if (start == 1 && token.size() == 1) return false;
+    for (int i = start; i < token.size(); i++) {
+        if (!isdigit(token[i])) return false;
+    }
+    return true;
+}
+
+// Function to evaluate infix expression
+int evaluateInfix(vector<string>& arr) {
+    stack<int> values;
+    stack<string> ops;
+
+    int n = arr.size();
+    for (int i = 0; i < n; i++) {
+        string token = arr[i];
+
+        // If it's a number, push to values stack
+        if (isNumber(token)) {
+            values.push(stoi(token));
+        }
+
+        // If it's an operator
+        else {
+            while (!ops.empty() &&
+                   ((precedence(ops.top()) > precedence(token)) ||
+                   (precedence(ops.top()) == precedence(token) &&
+                                    !isRightAssociative(token)))) {
+
+                int val2 = values.top(); values.pop();
+                int val1 = values.top(); values.pop();
+
+                string op = ops.top(); ops.pop();
+
+                values.push(applyOperation(val1, val2, op));
+            }
+            ops.push(token);
+        }
+    }
+
+    // Process remaining operators
+    while (!ops.empty()) {
+        int val2 = values.top(); values.pop();
+        int val1 = values.top(); values.pop();
+
+        string op = ops.top(); ops.pop();
+        values.push(applyOperation(val1, val2, op));
+    }
+
+    return values.top();
+}
+
+int main() {
+    vector<string> arr = {"100", "+", "200", "/", "2", "*", "5", "+", "7"};
+    cout << evaluateInfix(arr) << endl;
+
+    return 0;
+}
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdbool.h>
+#include <ctype.h>
+
+#define MAX 100
+
+// Stack for integers
+typedef struct {
+    int top;
+    unsigned capacity;
+    int* array;
+} Stack;
+
+// Stack for operators (strings)
+typedef struct {
+    int top;
+    unsigned capacity;
+    char* array;
+} StringStack;
+
+// Function to perform calculation on two numbers
+int applyOperation(int a, int b, char* op) {
+    if (strcmp(op, "+") == 0) return a + b;
+    if (strcmp(op, "-") == 0) return a - b;
+    if (strcmp(op, "*") == 0) return a * b;
+
+    // Floor Division
+    if (strcmp(op, "/") == 0) {
+        if (a * b < 0 && a % b != 0)
+            return (a / b) - 1;
+        return a / b;
+    }
+
+    if (strcmp(op, "^") == 0) return (int)pow(a, b);
+    return 0;
+}
+
+// Function to return precedence of operators
+int precedence(char* op) {
+    if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0) return 1;
+    if (strcmp(op, "*") == 0 || strcmp(op, "/") == 0) return 2;
+    if (strcmp(op, "^") == 0) return 3;
+    return 0;
+}
+
+// Function to check if operator is right-associative
+bool isRightAssociative(char* op) {
+    return (strcmp(op, "^") == 0);
+}
+
+// Function to check if token is a number
+bool isNumber(char* token) {
+    if (token == NULL || *token == '\0') return false;
+    int start = (token[0] == '-') ? 1 : 0;
+    if (start == 1 && strlen(token) == 1) return false;
+    for (int i = start; token[i] != '\0'; i++) {
+        if (!isdigit((unsigned char)token[i])) return false;
+    }
+    return true;
+}
+
+// Create stack for values
+Stack* createStack(unsigned capacity) {
+    Stack* stack = (Stack*)malloc(sizeof(Stack));
+    stack->top = -1;
+    stack->capacity = capacity;
+    stack->array = (int*)malloc(stack->capacity * sizeof(int));
+    return stack;
+}
+
+// Create stack for operators
+StringStack* createStringStack(unsigned capacity) {
+    StringStack* stack = (StringStack*)malloc(sizeof(StringStack));
+    stack->top = -1;
+    stack->capacity = capacity;
+    stack->array = (char*)malloc(stack->capacity * sizeof(char) * MAX);
+    return stack;
+}
+
+// Push integer to stack
+void push(Stack* stack, int item) {
+    stack->array[++stack->top] = item;
+}
+
+// Push operator string to stack
+void pushString(StringStack* stack, char* item) {
+    strcpy(stack->array + (stack->top + 1) * MAX, item);
+    stack->top++;
+}
+
+// Pop integer from stack
+int pop(Stack* stack) {
+    return stack->array[stack->top--];
+}
+
+// Pop operator string from stack
+char* popString(StringStack* stack) {
+    char* item = (char*)malloc(MAX * sizeof(char));
+    strcpy(item, stack->array + stack->top * MAX);
+    stack->top--;
+    return item;
+}
+
+// Peek top integer from stack
+int peek(Stack* stack) {
+    return stack->array[stack->top];
+}
+
+// Peek top operator string from stack
+char* peekString(StringStack* stack) {
+    char* item = (char*)malloc(MAX * sizeof(char));
+    strcpy(item, stack->array + stack->top * MAX);
+    return item;
+}
+
+// Check if integer stack is empty
+bool isEmpty(Stack* stack) {
+    return stack->top == -1;
+}
+
+// Check if operator stack is empty
+bool isEmptyString(StringStack* stack) {
+    return stack->top == -1;
+}
+
+// Function to evaluate infix expression
+int evaluateInfix(char** arr, int n) {
+    Stack* values = createStack(n);
+    StringStack* ops = createStringStack(n);
+
+    for (int i = 0; i < n; i++) {
+
+        // If it's a number, push to values stack
+        if (isNumber(arr[i])) {
+            push(values, atoi(arr[i]));
+        }
+
+        // If it's an operator
+        else {
+            while (!isEmptyString(ops) &&
+                   (precedence(peekString(ops)) > precedence(arr[i]) ||
+                    (precedence(peekString(ops)) == precedence(arr[i])
+                                        && !isRightAssociative(arr[i])))) {
+                int val2 = pop(values);
+                int val1 = pop(values);
+                char* op = popString(ops);
+                push(values, applyOperation(val1, val2, op));
+            }
+            pushString(ops, arr[i]);
+        }
+    }
+
+    // Process remaining operators
+    while (!isEmptyString(ops)) {
+        int val2 = pop(values);
+        int val1 = pop(values);
+        char* op = popString(ops);
+        push(values, applyOperation(val1, val2, op));
+    }
+
+    return peek(values);
+}
+
+int main() {
+    char* arr[] = {"100", "+", "200", "/", "2", "*", "5", "+", "7"};
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    printf("%d\n", evaluateInfix(arr, n));
+    return 0;
+}
+
+import java.util.Stack;
+
+public class GfG {
+
+    // Function to perform calculation on two numbers
+    static int applyOperation(int a, int b, String op) {
+        if (op.equals("+")) return a + b;
+        if (op.equals("-")) return a - b;
+        if (op.equals("*")) return a * b;
+
+        // Floor Division
+        if (op.equals("/")) {
+            if (a * b < 0 && a % b != 0)
+                return a / b - 1;
+            return a / b;
+        }
+
+        if (op.equals("^")) return (int) Math.pow(a, b);
+        return 0;
+    }
+
+    // Function to return precedence of operators
+    static int precedence(String op) {
+        if (op.equals("+") || op.equals("-")) return 1;
+        if (op.equals("*") || op.equals("/")) return 2;
+        if (op.equals("^")) return 3;
+        return 0;
+    }
+
+    // Function to check if operator is right-associative
+    static boolean isRightAssociative(String op) {
+        return op.equals("^");
+    }
+
+    // Function to check if token is a number
+    static boolean isNumber(String token) {
+        if (token == null || token.isEmpty()) return false;
+        int start = (token.charAt(0) == '-') ? 1 : 0;
+        if (start == 1 && token.length() == 1) return false;
+        for (int i = start; i < token.length(); i++) {
+            if (!Character.isDigit(token.charAt(i))) return false;
+        }
+        return true;
+    }
+
+    // Function to evaluate infix expression
+    static int evaluateInfix(String[] arr) {
+        Stack<Integer> values = new Stack<>();
+        Stack<String> ops = new Stack<>();
+
+        for (String token : arr) {
+
+            // If it's a number, push to values stack
+            if (isNumber(token)) {
+                values.push(Integer.parseInt(token));
+            }
+
+            // If it's an operator
+            else {
+                while (!ops.isEmpty() &&
+                        ((precedence(ops.peek()) > precedence(token)) ||
+                        (precedence(ops.peek()) == precedence(token) &&
+                                            !isRightAssociative(token)))) {
+
+                    int val2 = values.pop();
+                    int val1 = values.pop();
+                    String op = ops.pop();
+                    values.push(applyOperation(val1, val2, op));
+                }
+                ops.push(token);
+            }
+        }
+
+        // Process remaining operators
+        while (!ops.isEmpty()) {
+            int val2 = values.pop();
+            int val1 = values.pop();
+            String op = ops.pop();
+            values.push(applyOperation(val1, val2, op));
+        }
+
+        return values.pop();
+    }
+
+    public static void main(String[] args) {
+        String[] arr = {"100", "+", "200", "/", "2", "*", "5", "+", "7"};
+
+        System.out.println(evaluateInfix(arr));
+    }
+}
+
+import math
+
+# Function to perform calculation on two numbers
+def applyOperation(a, b, op):
+    if op == '+': return a + b
+    if op == '-': return a - b
+    if op == '*': return a * b
+    if op == '/': return a // b
+    if op == '^': return a ** b
+    return 0
+
+# Function to return precedence of operators
+def precedence(op):
+    if op == '+' or op == '-': return 1
+    if op == '*' or op == '/': return 2
+    if op == '^': return 3
+    return 0
+
+# Function to check if operator is right-associative
+def isRightAssociative(op):
+    return op == '^'
+
+def isNumber(token: str) -> bool:
+    if not token:
+        return False
+    start = 1 if token[0] == '-' else 0
+    if start == 1 and len(token) == 1:
+        return False
+    for ch in token[start:]:
+        if not ch.isdigit():
+            return False
+    return True
+
+# Function to evaluate infix expression
+def evaluateInfix(arr):
+    values = []
+    ops = []
+
+    n = len(arr)
+    for i in range(n):
+        token = arr[i]
+
+        # If it's a number, push to values stack
+        if isNumber(token):
+            values.append(int(token))
+        else:
+            while ops and ((precedence(ops[-1]) > precedence(token)) or \
+                        (precedence(ops[-1]) == precedence(token) \
+                                and not isRightAssociative(token))):
+                val2 = values.pop()
+                val1 = values.pop()
+                op = ops.pop()
+                values.append(applyOperation(val1, val2, op))
+            ops.append(token)
+
+    # Process remaining operators
+    while ops:
+        val2 = values.pop()
+        val1 = values.pop()
+        op = ops.pop()
+        values.append(applyOperation(val1, val2, op))
+
+    return values[0]
+
+if __name__ == '__main__':
+    arr = ["100", '+', '200', '/', '2', '*', '5', '+', '7']
+    print(evaluateInfix(arr))
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to perform calculation on two numbers
+    static int applyOperation(int a, int b, string op) {
+        if (op == "+") return a + b;
+        if (op == "-") return a - b;
+        if (op == "*") return a * b;
+        if (op == "/") {
+            if (a * b < 0 && a % b != 0)
+                return (a / b) - 1;
+            return a / b;
+        }
+        if (op == "^") return (int)Math.Pow(a, b);
+        return 0;
+    }
+
+    // Function to return precedence of operators
+    static int precedence(string op) {
+        if (op == "+" || op == "-") return 1;
+        if (op == "*" || op == "/") return 2;
+        if (op == "^") return 3;
+        return 0;
+    }
+
+    // Function to check if operator is right-associative
+    static bool isRightAssociative(string op) {
+        return op == "^";
+    }
+
+    static bool isNumber(string token) {
+        if (string.IsNullOrEmpty(token)) return false;
+        int start = (token[0] == '-') ? 1 : 0;
+        if (start == 1 && token.Length == 1) return false;
+        for (int i = start; i < token.Length; i++) {
+            if (!char.IsDigit(token[i])) return false;
+        }
+        return true;
+    }
+
+    // Function to evaluate infix expression
+    static int evaluateInfix(List<string> arr) {
+        Stack<int> values = new Stack<int>();
+        Stack<string> ops = new Stack<string>();
+
+        int n = arr.Count;
+        for (int i = 0; i < n; i++) {
+            string token = arr[i];
+
+            // If it's a number, push to values stack
+            if (isNumber(token)) {
+                values.Push(int.Parse(token));
+            }
+            // If it's an operator
+            else {
+                while (ops.Count > 0 && ((precedence(ops.Peek()) > precedence(token))
+                        || (precedence(ops.Peek()) == precedence(token)
+                                && !isRightAssociative(token)))) {
+                    int val2 = values.Pop();
+                    int val1 = values.Pop();
+                    string op = ops.Pop();
+                    values.Push(applyOperation(val1, val2, op));
+                }
+                ops.Push(token);
+            }
+        }
+
+        // Process remaining operators
+        while (ops.Count > 0) {
+            int val2 = values.Pop();
+            int val1 = values.Pop();
+            string op = ops.Pop();
+            values.Push(applyOperation(val1, val2, op));
+        }
+
+        return values.Pop();
+    }
+
+    static void Main() {
+        List<string> arr = new List<string> { "100", "+", "200", "/", "2", "*", "5", "+", "7" };
+        Console.WriteLine(evaluateInfix(arr));
+    }
+}
+
+// Function to perform calculation on two numbers
+function applyOperation(a, b, op) {
+    if (op === '+') return a + b;
+    if (op === '-') return a - b;
+    if (op === '*') return a * b;
+    if (op === '/') {
+        let q = Math.trunc(a / b);
+        if (a * b < 0 && a % b !== 0) q -= 1;
+        return q;
+    }
+    if (op === '^') return Math.pow(a, b);
+    return 0;
+}
+
+// Function to return precedence of operators
+function precedence(op) {
+    if (op === '+' || op === '-') return 1;
+    if (op === '*' || op === '/') return 2;
+    if (op === '^') return 3;
+    return 0;
+}
+
+// Function to check if operator is right-associative
+function isRightAssociative(op) {
+    return (op === '^');
+}
+
+function isNumber(token) {
+    if (!token || token.length === 0) return false;
+    let start = (token[0] === '-') ? 1 : 0;
+    if (start === 1 && token.length === 1) return false;
+    for (let i = start; i < token.length; i++) {
+        if (token[i] < '0' || token[i] > '9') return false;
+    }
+    return true;
+}
+
+// Function to evaluate infix expression
+function evaluateInfix(arr) {
+    let values = [];
+    let ops = [];
+
+    let n = arr.length;
+    for (let i = 0; i < n; i++) {
+        let token = arr[i];
+
+        // If it's a number, push to values stack
+        if (!isNaN(token)) {
+            values.push(parseInt(token));
+        }
+        // If it's an operator
+        else {
+            while (ops.length > 0 &&
+                   ((precedence(ops[ops.length - 1]) > precedence(token)) ||
+                   (precedence(ops[ops.length - 1]) === precedence(token) &&
+                    !isRightAssociative(token)))) {
+
+                let val2 = values.pop();
+                let val1 = values.pop();
+                let op = ops.pop();
+
+                values.push(applyOperation(val1, val2, op));
+            }
+            ops.push(token);
+        }
+    }
+
+    // Process remaining operators
+    while (ops.length > 0) {
+        let val2 = values.pop();
+        let val1 = values.pop();
+        let op = ops.pop();
+        values.push(applyOperation(val1, val2, op));
+    }
+
+    return values.pop();
+}
+
+// Driver Code
+let arr = ["100", "+", "200", "/", "2", "*", "5", "+", "7"];
+console.log(evaluateInfix(arr));
+
+607

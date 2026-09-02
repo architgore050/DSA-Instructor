@@ -1,0 +1,562 @@
+Source: https://www.geeksforgeeks.org/dsa/minimizing-infection-time-in-a-directed-graph/
+Title: Minimizing Infection Time in a Directed Graph
+
+Given a directed graph of N nodes [1, N] represented by a 2D array graph[][] , and an integer K which is the initially infected node. The graph[i] = (ui, vi, wi) represents the infection spreads from ui to vi in wi unit of time. The task is to find the minimum time required for the entire graph to be infected starting from node K. If it is not possible to infect all the nodes, return -1.
+
+Examples:
+
+> Input: graph = {{2, 1, 1}, {2, 3, 1}, {3, 4, 1}}, n = 4, k = 2 Output: 2 Input: graph = {{1,2,1}}, n = 2, k = 1 Output: 1 Input: graph = {{1,2,1}}, n = 2, k = 2 Output: -1
+
+## Minimizing Infection Time in a Directed Graph using Dijkstra's Algorithm :
+
+> Use Dijkstra's algorithm to find the shortest time for infecting all nodes in a directed graph from a given starting node 'k'.  The maximum distance (here, it is time) in the dist[] array indicates the minimum time for complete infection. If some nodes are unreachable, returns -1.
+
+Step-by-step approach:
+
+- Create an adjacency list to represent the directed graph, where each node is associated with its neighbors and the time it takes to propagate the infection to them.
+- Initialize a priority queue (min-heap) to keep track of nodes with the shortest distance from the source node. Start from the source node k with a distance of 0 .
+- Use Dijkstra's algorithm to explore nodes and update their distances. If a shorter path to a node is found, update its distance and push it into the priority queue.
+- Keep track of the maximum distance found in the dist[] array, which represents the time to infect all nodes.
+- Check, If the maximum distance is still at its initial value (INT_MAX), it means not all nodes are reachable, so return -1. Otherwise, return the maximum distance as the minimum time to infect the complete graph.
+
+Below is the implementation of the above approach:
+
+// C++ code for above approach:
+#include <bits/stdc++.h>
+using namespace std;
+
+int minTime(vector<vector<int> >& graph, int n, int k)
+{
+    // Create an adjacency list to represent
+    // the directed graph.
+    vector<vector<pair<int, int> > > adj(
+        n + 1); // <neighbor, weight>
+
+    // Populate the adjacency list
+    // using the input 'graph'.
+    for (auto i : graph) {
+        adj[i[0]].push_back({ i[1], i[2] });
+    }
+
+    // Initialize a min-heap priority queue
+    // for Dijkstra's algorithm.
+    priority_queue<pair<int, int>, vector<pair<int, int> >,
+                   greater<pair<int, int> > >
+        minH; // {distance, from source}
+
+    // Initialize a distance array to store
+    // the minimum distance from the source
+    // node 'k' to other nodes.
+    vector<int> dist(n + 1, INT_MAX);
+
+    // Start from node 'k' with a
+    // distance of 0.
+    minH.push({ 0, k });
+    dist[k] = 0;
+
+    while (minH.size() > 0) {
+        // Get the node with the minimum
+        // distance from the priority queue.
+        auto curr = minH.top();
+        minH.pop();
+        int currNode = curr.second;
+        int currDist = curr.first;
+
+        // Explore the neighbors of
+        // the current node.
+        for (auto child : adj[currNode]) {
+            int childNode = child.first;
+            int childDist = child.second;
+
+            // Relax the child node by
+            // updating its distance if a
+            // shorter path is found.
+            if (currDist + childDist < dist[childNode]) {
+                dist[childNode] = currDist + childDist;
+                minH.push({ dist[childNode], childNode });
+            }
+        }
+    }
+
+    // Find the maximum distance in the
+    // 'dist' array, which represents the
+    // time to infect all nodes.
+    int maxx = INT_MIN;
+    for (int i = 1; i <= n; i++) {
+        maxx = max(maxx, dist[i]);
+    }
+
+    // If the maximum distance is still
+    // INT_MAX, it means not all nodes
+    // are reachable, so return -1.
+    if (maxx == INT_MAX)
+        return -1;
+
+    // Otherwise, return the maximum
+    // distance as the minimum time to
+    // infect the complete graph.
+    return maxx;
+}
+
+// Drivers code
+int main()
+{
+
+    vector<vector<int> > graph
+        = { { 2, 1, 1 }, { 2, 3, 1 }, { 3, 4, 1 } };
+    int n = 4;
+    int k = 2;
+
+    int result = minTime(graph, n, k);
+
+    // Function Call
+    if (result == -1) {
+        cout << "It's impossible to infect all nodes."
+             << endl;
+    }
+    else {
+        cout << "Minimum time to infect all nodes: "
+             << result << endl;
+    }
+
+    return 0;
+}
+
+import java.util.*;
+
+class Main {
+    static class Node {
+        int to;
+        int weight;
+
+        Node(int to, int weight)
+        {
+            this.to = to;
+            this.weight = weight;
+        }
+    }
+
+    public static int minTime(List<List<Integer> > graph,
+                              int n, int k)
+    {
+        List<List<Node> > adj = new ArrayList<>(n + 1);
+
+        // Initialize adjacency list
+        for (int i = 0; i <= n; i++) {
+            adj.add(new ArrayList<>());
+        }
+
+        // Populate the adjacency list using the input
+        // 'graph'.
+        for (List<Integer> edge : graph) {
+            int from = edge.get(0);
+            int to = edge.get(1);
+            int weight = edge.get(2);
+            adj.get(from).add(new Node(to, weight));
+        }
+
+        // Initialize a min-heap priority queue for
+        // Dijkstra's algorithm.
+        PriorityQueue<int[]> minH = new PriorityQueue<>(
+            Comparator.comparingInt(arr -> arr[0]));
+
+        // Initialize a distance array to store the minimum
+        // distance from the source node 'k' to other nodes.
+        int[] dist = new int[n + 1];
+        Arrays.fill(dist, Integer.MAX_VALUE);
+
+        // Start from node 'k' with a distance of 0.
+        minH.offer(new int[] { 0, k });
+        dist[k] = 0;
+
+        while (!minH.isEmpty()) {
+            int[] curr = minH.poll();
+            int currNode = curr[1];
+            int currDist = curr[0];
+
+            // Explore the neighbors of the current node.
+            for (Node child : adj.get(currNode)) {
+                int childNode = child.to;
+                int childDist = child.weight;
+
+                // Relax the child node by updating its
+                // distance if a shorter path is found.
+                if (currDist + childDist
+                    < dist[childNode]) {
+                    dist[childNode] = currDist + childDist;
+                    minH.offer(new int[] { dist[childNode],
+                                           childNode });
+                }
+            }
+        }
+
+        // Find the maximum distance in the 'dist' array,
+        // which represents the time to infect all nodes.
+        int maxx = Integer.MIN_VALUE;
+        for (int i = 1; i <= n; i++) {
+            maxx = Math.max(maxx, dist[i]);
+        }
+
+        // If the maximum distance is still
+        // Integer.MAX_VALUE, it means not all nodes are
+        // reachable, so return -1.
+        if (maxx == Integer.MAX_VALUE) {
+            return -1;
+        }
+
+        // Otherwise, return the maximum distance as the
+        // minimum time to infect the complete graph.
+        return maxx;
+    }
+
+    public static void main(String[] args)
+    {
+        List<List<Integer> > graph = new ArrayList<>();
+        graph.add(Arrays.asList(2, 1, 1));
+        graph.add(Arrays.asList(2, 3, 1));
+        graph.add(Arrays.asList(3, 4, 1));
+        int n = 4;
+        int k = 2;
+
+        int result = minTime(graph, n, k);
+
+        // Function Call
+        if (result == -1) {
+            System.out.println(
+                "It's impossible to infect all nodes.");
+        }
+        else {
+            System.out.println(
+                "Minimum time to infect all nodes: "
+                + result);
+        }
+    }
+}
+
+# Python code to implement the above approach
+
+import heapq
+
+def min_time(graph, n, k):
+    # Create an adjacency list to represent
+    # the directed graph.
+    adj = [[] for _ in range(n + 1)]  # [(neighbor, weight)]
+
+    # Populate the adjacency list
+    # using the input 'graph'.
+    for i in graph:
+        adj[i[0]].append((i[1], i[2]))
+
+    # Initialize a min-heap priority queue
+    # for Dijkstra's algorithm.
+    min_heap = [(0, k)]  # (distance, from source)
+
+    # Initialize a distance array to store
+    # the minimum distance from the source
+    # node 'k' to other nodes.
+    dist = [float('inf')] * (n + 1)
+
+    # Start from node 'k' with a
+    # distance of 0.
+    heapq.heappush(min_heap, (0, k))
+    dist[k] = 0
+
+    while min_heap:
+        # Get the node with the minimum
+        # distance from the priority queue.
+        curr_dist, curr_node = heapq.heappop(min_heap)
+
+        # Explore the neighbors of
+        # the current node.
+        for child in adj[curr_node]:
+            child_node, child_dist = child
+
+            # Relax the child node by
+            # updating its distance if a
+            # shorter path is found.
+            if curr_dist + child_dist < dist[child_node]:
+                dist[child_node] = curr_dist + child_dist
+                heapq.heappush(min_heap, (dist[child_node], child_node))
+
+    # Find the maximum distance in the
+    # 'dist' array, which represents the
+    # time to infect all nodes.
+    maxx = max(dist[1:])
+
+    # If the maximum distance is still
+    # float('inf'), it means not all nodes
+    # are reachable, so return -1.
+    if maxx == float('inf'):
+        return -1
+
+    # Otherwise, return the maximum
+    # distance as the minimum time to
+    # infect the complete graph.
+    return maxx
+
+# Driver code
+graph = [[2, 1, 1], [2, 3, 1], [3, 4, 1]]
+n = 4
+k = 2
+
+result = min_time(graph, n, k)
+
+# Function Call
+if result == -1:
+    print("It's impossible to infect all nodes.")
+else:
+    print("Minimum time to infect all nodes:", result)
+
+# This code is contributed by Abhinav Mahajan (abhinav_m22)
+
+using System;
+using System.Collections.Generic;
+
+class MinimumTimeInfection
+{
+    static int MinTime(List<List<int>> graph, int n, int k)
+    {
+        // Create an adjacency list to represent the directed graph.
+        List<List<Tuple<int, int>>> adj = new List<List<Tuple<int, int>>>();
+        for (int i = 0; i <= n; i++)
+        {
+            adj.Add(new List<Tuple<int, int>>());
+        }
+
+        // Populate the adjacency list using the input 'graph'.
+        foreach (var edge in graph)
+        {
+            adj[edge[0]].Add(new Tuple<int, int>(edge[1], edge[2]));
+        }
+
+        // Initialize a priority queue for Dijkstra's algorithm.
+        var minH = new SortedSet<Tuple<int, int>>();
+        int[] dist = new int[n + 1];
+        Array.Fill(dist, int.MaxValue);
+
+        // Start from node 'k' with a distance of 0.
+        minH.Add(new Tuple<int, int>(0, k));
+        dist[k] = 0;
+
+        while (minH.Count > 0)
+        {
+            // Get the node with the minimum distance from the priority queue.
+            var curr = minH.Min;
+            minH.Remove(curr);
+            int currNode = curr.Item2;
+            int currDist = curr.Item1;
+
+            // Explore the neighbors of the current node.
+            foreach (var child in adj[currNode])
+            {
+                int childNode = child.Item1;
+                int childDist = child.Item2;
+
+                // Relax the child node by updating its distance if a shorter path is found.
+                if (currDist + childDist < dist[childNode])
+                {
+                    minH.RemoveWhere(t => t.Item2 == childNode); // Remove the outdated distance
+                                                                 // if present
+                    dist[childNode] = currDist + childDist;
+                    minH.Add(new Tuple<int, int>(dist[childNode], childNode));
+                }
+            }
+        }
+
+        // Find the maximum distance in the 'dist' array, which represents
+        // the time to infect all nodes.
+        int maxx = int.MinValue;
+        for (int i = 1; i <= n; i++)
+        {
+            maxx = Math.Max(maxx, dist[i]);
+        }
+
+        // If the maximum distance is still int.MaxValue, it means not all
+        // nodes are reachable, so return -1.
+        if (maxx == int.MaxValue)
+            return -1;
+
+        // Otherwise, return the maximum distance as the minimum time to infect the complete graph.
+        return maxx;
+    }
+
+    // Main method
+    public static void Main(string[] args)
+    {
+        List<List<int>> graph = new List<List<int>> {
+            new List<int> { 2, 1, 1 },
+            new List<int> { 2, 3, 1 },
+            new List<int> { 3, 4, 1 }
+        };
+        int n = 4;
+        int k = 2;
+
+        int result = MinTime(graph, n, k);
+
+        // Function Call
+        if (result == -1)
+        {
+            Console.WriteLine("It's impossible to infect all nodes.");
+        }
+        else
+        {
+            Console.WriteLine("Minimum time to infect all nodes: " + result);
+        }
+    }
+}
+
+class Node {
+    constructor(to, weight) {
+        this.to = to;
+        this.weight = weight;
+    }
+}
+
+function minTime(graph, n, k) {
+    // Initialize adjacency list.
+    const adj = new Array(n + 1);
+    for (let i = 0; i <= n; i++) {
+        adj[i] = [];
+    }
+
+    // Populate the adjacency list using the input 'graph'.
+    for (const edge of graph) {
+        const from = edge[0];
+        const to = edge[1];
+        const weight = edge[2];
+        adj[from].push(new Node(to, weight));
+    }
+
+    // Initialize a priority queue for Dijkstra's algorithm.
+    const minH = new PriorityQueue((a, b) => a[0] - b[0]);
+
+    // Initialize a distance array to store the minimum distance
+    //from the source node 'k' to other nodes.
+    const dist = new Array(n + 1).fill(Infinity);
+
+    // Start from node 'k' with a distance of 0.
+    minH.enqueue([0, k]);
+    dist[k] = 0;
+
+    while (!minH.isEmpty()) {
+        const [currDist, currNode] = minH.dequeue();
+
+        // Explore the neighbors of the current node.
+        for (const child of adj[currNode]) {
+            const childNode = child.to;
+            const childDist = child.weight;
+
+            // Relax the child node by updating its distance if a shorter path is found.
+            if (currDist + childDist < dist[childNode]) {
+                dist[childNode] = currDist + childDist;
+                minH.enqueue([dist[childNode], childNode]);
+            }
+        }
+    }
+
+    // Find the maximum distance in the 'dist' array,
+    // which represents the time to infect all nodes.
+    let maxx = -Infinity;
+    for (let i = 1; i <= n; i++) {
+        maxx = Math.max(maxx, dist[i]);
+    }
+
+    // If the maximum distance is still Infinity, it means not all nodes are reachable, so return -1.
+    if (maxx === Infinity) {
+        return -1;
+    }
+
+    // Otherwise, return the maximum distance as the minimum time to infect the complete graph.
+    return maxx;
+}
+
+class PriorityQueue {
+    constructor(compareFn) {
+        this.elements = [];
+        this.compare = compareFn;
+    }
+
+    enqueue(element) {
+        this.elements.push(element);
+        this.bubbleUp();
+    }
+
+    dequeue() {
+        if (this.isEmpty()) {
+            return undefined;
+        }
+
+        const root = this.elements[0];
+        const last = this.elements.pop();
+        if (!this.isEmpty()) {
+            this.elements[0] = last;
+            this.sinkDown();
+        }
+        return root;
+    }
+
+    isEmpty() {
+        return this.elements.length === 0;
+    }
+
+    bubbleUp() {
+        let index = this.elements.length - 1;
+        while (index > 0) {
+            const parentIndex = Math.floor((index - 1) / 2);
+            if (this.compare(this.elements[index], this.elements[parentIndex]) >= 0) {
+                break;
+            }
+            this.swap(index, parentIndex);
+            index = parentIndex;
+        }
+    }
+
+    sinkDown() {
+        let index = 0;
+        const length = this.elements.length;
+        while (true) {
+            const leftChildIdx = 2 * index + 1;
+            const rightChildIdx = 2 * index + 2;
+            let smallest = index;
+            if (leftChildIdx < length && this.compare(this.elements[leftChildIdx],
+            this.elements[smallest]) < 0) {
+                smallest = leftChildIdx;
+            }
+            if (rightChildIdx < length && this.compare(this.elements[rightChildIdx],
+            this.elements[smallest]) < 0) {
+                smallest = rightChildIdx;
+            }
+            if (smallest === index) {
+                break;
+            }
+            this.swap(index, smallest);
+            index = smallest;
+        }
+    }
+
+    swap(i, j) {
+        [this.elements[i], this.elements[j]] = [this.elements[j], this.elements[i]];
+    }
+}
+
+// Example usage
+const graph = [
+    [2, 1, 1],
+    [2, 3, 1],
+    [3, 4, 1]
+];
+const n = 4;
+const k = 2;
+
+const result = minTime(graph, n, k);
+
+// Function Call
+if (result === -1) {
+    console.log("It's impossible to infect all nodes.");
+} else {
+    console.log("Minimum time to infect all nodes: " + result);
+}
+
+Minimum time to infect all nodes: 2
+
+Time Complexity: O((V + E) * log(V)), where V is the number of vertices (nodes) and E is the number of edges in the graph. Auxiliary Space: O(V) for the distance array and O(V) for the priority queue, resulting in a total space complexity of O(V).

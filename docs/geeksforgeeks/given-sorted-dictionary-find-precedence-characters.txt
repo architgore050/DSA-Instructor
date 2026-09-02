@@ -1,0 +1,906 @@
+Source: https://www.geeksforgeeks.org/dsa/given-sorted-dictionary-find-precedence-characters/
+Title: Alien Dictionary
+
+Given an array of strings words[] , sorted in an alien language. Determine the correct order of letters in this alien language based on the given words. If the order is valid, return a string containing the unique letters in lexicographically increasing order as per the new language's rules.
+
+Note: There can be multiple valid orders for a given input, so you may return any one of them. If no valid order exists due to conflicting constraints, return an empty string.
+
+Examples:
+
+> Input: words[] = ["baa", "abcd", "abca", "cab", "cad"] Output : "bdac" Explanation: The pair “baa” and “abcd” suggests ‘b’ appears before ‘a’ in the alien dictionary. The pair “abcd” and “abca” suggests ‘d’ appears before ‘a’ in the alien dictionary. The pair “abca” and “cab” suggests ‘a’ appears before ‘c’ in the alien dictionary. The pair “cab” and “cad” suggests ‘b’ appears before ‘d’ in the alien dictionary. So, ‘b’→'d’ →‘a’ →‘c’ is a valid ordering. Input: words[] = ["caa", "aaa", "aab"] Output: "cab" Explanation: The pair "caa" and "aaa" suggests 'c' appears before 'a'. The pair "aaa" and "aab" suggests 'a' appear before 'b' in the alien dictionary. So, 'c' → 'a' → 'b' is a valid ordering.
+
+Table of Content
+
+- [Approach 1] Using Kahn's algorithm - O(n*m) Time and O(1) Space
+- [Approach 2] Using Depth-First Search - O(n*m) Time and O(1) Space
+
+### Key Concept:
+
+We are told the words are already sorted according to the alien dictionary — so the key observation is: we can use this ordering to deduce relationships between the letters. Think about how we learn the English alphabet order — we know “cat” comes before “car”, so we infer that 't' comes before 'r' . Similarly, in the alien language, if we take two consecutive words from the given list and compare them character by character, the first position where they differ gives us a direct clue about letter order. Now, to find an order that respects all these dependencies, we need to arrange the characters so that no dependency rule is broken. This is exactly what a topological sort does.
+
+### [Approach 1] Using Kahn's algorithm - O(n*m) Time and O(1) Space
+
+For Topological sorting we use Kahn’s Algorithm . This algorithm helps us process all dependencies between characters in the correct order and also detect if there’s a cycle, which would mean that the given character order is conflicting.
+
+> To apply it, we first create a graph of letters by comparing each pair of adjacent words.When we find the first different character between two words — say u from the first and v from the second — we add a directed edge u → v , Once the graph is built, we find all characters whose in-degree is 0 and push them into a queue. Then, we process the queue one by one  for each character removed, we decrease the in-degree of its adjacent letters.Whenever any letter’s in-degree becomes 0, we push it into the queue. By continuing this process, we can build the final order of characters in the alien language. If, in the end, not all characters are processed, it means there’s a cycle, and hence no valid order exists.
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <string>
+using namespace std;
+//Driver Code Ends
+
+string findOrder(vector<string>& words) {
+
+    // Adjacency list
+    vector<vector<int>> graph(26);
+
+    // In-degree of each character
+    vector<int> inDegree(26, 0);
+
+    // Tracks which characters are present
+    vector<bool> exists(26, false);
+
+    // Mark existing characters
+    for (string& word : words) {
+        for (char ch : word) {
+            exists[ch - 'a'] = true;
+        }
+    }
+
+    // Build the graph from adjacent words
+    for (int i = 0; i + 1 < words.size(); ++i) {
+         string& w1 = words[i];
+         string& w2 = words[i + 1];
+        int len = min(w1.length(), w2.length());
+        int j = 0;
+
+        while (j < len && w1[j] == w2[j]) ++j;
+
+        if (j < len) {
+            int u = w1[j] - 'a';
+            int v = w2[j] - 'a';
+            graph[u].push_back(v);
+            inDegree[v]++;
+        } else if (w1.size() > w2.size()) {
+
+            // Invalid input
+            return "";
+        }
+    }
+
+    // Topological sort
+    queue<int> q;
+    for (int i = 0; i < 26; ++i) {
+        if (exists[i] && inDegree[i] == 0) {
+            q.push(i);
+        }
+    }
+
+    string result;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        result += (char)(u + 'a');
+
+        for (int v : graph[u]) {
+            inDegree[v]--;
+            if (inDegree[v] == 0) {
+                q.push(v);
+            }
+        }
+    }
+
+    // Check, there was a cycle or not
+    for (int i = 0; i < 26; ++i) {
+        if (exists[i] && inDegree[i] != 0) {
+            return "";
+        }
+    }
+
+    return result;
+}
+
+//Driver Code Starts
+int main() {
+    vector<string> words = {"baa", "abcd", "abca", "cab", "cad"};
+    string order = findOrder(words);
+
+    cout<<order;
+    return 0;
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
+
+class GfG{
+
+//Driver Code Ends
+
+    public static String findOrder(String[] words) {
+
+        // Adjacency list
+        ArrayList<ArrayList<Integer>> graph = new ArrayList<>();
+
+        // In-degree of each character
+        int[] inDegree = new int[26];
+
+        // Tracks which characters are present
+        boolean[] exists = new boolean[26];
+
+        // Initialize graph
+        for (int i = 0; i < 26; i++) {
+            graph.add(new ArrayList<>());
+        }
+
+        // Mark existing characters
+        for (String word : words) {
+            for (char ch : word.toCharArray()) {
+                exists[ch - 'a'] = true;
+            }
+        }
+
+        // Build the graph from adjacent words
+        for (int i = 0; i + 1 < words.length; ++i) {
+            String w1 = words[i];
+            String w2 = words[i + 1];
+            int len = Math.min(w1.length(), w2.length());
+            int j = 0;
+
+            while (j < len && w1.charAt(j) == w2.charAt(j)) ++j;
+
+            if (j < len) {
+                int u = w1.charAt(j) - 'a';
+                int v = w2.charAt(j) - 'a';
+                graph.get(u).add(v);
+                inDegree[v]++;
+            } else if (w1.length() > w2.length()) {
+                // Invalid input
+                return "";
+            }
+        }
+
+        // Topological sort
+        Queue<Integer> q = new LinkedList<>();
+        for (int i = 0; i < 26; ++i) {
+            if (exists[i] && inDegree[i] == 0) {
+                q.offer(i);
+            }
+        }
+
+        String result = "";
+        while (!q.isEmpty()) {
+            int u = q.poll();
+            result += (char)(u + 'a');
+
+            for (int v : graph.get(u)) {
+                inDegree[v]--;
+                if (inDegree[v] == 0) {
+                    q.offer(v);
+                }
+            }
+        }
+
+        // Check, there was a cycle or not
+        for (int i = 0; i < 26; ++i) {
+            if (exists[i] && inDegree[i] != 0) {
+                return "";
+            }
+        }
+
+        return result;
+    }
+
+//Driver Code Starts
+    public static void main(String[] args) {
+        String[] words = {"baa", "abcd", "abca", "cab", "cad"};
+        String order = findOrder(words);
+
+        System.out.print(order);
+    }
+}
+
+//Driver Code Ends
+
+#Driver Code Starts
+from collections import deque
+#Driver Code Ends
+
+def findOrder(words):
+
+    # Adjacency list
+    graph = [[] for _ in range(26)]
+
+    # In-degree array
+    inDegree = [0] * 26
+
+    # To track which letters exist in input
+    exists = [False] * 26
+
+    # Mark existing characters
+    for word in words:
+        for ch in word:
+            exists[ord(ch) - ord('a')] = True
+
+    # Build graph
+    for i in range(len(words) - 1):
+        w1, w2 = words[i], words[i + 1]
+        minlen = min(len(w1), len(w2))
+        j = 0
+        while j < minlen and w1[j] == w2[j]:
+            j += 1
+
+        if j < minlen:
+            u = ord(w1[j]) - ord('a')
+            v = ord(w2[j]) - ord('a')
+            graph[u].append(v)
+            inDegree[v] += 1
+        elif len(w1) > len(w2):
+            # Invalid case
+            return ""
+
+    # Topological sort
+    q = deque([i for i in range(26) if exists[i]
+                                 and inDegree[i] == 0])
+    result = []
+
+    while q:
+        u = q.popleft()
+        result.append(chr(u + ord('a')))
+        for v in graph[u]:
+            inDegree[v] -= 1
+            if inDegree[v] == 0:
+                q.append(v)
+
+    if len(result) != sum(exists):
+
+        # Cycle detected or incomplete order
+        return ""
+
+    return ''.join(result)
+
+#Driver Code Starts
+if __name__ == "__main__":
+    words = ["baa", "abcd", "abca", "cab", "cad"]
+    order = findOrder(words)
+
+    print(order)
+
+#Driver Code Ends
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+//Driver Code Ends
+
+    public static string findOrder(string[] words) {
+
+        List<List<int>> graph = new List<List<int>>();
+        int[] inDegree = new int[26];
+        bool[] exists = new bool[26];
+
+        // Initialize graph
+        for (int i = 0; i < 26; i++) {
+            graph.Add(new List<int>());
+        }
+
+        // Mark existing characters
+        foreach (string word in words) {
+            foreach (char ch in word) {
+                exists[ch - 'a'] = true;
+            }
+        }
+
+        // Build the graph
+        for (int i = 0; i + 1 < words.Length; i++) {
+            string w1 = words[i];
+            string w2 = words[i + 1];
+            int len = Math.Min(w1.Length, w2.Length);
+            int j = 0;
+
+            while (j < len && w1[j] == w2[j]) j++;
+
+            if (j < len) {
+                int u = w1[j] - 'a';
+                int v = w2[j] - 'a';
+                graph[u].Add(v);
+                inDegree[v]++;
+            } else if (w1.Length > w2.Length) {
+                return "";
+            }
+        }
+
+        // Topological Sort
+        Queue<int> q = new Queue<int>();
+        for (int i = 0; i < 26; i++) {
+            if (exists[i] && inDegree[i] == 0) {
+                q.Enqueue(i);
+            }
+        }
+
+        string result = "";
+        while (q.Count > 0) {
+            int u = q.Dequeue();
+            result += (char)(u + 'a');
+
+            foreach (int v in graph[u]) {
+                inDegree[v]--;
+                if (inDegree[v] == 0) {
+                    q.Enqueue(v);
+                }
+            }
+        }
+
+        // Check for cycle
+        for (int i = 0; i < 26; i++) {
+            if (exists[i] && inDegree[i] != 0) {
+                return "";
+            }
+        }
+
+        return result;
+    }
+
+//Driver Code Starts
+    public static void Main() {
+        string[] words = {"baa", "abcd", "abca", "cab", "cad"};
+        string order = findOrder(words);
+
+        Console.WriteLine(order);
+    }
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+const Denque = require("denque");
+
+//Driver Code Ends
+
+function findOrder(words) {
+
+    // Adjacency list
+    const graph = Array.from({ length: 26 }, () => []);
+
+    // In-degree of each character
+    const inDegree = Array(26).fill(0);
+
+    // Tracks which characters are present
+    const exists = Array(26).fill(false);
+
+    // Mark existing characters
+    for (const word of words) {
+        for (const ch of word) {
+            exists[ch.charCodeAt(0) - 97] = true;
+        }
+    }
+
+    // Build the graph from adjacent words
+    for (let i = 0; i + 1 < words.length; ++i) {
+        const w1 = words[i];
+        const w2 = words[i + 1];
+        const len = Math.min(w1.length, w2.length);
+        let j = 0;
+
+        while (j < len && w1[j] === w2[j]) ++j;
+
+        if (j < len) {
+            const u = w1.charCodeAt(j) - 97;
+            const v = w2.charCodeAt(j) - 97;
+            graph[u].push(v);
+            inDegree[v]++;
+        } else if (w1.length > w2.length) {
+
+            // Invalid input
+            return "";
+        }
+    }
+
+    // Topological sort
+    const q = new Denque();
+    for (let i = 0; i < 26; ++i) {
+        if (exists[i] && inDegree[i] === 0) {
+            q.push(i);
+        }
+    }
+
+    let result = [];
+
+    while (!q.isEmpty()) {
+        const u = q.shift();
+        result.push(String.fromCharCode(u + 97));
+
+        for (const v of graph[u]) {
+            inDegree[v]--;
+            if (inDegree[v] === 0) {
+                q.push(v);
+            }
+        }
+    }
+
+    // Check, there was a cycle or not
+    if (result.length !== exists.filter(x => x).length) {
+        return "";
+    }
+
+    return result.join('');
+}
+
+//Driver Code Starts
+// Driver Code
+const words = ["baa", "abcd", "abca", "cab", "cad"];
+const order = findOrder(words);
+console.log(order);
+
+//Driver Code Ends
+
+bdac
+
+### [Approach 2] Using Depth-First Search - O(n*m) Time and O(1) Space
+
+For topological sorting, we can also use DFS. The idea is similar to what we discussed in the key concept — we compare all adjacent words and create a graph based on the first differing character between them, where an edge u → v means character u appears before v.
+
+> After building the graph, we perform a DFS traversal on each unvisited character to determine the correct order. We also use the same idea that we use in cycle detection in a directed graph. If, during DFS, we visit a node that is already in the current recursion stack, it means there’s a cycle, and hence, the character order is conflicting. During DFS, each character is added to the result after all the characters that depend on it are processed, Because of this, the characters are added in reverse topological order So, to get the correct order of characters as per the alien language, we reverse the final string.
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+//Driver Code Ends
+
+// dfs for topological sorting and cycle detection
+bool dfs(int u, vector<vector<int>> &graph, vector<int> &vis,
+                                    vector<int> &rec, string &ans) {
+
+    // Mark the node as visited
+    //and part of the current recursion stack
+    vis[u] = rec[u] = 1;
+
+    for (int v = 0; v < 26; v++) {
+        if (graph[u][v]) {
+            if (!vis[v]) {
+
+                // Recurse and check for cycle
+                if (!dfs(v, graph, vis, rec, ans))
+                    return false;
+            } else if (rec[v]) {
+
+                 // A cycle is detected if v is already
+                 //in the current recursion stack
+                return false;
+            }
+        }
+    }
+
+    // Add the character to the result after visiting all dependencies
+    ans.push_back(char('a' + u));
+
+    // Remove from recursion stack
+    rec[u] = 0;
+    return true;
+}
+
+// Function to find the correct order of characters in an alien dictionary
+string findOrder(vector<string> &words) {
+
+    vector<vector<int>> graph(26, vector<int>(26, 0));
+    vector<int> exist(26, 0);
+    vector<int> vis(26, 0);
+
+    vector<int> rec(26, 0);
+    string ans = "";
+
+    // Mark all characters that appear in the input
+    for (string word : words) {
+        for (char ch : word) {
+            exist[ch - 'a'] = 1;
+        }
+    }
+
+    //Build the graph
+    for (int i = 0; i + 1 < words.size(); i++) {
+         string &a = words[i], &b = words[i + 1];
+        int n = a.size(), m = b.size(), ind = 0;
+
+        // Find the first different character between a and b
+        while (ind < n && ind < m && a[ind] == b[ind])
+            ind++;
+
+        if (ind != n && ind == m)
+            return "";
+
+        if (ind < n && ind < m)
+            graph[a[ind] - 'a'][b[ind] - 'a'] = 1;
+    }
+
+    for (int i = 0; i < 26; i++) {
+        if (exist[i] && !vis[i]) {
+            bool x=dfs(i, graph, vis, rec, ans);
+
+                // Return empty string if a cycle is found
+               if(x==false) return "";
+            }
+        }
+
+    // Reverse to get the correct topological order
+    reverse(ans.begin(), ans.end());
+    return ans;
+}
+
+//Driver Code Starts
+int main() {
+    vector<string> words = {"baa", "abcd", "abca", "cab", "cad"};
+
+    string order = findOrder(words);
+    cout << order << endl;
+    return 0;
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+import java.util.ArrayList;
+import java.util.Collections;
+
+class GFG {
+
+//Driver Code Ends
+
+    // dfs for topological sorting and cycle detection
+    static boolean dfs(int u, int[][] graph, int[] vis, int[] rec, ArrayList<Character> ans) {
+
+        // Mark the node as visited
+        //and part of the current recursion stack
+        vis[u] = rec[u] = 1;
+
+        for (int v = 0; v < 26; v++) {
+            if (graph[u][v] == 1) {
+                if (vis[v] == 0) {
+
+                    // Recurse and check for cycle
+                    if (!dfs(v, graph, vis, rec, ans))
+                        return false;
+                } else if (rec[v] == 1) {
+
+                    // A cycle is detected if v is already
+                    //in the current recursion stack
+                    return false;
+                }
+            }
+        }
+
+        // Add the character to the result after visiting all dependencies
+        ans.add((char) ('a' + u));
+
+        // Remove from recursion stack
+        rec[u] = 0;
+        return true;
+    }
+
+    // Function to find the correct order of characters in an alien dictionary
+    static ArrayList<Character> findOrder(String[] words) {
+
+        int[][] graph = new int[26][26];
+        int[] exist = new int[26];
+        int[] vis = new int[26];
+        int[] rec = new int[26];
+        ArrayList<Character> ans = new ArrayList<>();
+
+        // Mark all characters that appear in the input
+        for (String word : words) {
+            for (char ch : word.toCharArray()) {
+                exist[ch - 'a'] = 1;
+            }
+        }
+
+        //Build the graph
+        for (int i = 0; i + 1 < words.length; i++) {
+            String a = words[i], b = words[i + 1];
+            int n = a.length(), m = b.length(), ind = 0;
+
+            // Find the first different character between a and b
+            while (ind < n && ind < m && a.charAt(ind) == b.charAt(ind))
+                ind++;
+
+            if (ind != n && ind == m)
+                return new ArrayList<>();
+
+            if (ind < n && ind < m)
+                graph[a.charAt(ind) - 'a'][b.charAt(ind) - 'a'] = 1;
+        }
+
+        for (int i = 0; i < 26; i++) {
+            if (exist[i] == 1 && vis[i] == 0) {
+                boolean x = dfs(i, graph, vis, rec, ans);
+
+                // Return empty list if a cycle is found
+                if (!x) return new ArrayList<>();
+            }
+        }
+
+        // Reverse to get the correct topological order
+        Collections.reverse(ans);
+        return ans;
+    }
+
+//Driver Code Starts
+    public static void main(String[] args) {
+        String[] words = {"baa", "abcd", "abca", "cab", "cad"};
+        ArrayList<Character> order = findOrder(words);
+        for (char c : order) System.out.print(c);
+    }
+}
+
+//Driver Code Ends
+
+# dfs for topological sorting and cycle detection
+def dfs(u, graph, vis, rec, ans):
+
+    # Mark the node as visited
+    #and part of the current recursion stack
+    vis[u] = rec[u] = 1
+
+    for v in range(26):
+        if graph[u][v]:
+            if not vis[v]:
+
+                # Recurse and check for cycle
+                if not dfs(v, graph, vis, rec, ans):
+                    return False
+            elif rec[v]:
+
+                # A cycle is detected if v is already
+                #in the current recursion stack
+                return False
+
+    # Add the character to the result after visiting all dependencies
+    ans.append(chr(ord('a') + u))
+
+    # Remove from recursion stack
+    rec[u] = 0
+    return True
+
+# Function to find the correct order of characters in an alien dictionary
+def findOrder(words):
+    graph = [[0] * 26 for _ in range(26)]
+    exist = [0] * 26
+    vis = [0] * 26
+    rec = [0] * 26
+    ans = []
+
+    # Mark all characters that appear in the input
+    for word in words:
+        for ch in word:
+            exist[ord(ch) - ord('a')] = 1
+
+    #Build the graph
+    for i in range(len(words) - 1):
+        a, b = words[i], words[i + 1]
+        n, m, ind = len(a), len(b), 0
+
+        # Find the first different character between a and b
+        while ind < n and ind < m and a[ind] == b[ind]:
+            ind += 1
+
+        if ind != n and ind == m:
+            return ""
+
+        if ind < n and ind < m:
+            graph[ord(a[ind]) - ord('a')][ord(b[ind]) - ord('a')] = 1
+
+    for i in range(26):
+        if exist[i] and not vis[i]:
+            x = dfs(i, graph, vis, rec, ans)
+            # Return empty string if a cycle is found
+            if not x:
+                return ""
+
+    # Reverse to get the correct topological order
+    ans.reverse()
+    return ''.join(ans)
+
+#Driver Code Starts
+if __name__ == "__main__":
+    words = ["baa", "abcd", "abca", "cab", "cad"]
+    order = findOrder(words)
+    print(order)
+
+#Driver Code Ends
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+//Driver Code Ends
+
+    // dfs for topological sorting and cycle detection
+    static bool dfs(int u, int[,] graph, int[] vis, int[] rec, List<char> ans)
+    {
+        // Mark the node as visited
+        //and part of the current recursion stack
+        vis[u] = rec[u] = 1;
+
+        for (int v = 0; v < 26; v++)
+        {
+            if (graph[u, v] == 1)
+            {
+                if (vis[v] == 0)
+                {
+                    // Recurse and check for cycle
+                    if (!dfs(v, graph, vis, rec, ans))
+                        return false;
+                }
+                else if (rec[v] == 1)
+                {
+                    // A cycle is detected if v is already
+                    //in the current recursion stack
+                    return false;
+                }
+            }
+        }
+
+        // Add the character to the result after visiting all dependencies
+        ans.Add((char)('a' + u));
+
+        // Remove from recursion stack
+        rec[u] = 0;
+        return true;
+    }
+
+    // Function to find the correct order of characters in an alien dictionary
+    static List<char> findOrder(string[] words)
+    {
+        int[,] graph = new int[26, 26];
+        int[] exist = new int[26];
+        int[] vis = new int[26];
+        int[] rec = new int[26];
+        List<char> ans = new List<char>();
+
+        // Mark all characters that appear in the input
+        foreach (var word in words)
+        {
+            foreach (char ch in word)
+                exist[ch - 'a'] = 1;
+        }
+
+        //Build the graph
+        for (int i = 0; i + 1 < words.Length; i++)
+        {
+            string a = words[i], b = words[i + 1];
+            int n = a.Length, m = b.Length, ind = 0;
+
+            // Find the first different character between a and b
+            while (ind < n && ind < m && a[ind] == b[ind])
+                ind++;
+
+            if (ind != n && ind == m)
+                return new List<char>();
+
+            if (ind < n && ind < m)
+                graph[a[ind] - 'a', b[ind] - 'a'] = 1;
+        }
+
+        for (int i = 0; i < 26; i++)
+        {
+            if (exist[i] == 1 && vis[i] == 0)
+            {
+                bool x = dfs(i, graph, vis, rec, ans);
+                // Return empty list if a cycle is found
+                if (!x) return new List<char>();
+            }
+        }
+
+        // Reverse to get the correct topological order
+        ans.Reverse();
+        return ans;
+    }
+
+//Driver Code Starts
+    static void Main()
+    {
+        string[] words = { "baa", "abcd", "abca", "cab", "cad" };
+        List<char> order = findOrder(words);
+        Console.WriteLine(new string(order.ToArray()));
+    }
+}
+
+//Driver Code Ends
+
+// dfs for topological sorting and cycle detection
+function dfs(u, graph, vis, rec, ans) {
+
+    // Mark the node as visited
+    //and part of the current recursion stack
+    vis[u] = rec[u] = 1;
+
+    for (let v = 0; v < 26; v++) {
+        if (graph[u][v]) {
+            if (!vis[v]) {
+
+                // Recurse and check for cycle
+                if (!dfs(v, graph, vis, rec, ans))
+                    return false;
+            } else if (rec[v]) {
+
+                // A cycle is detected if v is already
+                //in the current recursion stack
+                return false;
+            }
+        }
+    }
+
+    // Add the character to the result after visiting all dependencies
+    ans.push(String.fromCharCode('a'.charCodeAt(0) + u));
+
+    // Remove from recursion stack
+    rec[u] = 0;
+    return true;
+}
+
+// Function to find the correct order of characters in an alien dictionary
+function findOrder(words) {
+    const graph = Array.from({ length: 26 }, () => Array(26).fill(0));
+    const exist = Array(26).fill(0);
+    const vis = Array(26).fill(0);
+    const rec = Array(26).fill(0);
+    const ans = [];
+
+    // Mark all characters that appear in the input
+    for (let word of words) {
+        for (let ch of word) {
+            exist[ch.charCodeAt(0) - 'a'.charCodeAt(0)] = 1;
+        }
+    }
+
+    //Build the graph
+    for (let i = 0; i + 1 < words.length; i++) {
+        let a = words[i], b = words[i + 1];
+        let n = a.length, m = b.length, ind = 0;
+
+        // Find the first different character between a and b
+        while (ind < n && ind < m && a[ind] === b[ind])
+            ind++;
+
+        if (ind !== n && ind === m)
+            return "";
+
+        if (ind < n && ind < m)
+            graph[a.charCodeAt(ind) - 97][b.charCodeAt(ind) - 97] = 1;
+    }
+
+    for (let i = 0; i < 26; i++) {
+        if (exist[i] && !vis[i]) {
+            let x = dfs(i, graph, vis, rec, ans);
+
+            // Return empty string if a cycle is found
+            if (!x) return "";
+        }
+    }
+
+    // Reverse to get the correct topological order
+    ans.reverse();
+    return ans.join('');
+}
+
+// Driver code
+//Driver Code Starts
+let words = ["baa", "abcd", "abca", "cab", "cad"];
+let order = findOrder(words);
+console.log(order);
+
+//Driver Code Ends
+
+bdac

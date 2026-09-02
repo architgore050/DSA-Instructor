@@ -1,0 +1,783 @@
+Source: https://www.geeksforgeeks.org/dsa/word-ladder-length-of-shortest-chain-to-reach-a-target-word/
+Title: Shortest Transformation Length in a Word List
+
+Given two distinct words s and e , and a list of unique words words[] , where all words have the same length, find the length of the shortest transformation sequences from start to end. A valid transformation sequence must satisfy the following conditions:
+
+- Only one character can be changed in each transformation.
+- Every transformed word must exist in words[], including e.
+- All words consist only of lowercase English letters.
+- s may or may not be present in words[] .
+
+Return the length of the shortest transformation sequence from s to e. If no such sequence exists, return 0 .
+
+Examples:
+
+> Input: words[] = ["des", "der", "dfr", "dgt", "dfs"], start = "der", end = "dfs" Output: 3 Explanation: The length of the smallest transformation sequence from "der" to "dfs" is 3 i.e "der" -> "d f r" -> "df s ". Input: words[] = ["geek", "gefk"], start = "gedk", end = "geek" Output: 2 Explanation: The length of the smallest transformation sequence from "gedk" to "geek" is 2 i.e "gedk" -> "ge e k". Input: words[] = ["poon", "plee", "same", "poie", "plea", "plie", "poin"], start = "toon", end = "plea" Output: 7 Explanation: The length of the smallest transformation sequence from "toon" to "plea" is 7 i.e toon -> p oon -> po i n -> poi e -> p l ie -> pl e e -> ple a .
+
+Table of Content
+
+- [Naive Approach] Backtracking Over All Possible Sequences - O(n!) Time and O(n) Space
+- [Expected Approach] BFS with Hash Set - O(n m) Time and O(n) Space
+
+### [Naive Approach] Backtracking Over All Possible Sequences - O(n!) Time and O(n) Space
+
+> The idea is to recursively try every possible transformation sequence starting from start . From the current word, move to every unvisited word that differs by exactly one character and keep track of the minimum sequence length that reaches end .
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Recursive function to find the shortest transformation chain
+int minWordTransform(string start, string target, map<string, int> &mp)
+{
+
+    // If start word is the same as target, no transformation is needed
+    if (start == target)
+        return 1;
+
+    int mini = INT_MAX;
+
+    // Mark current word as visited
+    mp[start] = 1;
+
+    // Try changing each character of the word
+    for (int i = 0; i < start.size(); i++)
+    {
+        char originalChar = start[i];
+
+        // Try all possible lowercase letters at position i
+        for (char ch = 'a'; ch <= 'z'; ch++)
+        {
+            start[i] = ch;
+
+            // If the new word exists in dictionary and is not visited
+            if (mp.find(start) != mp.end() && mp[start] == 0)
+            {
+
+                // Recursive call for next transformation
+                int curr = minWordTransform(start, target, mp);
+
+                if (curr != INT_MAX)
+                    mini = min(mini, 1 + curr);
+            }
+        }
+
+        // Restore original character before moving to the next position
+        start[i] = originalChar;
+    }
+
+    // Mark current word as unvisited (backtracking)
+    mp[start] = 0;
+
+    return mini;
+}
+
+int wordLadder(vector<string> &words, string &s, string &e)
+{
+
+    // Initialize all words from the dictionary as unvisited
+    map<string, int> mp;
+
+    for (auto word : words)
+        mp[word] = 0;
+
+    int result = minWordTransform(s, e, mp);
+
+    if (result == INT_MAX)
+        result = 0;
+
+    return result;
+}
+
+int main()
+{
+
+    vector<string> words = {"poon", "plee", "same", "poie", "plea", "plie", "poin"};
+
+    string s = "toon";
+    string e = "plea";
+
+    cout << wordLadder(words, s, e);
+
+    return 0;
+}
+
+import java.util.*;
+
+public class GFG {
+
+    // Recursive function to find the shortest
+    // transformation chain
+    static int minWordTransform(String start, String target,
+                                HashMap<String, Integer> mp)
+    {
+
+        // If start word is the same as target, no
+        // transformation is needed
+        if (start.equals(target))
+            return 1;
+
+        int mini = Integer.MAX_VALUE;
+
+        // Mark current word as visited
+        mp.put(start, 1);
+
+        // Try changing each character of the word
+        for (int i = 0; i < start.length(); i++) {
+            char originalChar = start.charAt(i);
+
+            // Try all possible lowercase letters at
+            // position i
+            for (char ch = 'a'; ch <= 'z'; ch++) {
+                char[] startChars = start.toCharArray();
+                startChars[i] = ch;
+                String newStart = new String(startChars);
+
+                // If the new word exists in dictionary and
+                // is not visited
+                if (mp.containsKey(newStart)
+                    && mp.get(newStart) == 0) {
+
+                    // Recursive call for next
+                    // transformation
+                    int curr = minWordTransform(newStart,
+                                                target, mp);
+
+                    if (curr != Integer.MAX_VALUE)
+                        mini = Math.min(mini, 1 + curr);
+                }
+            }
+
+            // Restore original character before moving to
+            // the next position
+            start = start.substring(0, i) + originalChar
+                    + start.substring(i + 1);
+        }
+
+        // Mark current word as unvisited (backtracking)
+        mp.put(start, 0);
+
+        return mini;
+    }
+
+    static int wordLadder(String[] words, String s,
+                          String e)
+    {
+
+        // Initialize all words from the dictionary as
+        // unvisited
+        HashMap<String, Integer> mp = new HashMap<>();
+
+        for (String word : words)
+            mp.put(word, 0);
+
+        int result = minWordTransform(s, e, mp);
+
+        if (result == Integer.MAX_VALUE)
+            result = 0;
+
+        return result;
+    }
+
+    public static void main(String[] args)
+    {
+
+        String[] words = { "poon", "plee", "same", "poie",
+                           "plea", "plie", "poin" };
+
+        String s = "toon";
+        String e = "plea";
+
+        System.out.println(wordLadder(words, s, e));
+    }
+}
+
+def minWordTransform(start, target, mp):
+
+    # If start word is the same as target, no transformation is needed
+    if start == target:
+        return 1
+
+    mini = float('inf')
+
+    # Mark current word as visited
+    mp[start] = 1
+
+    # Try changing each character of the word
+    for i in range(len(start)):
+        originalChar = start[i]
+
+        # Try all possible lowercase letters at position i
+        for ch in range(ord('a'), ord('z') + 1):
+            newStart = start[:i] + chr(ch) + start[i + 1:]
+
+            # If the new word exists in dictionary and is not visited
+            if newStart in mp and mp[newStart] == 0:
+
+                # Recursive call for next transformation
+                curr = minWordTransform(newStart, target, mp)
+
+                if curr != float('inf'):
+                    mini = min(mini, 1 + curr)
+
+        # Restore original character before moving to the next position
+        start = start[:i] + originalChar + start[i + 1:]
+
+    # Mark current word as unvisited (backtracking)
+    mp[start] = 0
+
+    return mini
+
+def wordLadder(words, s, e):
+
+    # Initialize all words from the dictionary as unvisited
+    mp = {word: 0 for word in words}
+
+    result = minWordTransform(s, e, mp)
+
+    if result == float('inf'):
+        result = 0
+
+    return result
+
+if __name__ == '__main__':
+    words = ["poon", "plee", "same", "poie", "plea", "plie", "poin"]
+    s = "toon"
+    e = "plea"
+    print(wordLadder(words, s, e))
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    // Recursive function to find the shortest
+    // transformation chain
+    public static int
+    MinWordTransform(string start, string target,
+                     Dictionary<string, int> mp)
+    {
+        // If start word is the same as target, no
+        // transformation is needed
+        if (start == target)
+            return 1;
+
+        int mini = int.MaxValue;
+
+        // Mark current word as visited
+        mp[start] = 1;
+
+        // Try changing each character of the word
+        for (int i = 0; i < start.Length; i++) {
+            char originalChar = start[i];
+
+            // Try all possible lowercase letters at
+            // position i
+            for (char ch = 'a'; ch <= 'z'; ch++) {
+                char[] startChars = start.ToCharArray();
+                startChars[i] = ch;
+                string newStart = new string(startChars);
+
+                // If the new word exists in dictionary and
+                // is not visited
+                if (mp.ContainsKey(newStart)
+                    && mp[newStart] == 0) {
+                    // Recursive call for next
+                    // transformation
+                    int curr = MinWordTransform(newStart,
+                                                target, mp);
+
+                    if (curr != int.MaxValue)
+                        mini = Math.Min(mini, 1 + curr);
+                }
+            }
+
+            // Restore original character before moving to
+            // the next position
+            start = start.Substring(0, i) + originalChar
+                    + start.Substring(i + 1);
+        }
+
+        // Mark current word as unvisited (backtracking)
+        mp[start] = 0;
+
+        return mini;
+    }
+
+    public static int WordLadder(string[] words, string s,
+                                 string e)
+    {
+        // Initialize all words from the dictionary as
+        // unvisited
+        Dictionary<string, int> mp
+            = new Dictionary<string, int>();
+
+        foreach(string word in words) mp[word] = 0;
+
+        int result = MinWordTransform(s, e, mp);
+
+        if (result == int.MaxValue)
+            result = 0;
+
+        return result;
+    }
+
+    public static void Main(string[] args)
+    {
+        string[] words = { "poon", "plee", "same", "poie",
+                           "plea", "plie", "poin" };
+
+        string s = "toon";
+        string e = "plea";
+
+        Console.WriteLine(WordLadder(words, s, e));
+    }
+}
+
+function minWordTransform(start, target, mp) {
+
+    // If start word is the same as target, no transformation is needed
+    if (start === target)
+        return 1;
+
+    let mini = Number.MAX_SAFE_INTEGER;
+
+    // Mark current word as visited
+    mp[start] = 1;
+
+    // Try changing each character of the word
+    for (let i = 0; i < start.length; i++) {
+        let originalChar = start[i];
+
+        // Try all possible lowercase letters at position i
+        for (let ch = 'a'.charCodeAt(0); ch <= 'z'.charCodeAt(0); ch++) {
+            let newStart = start.slice(0, i) + String.fromCharCode(ch) + start.slice(i + 1);
+
+            // If the new word exists in dictionary and is not visited
+            if (mp[newStart]!== undefined && mp[newStart] === 0) {
+
+                // Recursive call for next transformation
+                let curr = minWordTransform(newStart, target, mp);
+
+                if (curr!== Number.MAX_SAFE_INTEGER)
+                    mini = Math.min(mini, 1 + curr);
+            }
+        }
+
+        // Restore original character before moving to the next position
+        start = start.slice(0, i) + originalChar + start.slice(i + 1);
+    }
+
+    // Mark current word as unvisited (backtracking)
+    mp[start] = 0;
+
+    return mini;
+}
+
+function wordLadder(words, s, e) {
+
+    // Initialize all words from the dictionary as unvisited
+    let mp = {};
+
+    for (let word of words)
+        mp[word] = 0;
+
+    let result = minWordTransform(s, e, mp);
+
+    if (result === Number.MAX_SAFE_INTEGER)
+        result = 0;
+
+    return result;
+}
+
+let words = ["poon", "plee", "same", "poie", "plea", "plie", "poin"];
+let s = "toon";
+let e = "plea";
+console.log(wordLadder(words, s, e));
+
+7
+
+### [Expected Approach] BFS with Hash Set - O(n m) Time and O(n) Space
+
+> The idea is to use BFS to find the smallest chain between start and target . To do so, create a queue words to store the word to visit and push start initially. At each level, go through all the elements stored in queue words, and for each element, alter all of its character for ' a' to 'z ' and one by one and check if the new word is in dictionary or not. If found , push the new word in queue , else continue . Each level of queue defines the length of chain, and once the target is found return the value of that level + 1.
+
+Let us understand with example: Input: words[] = ["poon", "plee", "same", "poie", "plea", "plie", "poin"], start = "toon", end = "plea"
+
+- Insert all words into a hash set and start BFS from "toon" with sequence length 1.
+- From "toon", changing one character at a time generates "poon", which exists in the dictionary. Push ("poon", 2) into the queue and remove it from the set.
+- Next, process "poon". A valid transformation "poin" is found. Push ("poin", 3) into the queue and remove it from the set.
+- Similarly, BFS discovers the sequence: toon -> poon -> poin -> poie -> plie -> plee -> plea
+- When "plea" is reached, its sequence length is 7. Therefore, the shortest transformation sequence length is 7.
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int wordLadder(vector<string> &words, string &s, string &e)
+{
+
+    // set to keep track of unvisited words
+    unordered_set<string> st(words.begin(), words.end());
+
+    // store the current chain length
+    int res = 0;
+    int m = s.length();
+
+    // queue to store words to visit
+    queue<string> q;
+
+    q.push(s);
+
+    while (!q.empty())
+    {
+        res++;
+        int len = q.size();
+
+        // iterate through all words at same level
+        for (int i = 0; i < len; ++i)
+        {
+            string word = q.front();
+            q.pop();
+
+            // For every character of the word
+            for (int j = 0; j < m; ++j)
+            {
+
+                // Retain the original character
+                // at the current position
+                char ch = word[j];
+
+                // Replace the current character with
+                // every possible lowercase alphabet
+                for (char c = 'a'; c <= 'z'; ++c)
+                {
+                    word[j] = c;
+
+                    // skip the word if already added
+                    // or not present in set
+                    if (st.find(word) == st.end())
+                        continue;
+
+                    // If target word is found
+                    if (word == e)
+                        return res + 1;
+
+                    // remove the word from set
+                    st.erase(word);
+
+                    // And push the newly generated word
+                    // which will be a part of the chain
+                    q.push(word);
+                }
+
+                // Restore the original character
+                // at the current position
+                word[j] = ch;
+            }
+        }
+    }
+
+    return 0;
+}
+
+int main()
+{
+
+    vector<string> words = {"poon", "plee", "same", "poie", "plea", "plie", "poin"};
+
+    string s = "toon";
+    string e = "plea";
+
+    cout << wordLadder(words, s, e);
+
+    return 0;
+}
+
+import java.util.*;
+
+public class GFG {
+
+    public static int wordLadder(String[] words, String s,
+                                 String e)
+    {
+
+        // set to keep track of unvisited words
+        Set<String> st
+            = new HashSet<>(Arrays.asList(words));
+
+        // store the current chain length
+        int res = 0;
+        int m = s.length();
+
+        // queue to store words to visit
+        Queue<String> q = new LinkedList<>();
+
+        q.add(s);
+
+        while (!q.isEmpty()) {
+            res++;
+            int len = q.size();
+
+            // iterate through all words at same level
+            for (int i = 0; i < len; ++i) {
+                String word = q.poll();
+
+                // For every character of the word
+                for (int j = 0; j < m; ++j) {
+
+                    // Retain the original character
+                    // at the current position
+                    char ch = word.charAt(j);
+
+                    // Replace the current character with
+                    // every possible lowercase alphabet
+                    char[] wordArray = word.toCharArray();
+                    for (char c = 'a'; c <= 'z'; ++c) {
+                        wordArray[j] = c;
+                        String newWord
+                            = new String(wordArray);
+
+                        // skip the word if already added
+                        // or not present in set
+                        if (!st.contains(newWord))
+                            continue;
+
+                        // If target word is found
+                        if (newWord.equals(e))
+                            return res + 1;
+
+                        // remove the word from set
+                        st.remove(newWord);
+
+                        // And push the newly generated word
+                        // which will be a part of the chain
+                        // which will be a part of the chain
+                        q.add(newWord);
+                    }
+
+                    // Restore the original character
+                    // at the current position
+                    wordArray[j] = ch;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    public static void main(String[] args)
+    {
+
+        String[] words = { "poon", "plee", "same", "poie",
+                           "plea", "plie", "poin" };
+
+        String s = "toon";
+        String e = "plea";
+
+        System.out.println(wordLadder(words, s, e));
+    }
+}
+
+from collections import deque
+
+def wordLadder(words, s, e):
+    # set to keep track of unvisited words
+    st = set(words)
+
+    # store the current chain length
+    res = 0
+    m = len(s)
+
+    # queue to store words to visit
+    q = deque([s])
+
+    while q:
+        res += 1
+        len_q = len(q)
+
+        # iterate through all words at same level
+        for _ in range(len_q):
+            word = q.popleft()
+
+            # For every character of the word
+            for j in range(m):
+                # Retain the original character
+                # at the current position
+                ch = word[j]
+
+                # Replace the current character with
+                # every possible lowercase alphabet
+                for c in range(ord('a'), ord('z') + 1):
+                    new_word = word[:j] + chr(c) + word[j + 1:]
+
+                    # skip the word if already added
+                    # or not present in set
+                    if new_word not in st:
+                        continue
+
+                    # If target word is found
+                    if new_word == e:
+                        return res + 1
+
+                    # remove the word from set
+                    st.remove(new_word)
+
+                    # And push the newly generated word
+                    # which will be a part of the chain
+                    q.append(new_word)
+
+                # Restore the original character
+                # at the current position
+                word = word[:j] + ch + word[j + 1:]
+
+    return 0
+
+if __name__ == '__main__':
+    words = ["poon", "plee", "same", "poie", "plea", "plie", "poin"]
+    s = "toon"
+    e = "plea"
+    print(wordLadder(words, s, e))
+
+using System;
+using System.Collections.Generic;
+
+public class GFG {
+    public static int wordLadder(string[] words, string s,
+                                 string e)
+    {
+        // set to keep track of unvisited words
+        HashSet<string> st = new HashSet<string>(words);
+
+        // store the current chain length
+        int res = 0;
+        int m = s.Length;
+
+        // queue to store words to visit
+        Queue<string> q = new Queue<string>();
+
+        q.Enqueue(s);
+
+        while (q.Count > 0) {
+            res++;
+            int len = q.Count;
+
+            // iterate through all words at same level
+            for (int i = 0; i < len; ++i) {
+                string word = q.Dequeue();
+
+                // For every character of the word
+                for (int j = 0; j < m; ++j) {
+                    // Retain the original character
+                    // at the current position
+                    char ch = word[j];
+
+                    // Replace the current character with
+                    // every possible lowercase alphabet
+                    for (char c = 'a'; c <= 'z'; ++c) {
+                        char[] wordArray
+                            = word.ToCharArray();
+                        wordArray[j] = c;
+                        string newWord
+                            = new string(wordArray);
+
+                        // skip the word if already added
+                        // or not present in set
+                        if (!st.Contains(newWord))
+                            continue;
+
+                        // If target word is found
+                        if (newWord == e)
+                            return res + 1;
+
+                        // remove the word from set
+                        st.Remove(newWord);
+
+                        // And push the newly generated word
+                        // which will be a part of the chain
+                        q.Enqueue(newWord);
+                    }
+
+                    // Restore the original character
+                    // at the current position
+                    word = word.Substring(0, j) + ch
+                           + word.Substring(j + 1);
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    public static void Main()
+    {
+        string[] words = { "poon", "plee", "same", "poie",
+                           "plea", "plie", "poin" };
+
+        string s = "toon";
+        string e = "plea";
+
+        Console.WriteLine(wordLadder(words, s, e));
+    }
+}
+
+function wordLadder(words, s, e) {
+    // set to keep track of unvisited words
+    let st = new Set(words);
+
+    // store the current chain length
+    let res = 0;
+    let m = s.length;
+
+    // queue to store words to visit
+    let q = [s];
+
+    while (q.length > 0) {
+        res++;
+        let len = q.length;
+
+        // iterate through all words at same level
+        for (let i = 0; i < len; ++i) {
+            let word = q.shift();
+
+            // For every character of the word
+            for (let j = 0; j < m; ++j) {
+
+                // Retain the original character
+                // at the current position
+                let ch = word[j];
+
+                // Replace the current character with
+                // every possible lowercase alphabet
+                for (let c = 'a'.charCodeAt(0); c <= 'z'.charCodeAt(0); ++c) {
+                    let newWord = word.substring(0, j) + String.fromCharCode(c) + word.substring(j + 1);
+
+                    // skip the word if already added
+                    // or not present in set
+                    if (!st.has(newWord))
+                        continue;
+
+                    // If target word is found
+                    if (newWord === e)
+                        return res + 1;
+
+                    // remove the word from set
+                    st.delete(newWord);
+
+                    // And push the newly generated word
+                    // which will be a part of the chain
+                    q.push(newWord);
+                }
+
+                // Restore the original character
+                // at the current position
+                word = word.substring(0, j) + ch + word.substring(j + 1);
+            }
+        }
+    }
+
+    return 0;
+}
+
+let words = ["poon", "plee", "same", "poie", "plea", "plie", "poin"];
+let s = "toon";
+let e = "plea";
+console.log(wordLadder(words, s, e));
+
+7

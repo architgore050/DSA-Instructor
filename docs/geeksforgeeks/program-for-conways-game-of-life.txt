@@ -1,0 +1,698 @@
+Source: https://www.geeksforgeeks.org/dsa/program-for-conways-game-of-life/
+Title: Conway's Game Of Life
+
+Given a binary matrix mat[][] of size m × n , each cell represents the state of a cell in a generation:
+
+- 1 → Live cell
+- 0 → Dead cell
+
+The matrix represents the current generation . Compute the next generation based on the following rules :
+
+1. Any live cell with fewer than two live neighbours dies (under-population).
+2. Any live cell with two or three live neighbours survives to the next generation.
+3. Any live cell with more than three live neighbours dies (overpopulation).
+4. Any dead cell with exactly three live neighbours becomes a live cell (reproduction).
+
+Note: Neighbours are the cells connected horizontally, vertically, or diagonally to a given cell . Examples:
+
+> Input: mat[][] = [[0, 0, 0, 0], [0, 0, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]] Output: mat[][] = [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]] Explanation: The cell at index {1, 1} with initial value 0 has exactly 3 live neighbours in index {1, 2}, {2, 1}, {2, 2}, thus it will be alive in next generation. Rest all three live cells have exactly 2 live neighbouring cells each, thus they all will remain alive in next generation as well. All the remaining dead cells have less than 3 live cells thus they will remain dead. Input: mat[][] = [[0, 0, 0, 0, 0], [0, 1, 1, 0, 0], [1, 1, 0, 0, 0], [0, 0, 0, 1, 0] [0, 0, 1, 0, 0]] Output: mat[][] = [[0, 0, 0, 0, 0], [1, 1, 1, 0, 0], [1, 1, 0, 0, 0], [0, 1, 1, 0, 0] [0, 0, 0, 0, 0]] Explanation: The live cells at indices {1, 1}, {1, 2}, {2, 0}, {2, 1} have either 2 or 3 live neighbours, they will remain alive. The remaining live cells at indices {3, 3} and {4, 2} have only 1 live neighbour, thus they will become dead. The dead cells at indices {1, 0}, {3, 1} and {3, 2} have exactly three live neighbours, thus they will become alive. Dead cell at index {2, 2} has 4 live neighbours and all remaining dead cells have less than 2 live neighbours, thus they will remain dead.
+
+Table of Content
+
+- [Naive Approach] Using an Additional Matrix - O(m*n) Time and O(m*n) Space
+- [Expected Approach] Without Using an Additional Matrix - O(m*n) Time and O(1) Space
+
+### [Naive Approach] - Using an Additional Matrix - O(m × n) Time and O(m × n) Space
+
+> Create an auxiliary matrix nextGen[][] of order m × n to store the cells of next generation. After creating the matrix nextGen[][], traverse the matrix mat[][] and for each cell find the count of live neighbours (i.e. cells with value 1). If the cell at index {x, y} is dead (i.e. 0) and the count of live neighbours is three, set nextGen[x][y] = 1, which means that the cell will become alive in the next generation. Else if the cell is live (i.e. 1) and the count of live neighbors is not equal to two or three, set nextGen[x][y] = 0, which means that the cell will be dead in the next generation. After completing the traversal, return the matrix nextGen[][].
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<vector<int>> findNextGen(vector<vector<int>> &mat)
+{
+    int m = mat.size(), n = mat[0].size();
+
+    // for storing the result
+    vector<vector<int>> nextGen(m, vector<int>(n, 0));
+
+    // Directions of eight possible neighbors
+    vector<vector<int>> directions =
+        {{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+
+            // Count the number of live neighbors
+            int live = 0;
+            for (auto dir : directions)
+            {
+                int x = i + dir[0];
+                int y = j + dir[1];
+
+                // Check if the neighbor is live
+                if (x >= 0 && x < m && y >= 0 && y < n && (mat[x][y] == 1))
+                {
+                    live++;
+                }
+            }
+
+            // Apply rules
+            if (mat[i][j] == 1 && (live < 2 || live > 3))
+            {
+                nextGen[i][j] = 0;
+            }
+            else if (mat[i][j] == 0 && live == 3)
+            {
+                nextGen[i][j] = 1;
+            }
+            else
+            {
+                nextGen[i][j] = mat[i][j];
+            }
+        }
+    }
+
+    return nextGen;
+}
+
+int main()
+{
+    vector<vector<int>> mat =
+        {{0, 0, 0, 0}, {0, 0, 1, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}};
+    vector<vector<int>> nextGen = findNextGen(mat);
+
+    for (int i = 0; i < nextGen.size(); i++)
+    {
+        for (int j = 0; j < nextGen[0].size(); j++)
+        {
+            cout << nextGen[i][j] << " ";
+        }
+        cout << endl;
+    }
+    return 0;
+}
+
+import java.util.ArrayList;
+
+public class GfG {
+
+    static ArrayList<ArrayList<Integer>> findNextGen(ArrayList<ArrayList<Integer>> mat) {
+        int m = mat.size();
+        int n = mat.get(0).size();
+
+        // for storing the result
+        ArrayList<ArrayList<Integer>> nextGen = new ArrayList<>();
+
+        // Directions of eight possible neighbors
+        int[][] directions = {
+            {0, 1}, {1, 0}, {0, -1}, {-1, 0},
+            {1, 1}, {-1, -1}, {1, -1}, {-1, 1}
+        };
+
+        for (int i = 0; i < m; i++) {
+            ArrayList<Integer> row = new ArrayList<>();
+            for (int j = 0; j < n; j++) {
+
+                // Count live neighbors
+                int live = 0;
+                for (int[] dir : directions) {
+                    int x = i + dir[0];
+                    int y = j + dir[1];
+
+                    if (x >= 0 && x < m && y >= 0 && y < n && mat.get(x).get(y) == 1) {
+                        live++;
+                    }
+                }
+
+                //  Apply rules
+                if (mat.get(i).get(j) == 1 && (live < 2 || live > 3))
+                    row.add(0);
+                else if (mat.get(i).get(j) == 0 && live == 3)
+                    row.add(1);
+                else
+                    row.add(mat.get(i).get(j));
+            }
+            nextGen.add(row);
+        }
+
+        return nextGen;
+    }
+
+    public static void main(String[] args) {
+        ArrayList<ArrayList<Integer>> mat = new ArrayList<>();
+
+        int[][] arr = {
+            {0, 0, 0, 0},
+            {0, 0, 1, 0},
+            {0, 1, 1, 0},
+            {0, 0, 0, 0}
+        };
+
+        for (int[] r : arr) {
+            ArrayList<Integer> row = new ArrayList<>();
+            for (int val : r) row.add(val);
+            mat.add(row);
+        }
+
+        ArrayList<ArrayList<Integer>> nextGen = findNextGen(mat);
+
+        for (ArrayList<Integer> row : nextGen) {
+            for (int val : row)
+                System.out.print(val + " ");
+            System.out.println();
+        }
+    }
+}
+
+def findNextGen(mat):
+    m, n = len(mat), len(mat[0])
+
+    # for storing the result
+    nextGen = [[0]*n for _ in range(m)]
+
+    # Directions of eight possible neighbors
+    directions = [
+        (0,1), (1,0), (0,-1), (-1,0),
+        (1,1), (-1,-1), (1,-1), (-1,1)
+    ]
+
+    for i in range(m):
+        for j in range(n):
+
+            # Count live neighbors
+            live = 0
+            for dx, dy in directions:
+                x, y = i + dx, j + dy
+                if 0 <= x < m and 0 <= y < n and mat[x][y] == 1:
+                    live += 1
+
+            # Apply rules
+            if mat[i][j] == 1 and (live < 2 or live > 3):
+                nextGen[i][j] = 0
+            elif mat[i][j] == 0 and live == 3:
+                nextGen[i][j] = 1
+            else:
+                nextGen[i][j] = mat[i][j]
+    return nextGen
+
+if __name__=="__main__":
+    mat = [
+        [0,0,0,0],
+        [0,0,1,0],
+        [0,1,1,0],
+        [0,0,0,0]
+    ]
+
+    nextGen = findNextGen(mat)
+
+    for row in nextGen:
+        print(*row)
+
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+    static List<List<int>> findNextGen(List<List<int>> mat)
+    {
+        int m = mat.Count;
+        int n = mat[0].Count;
+
+        // for storing the result
+        List<List<int>> nextGen = new List<List<int>>();
+
+        int[,] directions = {
+            {0,1}, {1,0}, {0,-1}, {-1,0},
+            {1,1}, {-1,-1}, {1,-1}, {-1,1}
+        };
+
+        for (int i = 0; i < m; i++)
+        {
+            List<int> row = new List<int>();
+
+            for (int j = 0; j < n; j++)
+            {
+                // Count live neighbors
+                int live = 0;
+                for (int d = 0; d < 8; d++)
+                {
+                    int x = i + directions[d, 0];
+                    int y = j + directions[d, 1];
+
+                    if (x >= 0 && x < m && y >= 0 && y < n && mat[x][y] == 1)
+                        live++;
+                }
+
+                // Apply rules
+                if (mat[i][j] == 1 && (live < 2 || live > 3))
+                    row.Add(0);
+                else if (mat[i][j] == 0 && live == 3)
+                    row.Add(1);
+                else
+                    row.Add(mat[i][j]);
+            }
+
+            nextGen.Add(row);
+        }
+
+        return nextGen;
+    }
+
+    static void Main()
+    {
+        var mat = new List<List<int>> {
+            new List<int>{0,0,0,0},
+            new List<int>{0,0,1,0},
+            new List<int>{0,1,1,0},
+            new List<int>{0,0,0,0}
+        };
+
+        var nextGen = findNextGen(mat);
+
+        foreach (var row in nextGen)
+        {
+            Console.WriteLine(string.Join(" ", row));
+        }
+    }
+}
+
+function findNextGen(mat) {
+    let m = mat.length, n = mat[0].length;
+
+    // for storing the result
+    let nextGen = Array.from({length: m}, () => Array(n).fill(0));
+
+    // Directions of eight possible neighbors
+    let directions = [
+        [0,1], [1,0], [0,-1], [-1,0],
+        [1,1], [-1,-1], [1,-1], [-1,1]
+    ];
+
+    for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+
+            // Count live neighbors
+            let live = 0;
+            for (let [dx, dy] of directions) {
+                let x = i + dx;
+                let y = j + dy;
+
+                if (x >= 0 && x < m && y >= 0 && y < n && mat[x][y] === 1) {
+                    live++;
+                }
+            }
+
+            // Apply rules
+            if (mat[i][j] === 1 && (live < 2 || live > 3))
+                nextGen[i][j] = 0;
+            else if (mat[i][j] === 0 && live === 3)
+                nextGen[i][j] = 1;
+            else
+                nextGen[i][j] = mat[i][j];
+        }
+    }
+
+    return nextGen;
+}
+
+// Driver code
+let mat = [
+    [0,0,0,0],
+    [0,0,1,0],
+    [0,1,1,0],
+    [0,0,0,0]
+];
+
+let nextGen = findNextGen(mat);
+nextGen.forEach(row => console.log(row.join(" ")));
+
+0 0 0 0
+0 1 1 0
+0 1 1 0
+0 0 0 0
+
+### [Expected Approach] - Without Using an Additional Matrix - O(m × n) Time and O(1) Space
+
+> Traverse the matrix mat[][] and for each cell find the count of live neighbors (i.e. cells with value 1 or 3). If the cell at index {x, y} is dead (i.e. 0) and the count of live neighbors is three, set mat[x][y] = 2, which means that the cell will become alive in the next generation, but is dead for now. Else if the cell is live (i.e. 1) and the count of live neighbors is not equal to two or three, set mat[x][y] = 3, which means that the cell will be dead in the next generation, but is alive for now. After completing the traversal, traverse the matrix mat[][] once again. Set all the cells with value 2 to 1 and cells with value 3 to 0. All the remaining cells will retain there value i.e. the cells with value 0 and 1 will remain as it is.
+
+#include <iostream>
+using namespace std;
+
+// Function to find the next generation
+void findNextGen(vector<vector<int>> &mat) {
+    int m = mat.size(), n = mat[0].size();
+
+    // Directions of eight possible neighbors
+    vector<vector<int>> directions =
+    {{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
+
+    // Iterate over the matrix
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+
+            // Count the number of live neighbors
+            int live = 0;
+            for (auto dir : directions) {
+                int x = i + dir[0];
+                int y = j + dir[1];
+
+                // Check if the neighbor is live
+                if (x >= 0 && x < m && y >= 0 && y < n &&
+                    (mat[x][y] == 1 || mat[x][y] == 3)) {
+                    live++;
+                }
+            }
+
+            // If current cell is live and number of live neighbors
+            // is less than 2 or greater than 3, then the cell will die
+            if (mat[i][j] == 1 && (live < 2 || live > 3)) {
+                mat[i][j] = 3;
+            }
+
+            // If current cell is dead and number of live neighbors
+            // is equal to 3, then the cell will become live
+            else if (mat[i][j] == 0 && live == 3) {
+                mat[i][j] = 2;
+            }
+        }
+    }
+
+    // Update the matrix with the next generation
+    // and print the results.
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+
+            // value 2 represents the cell is live
+            if (mat[i][j] == 2) {
+                mat[i][j] = 1;
+            }
+
+            // value 3 represents the cell is dead
+            if (mat[i][j] == 3) {
+                mat[i][j] = 0;
+            }
+
+            cout << mat[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+int main() {
+
+    vector<vector<int>> mat =
+    {{0, 0, 0, 0}, {0, 0, 1, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}};
+    findNextGen(mat);
+    return 0;
+}
+
+import java.util.*;
+
+class GfG {
+
+    // Function to find the next generation
+    static void findNextGen(int[][] mat) {
+        int m = mat.length, n = mat[0].length;
+
+        // Directions of eight possible neighbors
+        int[][] directions = { { 0, 1 },  { 1, 0 },
+                               { 0, -1 }, { -1, 0 },
+                               { 1, 1 },  { -1, -1 },
+                               { 1, -1 }, { -1, 1 } };
+
+        // Iterate over the matrix
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                int live = 0;
+
+                // Count the number of live neighbors
+                for (int[] dir : directions) {
+                    int x = i + dir[0], y = j + dir[1];
+
+                    if (x >= 0 && x < m && y >= 0 && y < n
+                        && (mat[x][y] == 1
+                            || mat[x][y] == 3)) {
+                        live++;
+                    }
+                }
+
+                // If current cell is live and number of
+                // live neighbors is less than 2 or greater
+                // than 3, then the cell will die
+                if (mat[i][j] == 1
+                    && (live < 2 || live > 3)) {
+                    mat[i][j] = 3;
+                }
+
+                // If current cell is dead and number of
+                // live neighbors is equal to 3, then the
+                // cell will become live
+                else if (mat[i][j] == 0 && live == 3) {
+                    mat[i][j] = 2;
+                }
+            }
+        }
+
+        // Update the matrix with the next generation
+        // and print the results.
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+
+                // value 2 represents the cell is live
+                if (mat[i][j] == 2) {
+                    mat[i][j] = 1;
+                }
+
+                // value 3 represents the cell is dead
+                if (mat[i][j] == 3) {
+                    mat[i][j] = 0;
+                }
+
+                // Print the next generation
+                System.out.print(mat[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    public static void main(String[] args) {
+        int[][] mat = { { 0, 0, 0, 0 },
+                        { 0, 0, 1, 0 },
+                        { 0, 1, 1, 0 },
+                        { 0, 0, 0, 0 } };
+        findNextGen(mat);
+    }
+}
+
+def findNextGen(mat):
+    m, n = len(mat), len(mat[0])
+
+    # Directions of eight possible neighbors
+    directions = [(0, 1), (1, 0), (0, -1), (-1, 0),
+                  (1, 1), (-1, -1), (1, -1), (-1, 1)]
+
+    # Iterate over the matrix
+    for i in range(m):
+        for j in range(n):
+            live = 0
+
+            # Count the number of live neighbors
+            for dx, dy in directions:
+                x, y = i + dx, j + dy
+
+                # Check if the neighbor is live
+                if 0 <= x < m and 0 <= y < n and (mat[x][y] == 1 or mat[x][y] == 3):
+                    live += 1
+
+            # If current cell is live and number of live neighbors
+            # is less than 2 or greater than 3, then the cell will die
+            if mat[i][j] == 1 and (live < 2 or live > 3):
+                mat[i][j] = 3
+
+            # If current cell is dead and number of live neighbors
+            # is equal to 3, then the cell will become live
+            elif mat[i][j] == 0 and live == 3:
+                mat[i][j] = 2
+
+    # Update and print the matrix
+    for i in range(m):
+        for j in range(n):
+
+          	# value 2 represents the cell is live
+            if mat[i][j] == 2:
+                mat[i][j] = 1
+
+            # value 3 represents the cell is dead
+            if mat[i][j] == 3:
+                mat[i][j] = 0
+
+            # print the cell of next generation
+            print(mat[i][j], end=" ")
+        print()
+
+mat = [
+    [0, 0, 0, 0],
+    [0, 0, 1, 0],
+    [0, 1, 1, 0],
+    [0, 0, 0, 0]
+]
+findNextGen(mat)
+
+using System;
+
+class GfG {
+
+    // Function to find the next generation
+    static void FindNextGen(int[, ] mat) {
+        int m = mat.GetLength(0), n = mat.GetLength(1);
+
+        // Directions of eight possible neighbors
+        int[, ] directions = { { 0, 1 },  { 1, 0 },
+                               { 0, -1 }, { -1, 0 },
+                               { 1, 1 },  { -1, -1 },
+                               { 1, -1 }, { -1, 1 } };
+
+        // Iterate over the matrix
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                int live = 0;
+
+                // Count the number of live neighbors
+                for (int k = 0; k < 8; k++) {
+                    int x = i + directions[k, 0];
+                    int y = j + directions[k, 1];
+
+                    if (x >= 0 && x < m && y >= 0 && y < n
+                        && (mat[x, y] == 1
+                            || mat[x, y] == 3)) {
+                        live++;
+                    }
+                }
+
+                // If current cell is live and number of
+                // live neighbors is less than 2 or greater
+                // than 3, then the cell will die
+                if (mat[i, j] == 1
+                    && (live < 2 || live > 3)) {
+                    mat[i, j] = 3;
+                }
+
+                // If current cell is dead and number of
+                // live neighbors is equal to 3, then the
+                // cell will become live
+                if (mat[i, j] == 0 && live == 3) {
+                    mat[i, j] = 2;
+                }
+            }
+        }
+
+        // Update and print the matrix
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+
+                // value 2 represents the cell is live
+                if (mat[i, j] == 2) {
+                    mat[i, j] = 1;
+                }
+
+                // value 3 represents the cell is dead
+                if (mat[i, j] == 3) {
+                    mat[i, j] = 0;
+                }
+
+                Console.Write(mat[i, j] + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+
+    static void Main(string[] args) {
+        int[, ] mat = { { 0, 0, 0, 0 },
+                        { 0, 0, 1, 0 },
+                        { 0, 1, 1, 0 },
+                        { 0, 0, 0, 0 } };
+
+        FindNextGen(mat);
+    }
+}
+
+function findNextGen(mat) {
+
+    let m = mat.length, n = mat[0].length;
+
+    // Directions of eight possible neighbors
+    let directions = [
+        [ 0, 1 ], [ 1, 0 ], [ 0, -1 ], [ -1, 0 ], [ 1, 1 ],
+        [ -1, -1 ], [ 1, -1 ], [ -1, 1 ]
+    ];
+
+    // Iterate over the matrix
+    for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+            let live = 0;
+
+            // Count the number of live neighbors
+            for (let [dx, dy] of directions) {
+                let x = i + dx, y = j + dy;
+
+                // check if the neighbor is live
+                if (x >= 0 && x < m && y >= 0 && y < n
+                    && (mat[x][y] === 1
+                        || mat[x][y] === 3)) {
+                    live++;
+                }
+            }
+
+            // If current cell is live and number of live
+            // neighbors is less than 2 or greater than 3,
+            // then the cell will die
+            if (mat[i][j] === 1 && (live < 2 || live > 3)) {
+                mat[i][j] = 3;
+            }
+
+            // If current cell is dead and number of live
+            // neighbors is equal to 3, then the cell will
+            // become live
+            if (mat[i][j] === 0 && live === 3) {
+                mat[i][j] = 2;
+            }
+        }
+    }
+
+    // Update and print the matrix
+    for (let i = 0; i < m; i++) {
+
+        let row = "";
+        for (let j = 0; j < n; j++) {
+
+            // value 2 represents the cell is live
+            if (mat[i][j] == 2) {
+                mat[i][j] = 1;
+            }
+
+            // value 3 represents the cell is dead
+            if (mat[i][j] == 3) {
+                mat[i][j] = 0;
+            }
+
+            row += mat[i][j] + " ";
+        }
+        console.log(row.trim());
+    }
+}
+
+//Driver code
+let mat = [
+    [ 0, 0, 0, 0 ], [ 0, 0, 1, 0 ], [ 0, 1, 1, 0 ],
+    [ 0, 0, 0, 0 ]
+];
+findNextGen(mat);
+
+0 0 0 0
+0 1 1 0
+0 1 1 0
+0 0 0 0

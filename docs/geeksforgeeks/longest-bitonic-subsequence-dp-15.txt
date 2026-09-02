@@ -1,0 +1,1061 @@
+Source: https://www.geeksforgeeks.org/dsa/longest-bitonic-subsequence-dp-15/
+Title: Longest Bitonic Subsequence
+
+Given an array arr[] containing n positive integers,  find the length of the longest bitonic subsequence. A subsequence of numbers is called bitonic if it is first strictly increasing, then strictly decreasing. Note: Only strictly increasing (no decreasing part) or a strictly decreasing sequence should not be considered as a bitonic sequence. Examples:
+
+> Input: n = 5, nums[] = [1, 2, 5, 3, 2] Output: 5 Explanation: The sequence [1, 2, 5] is increasing and the sequence [3, 2] is decreasing so merging both we will get length 5. Input: n = 8, nums[] = [1, 11, 2, 10, 4, 5, 2, 1] Output: 6 Explanation: The bitonic sequence [1, 2, 10, 4, 2, 1] has length 6.
+
+Table of Content
+
+- Using Recursion - O(n*(2^n)) Time and O(n) Space
+- Using Top-Down DP (Memoization) - O(n^2) Time and O(n^2) Space
+- Using Bottom-Up DP (Tabulation) - O(n^2) Time and O(n) Space
+
+### Using Recursion - O(n*(2^n)) Time and O(n) Space
+
+> In this approach, we consider every element of the array as a possible peak of a bitonic subsequence. For an element to be a valid peak: The elements on its left must form a strictly increasing subsequence. The elements on its right must form a strictly decreasing subsequence. A sequence that is only increasing or only decreasing does not qualify as bitonic, because a bitonic subsequence must have both parts with a clear turning point (the peak).
+
+So, for each index i, we calculate:
+
+- the longest increasing subsequence ending at i (from the left), and
+- the longest decreasing subsequence starting from i (to the right).
+
+This gives us the bitonic subsequence length with i as the peak.
+
+Finally, we take the maximum bitonic length among all choices of peaks.
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to find the longest decreasing subsequence
+// to the left starting from rightmost element
+int leftIncSubs(int prev, int idx, vector<int> &arr)
+{
+    if (idx < 0)
+    {
+        return 0;
+    }
+
+    int include = 0;
+    if (arr[idx] < arr[prev])
+    {
+        include = 1 + leftIncSubs(idx, idx - 1, arr);
+    }
+
+    return max(include, leftIncSubs(prev, idx - 1, arr));
+}
+
+// Function to find the longest decreasing subsequence
+// to the right starting from leftmost element
+int rightDecSubs(int prev, int idx, vector<int> &arr)
+{
+    if (idx >= arr.size())
+    {
+        return 0;
+    }
+
+    int include = 0;
+    if (arr[idx] < arr[prev])
+    {
+        include = 1 + rightDecSubs(idx, idx + 1, arr);
+    }
+
+    return max(include, rightDecSubs(prev, idx + 1, arr));
+}
+
+int longestBitonicSequence(int n, vector<int> &nums)
+{
+    int maxLength = 0;
+
+    // Iterate over potential peaks in the array
+    for (int i = 1; i < n - 1; i++)
+    {
+        int leftLen = leftIncSubs(i, i - 1, nums);
+        int rightLen = rightDecSubs(i, i + 1, nums);
+
+        // valid bitonic only if both sides exist
+        if (leftLen > 0 && rightLen > 0)
+        {
+            maxLength = max(maxLength, leftLen + rightLen + 1);
+        }
+    }
+    return maxLength;
+}
+//Driver Code
+int main() {
+    vector<int> arr = {12, 11, 40, 5, 3, 1};
+
+    cout << longestBitonicSequence(arr.size(), arr);
+
+    return 0;
+}
+
+import java.util.ArrayList;
+
+public class GfG {
+    // Function to find the longest increasing subsequence
+    // to the left starting from rightmost element
+    public static int leftIncSubs(int prev, int idx, ArrayList<Integer> arr) {
+        if (idx < 0)
+            return 0;
+
+        int include = 0;
+        if (arr.get(idx) < arr.get(prev))
+            include = 1 + leftIncSubs(idx, idx - 1, arr);
+
+        return Math.max(include, leftIncSubs(prev, idx - 1, arr));
+    }
+
+    // Function to find the longest decreasing subsequence
+    // to the right starting from leftmost element
+    public static int rightDecSubs(int prev, int idx, ArrayList<Integer> arr) {
+        if (idx >= arr.size())
+            return 0;
+
+        int include = 0;
+        if (arr.get(idx) < arr.get(prev))
+            include = 1 + rightDecSubs(idx, idx + 1, arr);
+
+        return Math.max(include, rightDecSubs(prev, idx + 1, arr));
+    }
+
+    public static int longestBitonicSequence(int n, ArrayList<Integer> nums) {
+        int maxLength = 0;
+
+        // Iterate over potential peaks in the array
+        for (int i = 1; i < n - 1; i++) {
+            int leftLen = leftIncSubs(i, i - 1, nums);
+            int rightLen = rightDecSubs(i, i + 1, nums);
+
+            // valid bitonic only if both sides exist
+            if (leftLen > 0 && rightLen > 0)
+                maxLength = Math.max(maxLength, leftLen + rightLen + 1);
+        }
+        return maxLength;
+    }
+
+    public static void main(String[] args) {
+        ArrayList<Integer> arr = new ArrayList<>();
+        arr.add(12); arr.add(11); arr.add(40); arr.add(5); arr.add(3); arr.add(1);
+        System.out.println(longestBitonicSequence(arr.size(), arr));
+    }
+}
+
+def leftIncSubs(prev, idx, arr):
+    if idx < 0:
+        return 0
+
+    include = 0
+    if arr[idx] < arr[prev]:
+        include = 1 + leftIncSubs(idx, idx - 1, arr)
+
+    return max(include, leftIncSubs(prev, idx - 1, arr))
+
+def rightDecSubs(prev, idx, arr):
+    if idx >= len(arr):
+        return 0
+
+    include = 0
+    if arr[idx] < arr[prev]:
+        include = 1 + rightDecSubs(idx, idx + 1, arr)
+
+    return max(include, rightDecSubs(prev, idx + 1, arr))
+
+def longestBitonicSequence(n, nums):
+    maxLength = 0
+
+    # Iterate over potential peaks in the array
+    for i in range(1, n - 1):
+        leftLen = leftIncSubs(i, i - 1, nums)
+        rightLen = rightDecSubs(i, i + 1, nums)
+
+        # valid bitonic only if both sides exist
+        if leftLen > 0 and rightLen > 0:
+            maxLength = max(maxLength, leftLen + rightLen + 1)
+    return maxLength
+
+if __name__ == "__main__":
+    arr = [12, 11, 40, 5, 3, 1]
+    print(longestBitonicSequence(len(arr), arr))
+
+using System;
+using System.Collections.Generic;
+
+public class GfG{
+    // Function to find the longest increasing subsequence
+    // to the left starting from rightmost element
+    public static int leftIncSubs(int prev, int idx, List<int> arr) {
+        if (idx < 0)
+            return 0;
+
+        int include = 0;
+        if (arr[idx] < arr[prev])
+            include = 1 + leftIncSubs(idx, idx - 1, arr);
+
+        return Math.Max(include, leftIncSubs(prev, idx - 1, arr));
+    }
+
+    // Function to find the longest decreasing subsequence
+    // to the right starting from leftmost element
+    public static int rightDecSubs(int prev, int idx, List<int> arr) {
+        if (idx >= arr.Count)
+            return 0;
+
+        int include = 0;
+        if (arr[idx] < arr[prev])
+            include = 1 + rightDecSubs(idx, idx + 1, arr);
+
+        return Math.Max(include, rightDecSubs(prev, idx + 1, arr));
+    }
+
+    public static int longestBitonicSequence(int n, List<int> nums) {
+        int maxLength = 0;
+
+        // Iterate over potential peaks in the array
+        for (int i = 1; i < n - 1; i++) {
+            int leftLen = leftIncSubs(i, i - 1, nums);
+            int rightLen = rightDecSubs(i, i + 1, nums);
+
+            // valid bitonic only if both sides exist
+            if (leftLen > 0 && rightLen > 0)
+                maxLength = Math.Max(maxLength, leftLen + rightLen + 1);
+        }
+        return maxLength;
+    }
+
+    public static void Main(string[] args) {
+        List<int> arr = new List<int> { 12, 11, 40, 5, 3, 1 };
+        Console.WriteLine(longestBitonicSequence(arr.Count, arr));
+    }
+}
+
+function leftIncSubs(prev, idx, arr) {
+    if (idx < 0) {
+        return 0;
+    }
+
+    let include = 0;
+    if (arr[idx] < arr[prev]) {
+        include = 1 + leftIncSubs(idx, idx - 1, arr);
+    }
+
+    return Math.max(include, leftIncSubs(prev, idx - 1, arr));
+}
+
+function rightDecSubs(prev, idx, arr) {
+    if (idx >= arr.length) {
+        return 0;
+    }
+
+    let include = 0;
+    if (arr[idx] < arr[prev]) {
+        include = 1 + rightDecSubs(idx, idx + 1, arr);
+    }
+
+    return Math.max(include, rightDecSubs(prev, idx + 1, arr));
+}
+
+function longestBitonicSequence(n, nums) {
+    let maxLength = 0;
+
+    // Iterate over potential peaks in the array
+    for (let i = 1; i < n - 1; i++) {
+        let leftLen = leftIncSubs(i, i - 1, nums);
+        let rightLen = rightDecSubs(i, i + 1, nums);
+
+        // valid bitonic only if both sides exist
+        if (leftLen > 0 && rightLen > 0) {
+            maxLength = Math.max(maxLength, leftLen + rightLen + 1);
+        }
+    }
+    return maxLength;
+}
+
+//Driver Code
+let arr = [12, 11, 40, 5, 3, 1];
+console.log(longestBitonicSequence(arr.length, arr));
+
+5
+
+### Using Top-Down DP (Memoization) - O(n^2) Time and O(n^2) Space
+
+> We treat every element as a potential peak of a bitonic sequence. For each peak, we recursively find the longest decreasing subsequence on the left and right sides using memoization to avoid recomputation. At each step, we decide whether to include the current element based on the decreasing condition. If both left and right parts exist, we combine their lengths with the peak ( left + right + 1 ). Finally, we return the maximum length among all such valid peaks.
+
+Algorithm:
+
+- We consider each element as a peak and try to form a bitonic sequence around it.
+- Using recursion + memoization, we find the longest decreasing subsequence on the left and right of the peak.
+- At each step, we either include or skip an element based on comparison.
+- If both sides exist, we compute length as left + right + 1 .
+- Return the maximum length among all peaks.
+
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to find the longest decreasing subsequence
+// on the left side of a given index (moving backwards)
+int leftIncSubs(int prev, int idx, const vector<int> &arr, vector<vector<int>> &leftDp)
+{
+
+    // Base case: if index goes out of bounds
+    if (idx < 0)
+    {
+        return 0;
+    }
+
+    // Return already computed result (memoization)
+    if (leftDp[prev][idx] != -1)
+    {
+        return leftDp[prev][idx];
+    }
+
+    int include = 0;
+
+    // Include current element if it is smaller than previous
+    if (arr[idx] < arr[prev])
+    {
+        include = 1 + leftIncSubs(idx, idx - 1, arr, leftDp);
+    }
+
+    // Take maximum of including or excluding current element
+    return leftDp[prev][idx] = max(include, leftIncSubs(prev, idx - 1, arr, leftDp));
+}
+
+// Function to find the longest decreasing subsequence
+// on the right side of a given index (moving forward)
+int rightDecSubs(int prev, int idx, const vector<int> &arr, vector<vector<int>> &rightDp)
+{
+
+    // Base case: if index goes out of bounds
+    if (idx >= arr.size())
+    {
+        return 0;
+    }
+
+    // Return already computed result (memoization)
+    if (rightDp[prev][idx] != -1)
+    {
+        return rightDp[prev][idx];
+    }
+
+    int include = 0;
+
+    // Include current element if it is smaller than previous
+    if (arr[idx] < arr[prev])
+    {
+        include = 1 + rightDecSubs(idx, idx + 1, arr, rightDp);
+    }
+
+    // Take maximum of including or excluding current element
+    return rightDp[prev][idx] = max(include, rightDecSubs(prev, idx + 1, arr, rightDp));
+}
+
+// Function to find the length of the longest Bitonic subsequence
+int longestBitonicSequence(int n, vector<int> &nums)
+{
+
+    int maxLength = 0;
+
+    // DP tables for memoization
+    vector<vector<int>> leftDp(n, vector<int>(n, -1));
+    vector<vector<int>> rightDp(n, vector<int>(n, -1));
+
+    // Consider every element as peak of bitonic sequence
+    for (int i = 1; i < n - 1; i++)
+    {
+
+        // Longest decreasing subsequence on left of i
+        int leftLen = leftIncSubs(i, i - 1, nums, leftDp);
+
+        int rightLen = rightDecSubs(i, i + 1, nums, rightDp);
+        if (leftLen > 0 && rightLen > 0)
+        {
+            maxLength = max(maxLength, leftLen + rightLen + 1);
+        }
+    }
+
+    return maxLength;
+}
+// Driver Code
+int main()
+{
+    vector<int> arr = {12, 11, 40, 5, 3, 1};
+
+    cout << longestBitonicSequence(arr.size(), arr);
+    return 0;
+}
+
+import java.util.Arrays;
+
+public class GfG {
+    // Function to find the longest decreasing subsequence
+    // on the left side of a given index (moving backwards)
+    static int leftIncSubs(int prev, int idx, int[] arr, int[][] leftDp) {
+        // Base case: if index goes out of bounds
+        if (idx < 0)
+            return 0;
+
+        // Return already computed result (memoization)
+        if (leftDp[prev][idx]!= -1)
+            return leftDp[prev][idx];
+
+        int include = 0;
+
+        // Include current element if it is smaller than previous
+        if (arr[idx] < arr[prev])
+            include = 1 + leftIncSubs(idx, idx - 1, arr, leftDp);
+
+        // Take maximum of including or excluding current element
+        return leftDp[prev][idx] = Math.max(include, leftIncSubs(prev, idx - 1, arr, leftDp));
+    }
+
+    // Function to find the longest decreasing subsequence
+    // on the right side of a given index (moving forward)
+    static int rightDecSubs(int prev, int idx, int[] arr, int[][] rightDp) {
+        // Base case: if index goes out of bounds
+        if (idx >= arr.length)
+            return 0;
+
+        // Return already computed result (memoization)
+        if (rightDp[prev][idx]!= -1)
+            return rightDp[prev][idx];
+
+        int include = 0;
+
+        // Include current element if it is smaller than previous
+        if (arr[idx] < arr[prev])
+            include = 1 + rightDecSubs(idx, idx + 1, arr, rightDp);
+
+        // Take maximum of including or excluding current element
+        return rightDp[prev][idx] = Math.max(include, rightDecSubs(prev, idx + 1, arr, rightDp));
+    }
+
+    // Function to find the length of the longest Bitonic subsequence
+    static int longestBitonicSequence(int n, int[] nums) {
+        int maxLength = 0;
+
+        // DP tables for memoization
+        int[][] leftDp = new int[n][n];
+        int[][] rightDp = new int[n][n];
+
+        for (int[] row : leftDp)
+            Arrays.fill(row, -1);
+        for (int[] row : rightDp)
+            Arrays.fill(row, -1);
+
+        // Consider every element as peak of bitonic sequence
+        for (int i = 1; i < n - 1; i++) {
+            // Longest decreasing subsequence on left of i
+            int leftLen = leftIncSubs(i, i - 1, nums, leftDp);
+
+            int rightLen = rightDecSubs(i, i + 1, nums, rightDp);
+            if (leftLen > 0 && rightLen > 0)
+                maxLength = Math.max(maxLength, leftLen + rightLen + 1);
+        }
+
+        return maxLength;
+    }
+
+    // Driver Code
+    public static void main(String[] args) {
+        int[] arr = {12, 11, 40, 5, 3, 1};
+        System.out.println(longestBitonicSequence(arr.length, arr));
+    }
+}
+
+import sys
+sys.setrecursionlimit(10**6)
+
+# Function to find the longest decreasing subsequence
+# on the left side of a given index (moving backwards)
+def leftIncSubs(prev, idx, arr, leftDp):
+    # Base case: if index goes out of bounds
+    if idx < 0:
+        return 0
+
+    # Return already computed result (memoization)
+    if leftDp[prev][idx]!= -1:
+        return leftDp[prev][idx]
+
+    include = 0
+
+    # Include current element if it is smaller than previous
+    if arr[idx] < arr[prev]:
+        include = 1 + leftIncSubs(idx, idx - 1, arr, leftDp)
+
+    # Take maximum of including or excluding current element
+    leftDp[prev][idx] = max(include, leftIncSubs(prev, idx - 1, arr, leftDp))
+    return leftDp[prev][idx]
+
+# Function to find the longest decreasing subsequence
+# on the right side of a given index (moving forward)
+def rightDecSubs(prev, idx, arr, rightDp):
+    # Base case: if index goes out of bounds
+    if idx >= len(arr):
+        return 0
+
+    # Return already computed result (memoization)
+    if rightDp[prev][idx]!= -1:
+        return rightDp[prev][idx]
+
+    include = 0
+
+    # Include current element if it is smaller than previous
+    if arr[idx] < arr[prev]:
+        include = 1 + rightDecSubs(idx, idx + 1, arr, rightDp)
+
+    # Take maximum of including or excluding current element
+    rightDp[prev][idx] = max(include, rightDecSubs(prev, idx + 1, arr, rightDp))
+    return rightDp[prev][idx]
+
+# Function to find the length of the longest Bitonic subsequence
+def longestBitonicSequence(n, nums):
+    maxLength = 0
+
+    # DP tables for memoization
+    leftDp = [[-1]*n for _ in range(n)]
+    rightDp = [[-1]*n for _ in range(n)]
+
+    # Consider every element as peak of bitonic sequence
+    for i in range(1, n - 1):
+        # Longest decreasing subsequence on left of i
+        leftLen = leftIncSubs(i, i - 1, nums, leftDp)
+        rightLen = rightDecSubs(i, i + 1, nums, rightDp)
+        if leftLen > 0 and rightLen > 0:
+            maxLength = max(maxLength, leftLen + rightLen + 1)
+    return maxLength
+
+if __name__ == '__main__':
+    arr = [12, 11, 40, 5, 3, 1]
+    print(longestBitonicSequence(len(arr), arr))
+
+using System;
+using System.Collections.Generic;
+
+public class GfG
+{
+    // Function to find the longest decreasing subsequence
+    // on the left side of a given index (moving backwards)
+    static int leftIncSubs(int prev, int idx, IList<int> arr, int[,] leftDp)
+    {
+        // Base case: if index goes out of bounds
+        if (idx < 0)
+        {
+            return 0;
+        }
+
+        // Return already computed result (memoization)
+        if (leftDp[prev, idx]!= -1)
+        {
+            return leftDp[prev, idx];
+        }
+
+        int include = 0;
+
+        // Include current element if it is smaller than previous
+        if (arr[idx] < arr[prev])
+        {
+            include = 1 + leftIncSubs(idx, idx - 1, arr, leftDp);
+        }
+
+        // Take maximum of including or excluding current element
+        return leftDp[prev, idx] = Math.Max(include, leftIncSubs(prev, idx - 1, arr, leftDp));
+    }
+
+    // Function to find the longest decreasing subsequence
+    // on the right side of a given index (moving forward)
+    static int rightDecSubs(int prev, int idx, IList<int> arr, int[,] rightDp)
+    {
+        // Base case: if index goes out of bounds
+        if (idx >= arr.Count)
+        {
+            return 0;
+        }
+
+        // Return already computed result (memoization)
+        if (rightDp[prev, idx]!= -1)
+        {
+            return rightDp[prev, idx];
+        }
+
+        int include = 0;
+
+        // Include current element if it is smaller than previous
+        if (arr[idx] < arr[prev])
+        {
+            include = 1 + rightDecSubs(idx, idx + 1, arr, rightDp);
+        }
+
+        // Take maximum of including or excluding current element
+        return rightDp[prev, idx] = Math.Max(include, rightDecSubs(prev, idx + 1, arr, rightDp));
+    }
+
+    // Function to find the length of the longest Bitonic subsequence
+    static int longestBitonicSequence(int n, IList<int> nums)
+    {
+        int maxLength = 0;
+
+        // DP tables for memoization
+        int[,] leftDp = new int[n, n];
+        int[,] rightDp = new int[n, n];
+
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                leftDp[i, j] = -1;
+                rightDp[i, j] = -1;
+            }
+        }
+
+        // Consider every element as peak of bitonic sequence
+        for (int i = 1; i < n - 1; i++)
+        {
+            // Longest decreasing subsequence on left of i
+            int leftLen = leftIncSubs(i, i - 1, nums, leftDp);
+
+            int rightLen = rightDecSubs(i, i + 1, nums, rightDp);
+            if (leftLen > 0 && rightLen > 0)
+            {
+                maxLength = Math.Max(maxLength, leftLen + rightLen + 1);
+            }
+        }
+
+        return maxLength;
+    }
+
+    public static void Main()
+    {
+        var arr = new List<int> { 12, 11, 40, 5, 3, 1 };
+        Console.WriteLine(longestBitonicSequence(arr.Count, arr));
+    }
+}
+
+function leftIncSubs(prev, idx, arr, leftDp) {
+    // Base case: if index goes out of bounds
+    if (idx < 0) {
+        return 0;
+    }
+
+    // Return already computed result (memoization)
+    if (leftDp[prev][idx]!= -1) {
+        return leftDp[prev][idx];
+    }
+
+    let include = 0;
+
+    // Include current element if it is smaller than previous
+    if (arr[idx] < arr[prev]) {
+        include = 1 + leftIncSubs(idx, idx - 1, arr, leftDp);
+    }
+
+    // Take maximum of including or excluding current element
+    return leftDp[prev][idx] = Math.max(include, leftIncSubs(prev, idx - 1, arr, leftDp));
+}
+
+function rightDecSubs(prev, idx, arr, rightDp) {
+    // Base case: if index goes out of bounds
+    if (idx >= arr.length) {
+        return 0;
+    }
+
+    // Return already computed result (memoization)
+    if (rightDp[prev][idx]!= -1) {
+        return rightDp[prev][idx];
+    }
+
+    let include = 0;
+
+    // Include current element if it is smaller than previous
+    if (arr[idx] < arr[prev]) {
+        include = 1 + rightDecSubs(idx, idx + 1, arr, rightDp);
+    }
+
+    // Take maximum of including or excluding current element
+    return rightDp[prev][idx] = Math.max(include, rightDecSubs(prev, idx + 1, arr, rightDp));
+}
+
+function longestBitonicSequence(n, nums) {
+    let maxLength = 0;
+
+    // DP tables for memoization
+    let leftDp = Array.from({length: n}, () => Array(n).fill(-1));
+    let rightDp = Array.from({length: n}, () => Array(n).fill(-1));
+
+    // Consider every element as peak of bitonic sequence
+    for (let i = 1; i < n - 1; i++) {
+        // Longest decreasing subsequence on left of i
+        let leftLen = leftIncSubs(i, i - 1, nums, leftDp);
+
+        let rightLen = rightDecSubs(i, i + 1, nums, rightDp);
+        if (leftLen > 0 && rightLen > 0) {
+            maxLength = Math.max(maxLength, leftLen + rightLen + 1);
+        }
+    }
+
+    return maxLength;
+}
+
+// Driver Code
+let arr = [12, 11, 40, 5, 3, 1];
+
+console.log(longestBitonicSequence(arr.length, arr));
+
+5
+
+### Using Bottom-Up DP (Tabulation) - O(n^2) Time and O(n) Space
+
+> We compute the LIS from left to right and the LDS from right to left. For each index i, LIS is formed by extending previous smaller elements (j < i), while LDS is formed by extending smaller elements on the right (j > i). Then, treating each index as a peak, the bitonic length is calculated as LIS[i] + LDS[i] - 1. We consider only those indices where both LIS[i] > 1 and LDS[i] > 1, and return the maximum value among them.
+
+Algorithm:
+
+- First, we check if the array size is less than 3, since a bitonic sequence requires at least 3 elements.
+- We compute leftLIS[] , where each index stores the longest increasing subsequence ending at that position.
+- We compute rightLDS[] , where each index stores the longest decreasing subsequence starting from that position.
+- Then, we treat every index as a peak and combine LIS + LDS - 1 to get the bitonic length.
+- Finally, we return the maximum valid length where both increasing and decreasing parts exist.
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to find the length of the Longest Bitonic Subsequence
+int longestBitonicSequence(int n, vector<int> &arr)
+{
+
+    // If there are less than 3 elements,
+    // no bitonic subsequence exists
+    if (n < 3)
+    {
+        return 0;
+    }
+
+    // leftLIS[i] will store the length of
+    // Longest Increasing Subsequence ending at index i
+    vector<int> leftLIS(n, 1);
+
+    // rightLDS[i] will store the length of
+    // Longest Decreasing Subsequence starting from index i
+    vector<int> rightLDS(n, 1);
+
+    // Build LIS array from left to right
+    for (int i = 1; i < n; i++)
+    {
+        for (int j = 0; j < i; j++)
+        {
+
+            // If current element is greater than previous,
+            // update LIS value
+            if (arr[j] < arr[i])
+            {
+                leftLIS[i] = max(leftLIS[i], leftLIS[j] + 1);
+            }
+        }
+    }
+
+    // Build LDS array from right to left
+    for (int i = n - 2; i >= 0; i--)
+    {
+
+        // Compare with all elements on the right
+        for (int j = n - 1; j > i; j--)
+        {
+
+            // If current element is greater than next,
+            // update LDS value
+            if (arr[j] < arr[i])
+            {
+                rightLDS[i] = max(rightLDS[i], rightLDS[j] + 1);
+            }
+        }
+    }
+
+    int maxLength = 0;
+
+    // Try every index as peak of bitonic sequence
+    for (int i = 0; i < n; i++)
+    {
+
+        // Valid bitonic sequence must have both
+        // increasing and decreasing parts
+        if (leftLIS[i] > 1 && rightLDS[i] > 1)
+        {
+
+            // Combine LIS and LDS (subtract 1 to avoid double counting peak)
+            maxLength = max(maxLength, leftLIS[i] + rightLDS[i] - 1);
+        }
+    }
+
+    // If no valid bitonic sequence found, return 0
+    return maxLength;
+}
+//Driver Code
+int main() {
+    vector<int> arr = {12, 11, 40, 5, 3, 1};
+
+    cout << longestBitonicSequence(arr.size(), arr);
+    return 0;
+}
+
+import java.util.Arrays;
+
+public class GfG {
+    // Function to find the length of the Longest Bitonic Subsequence
+    public static int longestBitonicSequence(int n, int[] arr) {
+        // If there are less than 3 elements,
+        // no bitonic subsequence exists
+        if (n < 3) {
+            return 0;
+        }
+
+        // leftLIS[i] will store the length of
+        // Longest Increasing Subsequence ending at index i
+        int[] leftLIS = new int[n];
+        Arrays.fill(leftLIS, 1);
+
+        // rightLDS[i] will store the length of
+        // Longest Decreasing Subsequence starting from index i
+        int[] rightLDS = new int[n];
+        Arrays.fill(rightLDS, 1);
+
+        // Build LIS array from left to right
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < i; j++) {
+
+                // If current element is greater than previous,
+                // update LIS value
+                if (arr[j] < arr[i]) {
+                    leftLIS[i] = Math.max(leftLIS[i], leftLIS[j] + 1);
+                }
+            }
+        }
+
+        // Build LDS array from right to left
+        for (int i = n - 2; i >= 0; i--) {
+
+            // Compare with all elements on the right
+            for (int j = n - 1; j > i; j--) {
+
+                // If current element is greater than next,
+                // update LDS value
+                if (arr[j] < arr[i]) {
+                    rightLDS[i] = Math.max(rightLDS[i], rightLDS[j] + 1);
+                }
+            }
+        }
+
+        int maxLength = 0;
+
+        // Try every index as peak of bitonic sequence
+        for (int i = 0; i < n; i++) {
+
+            // Valid bitonic sequence must have both
+            // increasing and decreasing parts
+            if (leftLIS[i] > 1 && rightLDS[i] > 1) {
+
+                // Combine LIS and LDS (subtract 1 to avoid double counting peak)
+                maxLength = Math.max(maxLength, leftLIS[i] + rightLDS[i] - 1);
+            }
+        }
+
+        // If no valid bitonic sequence found, return 0
+        return maxLength;
+    }
+    //Driver Code
+    public static void main(String[] args) {
+        int[] arr = {12, 11, 40, 5, 3, 1};
+        System.out.println(longestBitonicSequence(arr.length, arr));
+    }
+}
+
+def longestBitonicSequence(n, arr):
+    # If there are less than 3 elements,
+    # no bitonic subsequence exists
+    if n < 3:
+        return 0
+
+    # leftLIS[i] will store the length of
+    # Longest Increasing Subsequence ending at index i
+    leftLIS = [1] * n
+
+    # rightLDS[i] will store the length of
+    # Longest Decreasing Subsequence starting from index i
+    rightLDS = [1] * n
+
+    # Build LIS array from left to right
+    for i in range(1, n):
+        for j in range(i):
+
+            # If current element is greater than previous,
+            # update LIS value
+            if arr[j] < arr[i]:
+                leftLIS[i] = max(leftLIS[i], leftLIS[j] + 1)
+
+    # Build LDS array from right to left
+    for i in range(n-2, -1, -1):
+
+        # Compare with all elements on the right
+        for j in range(n-1, i, -1):
+
+            # If current element is greater than next,
+            # update LDS value
+            if arr[j] < arr[i]:
+                rightLDS[i] = max(rightLDS[i], rightLDS[j] + 1)
+
+    maxLength = 0
+
+    # Try every index as peak of bitonic sequence
+    for i in range(n):
+
+        # Valid bitonic sequence must have both
+        # increasing and decreasing parts
+        if leftLIS[i] > 1 and rightLDS[i] > 1:
+
+            # Combine LIS and LDS (subtract 1 to avoid double counting peak)
+            maxLength = max(maxLength, leftLIS[i] + rightLDS[i] - 1)
+
+    # If no valid bitonic sequence found, return 0
+    return maxLength
+
+if __name__ == '__main__':
+    arr = [12, 11, 40, 5, 3, 1]
+    print(longestBitonicSequence(len(arr), arr))
+
+using System;
+
+public class GfG {
+    // Function to find the length of the Longest Bitonic Subsequence
+    public static int longestBitonicSequence(int n, int[] arr) {
+        // If there are less than 3 elements,
+        // no bitonic subsequence exists
+        if (n < 3) {
+            return 0;
+        }
+
+        // leftLIS[i] will store the length of
+        // Longest Increasing Subsequence ending at index i
+        int[] leftLIS = new int[n];
+        for (int i = 0; i < n; i++) {
+            leftLIS[i] = 1;
+        }
+
+        // rightLDS[i] will store the length of
+        // Longest Decreasing Subsequence starting from index i
+        int[] rightLDS = new int[n];
+        for (int i = 0; i < n; i++) {
+            rightLDS[i] = 1;
+        }
+
+        // Build LIS array from left to right
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < i; j++) {
+
+                // If current element is greater than previous,
+                // update LIS value
+                if (arr[j] < arr[i]) {
+                    leftLIS[i] = Math.Max(leftLIS[i], leftLIS[j] + 1);
+                }
+            }
+        }
+
+        // Build LDS array from right to left
+        for (int i = n - 2; i >= 0; i--) {
+
+            // Compare with all elements on the right
+            for (int j = n - 1; j > i; j--) {
+
+                // If current element is greater than next,
+                // update LDS value
+                if (arr[j] < arr[i]) {
+                    rightLDS[i] = Math.Max(rightLDS[i], rightLDS[j] + 1);
+                }
+            }
+        }
+
+        int maxLength = 0;
+
+        // Try every index as peak of bitonic sequence
+        for (int i = 0; i < n; i++) {
+
+            // Valid bitonic sequence must have both
+            // increasing and decreasing parts
+            if (leftLIS[i] > 1 && rightLDS[i] > 1) {
+
+                // Combine LIS and LDS (subtract 1 to avoid double counting peak)
+                maxLength = Math.Max(maxLength, leftLIS[i] + rightLDS[i] - 1);
+            }
+        }
+
+        // If no valid bitonic sequence found, return 0
+        return maxLength;
+    }
+    //Driver Code
+    public static void Main() {
+        int[] arr = {12, 11, 40, 5, 3, 1};
+        Console.WriteLine(longestBitonicSequence(arr.Length, arr));
+    }
+}
+
+function longestBitonicSequence(n, arr) {
+    // If there are less than 3 elements,
+    // no bitonic subsequence exists
+    if (n < 3) {
+        return 0;
+    }
+
+    // leftLIS[i] will store the length of
+    // Longest Increasing Subsequence ending at index i
+    let leftLIS = new Array(n).fill(1);
+
+    // rightLDS[i] will store the length of
+    // Longest Decreasing Subsequence starting from index i
+    let rightLDS = new Array(n).fill(1);
+
+    // Build LIS array from left to right
+    for (let i = 1; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+            // If current element is greater than previous,
+            // update LIS value
+            if (arr[j] < arr[i]) {
+                leftLIS[i] = Math.max(leftLIS[i], leftLIS[j] + 1);
+            }
+        }
+    }
+
+    // Build LDS array from right to left
+    for (let i = n - 2; i >= 0; i--) {
+        for (let j = n - 1; j > i; j--) {
+            // If current element is greater than next,
+            // update LDS value
+            if (arr[j] < arr[i]) {
+                rightLDS[i] = Math.max(rightLDS[i], rightLDS[j] + 1);
+            }
+        }
+    }
+
+    let maxLength = 0;
+
+    // Try every index as peak of bitonic sequence
+    for (let i = 0; i < n; i++) {
+        // Valid bitonic sequence must have both
+        // increasing and decreasing parts
+        if (leftLIS[i] > 1 && rightLDS[i] > 1) {
+            // Combine LIS and LDS (subtract 1 to avoid double counting peak)
+            maxLength = Math.max(maxLength, leftLIS[i] + rightLDS[i] - 1);
+        }
+    }
+
+    // If no valid bitonic sequence found, return 0
+    return maxLength;
+}
+//Driver Code
+let arr = [12, 11, 40, 5, 3, 1];
+console.log(longestBitonicSequence(arr.length, arr));
+
+5

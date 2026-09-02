@@ -1,0 +1,663 @@
+Source: https://www.geeksforgeeks.org/dsa/the-skyline-problem-using-divide-and-conquer-algorithm/
+Title: The Skyline Problem
+
+Given n rectangular buildings in a 2-dimensional city, compute the skyline of these buildings, eliminating hidden lines. The goal is to view buildings from a distance and keep only the visible outer boundary.  All buildings share a common base, and each building is represented by a triplet (left, right, ht), where:
+
+- 'left': is the x coordinate of the left side (or wall).
+- 'right': is x coordinate of right side.
+- 'ht': is the height of the building.
+
+The skyline is represented as a collection of key points (left, ht), where each point indicates that at x = left, the height of the skyline becomes ht.
+
+Examples:
+
+> Input: arr[][] = [[1, 5, 11 ], [2, 7, 6 ], [3, 9, 13 ], [ 12, 16, 7 ], [ 14, 25, 3 ], [ 19, 22, 18 ], [ 23, 29, 13 ], [ 24, 28, 4 ]] Output: [[1, 11 ], [ 3, 13 ], [ 9, 0 ], [ 12, 7 ], [ 16, 3 ], [ 19, 18 ], [ 22, 3 ], [ 23, 13 ], [ 29, 0 ]] Explanation: We build the skyline from left to right. One thing is obvious,  we build the skyline from left to right. Now we know the left point [1, 11]  of the first building is going to be in the output as it is the leftmost point. If  we take a look at the right point of the first building which is [5,  11], we find that this point cannot be considered because there is a  higher height building (third building in our input array [3, 9, 13[).  So we ignore it. Now we see  the second building [2, 7, 6], its both left and right are covered. Left is  covered by first building and right is covered by third building because  its height is smaller than both of its neighbors. So we ignore its both left and right points. We process the remaining buildings in the same way, only adding points where the height changes, and ignoring parts that are hidden by taller buildings. The Skyline Representation Input: arr[ ][ ] = [[1, 5, 11]] Output: [[ 1, 11 ], [ 5, 0 ]]
+
+Table of Content
+
+- [Naive Approach] Sweep Line Algorithm - O(n^2) Time and O(n) Space
+- [Expected Approach] Sweep Line and Priority Queue - O(n Log n) Time and O(n) Space
+
+### [Naive Approach] Sweep Line Algorithm - O(n^2) Time and O(n) Space
+
+- Get all corner x coordinates of all buildings in an array say points[]. We are mainly going to have 2n points in this array as we have left and right for every building.
+- Sort the points[] to simulate the sweep line from left to right.
+- Now traverse through the sorted point[] and for every x point check which building has the maximum height at this point and add the maximum height to the skyline if the maximum height is different from the previously added height to the skyline.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+vector<pair<int, int>> getSkyline(vector<vector<int>>& arr) {
+    vector<int> points;
+
+    // Collect all left and right x-coordinates
+    // of buildings
+    for (auto& b : arr) {
+        points.push_back(b[0]);
+        points.push_back(b[1]);
+    }
+
+    // Sort all critical points
+    sort(points.begin(), points.end());
+
+    vector<pair<int, int>> res;
+    int prev = 0;
+
+    // Traverse through each point to
+    // determine skyline height
+    for (int x : points) {
+        int maxH = 0;
+
+        // Check which buildings cover the
+        // current x and get the max height
+        for (auto& b : arr) {
+            int l = b[0], r = b[1], h = b[2];
+            if (l <= x && x < r) {
+                maxH = max(maxH, h);
+            }
+        }
+
+        // Add to result if height has changed
+        if (res.empty() || maxH != prev) {
+            res.push_back({x, maxH});
+            prev = maxH;
+        }
+    }
+
+    return res;
+}
+
+int main() {
+    vector<vector<int>> arr = {
+        {2, 9, 10},
+        {3, 6, 15},
+        {5, 12, 12}
+    };
+
+    vector<pair<int, int>> skyline = getSkyline(arr);
+
+    for (auto& p : skyline) {
+        cout << "(" << p.first << ", " << p.second << ") ";
+    }
+
+    cout << endl;
+    return 0;
+}
+
+import java.util.*;
+
+class Solution {
+    public ArrayList<int[]> getSkyline(int[][] arr) {
+        ArrayList<Integer> points = new ArrayList<>();
+
+        // Collect all left and right x-coordinates
+        // of buildings
+        for (int[] b : arr) {
+            points.add(b[0]);
+            points.add(b[1]);
+        }
+
+        // Sort all critical points
+        Collections.sort(points);
+
+        ArrayList<int[]> res = new ArrayList<>();
+        int prev = 0;
+
+        // Traverse through each point to
+        // determine skyline height
+        for (int x : points) {
+            int maxH = 0;
+
+            // Check which buildings cover the
+            // current x and get the max height
+            for (int[] b : arr) {
+                int l = b[0], r = b[1], h = b[2];
+                if (l <= x && x < r) {
+                    maxH = Math.max(maxH, h);
+                }
+            }
+
+            // Add to result if height has changed
+            if (res.isEmpty() || maxH != prev) {
+                res.add(new int[]{x, maxH});
+                prev = maxH;
+            }
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[][] arr = {
+            {2, 9, 10},
+            {3, 6, 15},
+            {5, 12, 12}
+        };
+
+        Solution sol = new Solution();
+        ArrayList<int[]> skyline = sol.getSkyline(arr);
+
+        for (int[] p : skyline) {
+            System.out.print("(" + p[0] + ", " + p[1] + ") ");
+        }
+
+        System.out.println();
+    }
+}
+
+def getSkyline(arr):
+    points = []
+
+    # Collect all left and right x-coordinates
+    # of buildings
+    for b in arr:
+        points.append(b[0])
+        points.append(b[1])
+
+    # Sort all critical points
+    points.sort()
+
+    res = []
+    prev = 0
+
+    # Traverse through each point to
+    # determine skyline height
+    for x in points:
+        maxH = 0
+
+        # Check which buildings cover the
+        # current x and get the max height
+        for b in arr:
+            l, r, h = b
+            if l <= x < r:
+                maxH = max(maxH, h)
+
+        # Add to result if height has changed
+        if not res or maxH != prev:
+            res.append((x, maxH))
+            prev = maxH
+
+    return res
+
+if __name__ == '__main__':
+    arr = [
+        [2, 9, 10],
+        [3, 6, 15],
+        [5, 12, 12]
+    ]
+
+    skyline = getSkyline(arr)
+
+    for p in skyline:
+        print(f'({p[0]}, {p[1]}) ', end='')
+
+    print()
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static List<int[]> getSkyline(int[][] arr) {
+        List<int> points = new List<int>();
+
+        // Collect all left and right x-coordinates
+        // of buildings
+        foreach (var b in arr) {
+            points.Add(b[0]);
+            points.Add(b[1]);
+        }
+
+        // Sort all critical points
+        points.Sort();
+
+        List<int[]> res = new List<int[]>();
+        int prev = 0;
+
+        // Traverse through each point to
+        // determine skyline height
+        foreach (var x in points) {
+            int maxH = 0;
+
+            // Check which buildings cover the
+            // current x and get the max height
+            foreach (var b in arr) {
+                int l = b[0], r = b[1], h = b[2];
+                if (l <= x && x < r) {
+                    maxH = Math.Max(maxH, h);
+                }
+            }
+
+            // Add to result if height has changed
+            if (res.Count == 0 || maxH != prev) {
+                res.Add(new int[] { x, maxH });
+                prev = maxH;
+            }
+        }
+
+        return res;
+    }
+
+    public static void Main(string[] args) {
+        int[][] arr = {
+            new int[] {2, 9, 10},
+            new int[] {3, 6, 15},
+            new int[] {5, 12, 12}
+        };
+
+        List<int[]> skyline = getSkyline(arr);
+
+        foreach (var p in skyline) {
+            Console.Write("(" + p[0] + ", " + p[1] + ") ");
+        }
+
+        Console.WriteLine();
+    }
+}
+
+function getSkyline(arr) {
+    const points = [];
+
+    // Collect all left and right x-coordinates
+    // of buildings
+    for (const b of arr) {
+        points.push(b[0]);
+        points.push(b[1]);
+    }
+
+    // Sort all critical points
+    points.sort((a, b) => a - b);
+
+    const res = [];
+    let prev = 0;
+
+    // Traverse through each point to
+    // determine skyline height
+    for (const x of points) {
+        let maxH = 0;
+
+        // Check which buildings cover the
+        // current x and get the max height
+        for (const b of arr) {
+            const [l, r, h] = b;
+            if (l <= x && x < r) {
+                maxH = Math.max(maxH, h);
+            }
+        }
+
+        // Add to result if height has changed
+        if (res.length === 0 || maxH !== prev) {
+            res.push([x, maxH]);
+            prev = maxH;
+        }
+    }
+
+    return res;
+}
+
+const arr = [
+    [2, 9, 10],
+    [3, 6, 15],
+    [5, 12, 12]
+];
+
+const skyline = getSkyline(arr);
+
+for (const p of skyline) {
+    process.stdout.write(`(${p[0]}, ${p[1]}) `);
+}
+
+console.log();
+
+(2, 10) (3, 15) (6, 12) (12, 0)
+
+### [Expected Approach] Sweep Line and Priority Queue - O(n Log n) Time and O(n) Space
+
+> The approach uses a sweep line algorithm with a priority queue (max-heap) to quickly get the current maximum heights as the sweep line moves from left to right.  The idea is to again store all points, but this time we also store building indexes. We use priority queue to have all building point in it when we reach the next points, so that we can quickly find the maximum.
+
+Step-by-step explanation:
+
+1. Prepare edges by storing both start and end of each building as (x-coordinate, building index).
+2. Sort all edges by x-coordinate to process them from left to right.
+3. Maintain a priority queue (max-heap) of active buildings storing (height, end).
+4. Add buildings to the priority queue when a start edge is encountered.
+5. Remove buildings whose end is less than or equal to the current x-coordinate.
+6. The top of the priority queue gives the current maximum height.
+7. If this height changes from the previous value, add (x, height) to the skyline.
+8. Return the collected points as the final skyline.
+
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+vector<vector<int>> getSkyline(vector<vector<int>> &arr) {
+    vector<pair<int, int>> e;
+    priority_queue<pair<int, int>> pq;
+    vector<vector<int>> skyline;
+
+    // Store both start and end edges
+    for (int i = 0; i < arr.size(); ++i) {
+        e.push_back({arr[i][0], i});
+        e.push_back({arr[i][1], i});
+    }
+
+    // Sort edges by x-coordinate (sweep line)
+    sort(e.begin(), e.end());
+
+    int i = 0;
+    while (i < e.size()) {
+        int curr_x = e[i].first;
+
+        // Process all edges at same x
+        while (i < e.size() && e[i].first == curr_x) {
+            int idx = e[i].second;
+
+            // If it's a start edge, add building to heap
+            if (arr[idx][0] == curr_x)
+                pq.emplace(arr[idx][2], arr[idx][1]);
+
+            ++i;
+        }
+
+        // Remove buildings that are no longer active
+        // (their right boundary is passed)
+        while (!pq.empty() && pq.top().second <= curr_x)
+            pq.pop();
+
+        // Current max height among active buildings
+        int curr_height = pq.empty() ? 0 : pq.top().first;
+
+        // Add point only if height changes
+        if (skyline.empty() || skyline.back()[1] != curr_height)
+            skyline.push_back({curr_x, curr_height});
+    }
+
+    return skyline;
+}
+
+int main() {
+    vector<vector<int>> arr = {
+        {1, 5, 11}, {2, 7, 6}, {3, 9, 13}, {12, 16, 7},
+        {14, 25, 3}, {19, 22, 18}, {23, 29, 13}, {24, 28, 4}
+    };
+
+    vector<vector<int>> result = getSkyline(arr);
+
+    for (const auto &p : result) {
+        cout << "[" << p[0] << ", " << p[1] << "] ";
+    }
+    cout << endl;
+
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.PriorityQueue;
+
+public class GfG {
+    public static ArrayList<ArrayList<Integer>>
+                                getSkyline(int[][] arr) {
+        int idx = 0;
+        ArrayList<int[]> e = new ArrayList<>();
+        PriorityQueue<int[]> pq = new PriorityQueue<>
+                                        ((a, b) -> b[0] - a[0]);
+        ArrayList<ArrayList<Integer>> skyline = new ArrayList<>();
+
+        // Store both start and end edges
+        for (int i = 0; i < arr.length; i++) {
+            e.add(new int[]{arr[i][0], i});
+            e.add(new int[]{arr[i][1], i});
+        }
+
+        // Sort edges by x-coordinate (sweep line)
+        Collections.sort(e, (a, b) -> Integer.compare(a[0], b[0]));
+
+        while (idx < e.size()) {
+            int curr_x = e.get(idx)[0];
+
+            // Process all edges at same x
+            while (idx < e.size() && curr_x == e.get(idx)[0]) {
+                int building_idx = e.get(idx)[1];
+
+                // If it's a start edge, add building to heap
+                if (arr[building_idx][0] == curr_x)
+                    pq.add(new int[]{arr[building_idx][2],
+                                            arr[building_idx][1]});
+
+                idx++;
+            }
+
+            // Remove buildings that are no longer active
+            // (their right boundary is passed)
+            while (!pq.isEmpty() && pq.peek()[1] <= curr_x)
+                pq.poll();
+
+            // Current max height among active buildings
+            int curr_height = pq.isEmpty() ? 0 : pq.peek()[0];
+
+            // Add point only if height changes
+            if (skyline.isEmpty() ||
+                skyline.get(skyline.size() - 1).get(1) != curr_height){
+                skyline.add(new ArrayList<>(Arrays.asList(curr_x, curr_height)));
+            }
+        }
+
+        return skyline;
+    }
+
+    public static void main(String[] args) {
+        int[][] arr = {
+            {1, 5, 11}, {2, 7, 6}, {3, 9, 13}, {12, 16, 7},
+            {14, 25, 3}, {19, 22, 18}, {23, 29, 13}, {24, 28, 4}
+        };
+
+        ArrayList<ArrayList<Integer>> result = getSkyline(arr);
+
+        for (ArrayList<Integer> p : result) {
+            System.out.print("[" + p.get(0) + ", " + p.get(1) + "] ");
+        }
+        System.out.println();
+    }
+}
+
+import heapq
+
+def getSkyline(arr):
+    idx = 0
+    e = []
+    pq = []
+    skyline = []
+
+    # Store both start and end edges
+    for i in range(len(arr)):
+        e.append((arr[i][0], i))
+        e.append((arr[i][1], i))
+
+    # Sort edges by x-coordinate (sweep line)
+    e.sort()
+
+    while idx < len(e):
+        curr_x = e[idx][0]
+
+        # Process all edges at same x
+        while idx < len(e) and curr_x == e[idx][0]:
+            building_idx = e[idx][1]
+
+            # If it's a start edge, add building to heap
+            # (use negative height to simulate max-heap)
+            if arr[building_idx][0] == curr_x:
+                heapq.heappush(pq, (-arr[building_idx][2], arr[building_idx][1]))
+
+            idx += 1
+
+        # Remove buildings that are no longer active
+        # (their right boundary is passed)
+        while pq and pq[0][1] <= curr_x:
+            heapq.heappop(pq)
+
+        # Current max height among active buildings
+        curr_height = 0 if not pq else -pq[0][0]
+
+        # Add point only if height changes
+        if not skyline or skyline[-1][1] != curr_height:
+            skyline.append([curr_x, curr_height])
+
+    return skyline
+
+if __name__ == "__main__":
+    arr = [
+        [1, 5, 11], [2, 7, 6], [3, 9, 13], [12, 16, 7],
+        [14, 25, 3], [19, 22, 18], [23, 29, 13], [24, 28, 4]
+    ]
+
+    result = getSkyline(arr)
+
+    for p in result:
+        print(f"[{p[0]}, {p[1]}]", end=" ")
+    print()
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static List<List<int>> getSkyline(int[,] arr)
+    {
+        int idx = 0;
+        List<int[]> e = new List<int[]>();
+
+        // Max-heap based on height (store: height, end)
+        SortedSet<int[]> pq = new SortedSet<int[]>(
+            Comparer<int[]>.Create((a, b) =>
+                a[0] != b[0] ? b[0].CompareTo(a[0]) : b[1].CompareTo(a[1]))
+        );
+
+        List<List<int>> skyline = new List<List<int>>();
+
+        // Store both start and end edges
+        for (int i = 0; i < arr.GetLength(0); i++)
+        {
+            e.Add(new int[] { arr[i, 0], i });
+            e.Add(new int[] { arr[i, 1], i });
+        }
+
+        // Sort edges by x-coordinate (sweep line)
+        e.Sort((a, b) => a[0].CompareTo(b[0]));
+
+        while (idx < e.Count)
+        {
+            int curr_x = e[idx][0];
+
+            // Process all edges at same x
+            while (idx < e.Count && curr_x == e[idx][0])
+            {
+                int building_idx = e[idx][1];
+
+                // If it's a start edge, add building to heap
+                if (arr[building_idx, 0] == curr_x)
+                    pq.Add(new int[] { arr[building_idx, 2], arr[building_idx, 1] });
+
+                idx++;
+            }
+
+            // Remove buildings that are no longer active
+            // (their right boundary is passed)
+            while (pq.Count > 0 && pq.Min[1] <= curr_x)
+                pq.Remove(pq.Min);
+
+            // Current max height among active buildings
+            int curr_height = pq.Count == 0 ? 0 : pq.Min[0];
+
+            // Add point only if height changes
+            if (skyline.Count == 0 || skyline[skyline.Count - 1][1] != curr_height)
+                skyline.Add(new List<int> { curr_x, curr_height });
+        }
+
+        return skyline;
+    }
+
+    static void Main(string[] args)
+    {
+        int[,] arr = {
+            { 1, 5, 11 }, { 2, 7, 6 }, { 3, 9, 13 }, { 12, 16, 7 },
+            { 14, 25, 3 }, { 19, 22, 18 }, { 23, 29, 13 }, { 24, 28, 4 }
+        };
+
+        List<List<int>> result = getSkyline(arr);
+
+        foreach (var p in result)
+        {
+            Console.Write($"[{p[0]}, {p[1]}] ");
+        }
+        Console.WriteLine();
+    }
+}
+
+function getSkyline(arr) {
+    let idx = 0;
+    let e = [];
+    let pq = [];
+    let skyline = [];
+
+    // Store both start and end edges
+    for (let i = 0; i < arr.length; i++) {
+        e.push([arr[i][0], i]);
+        e.push([arr[i][1], i]);
+    }
+
+    // Sort edges by x-coordinate (sweep line)
+    e.sort((a, b) => a[0] - b[0]);
+
+    while (idx < e.length) {
+        let curr_x = e[idx][0];
+
+        // Process all edges at same x
+        while (idx < e.length && curr_x === e[idx][0]) {
+            let building_idx = e[idx][1];
+
+            // If it's a start edge, add building to active list
+            if (arr[building_idx][0] === curr_x) {
+                pq.push([arr[building_idx][2],
+                                arr[building_idx][1]]);
+            }
+
+            idx++;
+        }
+
+        // Remove buildings that are no longer active
+        // (their right boundary is passed)
+        pq = pq.filter(item => item[1] > curr_x);
+
+        // Get current max height among active buildings
+        let curr_height = 0;
+        for (let i = 0; i < pq.length; i++) {
+            curr_height = Math.max(curr_height, pq[i][0]);
+        }
+
+        // Add point only if height changes
+        if (skyline.length === 0 ||
+                skyline[skyline.length - 1][1] !== curr_height) {
+            skyline.push([curr_x, curr_height]);
+        }
+    }
+
+    return skyline;
+}
+
+// Driver Code
+let arr = [
+    [1, 5, 11], [2, 7, 6], [3, 9, 13], [12, 16, 7],
+    [14, 25, 3], [19, 22, 18], [23, 29, 13], [24, 28, 4]
+];
+
+let result = getSkyline(arr);
+
+result.forEach(p => console.log(`[${p[0]}, ${p[1]}]`));
+
+[1, 11] [3, 13] [9, 0] [12, 7] [16, 3] [19, 18] [22, 3] [23, 13] [29, 0]

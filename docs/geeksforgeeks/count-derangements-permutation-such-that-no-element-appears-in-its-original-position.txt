@@ -1,0 +1,564 @@
+Source: https://www.geeksforgeeks.org/dsa/count-derangements-permutation-such-that-no-element-appears-in-its-original-position/
+Title: Count Derangements
+
+Given a number n , find the total number of Derangements of a set of elements from 1 to n.
+
+A Derangement is a permutation of n elements, such that no element appears in its original position. For example, a derangement of [1, 2, 3] is [2, 3, 1].
+
+Examples:
+
+> Input: n = 2 Output: 1 Explanation: For [1, 2], there is only one possible derangement [2, 1]. Input: n = 3 Output: 2 Explanation: For [1, 2, 3], there are two possible derangements [3, 1, 2] and [2, 3, 1].
+
+Table of Content
+
+- [Naive Approach] Using Recursion - O(2 ^ n) Time and O(n) Space
+- [Better Approach 1] Top-Down DP (Memoization) - O(n) Time and O(n) Space
+- [Better Approach 2] Bottom-Up DP (Tabulation) - O(n) Time and O(n) Space
+- [Expected Approach] Space Optimized DP - O(n) Time and O(1) Space
+
+### [Naive Approach] Using Recursion - O(2 ^ n) Time and O(n) Space
+
+> The idea is to use recursion as, there are n-1 ways to place the first element, which explains the multiplication by (n−1). Let the first element be placed at position i , now there are two possibilities depending on whether the element at position i goes to the first position or not. Case 1: If the element at position i is placed at the first position, then both elements are fixed, reducing the problem to n−2 elements. Case 2: If the element at position i is not placed at the first position, then the problem reduces to finding derangements of the remaining n−1 elements. The formula used in the solution is: F(n) = (n - 1) * (F(n - 1) + F(n - 2))
+
+Dry run for n = 4:
+
+- For n = 1, F(1) = 0 and for n = 2, F(2) = 1 as base cases.
+- For n = 4, use formula F(4) = 3 × (F(3) + F(2)).
+- First compute F(3): F(3) = 2 × (F(2) + F(1)) = 2 × (1 + 0) = 2.
+- Now substitute values in F(4): F(4) = 3 × (2 + 1).
+- Here, 3 represents the choices for placing the first element, and (F(3) + F(2)) represents the two cases.
+- Final result: F(4) = 3 × 3 = 9.
+
+#include <iostream>
+using namespace std;
+
+int derangeCount(int n) {
+
+  // Base cases
+  if (n == 1) return 0;
+  if (n == 2) return 1;
+
+  // f(n) = (n-1)[f(n-1) + f(n-2)]
+  return (n - 1) * (derangeCount(n - 1) +
+                        derangeCount(n - 2));
+}
+
+int main() {
+    int n = 5;
+    cout << derangeCount(n);
+    return 0;
+}
+
+class GfG  {
+
+    static int derangeCount(int n) {
+
+        // Base cases
+        if (n == 1) return 0;
+        if (n == 2) return 1;
+
+        // f(n) = (n-1)[f(n-1) + f(n-2)]
+        return (n - 1) * (derangeCount(n - 1) +
+                            derangeCount(n - 2));
+    }
+
+    public static void main (String[] args) {
+        int n = 5;
+        System.out.println(derangeCount(n));
+    }
+}
+
+def derangeCount(n):
+
+    # Base cases
+    if (n == 1): return 0
+    if (n == 2): return 1
+
+    # f(n) = (n-1)[f(n-1) + f(n-2)]
+    return (n - 1) * (derangeCount(n - 1) +
+                        derangeCount(n - 2))
+
+if __name__ == "__main__":
+    n = 5
+    print(derangeCount(n))
+
+using System;
+
+class GfG  {
+
+    static int derangeCount(int n) {
+
+        // Base cases
+        if (n == 1) return 0;
+        if (n == 2) return 1;
+
+        // f(n) = (n-1)[f(n-1) + f(n-2)]
+        return (n - 1) * (derangeCount(n - 1) +
+                            derangeCount(n - 2));
+    }
+
+	static void Main () {
+        int n = 5;
+        Console.Write(derangeCount(n));
+
+    }
+}
+
+function derangeCount(n) {
+
+  // Base cases
+  if (n === 1) return 0;
+  if (n === 2) return 1;
+
+  // f(n) = (n-1)[f(n-1) + f(n-2)]
+  return (n - 1) * (derangeCount(n - 1) +
+                        derangeCount(n - 2));
+}
+
+// Driver code
+const n = 5;
+console.log(derangeCount(n));
+
+9
+
+### [Better Approach 1] Top-Down DP (Memoization ) - O(n) Time and O(n) Space
+
+Above recursive solution has properties that make it suitable for optimization using Dynamic Programming :
+
+> 1. Optimal Substructure: The recursive relation demonstrates that the solution for F(n) can be constructed using the solutions to smaller subproblems, specifically F(n - 1) and F(n - 2). 2. Overlapping Subproblems: The function F(n) recursively calls itself with n - 1 and n - 2. However, these subproblems are not independent. For example, when calculating F(4), it will internally compute F(3) and F(2). Then, F(3) will again compute F(2), leading to redundant calculations.
+
+This approach uses recursion with caching (memo array) to store results of subproblems and reuse them, avoiding repeated computations.
+
+#include <iostream>
+using namespace std;
+
+int calculate(int n, vector<int> &memo) {
+
+  	// Base cases
+  	if (n == 1) return 0;
+  	if (n == 2) return 1;
+
+  	// If the value of n is previously
+  	// calculated then return it here
+	if(memo[n] != -1) return memo[n];
+
+  	// countDer(n) = (n-1)[countDer(n-1) + der(n-2)]
+  	return memo[n] = (n - 1) * (calculate(n - 1, memo)
+                                + calculate(n - 2, memo));
+}
+int derangeCount(int n) {
+  	vector<int> memo(n + 1, -1);
+  	return calculate(n, memo);
+}
+int main() {
+    int n = 5;
+    cout << derangeCount(n);
+    return 0;
+}
+
+import java.util.Arrays;
+
+class GfG {
+    static int calculate(int n, int[] memo) {
+
+        // Base cases
+        if (n == 1) return 0;
+        if (n == 2) return 1;
+
+        // If the value of n is previously calculated
+      	// then return it here
+        if (memo[n] != -1) return memo[n];
+
+        // countDer(n) = (n-1)[countDer(n-1) + der(n-2)]
+        return memo[n] = (n - 1) * (calculate(n - 1, memo)
+                                    + calculate(n - 2, memo));
+    }
+
+    static int derangeCount(int n) {
+        int[] memo = new int[n + 1];
+        Arrays.fill(memo, -1);
+        return calculate(n, memo);
+    }
+
+    public static void main(String[] args) {
+        int n = 5;
+        System.out.println(derangeCount(n));
+    }
+}
+
+def calculate(n, memo):
+
+    # Base cases
+    if n == 1:
+        return 0
+    if n == 2:
+        return 1
+
+    # If the value of n is previously
+    # calculated then return it here
+    if memo[n] != -1:
+        return memo[n]
+
+    # countDer(n) = (n-1)[countDer(n-1) + der(n-2)]
+    memo[n] = (n - 1) * (calculate(n - 1, memo) + calculate(n - 2, memo))
+    return memo[n]
+
+def derangeCount(n):
+    memo = [-1] * (n + 1)
+    return calculate(n, memo)
+
+if __name__ == "__main__":
+    n = 5
+    print(derangeCount(n))
+
+using System;
+
+class GfG {
+    static int Calculate(int n, int[] memo) {
+
+        // Base cases
+        if (n == 1) return 0;
+        if (n == 2) return 1;
+
+        // If the value of n is previously
+      	// calculated then return it here
+        if (memo[n] != -1) return memo[n];
+
+        // countDer(n) = (n-1)[countDer(n-1) + der(n-2)]
+        memo[n] = (n - 1) * (Calculate(n - 1, memo) + Calculate(n - 2, memo));
+        return memo[n];
+    }
+
+    static int derangeCount(int n) {
+        int[] memo = new int[n + 1];
+        Array.Fill(memo, -1);
+        return Calculate(n, memo);
+    }
+
+    static void Main() {
+        int n = 5;
+        Console.WriteLine(derangeCount(n));
+    }
+}
+
+function calculate(n, memo) {
+
+    // Base cases
+    if (n === 1) return 0;
+    if (n === 2) return 1;
+
+    // If the value of n is previously
+    // calculated then return it here
+    if (memo[n] !== -1) return memo[n];
+
+    // countDer(n) = (n-1)[countDer(n-1) + der(n-2)]
+    memo[n] = (n - 1) * (calculate(n - 1, memo) + calculate(n - 2, memo));
+    return memo[n];
+}
+
+function derangeCount(n) {
+    let memo = Array(n + 1).fill(-1);
+    return calculate(n, memo);
+}
+
+// Driver code
+const n = 5;
+console.log(derangeCount(n));
+
+9
+
+### [Better Approach 2] Bottom-Up DP (Tabulation) - O(n) Time and O(n) Space
+
+> The approach is similar to the previous one. just instead of breaking down the problem recursively , we iteratively build up the solution by calculating in bottom-up manner. Maintain a dp[] table such that dp[i] stores the Count Derangements for i. Base Case: For i  = 1 dp[i] = 0 For i = 2 dp[i] = 1 Recursive Case: For i > 2 dp[i] = (i - 1) * (dp[i-1] + dp[i - 1])
+
+#include <iostream>
+using namespace std;
+
+int derangeCount(int n) {
+
+    // Create a DP array to store
+  	// results
+    vector<int> dp(n + 1);
+
+    // Base cases
+    dp[1] = 0;
+    dp[2] = 1;
+
+    // Fill the DP array using the recursive relation
+    for (int i = 3; i <= n; i++) {
+        dp[i] = (i - 1) * (dp[i - 1] + dp[i - 2]);
+    }
+
+    return dp[n];
+}
+
+int main() {
+    int n = 5;
+    cout << derangeCount(n);
+    return 0;
+}
+
+class GfG {
+    static int derangeCount(int n) {
+
+        // Create a DP array to store results
+        int[] dp = new int[n + 1];
+
+        // Base cases
+        dp[1] = 0;
+        dp[2] = 1;
+
+        // Fill the DP array using the recursive relation
+        for (int i = 3; i <= n; i++) {
+            dp[i] = (i - 1) * (dp[i - 1] + dp[i - 2]);
+        }
+
+        return dp[n];
+    }
+
+    public static void main(String[] args) {
+        int n = 5;
+        System.out.println(derangeCount(n));
+    }
+}
+
+def derangeCount(n):
+
+    # Create a DP array to store results
+    dp = [0] * (n + 1)
+
+    # Base cases
+    dp[1] = 0
+    dp[2] = 1
+
+    # Fill the DP array using the
+    # recursive relation
+    for i in range(3, n + 1):
+        dp[i] = (i - 1) * (dp[i - 1] + dp[i - 2])
+
+    return dp[n]
+
+if __name__ == "__main__":
+    n = 5
+    print(derangeCount(n))
+
+using System;
+
+class GfG {
+    static int derangeCount(int n) {
+
+        // Create a DP array to store results
+        int[] dp = new int[n + 1];
+
+        // Base cases
+        dp[1] = 0;
+        dp[2] = 1;
+
+        // Fill the DP array using the recursive relation
+        for (int i = 3; i <= n; i++) {
+            dp[i] = (i - 1) * (dp[i - 1] + dp[i - 2]);
+        }
+
+        return dp[n];
+    }
+
+    static void Main() {
+        int n = 5;
+        Console.WriteLine(derangeCount(n));
+    }
+}
+
+function derangeCount(n) {
+
+    // Create a DP array to store results
+    const dp = new Array(n + 1).fill(0);
+
+    // Base cases
+    dp[1] = 0;
+    dp[2] = 1;
+
+    // Fill the DP array using the recursive relation
+    for (let i = 3; i <= n; i++) {
+        dp[i] = (i - 1) * (dp[i - 1] + dp[i - 2]);
+    }
+
+    return dp[n];
+}
+
+// Driver code
+const n = 5;
+console.log(derangeCount(n));
+
+9
+
+### [Expected Approach] Space Optimized DP - O(n) Time and O(1) Space
+
+> To optimize the space complexity to O(1) we can avoid using an array and instead use two variables to store the previous two results, as we only need the last two values to compute the next value. This will reduce the space requirement significantly.
+
+Dry run for n = 5:
+
+- For n = 1, derangements = 0 since no rearrangement is possible.
+- For n = 2, derangements = 1 as only one valid permutation exists.
+- Initialize prev2 = 0 and prev1 = 1 to store results for n = 1 and n = 2.
+- For n = 3, D(3) = 2 × (1 + 0) = 2 using prev1 and prev2.
+- At each step, update prev2 = prev1 and prev1 = current value.
+- For n = 4, D(4) = 3 × (2 + 1) = 9 using updated values.
+- For n = 5, D(5) = 4 × (9 + 2) = 44 using updated values.
+
+Final answer: 44.
+
+#include <iostream>
+using namespace std;
+
+int derangeCount(int n) {
+
+    // Base cases
+    if (n == 1) return 0;
+    if (n == 2) return 1;
+
+    // Variables to store previous two results
+  	// Equivalent to dp[1]
+    int prev2 = 0;
+
+  	// Equivalent to dp[2]
+    int prev1 = 1;
+
+    // Calculate derangements using the optimized
+  	// space approach
+    for (int i = 3; i <= n; i++) {
+        int curr = (i - 1) * (prev1 + prev2);
+        prev2 = prev1;
+        prev1 = curr;
+    }
+
+    return prev1;
+}
+
+int main() {
+    int n = 5;
+    cout << derangeCount(n);
+    return 0;
+}
+
+class GfG {
+    static int derangeCount(int n) {
+
+        // Base cases
+        if (n == 1) return 0;
+        if (n == 2) return 1;
+
+        // Variables to store previous two results
+        // Equivalent to dp[1]
+        int prev2 = 0;
+
+        // Equivalent to dp[2]
+        int prev1 = 1;
+
+        // Calculate derangements using the
+      	// optimized space approach
+        for (int i = 3; i <= n; i++) {
+            int curr = (i - 1) * (prev1 + prev2);
+            prev2 = prev1;
+            prev1 = curr;
+        }
+
+        return prev1;
+    }
+
+    public static void main(String[] args) {
+
+        int n = 5;
+        System.out.println(derangeCount(n));
+    }
+}
+
+def derangeCount(n):
+
+    # Base cases
+    if n == 1:
+        return 0
+    if n == 2:
+        return 1
+
+    # Variables to store previous two results
+    # Equivalent to dp[1]
+    prev2 = 0
+
+    # Equivalent to dp[2]
+    prev1 = 1
+
+    # Calculate derangements using the
+    # optimized space approach
+    for i in range(3, n + 1):
+        curr = (i - 1) * (prev1 + prev2)
+        prev2 = prev1
+        prev1 = curr
+
+    return prev1
+
+if __name__ == "__main__":
+    n = 5
+    print(derangeCount(n))
+
+using System;
+
+class GfG {
+    static int derangeCount(int n) {
+
+        // Base cases
+        if (n == 1) return 0;
+        if (n == 2) return 1;
+
+        // Variables to store previous two results
+        // Equivalent to dp[1]
+        int prev2 = 0;
+
+        // Equivalent to dp[2]
+        int prev1 = 1;
+
+        // Calculate derangements using the optimized
+      	// space approach
+        for (int i = 3; i <= n; i++) {
+            int curr = (i - 1) * (prev1 + prev2);
+            prev2 = prev1;
+            prev1 = curr;
+        }
+
+        return prev1;
+    }
+
+    static void Main() {
+        int n = 5;
+        Console.WriteLine(derangeCount(n));
+    }
+}
+
+function derangeCount(n) {
+
+    // Base cases
+    if (n === 1) return 0;
+    if (n === 2) return 1;
+
+    // Variables to store previous two results
+    // Equivalent to dp[1]
+    let prev2 = 0;
+
+    // Equivalent to dp[2]
+    let prev1 = 1;
+
+    // Calculate derangements using the
+    // optimized space approach
+    for (let i = 3; i <= n; i++) {
+        let curr = (i - 1) * (prev1 + prev2);
+        prev2 = prev1;
+        prev1 = curr;
+    }
+
+    return prev1;
+}
+
+// Driver code
+const n = 5;
+console.log(derangeCount(n));
+
+9

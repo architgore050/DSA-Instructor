@@ -1,0 +1,464 @@
+Source: https://www.geeksforgeeks.org/dsa/total-number-spanning-trees-graph/
+Title: Number of Spanning Trees in a Graph
+
+Given a connected undirected graph with v vertices and its adjacency matrix representation, determine the total number of spanning trees that can be formed from the graph.
+
+A spanning tree is a subgraph that connects all vertices of a graph with exactly v-1 edges and contains no cycles.
+
+Example:
+
+> Input: v = 4 adj[][] = [ [0,1,0,0], [1,0,1,0], [0,1,0,1], [0,0,1,0] ] Output: 1 Explanation: The graph is connected and has exactly v-1 edges, so it is already a tree, hence only one spanning tree exists. Input: v = 4 adj[][] = [ [0,1,1,0], [1,0,1,0], [1,1,0,1], [0,0,1,0] ] Output: 3 Explanation: The graph has one cycle among nodes 0, 1, and 2, so removing one edge forms a spanning tree. Since the cycle has 3 edges, removing any one gives 3 possible spanning trees.
+
+### Using Kirchhoff's Theorem
+
+> Kirchhoff’s Theorem works by converting the graph into a matrix form that captures how nodes are connected. This matrix (called the Laplacian matrix) represents the structure of the graph, and its determinant (cofactor) gives the total number of spanning trees.
+
+Consider the following graph,
+
+All possible spanning trees are as follows,
+
+Here are the steps showing how the approach works to find the number of spanning trees in the given graph using Kirchhoff’s Theorem.
+
+- Create the adjacency Matrix for the given graph:
+
+- Convert the adjacency matrix into the Laplacian matrix which is achieved using the following steps.
+
+> A Laplacian matrix L, where Replace all the diagonal elements with the degree of nodes. For eg. element at (1, 1) position of adjacency matrix will be replaced by the degree of node 1, element, i,e., L[i][i] = degree of node i Replace all non-diagonal 1's with -1.  L[i][j] = -1 if there is an edge between i and j,  L[i][j] remains 0 otherwise
+
+- Remove any one row and one column from the Laplacian matrix. For example, remove the first row and first column. The cofactor value is the same for any row and column removed, so you can choose any.
+- Find the determinant (cofactor) of the resulting matrix. This value gives the total number of spanning trees "3". The determinant remains the same regardless of which row and column are removed.
+
+> Cayley’s formula for Complete Graph : It is a special case of Kirchhoff’s theorem because, in a complete graph of n nodes, the determinant is equal to n^(n-2).
+
+It works here because the Laplacian matrix represents how all nodes in the graph are connected. The determinant expands into all possible edge combinations, and due to its mathematical properties, invalid ones (cycles or disconnected) cancel out. As a result, only valid spanning trees remain, so the determinant directly gives their total count.
+
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+
+// Determinant using Gaussian elimination
+double determinant(vector<vector<double>> mat, int n) {
+    double det = 1.0;
+
+    for (int i = 0; i < n; i++) {
+
+        // Find pivot
+        int pivot = i;
+        for (int j = i + 1; j < n; j++) {
+            if (fabs(mat[j][i]) > fabs(mat[pivot][i]))
+                pivot = j;
+        }
+
+        // If pivot is zero → determinant = 0
+        if (fabs(mat[pivot][i]) < 1e-9)
+            return 0;
+
+        // Swap rows
+        if (i != pivot) {
+            swap(mat[i], mat[pivot]);
+            det *= -1;
+        }
+
+        det *= mat[i][i];
+
+        // Eliminate below
+        for (int j = i + 1; j < n; j++) {
+            double factor = mat[j][i] / mat[i][i];
+            for (int k = i; k < n; k++) {
+                mat[j][k] -= factor * mat[i][k];
+            }
+        }
+    }
+
+    return det;
+}
+
+// Number of spanning trees
+int numOfSpanningTree(vector<vector<int>> &graph, int n) {
+
+    // Laplacian matrix
+    vector<vector<double>> L(n, vector<double>(n, 0));
+
+    for (int i = 0; i < n; i++) {
+        int degree = 0;
+
+        for (int j = 0; j < n; j++) {
+            if (graph[i][j]) {
+                degree++;
+                if (i != j) L[i][j] = -1;
+            }
+        }
+
+        L[i][i] = degree;
+    }
+
+    // Minor matrix
+    vector<vector<double>> minor(n - 1, vector<double>(n - 1));
+
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - 1; j++) {
+            minor[i][j] = L[i][j];
+        }
+    }
+
+    // Determinant
+    return (int)round(determinant(minor, n - 1));
+}
+
+int main() {
+    int v = 4;
+
+    vector<vector<int>> graph = {
+        {0, 1, 1, 1},
+        {1, 0, 1, 1},
+        {1, 1, 0, 1},
+        {1, 1, 1, 0}
+    };
+
+    cout << numOfSpanningTree(graph, v);
+
+    return 0;
+}
+
+import java.util.*;
+
+class GfG {
+
+    // Determinant using Gaussian elimination
+    static double determinant(double[][] mat, int n) {
+        double det = 1.0;
+
+        for (int i = 0; i < n; i++) {
+
+            // Find pivot
+            int pivot = i;
+            for (int j = i + 1; j < n; j++) {
+                if (Math.abs(mat[j][i]) > Math.abs(mat[pivot][i]))
+                    pivot = j;
+            }
+
+            // If pivot is zero → determinant = 0
+            if (Math.abs(mat[pivot][i]) < 1e-9)
+                return 0;
+
+            // Swap rows
+            if (i != pivot) {
+                double[] tempRow = mat[i];
+                mat[i] = mat[pivot];
+                mat[pivot] = tempRow;
+                det *= -1;
+            }
+
+            det *= mat[i][i];
+
+            // Eliminate below
+            for (int j = i + 1; j < n; j++) {
+                double factor = mat[j][i] / mat[i][i];
+                for (int k = i; k < n; k++) {
+                    mat[j][k] -= factor * mat[i][k];
+                }
+            }
+        }
+
+        return det;
+    }
+
+    // Function to compute number of spanning trees
+    // using adjacency matrix
+    static int numOfSpanningTree(int[][] graph, int v) {
+
+        // Laplacian matrix
+        double[][] L = new double[v][v];
+
+        for (int i = 0; i < v; i++) {
+            int degree = 0;
+
+            for (int j = 0; j < v; j++) {
+                if (graph[i][j] == 1) {
+                    degree++;
+                    if (i != j) L[i][j] = -1;
+                }
+            }
+
+            L[i][i] = degree;
+        }
+
+        // Minor matrix
+        double[][] minor = new double[v - 1][v - 1];
+
+        for (int i = 0; i < v - 1; i++) {
+            for (int j = 0; j < v - 1; j++) {
+                minor[i][j] = L[i][j];
+            }
+        }
+
+        // Determinant
+        return (int)Math.round(determinant(minor, v - 1));
+    }
+
+    public static void main(String[] args) {
+        int v = 4;
+
+        int[][] graph = {
+            {0, 1, 1, 1},
+            {1, 0, 1, 1},
+            {1, 1, 0, 1},
+            {1, 1, 1, 0}
+        };
+
+        System.out.println(numOfSpanningTree(graph, v));
+    }
+}
+
+# Determinant using Gaussian elimination
+def determinant(mat, n):
+    det = 1.0
+
+    for i in range(n):
+
+        # Find pivot
+        pivot = i
+        for j in range(i + 1, n):
+            if abs(mat[j][i]) > abs(mat[pivot][i]):
+                pivot = j
+
+        # If pivot is zero → determinant = 0
+        if abs(mat[pivot][i]) < 1e-9:
+            return 0
+
+        # Swap rows
+        if i != pivot:
+            mat[i], mat[pivot] = mat[pivot], mat[i]
+            det *= -1
+
+        det *= mat[i][i]
+
+        # Eliminate below
+        for j in range(i + 1, n):
+            factor = mat[j][i] / mat[i][i]
+            for k in range(i, n):
+                mat[j][k] -= factor * mat[i][k]
+
+    return det
+
+# Function to compute number of spanning trees
+# using adjacency matrix
+def numOfSpanningTree(graph, v):
+
+    # Laplacian matrix
+    L = [[0.0] * v for _ in range(v)]
+
+    for i in range(v):
+        degree = 0
+
+        for j in range(v):
+            if graph[i][j] == 1:
+                degree += 1
+                if i != j:
+                    L[i][j] = -1
+
+        L[i][i] = degree
+
+    # Minor matrix
+    minor = [[0.0] * (v - 1) for _ in range(v - 1)]
+
+    for i in range(v - 1):
+        for j in range(v - 1):
+            minor[i][j] = L[i][j]
+
+    # Determinant
+    return round(determinant(minor, v - 1))
+
+if __name__ == "__main__":
+    v = 4
+
+    graph = [
+        [0, 1, 1, 1],
+        [1, 0, 1, 1],
+        [1, 1, 0, 1],
+        [1, 1, 1, 0]
+    ]
+
+    print(numOfSpanningTree(graph, v))  # Output: 16
+
+using System;
+
+class GfG {
+
+    // Determinant using Gaussian elimination
+    static double determinant(double[,] mat, int n) {
+        double det = 1.0;
+
+        for (int i = 0; i < n; i++) {
+
+            // Find pivot
+            int pivot = i;
+            for (int j = i + 1; j < n; j++) {
+                if (Math.Abs(mat[j, i]) > Math.Abs(mat[pivot, i]))
+                    pivot = j;
+            }
+
+            // If pivot is zero → determinant = 0
+            if (Math.Abs(mat[pivot, i]) < 1e-9)
+                return 0;
+
+            // Swap rows
+            if (i != pivot) {
+                for (int k = 0; k < n; k++) {
+                    double temp = mat[i, k];
+                    mat[i, k] = mat[pivot, k];
+                    mat[pivot, k] = temp;
+                }
+                det *= -1;
+            }
+
+            det *= mat[i, i];
+
+            // Eliminate below
+            for (int j = i + 1; j < n; j++) {
+                double factor = mat[j, i] / mat[i, i];
+                for (int k = i; k < n; k++) {
+                    mat[j, k] -= factor * mat[i, k];
+                }
+            }
+        }
+
+        return det;
+    }
+
+    // Function to compute number of spanning trees
+    // using adjacency matrix
+    static int numOfSpanningTree(int[,] graph, int v) {
+
+        // Laplacian matrix
+        double[,] L = new double[v, v];
+
+        for (int i = 0; i < v; i++) {
+            int degree = 0;
+
+            for (int j = 0; j < v; j++) {
+                if (graph[i, j] == 1) {
+                    degree++;
+                    if (i != j) L[i, j] = -1;
+                }
+            }
+
+            L[i, i] = degree;
+        }
+
+        // Minor matrix
+        double[,] minor = new double[v - 1, v - 1];
+
+        for (int i = 0; i < v - 1; i++) {
+            for (int j = 0; j < v - 1; j++) {
+                minor[i, j] = L[i, j];
+            }
+        }
+
+        // Determinant
+        return (int)Math.Round(determinant(minor, v - 1));
+    }
+
+    static void Main() {
+        int v = 4;
+
+        int[,] graph = {
+            {0, 1, 1, 1},
+            {1, 0, 1, 1},
+            {1, 1, 0, 1},
+            {1, 1, 1, 0}
+        };
+
+        Console.WriteLine(numOfSpanningTree(graph, v));
+    }
+}
+
+// Determinant using Gaussian elimination
+function determinant(mat, n) {
+    let det = 1.0;
+
+    for (let i = 0; i < n; i++) {
+
+        // Find pivot
+        let pivot = i;
+        for (let j = i + 1; j < n; j++) {
+            if (Math.abs(mat[j][i]) > Math.abs(mat[pivot][i]))
+                pivot = j;
+        }
+
+        // If pivot is zero → determinant = 0
+        if (Math.abs(mat[pivot][i]) < 1e-9)
+            return 0;
+
+        // Swap rows
+        if (i !== pivot) {
+            [mat[i], mat[pivot]] = [mat[pivot], mat[i]];
+            det *= -1;
+        }
+
+        det *= mat[i][i];
+
+        // Eliminate below
+        for (let j = i + 1; j < n; j++) {
+            let factor = mat[j][i] / mat[i][i];
+            for (let k = i; k < n; k++) {
+                mat[j][k] -= factor * mat[i][k];
+            }
+        }
+    }
+
+    return det;
+}
+
+// Function to compute number of spanning trees
+// using adjacency matrix
+function numOfSpanningTree(graph, v) {
+
+    // Laplacian matrix
+    let L = Array.from({ length: v }, () => Array(v).fill(0));
+
+    for (let i = 0; i < v; i++) {
+        let degree = 0;
+
+        for (let j = 0; j < v; j++) {
+            if (graph[i][j] === 1) {
+                degree++;
+                if (i !== j) L[i][j] = -1;
+            }
+        }
+
+        L[i][i] = degree;
+    }
+
+    // Minor matrix
+    let minor = Array.from({ length: v - 1 }, () =>
+        Array(v - 1).fill(0)
+    );
+
+    for (let i = 0; i < v - 1; i++) {
+        for (let j = 0; j < v - 1; j++) {
+            minor[i][j] = L[i][j];
+        }
+    }
+
+    // Determinant
+    return Math.round(determinant(minor, v - 1));
+}
+
+// Driver code
+let v = 4;
+
+let graph = [
+    [0, 1, 1, 1],
+    [1, 0, 1, 1],
+    [1, 1, 0, 1],
+    [1, 1, 1, 0]
+];
+
+console.log(numOfSpanningTree(graph, v)); // Output: 16
+
+16
+
+Time Complexity: O(n^3) due to Gaussian elimination for determinant. Auxiliary Space : O(n^2) for storing matrices.

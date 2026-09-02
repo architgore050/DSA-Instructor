@@ -1,0 +1,817 @@
+Source: https://www.geeksforgeeks.org/dsa/deletion-in-binary-search-tree/
+Title: Deletion in Binary Search Tree (BST)
+
+Given the root of a Binary Search Tree (BST) and an integer x , delete the node with value x from the BST while maintaining the BST property.
+
+> Input: x = 15 Output: [[10], [5, 18], [N, N, 12, N]] Explanation: The node with value x (15) is deleted from BST.
+
+Deleting a node in a BST means removing the target node while ensuring that the tree remains a valid BST. Depending on the structure of the node to be deleted, there are three possible scenarios:
+
+### Case 1: Node has No Children (Leaf Node)
+
+If the target node is a leaf node, it can be directly removed from the tree since it has no child to maintain.
+
+Working:
+
+### Case 2: Node has One Child(Left or Right Child)
+
+If the target node has only one child, we remove the node and connect its parent directly to its only child. This way, the tree remains valid after deletion of target node.
+
+Working:
+
+### Case 3: Node has Two Children
+
+If the target node has two children, deletion is slightly more complex.
+
+To maintain the BST property, we need to find a replacement node for the target. The replacement can be either:
+
+- The inorder successor — the smallest value in the right subtree, which is the next greater value than the target node.
+- The inorder predecessor — the largest value in the left subtree, which is the next smaller value than the target node.
+
+Once the replacement node is chosen, we replace the target node’s value with that node’s value, and then delete the replacement node, which will now fall under Case 1 (no children) or Case 2 (one child).
+
+Note: Inorder predecessor can also be used.
+
+Working:
+
+The deletion process in BST depends on the number of children of the node.
+
+- No children means simply remove the node.
+- One child means remove the node and connect its parent to the node’s only child.
+- Two children means replace the node with its inorder successor/predecessor and delete that node.
+
+This ensures that the BST property remains intact after every deletion.
+
+//Driver Code Starts
+#include <iostream>
+#include<vector>
+#include<unordered_map>
+#include <queue>
+using namespace std;
+
+// Node structure
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int x) {
+        data = x;
+        left = right = nullptr;
+    }
+};
+
+// Calculate Height
+int getHeight(Node* root, int h) {
+    if (root == nullptr) return h - 1;
+    return max(getHeight(root->left, h + 1),
+                      getHeight(root->right, h + 1));
+}
+
+// Print Level Order
+void levelOrder(Node* root) {
+    queue<pair<Node*, int>> q;
+    q.push({root, 0});
+
+    int lastLevel = 0;
+
+    // function to get the height of tree
+    int height = getHeight(root, 0);
+
+    // printing the level order of tree
+    while (!q.empty()) {
+        auto top = q.front(); q.pop();
+        Node* node = top.first;
+        int lvl = top.second;
+
+        if (lvl > lastLevel) {
+            cout << "
+";
+            lastLevel = lvl;
+        }
+
+        // all levels are printed
+        if (lvl > height) break;
+
+        if (node->data != -1) cout << node->data << " ";
+
+        // printing null node
+        else cout << "N ";
+
+        // null node has no children
+        if (node->data == -1) continue;
+
+        if (node->left == nullptr) q.push({new Node(-1), lvl + 1});
+        else q.push({node->left, lvl + 1});
+
+        if (node->right == nullptr) q.push({new Node(-1), lvl + 1});
+        else q.push({node->right, lvl + 1});
+    }
+}
+
+//Driver Code Ends
+
+// Get inorder successor (smallest in right subtree)
+Node* getSuccessor(Node* curr) {
+    curr = curr->right;
+    while (curr != nullptr && curr->left != nullptr)
+        curr = curr->left;
+    return curr;
+}
+
+// Delete a node with value x from BST
+Node* delNode(Node* root, int x) {
+    if (root == nullptr)
+        return root;
+
+    if (root->data > x)
+        root->left = delNode(root->left, x);
+    else if (root->data < x)
+        root->right = delNode(root->right, x);
+    else {
+        // Node with 0 or 1 child
+        if (root->left == nullptr) {
+            Node* temp = root->right;
+            delete root;
+            return temp;
+        }
+        if (root->right == nullptr) {
+            Node* temp = root->left;
+            delete root;
+            return temp;
+        }
+
+        // Node with 2 children
+        Node* succ = getSuccessor(root);
+        root->data = succ->data;
+        root->right = delNode(root->right, succ->data);
+    }
+    return root;
+}
+
+//Driver Code Starts
+
+int main() {
+    Node* root = new Node(10);
+    root->left = new Node(5);
+    root->right = new Node(15);
+    root->right->left = new Node(12);
+    root->right->right = new Node(18);
+
+    int x = 15;
+    root = delNode(root, x);
+
+    levelOrder(root);
+
+    return 0;
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+#include <stdio.h>
+#include <stdlib.h>
+
+// Node structure
+struct Node
+{
+    int data;
+    struct Node *left;
+    struct Node *right;
+};
+
+// Function to create a new node
+struct Node *createNode(int x)
+{
+    struct Node *newNode = (struct Node *)malloc(sizeof(struct Node));
+    newNode->data = x;
+    newNode->left = newNode->right = NULL;
+    return newNode;
+}
+
+// Function to find the height of the tree
+int getHeight(struct Node *root, int h)
+{
+    if (root == NULL)
+        return h - 1;
+    int leftHeight = getHeight(root->left, h + 1);
+    int rightHeight = getHeight(root->right, h + 1);
+    return (leftHeight > rightHeight) ? leftHeight : rightHeight;
+}
+
+// Queue structure for level order traversal
+struct QueueNode
+{
+    struct Node *node;
+    int level;
+};
+
+struct Queue
+{
+    struct QueueNode arr[100];
+    int front, rear;
+};
+
+// Initialize queue
+void initQueue(struct Queue *q)
+{
+    q->front = 0;
+    q->rear = 0;
+}
+
+// Enqueue
+void enqueue(struct Queue *q, struct Node *node, int level)
+{
+    q->arr[q->rear].node = node;
+    q->arr[q->rear].level = level;
+    q->rear++;
+}
+
+// Dequeue
+struct QueueNode dequeue(struct Queue *q)
+{
+    return q->arr[q->front++];
+}
+
+// Check if queue is empty
+int isEmpty(struct Queue *q)
+{
+    return q->front == q->rear;
+}
+
+// Function to print Level Order Traversal
+void levelOrder(struct Node *root)
+{
+    if (root == NULL)
+        return;
+
+    struct Queue q;
+    initQueue(&q);
+    enqueue(&q, root, 0);
+
+    int lastLevel = 0;
+
+    // function to get height of the tree
+    int height = getHeight(root, 0);
+
+    // printing level order of the tree
+    while (!isEmpty(&q))
+    {
+        struct QueueNode temp = dequeue(&q);
+        struct Node *node = temp.node;
+        int lvl = temp.level;
+
+        if (lvl > lastLevel)
+        {
+            printf("
+");
+            lastLevel = lvl;
+        }
+
+        // all levels are printed
+        if (lvl > height)
+            break;
+
+        // Printing null nodes
+        if (node->data != -1)
+            printf("%d ", node->data);
+        else
+            printf("N ");
+
+        // null node has no children
+        if (node->data == -1)
+            continue;
+
+        if (node->left == NULL)
+            enqueue(&q, createNode(-1), lvl + 1);
+        else
+            enqueue(&q, node->left, lvl + 1);
+
+        if (node->right == NULL)
+            enqueue(&q, createNode(-1), lvl + 1);
+        else
+            enqueue(&q, node->right, lvl + 1);
+    }
+}
+
+//Driver Code Ends
+
+// the inorder successor (smallest in right subtree)
+struct Node *getSuccessor(struct Node *curr)
+{
+    curr = curr->right;
+    while (curr != NULL && curr->left != NULL)
+        curr = curr->left;
+    return curr;
+}
+
+// Function to delete a node with value x from BST
+struct Node *delNode(struct Node *root, int x)
+{
+    if (root == NULL)
+        return root;
+
+    if (root->data > x)
+        root->left = delNode(root->left, x);
+    else if (root->data < x)
+        root->right = delNode(root->right, x);
+
+    else
+    {
+        // Node with 0 or 1 child
+        if (root->left == NULL)
+        {
+            struct Node *temp = root->right;
+            free(root);
+            return temp;
+        }
+        if (root->right == NULL)
+        {
+            struct Node *temp = root->left;
+            free(root);
+            return temp;
+        }
+
+        // Node with 2 children
+        struct Node *succ = getSuccessor(root);
+        root->data = succ->data;
+        root->right = delNode(root->right, succ->data);
+    }
+    return root;
+}
+
+//Driver Code Starts
+int main()
+{
+    struct Node *root = createNode(10);
+    root->left = createNode(5);
+    root->right = createNode(15);
+    root->right->left = createNode(12);
+    root->right->right = createNode(18);
+
+    int x = 15;
+
+    root = delNode(root, x);
+    levelOrder(root);
+
+    return 0;
+}
+//Driver Code Ends
+
+//Driver Code Starts
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+// Node structure
+class Node {
+    int data;
+    Node left, right;
+
+    public Node(int item) {
+        data = item;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // Calculate Height
+ static int getHeight( Node root, int h ) {
+        if( root == null ) return h-1;
+
+        return Math.max(getHeight(root.left, h+1), getHeight(root.right, h+1));
+    }
+
+    // Print Level Order
+     static void levelOrder(Node root) {
+        Queue<List<Object>> queue = new LinkedList<>();
+        queue.offer(List.of(root, 0));
+
+        int lastLevel = 0;
+
+        // function to get the height of tree
+        int height = getHeight(root, 0);
+
+        // printing the level order of tree
+        while( !queue.isEmpty()) {
+            List<Object> top = queue.poll();
+
+            Node node = (Node) top.get(0);
+            int lvl = (int) top.get(1);
+
+            if( lvl > lastLevel ) {
+                System.out.println();
+                lastLevel = lvl;
+            }
+
+            // all levels are printed
+            if( lvl > height ) break;
+
+            // printing null node
+            System.out.print((node.data == -1 ? "N" : node.data) + " ");
+
+            // null node has no children
+            if( node.data == -1 ) continue;
+
+            if( node.left == null ) queue.offer(List.of(new Node(-1), lvl+1));
+            else queue.offer(List.of(node.left, lvl+1));
+
+            if( node.right == null ) queue.offer(List.of(new Node(-1), lvl+1));
+            else queue.offer(List.of(node.right, lvl+1));
+        }
+    }
+
+//Driver Code Ends
+
+     // Get inorder successor (smallest in right subtree)
+    static Node getSuccessor(Node curr) {
+        curr = curr.right;
+        while (curr != null && curr.left != null) {
+            curr = curr.left;
+        }
+        return curr;
+    }
+
+    // Delete a node with value x from BST
+    static Node delNode(Node root, int x) {
+        if (root == null) return root;
+
+        if (root.data > x) {
+            root.left = delNode(root.left, x);
+        } else if (root.data < x) {
+            root.right = delNode(root.right, x);
+        } else {
+            // Node with 0 or 1 child
+            if (root.left == null) return root.right;
+            if (root.right == null) return root.left;
+
+            // Node with 2 children
+            Node succ = getSuccessor(root);
+            root.data = succ.data;
+            root.right = delNode(root.right, succ.data);
+        }
+        return root;
+    }
+
+//Driver Code Starts
+    public static void main(String[] args) {
+        Node root = new Node(10);
+        root.left = new Node(5);
+        root.right = new Node(15);
+        root.right.left = new Node(12);
+        root.right.right = new Node(18);
+
+        int x = 15;
+        root = delNode(root, x);
+
+        levelOrder(root);
+    }
+}
+
+//Driver Code Ends
+
+#Driver Code Starts
+from collections import deque
+
+# Node structure
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+# Calculate Height
+def getHeight(root, h):
+    if root is None:
+        return h - 1
+    return max(getHeight(root.left, h + 1),
+               getHeight(root.right, h + 1))
+
+# Print Level Order
+def levelOrder(root):
+    q = deque()
+    q.append((root, 0))
+    lastLevel = 0
+
+    # function to get the height of tree
+    height = getHeight(root, 0)
+
+    #  printing the level order of tree
+    while q:
+        node, lvl = q.popleft()
+
+        if lvl > lastLevel:
+            print()
+            lastLevel = lvl
+
+        #  all levels are printed
+        if lvl > height:
+            break
+
+        #  printing null nodes
+        if node.data != -1:
+            print(node.data, end=" ")
+        else:
+            print("N", end=" ")
+
+        # null node has no children
+        if node.data == -1:
+            continue
+
+        if node.left is None:
+            q.append((Node(-1), lvl + 1))
+        else:
+            q.append((node.left, lvl + 1))
+
+        if node.right is None:
+            q.append((Node(-1), lvl + 1))
+        else:
+            q.append((node.right, lvl + 1))
+#Driver Code Ends
+
+# Get inorder successor (smallest in right subtree)
+def getSuccessor(curr):
+    curr = curr.right
+    while curr is not None and curr.left is not None:
+        curr = curr.left
+    return curr
+
+# Delete a node with value x from BST
+def delNode(root, x):
+    if root is None:
+        return root
+
+    if root.data > x:
+        root.left = delNode(root.left, x)
+    elif root.data < x:
+        root.right = delNode(root.right, x)
+    else:
+
+        # node with 0 or 1  children
+        if root.left is None:
+            return root.right
+        if root.right is None:
+            return root.left
+
+        #  Node with 2 children
+        succ = getSuccessor(root)
+        root.data = succ.data
+        root.right = delNode(root.right, succ.data)
+
+    return root
+
+#Driver Code Starts
+
+if  __name__ == "__main__":
+    root = Node(10)
+    root.left = Node(5)
+    root.right = Node(15)
+    root.right.left = Node(12)
+    root.right.right = Node(18)
+
+    x = 15
+    root = delNode(root, x)
+    levelOrder(root)
+
+#Driver Code Ends
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+// Node structure
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int x)
+    {
+        data = x;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // Calculate Height
+    static int getHeight(Node root, int h)
+    {
+        if (root == null)
+            return h - 1;
+        return Math.Max(getHeight(root.left, h + 1),
+                        getHeight(root.right, h + 1));
+    }
+
+    // Print Level Order
+    static void levelOrder(Node root)
+    {
+        Queue<(Node, int)> q = new Queue<(Node, int)>();
+        q.Enqueue((root, 0));
+
+        int lastLevel = 0;
+
+        // function to get the height of tree
+        int height = getHeight(root, 0);
+
+        // printing the level order of the tree
+        while (q.Count > 0) {
+            var(node, lvl) = q.Dequeue();
+
+            if (lvl > lastLevel) {
+                Console.WriteLine();
+                lastLevel = lvl;
+            }
+
+            //all levels are printed
+            if (lvl > height)
+                break;
+
+            // printing null nodes
+            if (node.data != -1)
+                Console.Write(node.data + " ");
+            else
+                Console.Write("N ");
+
+            // null node has no children
+            if (node.data == -1)
+                continue;
+
+            if (node.left == null)
+                q.Enqueue((new Node(-1), lvl + 1));
+            else
+                q.Enqueue((node.left, lvl + 1));
+
+            if (node.right == null)
+                q.Enqueue((new Node(-1), lvl + 1));
+            else
+                q.Enqueue((node.right, lvl + 1));
+        }
+    }
+//Driver Code Ends
+
+    // Get inorder successor (smallest in right subtree)
+    static Node getSuccessor(Node curr)
+    {
+        curr = curr.right;
+        while (curr != null && curr.left != null)
+            curr = curr.left;
+        return curr;
+    }
+
+    // Delete a node with value x from BST
+    static Node delNode(Node root, int x)
+    {
+        if (root == null)
+            return root;
+
+        if (root.data > x)
+            root.left = delNode(root.left, x);
+        else if (root.data < x)
+            root.right = delNode(root.right, x);
+        else {
+
+            // Node with 0 or 1 child
+            if (root.left == null)
+                return root.right;
+            if (root.right == null)
+                return root.left;
+
+            // Node with 2 children
+            Node succ = getSuccessor(root);
+            root.data = succ.data;
+            root.right = delNode(root.right, succ.data);
+        }
+        return root;
+    }
+
+//Driver Code Starts
+    static void Main()
+    {
+        Node root = new Node(10);
+        root.left = new Node(5);
+        root.right = new Node(15);
+        root.right.left = new Node(12);
+        root.right.right = new Node(18);
+
+        int x = 15;
+        root = delNode(root, x);
+        levelOrder(root);
+    }
+}
+//Driver Code Ends
+
+//Driver Code Starts
+const Denque = require("denque");
+
+// Node structure
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Calculate Height
+function getHeight(root, h) {
+    if (root === null) return h - 1;
+    return Math.max(getHeight(root.left, h + 1),
+                    getHeight(root.right, h + 1));
+}
+
+// Print Level Order
+function levelOrder(root) {
+    const q = new Denque();
+    q.push([root, 0]);
+
+    let lastLevel = 0;
+
+    // function to get height of the tree
+    const height = getHeight(root, 0);
+
+// printing level order  of the tree
+    while (!q.isEmpty()) {
+        const [node, lvl] = q.shift();
+
+        if (lvl > lastLevel) {
+            console.log();
+            lastLevel = lvl;
+        }
+
+          // all levels are printed
+        if (lvl > height) break;
+
+    //   printing null nodes
+        if (node.data !== -1)
+            process.stdout.write(node.data + " ");
+        else
+            process.stdout.write("N ");
+
+        //  null node has no children
+        if (node.data === -1) continue;
+
+        if (node.left === null) q.push([new Node(-1), lvl + 1]);
+        else q.push([node.left, lvl + 1]);
+
+        if (node.right === null) q.push([new Node(-1), lvl + 1]);
+        else q.push([node.right, lvl + 1]);
+    }
+}
+//Driver Code Ends
+
+// Get inorder successor (smallest in right subtree)
+function getSuccessor(curr) {
+    curr = curr.right;
+    while (curr !== null && curr.left !== null)
+        curr = curr.left;
+    return curr;
+}
+
+// Delete a node with value x from BST
+function delNode(root, x) {
+    if (root === null)
+        return root;
+
+    if (root.data > x)
+        root.left = delNode(root.left, x);
+    else if (root.data < x)
+        root.right = delNode(root.right, x);
+    else {
+        // Node with 0 or 1 child
+        if (root.left === null)
+            return root.right;
+        if (root.right === null)
+            return root.left;
+
+        // Node with 2 children
+        const succ = getSuccessor(root);
+        root.data = succ.data;
+        root.right = delNode(root.right, succ.data);
+    }
+    return root;
+}
+
+//Driver Code Starts
+// Driver code
+let root = new Node(10);
+root.left = new Node(5);
+root.right = new Node(15);
+root.right.left = new Node(12);
+root.right.right = new Node(18);
+
+const x = 15;
+root = delNode(root, x);
+levelOrder(root);
+
+//Driver Code Ends
+
+10
+5 18
+N N 12 N
+
+Time Complexity: O(h), where h is the height of the BST. Auxiliary Space: O(h).

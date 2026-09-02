@@ -1,0 +1,1411 @@
+Source: https://www.geeksforgeeks.org/dsa/largest-divisible-subset-array/
+Title: Largest divisible subset in array
+
+Given an array arr[], find the largest divisible subset in the given array. If there are multiple subsets of the largest size, return the lexicographically greatest one after sorting in ascending order.
+
+Note: A subset is called divisible if for every pair (x, y) in the subset, either x divides y or y divides x .
+
+Examples:
+
+> Input: arr[]  = [1, 16, 7, 8, 4] Output: [1, 4, 8, 16] Explanation: In the output subset, for every pair either the first element divides second or second divides first. Input : arr[] = [2, 4, 3, 8] Output : [2, 4,  8] Explanation: In the output subset, for every pair either the first element divides second or second divides first.
+
+Table of Content
+
+- [Naive Approach] Generate all subset of array - O(2^n*n^2) Time and O(n) Space
+- [Better Approach] Using Recursion - O(2^n*n) Time and O(n) Space
+- [Expected Approach 1] Using Top-Down DP(Memoization) - O(n^2) Time and O(n) Space
+- [Expected Approach 2] Using Bottom-Up DP (Tabulation) – O(n^2) Time and O(n) Space
+
+### [Naive Approach] Generate all subset of array - O(2^n*n^2) Time and O(n) Space
+
+> A simple solution is to generate all subsets of a given set . For each subset, we check if all pairs of elements satisfy the divisibility condition ( a % b == 0 || b % a == 0 ). Among all valid subsets, we track the one with the largest size, and in case of ties, we pick the lexicographically greatest one. This approach is simple but inefficient due to exponential time complexity.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+vector<int> res;
+
+// Function to check if every pair in the subset
+// satisfies the divisibility condition
+bool isValid(const vector<int>& subset) {
+
+    for (int i = 0; i < subset.size(); ++i) {
+        for (int j = i + 1; j < subset.size(); ++j) {
+
+            // If neither element divides the other, it's not a valid subset
+            if (subset[i] % subset[j] != 0 && subset[j] % subset[i] != 0)
+                return false;
+        }
+    }
+    return true;
+}
+
+// Lexicographical comparison
+int compareLex(const vector<int>& a, const vector<int>& b) {
+    for (int i = 0; i < a.size(); ++i) {
+        if (a[i] != b[i])
+            return a[i] > b[i] ? 1 : -1;
+    }
+    return 0;
+}
+
+// Recursive DFS function to generate all subsets and track the best one
+void dfs(const vector<int>& arr, vector<int>& curr, int index) {
+
+    // Base case: if we've considered all elements
+    if (index >= arr.size()) {
+        if (isValid(curr)) {
+            // If current subset is longer than the best so far, update it
+            if (curr.size() > res.size()) {
+                res = curr;
+            }
+            // If size is the same, update only if lexicographically greater
+            else if (curr.size() == res.size() && compareLex(curr, res) > 0){
+                res = curr;
+            }
+        }
+        return;
+    }
+
+    // Include the current element in the subset
+    curr.push_back(arr[index]);
+    dfs(arr, curr, index + 1);
+
+    // Backtrack: remove the element and explore without it
+    curr.pop_back();
+    dfs(arr, curr, index + 1);
+}
+
+// Wrapper function to find the largest divisible subset
+vector<int> largestSubset(vector<int>& arr) {
+
+    // Sort the array to simplify lexicographical comparisons
+    sort(arr.begin(), arr.end());
+
+    // Temporary subset to build during DFS
+    vector<int> curr;
+    // Clear previous results
+    res.clear();
+    // Start DFS from index 0
+    dfs(arr, curr, 0);
+    return res;
+}
+
+int main() {
+    vector<int> arr = {1, 16, 7, 8, 4};
+    vector<int> result = largestSubset(arr);
+
+    // Print the result
+    for (int num : result) cout << num << " ";
+    return 0;
+}
+
+import java.util.*;
+class GfG{
+
+    // Global result to store the best valid subset
+    ArrayList<Integer> res = new ArrayList<>();
+
+    // Function to check if every pair in the subset
+    // satisfies the divisibility condition
+    boolean isValid(ArrayList<Integer> subset) {
+
+        for (int i = 0; i < subset.size(); i++) {
+            for (int j = i + 1; j < subset.size(); j++) {
+
+                int a = subset.get(i), b = subset.get(j);
+                // If neither divides the other, it's invalid
+                if (a % b != 0 && b % a != 0)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    // Function to compare two lists lexicographically
+    // Returns true if 'a' is lexicographically greater than 'b'
+    boolean isLexGreater(ArrayList<Integer> a, ArrayList<Integer> b) {
+        for (int i = 0; i < a.size(); i++) {
+            if (!a.get(i).equals(b.get(i)))
+                // If different, compare values
+                return a.get(i) > b.get(i);
+        }
+        return false; // Lists are equal
+    }
+
+    // Recursive DFS function to generate all subsets
+    void dfs(int[] arr, ArrayList<Integer> curr, int index) {
+
+        // Base case: all elements considered
+        if (index >= arr.length) {
+
+            // Check if current subset is valid
+            if (isValid(curr)) {
+
+                // If it's longer than current result, update
+                if (curr.size() > res.size()) {
+                    res = new ArrayList<>(curr);
+                }
+
+                // If same size but lexicographically greater, update
+                else if (curr.size() == res.size() &&
+                         isLexGreater(curr, res)) {
+                    res = new ArrayList<>(curr);
+                }
+
+            }
+            return;
+        }
+
+        // Include current element in subset
+        curr.add(arr[index]);
+        dfs(arr, curr, index + 1);
+
+        // Backtrack: exclude current element and continue
+        curr.remove(curr.size() - 1);
+        dfs(arr, curr, index + 1);
+    }
+
+    // Main function to find the largest divisible subset
+    public ArrayList<Integer> largestSubset(int[] arr) {
+
+        // Sort for consistent lexicographical order
+        Arrays.sort(arr);
+        // Clear previous result
+        res.clear();
+        // Start DFS with empty subset
+        dfs(arr, new ArrayList<>(), 0);
+        // Return the best subset found
+        return res;
+    }
+
+    // Optional main method for testing
+    public static void main(String[] args) {
+
+        GfG sol = new GfG();
+        int[] arr = {1, 16, 7, 8, 4};
+        ArrayList<Integer> result = sol.largestSubset(arr);
+
+        // Output the largest divisible subset
+        for (int num : result) {
+           System.out.print(num + " ");
+        }
+    }
+}
+
+def isValid(subset):
+    # Check if every pair in the subset satisfies divisibility condition
+    for i in range(len(subset)):
+        for j in range(i + 1, len(subset)):
+            a, b = subset[i], subset[j]
+            if a % b != 0 and b % a != 0:
+                return False
+    return True
+
+def isLexGreater(a, b):
+    # Compare two lists lexicographically
+    for i in range(len(a)):
+        if a[i] != b[i]:
+            return a[i] > b[i]
+    return False
+
+def dfs(arr, curr, index, res):
+    # Base case: all elements considered
+    if index >= len(arr):
+        if isValid(curr):
+            if len(curr) > len(res[0]):
+                res[0] = curr.copy()
+            elif len(curr) == len(res[0]) and isLexGreater(curr, res[0]):
+                res[0] = curr.copy()
+        return
+
+    # Include current element
+    curr.append(arr[index])
+    dfs(arr, curr, index + 1, res)
+
+    # Backtrack: exclude current element
+    curr.pop()
+    dfs(arr, curr, index + 1, res)
+
+def largestSubset(arr):
+    # Sort for consistent lexicographical order
+    arr.sort()
+    # Use list of list to mimic pass-by-reference
+    res = [[]]
+    dfs(arr, [], 0, res)
+    return res[0]
+
+if __name__ == "__main__":
+    arr = [1, 16, 7, 8, 4]
+    result = largestSubset(arr)
+    for num in result:
+        print(num, end=' ')
+
+using System;
+using System.Collections.Generic;
+
+class GfG{
+    // Global result list to store the best subset
+    List<int> res = new List<int>();
+
+    // Function to check if every pair in the subset
+    // satisfies the divisibility condition
+    bool isValid(List<int> subset){
+
+        for (int i = 0; i < subset.Count; i++){
+
+            for (int j = i + 1; j < subset.Count; j++){
+
+                int a = subset[i], b = subset[j];
+                if (a % b != 0 && b % a != 0)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    // Function to compare two lists lexicographically
+    bool isLexGreater(List<int> a, List<int> b){
+
+        for (int i = 0; i < a.Count; i++){
+            if (a[i] != b[i])
+                return a[i] > b[i];
+        }
+        return false;
+    }
+
+    // Recursive DFS function to generate all subsets
+    void dfs(int[] arr, List<int> curr, int index){
+
+        // Base case: all elements have been considered
+        if (index >= arr.Length){
+
+            if (isValid(curr)){
+                // If current subset is larger than result
+                if (curr.Count > res.Count){
+                    res = new List<int>(curr);
+                }
+                // If same size but lexicographically greater
+                else if (curr.Count == res.Count && isLexGreater(curr, res)){
+                    res = new List<int>(curr);
+                }
+            }
+            return;
+        }
+
+        // Include current element in subset
+        curr.Add(arr[index]);
+        dfs(arr, curr, index + 1);
+
+        // Backtrack: exclude current element
+        curr.RemoveAt(curr.Count - 1);
+        dfs(arr, curr, index + 1);
+    }
+
+    // Main function to be called
+    public List<int> largestSubset(int[] arr){
+
+        // Sort the array for consistent lexicographical order
+        Array.Sort(arr);
+
+        // Clear previous result
+        res.Clear();
+
+        // Start DFS with an empty subset
+        dfs(arr, new List<int>(), 0);
+
+        return res;
+    }
+
+    // Optional test method
+    public static void Main(string[] args){
+        GfG obj = new GfG();
+        int[] arr = { 1, 16, 7, 8, 4 };
+
+        List<int> result = obj.largestSubset(arr);
+
+        // Print result
+        foreach (int num in result){
+            Console.Write(num + " ");
+        }
+    }
+}
+
+// Global result to store the best valid subset
+let res = [];
+
+// Function to check if every pair in the subset is divisible
+function isValid(subset) {
+    for (let i = 0; i < subset.length; ++i) {
+        for (let j = i + 1; j < subset.length; ++j) {
+            if (subset[i] % subset[j] !== 0 && subset[j] % subset[i] !== 0){
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// Lexicographical comparison
+function compareLex(a, b) {
+    for (let i = 0; i < a.length; ++i) {
+        if (a[i] !== b[i]) return a[i] > b[i] ? 1 : -1;
+    }
+    return 0;
+}
+
+// DFS function to explore all subsets
+function dfs(arr, curr, index) {
+    if (index >= arr.length) {
+        if (isValid(curr)) {
+            if (curr.length > res.length) {
+                res = [...curr];
+            } else if (curr.length === res.length &&
+                       compareLex(curr, res) > 0) {
+                res = [...curr];
+            }
+        }
+        return;
+    }
+
+    // Include current element
+    curr.push(arr[index]);
+    dfs(arr, curr, index + 1);
+
+    // Backtrack: exclude current element
+    curr.pop();
+    dfs(arr, curr, index + 1);
+}
+
+function largestSubset(arr) {
+
+    // Sort for lexicographical comparison
+    arr.sort((a, b) => a - b);
+    res = [];
+    const curr = [];
+    dfs(arr, curr, 0);
+    return res;
+}
+
+// Driver code
+const arr = [1, 16, 7, 8, 4];
+const result = largestSubset(arr);
+console.log(result.join(" "));
+
+1 4 8 16
+
+Time Complexity: O( 2 n * n 2 ), because the code generates all subsets and checks pairwise divisibility for each. Auxiliary Space: O(n) due to the recursion depth and temporary subset storage.
+
+### [Better Approach] Using Recursion - O(2^n*n) Time and O(n) Space
+
+For the recursive approach to find the largest divisible subset , first sort all array elements in increasing order. The purpose of sorting is to make sure that all divisors of an element appear before it. We can break down the solution into two main cases. In both cases, the number of available elements decreases by one.
+
+> If the current element can be included in the subset (i.e., it is divisible by the last included element), we add it to the current subset and recursively check the next elements. If the current element cannot be included, we skip it and recursively check the next element. Mathematically, the recurrence relation will look like: largestDivisibleSubset(arr, i, prev) = largestDivisibleSubset(arr, i + 1, arr[i]) OR largestDivisibleSubset(arr, i + 1, prev)
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Function to find the largest divisible
+// subset using recursion
+void lds(vector<int>& res, vector<int>& curr,
+                 int i, int prev, vector<int>& arr) {
+
+    // Base case: check if we've reached the
+    // end of the array
+    if (i >= arr.size()) {
+
+        // Update ans if the current subset is
+        // larger and exicographically greatest
+        if (curr.size() > res.size()) {
+            res = curr;
+        }
+        if(curr.size() == res.size() && curr > res){
+            res = curr;
+        }
+        return;
+    }
+
+    // Include current element if divisible by
+    // previous element
+    if (curr.empty() || arr[i] % prev == 0) {
+        curr.push_back(arr[i]);
+
+        // Recur with the current number included
+        lds(res, curr, i + 1, arr[i], arr);
+
+        // Backtrack to explore other possibilities
+        curr.pop_back();
+    }
+
+    // Exclude current element and move to the next
+    // Recur without including the current number
+    lds(res, curr, i + 1, prev, arr);
+}
+
+// Main function to find the largest divisible subset
+vector<int> largestSubset(vector<int>& arr) {
+
+    sort(arr.begin(), arr.end());
+    vector<int> res;
+    vector<int> curr;
+
+    // Start the recursive search
+    lds(res, curr, 0, 1, arr);
+    return res;
+}
+
+int main() {
+
+    vector<int> arr = {1, 16, 7, 8, 4};
+
+    vector<int> res = largestSubset(arr);
+
+    for (int num : res) {
+        cout << num << " ";
+    }
+
+    return 0;
+}
+
+import java.util.*;
+
+class GfG {
+
+    // Recursive function to explore all subsets and track
+    // the largest divisible one
+    static void lds(ArrayList<Integer> res, ArrayList<Integer> curr,
+                    int i, int prev, int[] arr) {
+
+        // Base case: if we've reached the end of the array
+        if (i >= arr.length) {
+            // If the current subset is larger than the best so far
+            // update it
+            if (curr.size() > res.size()) {
+                res.clear();
+                res.addAll(curr);
+            }
+            // If both are of equal size, choose the
+            // lexicographically greater one
+            else if (curr.size() == res.size()) {
+                for (int j = 0; j < curr.size(); j++) {
+                    if (curr.get(j) > res.get(j)) {
+                        res.clear();
+                        res.addAll(curr);
+                        break;
+                    }
+                    else if (curr.get(j) < res.get(j)) {
+                        // No need to check further if current
+                        // is already smaller
+                        break;
+                    }
+                }
+            }
+            return;
+        }
+
+        // Include arr[i] if it is divisible by 'prev'
+        // Or if curr is empty (first element)
+        if (curr.isEmpty() || arr[i] % prev == 0) {
+            // Choose the current element
+            curr.add(arr[i]);
+            // Recurse with updated prev and index
+            lds(res, curr, i + 1, arr[i], arr);
+            // Backtrack: remove last added element
+            curr.remove(curr.size() - 1);
+        }
+
+        // Exclude arr[i] and move to next element
+        lds(res, curr, i + 1, prev, arr);
+    }
+
+    // Main function to find the largest divisible subset
+    static ArrayList<Integer> largestSubset(int[] arr) {
+        // Sort array for easier lexicographical comparison
+        Arrays.sort(arr);
+        // Final result holder
+        ArrayList<Integer> res = new ArrayList<>();
+        // Temporary subset during recursion
+        ArrayList<Integer> curr = new ArrayList<>();
+        // Start recursive DFS with initial prev = 1
+        lds(res, curr, 0, 1, arr);
+        // Return the largest valid subset found
+        return res;
+    }
+
+    public static void main(String[] args) {
+
+        // Input array
+        int[] arr = {1, 16, 7, 8, 4};
+
+        // Find the largest divisible subset
+        ArrayList<Integer> res = largestSubset(arr);
+
+        // Print the result elements space-separated
+        for (int num : res) {
+            System.out.print(num + " ");
+        }
+    }
+}
+
+# Python Implementation for Largest Divisible Subset
+# using Recursion
+def lds(res, curr, i, prev, arr):
+    # Base case: check if we've reached the
+    # end of the array
+    if i >= len(arr):
+        # Update res if the current subset is
+        # larger or if it's the same size but lexicographically greater
+        if len(curr) > len(res) or (len(curr) == len(res) and curr > res):
+            res[:] = curr[:]
+        return
+
+    # Include current element if divisible by
+    # previous element
+    if not curr or arr[i] % prev == 0:
+        curr.append(arr[i])
+
+        # Recur with the current number included
+        lds(res, curr, i + 1, arr[i], arr)
+
+        # Backtrack to explore other possibilities
+        curr.pop()
+
+    # Exclude current element and move to the next
+    # Recur without including the current number
+    lds(res, curr, i + 1, prev, arr)
+
+# Main function to find the largest divisible subset
+def largestSubset(arr):
+    arr.sort()
+    res = []
+    curr = []
+
+    # Start the recursive search
+    lds(res, curr, 0, 1, arr)
+    return res
+
+if __name__ == "__main__":
+    arr = [1, 16, 7, 8, 4]
+
+    res = largestSubset(arr)
+
+    for num in res:
+        print(num, end=" ")
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to find the largest divisible subset using recursion
+    static void lds(List<int> res, List<int> curr, int i, int prev, int[] arr) {
+
+        // Base case: check if we've reached the end of the array
+        if (i >= arr.Length) {
+
+            // Update res if the current subset is larger
+            // or if it has the same size but is lexicographically greater
+            if (curr.Count > res.Count || (curr.Count == res.Count &&
+                CompareLists(curr, res))) {
+                res.Clear();
+                res.AddRange(curr);
+            }
+            return;
+        }
+
+        // Include current element if divisible by the previous element
+        if (curr.Count == 0 || arr[i] % prev == 0) {
+            curr.Add(arr[i]);
+
+            // Recur with the current number included
+            lds(res, curr, i + 1, arr[i], arr);
+
+            // Backtrack to explore other possibilities
+            curr.RemoveAt(curr.Count - 1);
+        }
+
+        // Exclude current element and move to the next
+        // Recur without including the current number
+        lds(res, curr, i + 1, prev, arr);
+    }
+
+    // Helper function to compare two lists lexicographically
+    static bool CompareLists(List<int> list1, List<int> list2) {
+        for (int i = 0; i < list1.Count && i < list2.Count; i++) {
+            if (list1[i] != list2[i]) {
+                // Return true if list1 is lexicographically greater
+                return list1[i] > list2[i];
+            }
+        }
+        // If they are equal up to the smallest size
+        // the longer list is greater
+        return list1.Count > list2.Count;
+    }
+
+    // Main function to find the largest divisible subset
+    static List<int> largestSubset(int[] arr) {
+        // Sort array in ascending order
+        Array.Sort(arr);
+        List<int> res = new List<int>();
+        List<int> curr = new List<int>();
+
+        // Start the recursive search
+        lds(res, curr, 0, 1, arr);
+        return res;
+    }
+
+    static void Main(string[] args) {
+        int[] arr = { 1, 16, 7, 8, 4 };
+        List<int> res = largestSubset(arr);
+
+        foreach (int num in res) {
+            Console.Write(num + " ");
+        }
+    }
+}
+
+// Function to find the largest divisible subset using recursion
+function lds(res, curr, i, prev, arr) {
+
+    // Base case: check if we've reached the end of the array
+    if (i >= arr.length) {
+
+        // Update res if the current subset is larger or
+        // if it's the same size but lexicographically greater
+        if (curr.length > res.length ||
+           (curr.length === res.length && curr.join(',') > res.join(','))) {
+
+            // Replace the contents of res with curr
+            res.splice(0, res.length, ...curr);
+        }
+        return;
+    }
+
+    // Include current element if divisible by previous element
+    if (curr.length === 0 || arr[i] % prev === 0) {
+        curr.push(arr[i]);
+
+        // Recur with the current number included
+        lds(res, curr, i + 1, arr[i], arr);
+
+        // Backtrack to explore other possibilities
+        curr.pop();
+    }
+
+    // Exclude current element and move to the next
+    // Recur without including the current number
+    lds(res, curr, i + 1, prev, arr);
+}
+
+// Main function to find the largest divisible subset
+function largestSubset(arr) {
+
+    // Sort the array in ascending order
+    arr.sort((a, b) => a - b);
+    let res = [];
+    let curr = [];
+
+    // Start the recursive search
+    lds(res, curr, 0, 1, arr);
+    return res;
+}
+
+// Driver Code
+const arr = [1, 16, 7, 8, 4];
+const res = largestSubset(arr);
+
+console.log(res.join(" "));
+
+1 4 8 16
+
+### [Expected Approach 1] Using Top-Down DP(Memoization) - O(n^2) Time and O(n) Space
+
+If we notice carefully, we can observe that the above recursive solution holds the following two properties of Dynamic Programming.
+
+> 1. Optimal Substructure: For an array of integers, the largest divisible subset including the current element can be determined by considering all preceding elements. If arr[i] is divisible by arr[j] (for j < i), then the size of the largest divisible subset that includes arr[i] is: lds(i) = max(1, lds(j) + 1) for all j such that arr[i] % arr[j] = 0 2. Overlapping Subproblems: The recursive approach leads to overlapping subproblems, where many subproblems are computed multiple times. For example, while evaluating the largest subset for arr[i] , results for previously computed arr[j] may be recalculated.
+
+Step by Step Implementation:
+
+- First, sort the array in ascending order to simplify divisibility checks.
+- Use a memo[] array to keep track of the largest subset size at each index and a parent array for backtracking.
+- Set all entries in the memo array to -1, indicating uncomputed values.
+- Loop through the sorted array, calculating the largest divisible subset size by checking previous elements and updating the memo and parent arrays.
+- After determining the largest size, use the parent array to reconstruct the actual subset.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Recursive function to compute the length of the largest divisible
+// subset ending at index i
+int lds(vector<int>& arr, vector<int>& memo, vector<int>& parent, int i) {
+    if (memo[i] != -1) {
+        // Return previously computed result
+        return memo[i];
+    }
+
+    int maxLength = 1;
+    int bestParent = -1;
+
+    // Try including arr[i] in the subset by checking all j < i
+    for (int j = 0; j < i; j++) {
+        if (arr[j] % arr[i] == 0) {
+            int length = lds(arr, memo, parent, j) + 1;
+            if (length > maxLength) {
+                maxLength = length;
+                bestParent = j;
+            }
+        }
+    }
+
+    memo[i] = maxLength;
+    parent[i] = bestParent;
+    return maxLength;
+}
+
+// Main function to find the largest divisible subset
+vector<int> largestSubset(vector<int>& arr) {
+    int n = arr.size();
+
+    // Sort the array in descending order
+    sort(arr.rbegin(), arr.rend());
+
+    vector<int> memo(n, -1);
+    vector<int> parent(n, -1);
+    int maxSize = 0;
+    int lastIndex = 0;
+
+    // Try starting the subset at each index
+    for (int i = 0; i < n; i++) {
+        int size = lds(arr, memo, parent, i);
+        if (size > maxSize) {
+            maxSize = size;
+            lastIndex = i;
+        }
+    }
+
+    // Backtrack to construct the subset
+    vector<int> res;
+    for (int i = lastIndex; i >= 0; i = parent[i]) {
+        res.push_back(arr[i]);
+        if (parent[i] == -1) break;
+    }
+
+    // The result is already in descending order, no need to reverse
+    return res;
+}
+
+int main() {
+    vector<int> arr = {1, 16, 7, 8, 4};
+
+    vector<int> res = largestSubset(arr);
+    for (int num : res) {
+        cout << num << " ";
+    }
+
+    return 0;
+}
+
+import java.util.*;
+
+class GfG {
+
+    // Recursive function to compute the length of the
+    // largest divisible subset ending at index i
+    static int lds(int[] arr, int[] memo, int[] parent, int i) {
+
+        if (memo[i] != -1) {
+            // Return previously computed result
+            return memo[i];
+        }
+
+        int maxLength = 1;
+        int bestParent = -1;
+
+        // Try including arr[i] in the subset by checking all j < i
+        for (int j = 0; j < i; j++) {
+            if (arr[j] % arr[i] == 0) {
+
+                // Condition for divisibility
+                int length = lds(arr, memo, parent, j) + 1;
+                if (length > maxLength) {
+                    maxLength = length;
+                    bestParent = j;
+                }
+            }
+        }
+
+        memo[i] = maxLength;
+        parent[i] = bestParent;
+        return maxLength;
+    }
+
+    // Main function to find the largest divisible subset
+    static ArrayList<Integer> largestSubset(int[] arr) {
+        int n = arr.length;
+
+        // Sort the array in descending order
+        Integer[] boxedArr = Arrays.stream(arr).boxed().
+                                    toArray(Integer[]::new);
+        Arrays.sort(boxedArr, Collections.reverseOrder());
+
+        // Convert back to primitive int array
+        for (int i = 0; i < n; i++) {
+            arr[i] = boxedArr[i];
+        }
+
+        int[] memo = new int[n];
+        int[] parent = new int[n];
+        Arrays.fill(memo, -1);
+        Arrays.fill(parent, -1);
+
+        int maxSize = 0;
+        int lastIndex = 0;
+
+        // Try starting the subset at each index
+        for (int i = 0; i < n; i++) {
+            int size = lds(arr, memo, parent, i);
+            if (size > maxSize) {
+                maxSize = size;
+                lastIndex = i;
+            }
+        }
+
+        // Backtrack to construct the subset
+        ArrayList<Integer> res = new ArrayList<>();
+        for (int i = lastIndex; i >= 0; i = parent[i]) {
+            res.add(arr[i]);
+            if (parent[i] == -1) break;
+        }
+
+        // Since we built from end to start, no need to reverse
+        // (already descending)
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = { 1, 16, 7, 8, 4 };
+
+        ArrayList<Integer> res = largestSubset(arr);
+        for (int num : res) {
+            System.out.print(num + " ");
+        }
+    }
+}
+
+def lds(arr, memo, parent, i):
+    # If this subproblem has already been solved, return the result
+    if memo[i] != -1:
+        return memo[i]
+
+    maxLength = 1
+    bestParent = -1
+
+    # Try to include arr[i] in the subset by checking all j < i
+    for j in range(i):
+        # Adjusted for descending order
+        if arr[j] % arr[i] == 0:
+            length = lds(arr, memo, parent, j) + 1
+            if length > maxLength:
+                maxLength = length
+                bestParent = j
+
+    # Store the result for memoization and backtracking
+    memo[i] = maxLength
+    parent[i] = bestParent
+    return maxLength
+
+# Main function to find the largest divisible subset
+def largestSubset(arr):
+    n = len(arr)
+
+    # Sort in descending order
+    arr.sort(reverse=True)
+
+    # Memoization array
+    memo = [-1] * n
+    # Backtracking parent array
+    parent = [-1] * n
+
+    maxSize = 0
+    lastIndex = 0
+
+    # Try to find the largest subset size for each index
+    for i in range(n):
+        size = lds(arr, memo, parent, i)
+        if size > maxSize:
+            maxSize = size
+            lastIndex = i
+
+    # Backtrack to construct the result
+    res = []
+    while lastIndex != -1:
+        res.append(arr[lastIndex])
+        lastIndex = parent[lastIndex]
+
+    # Already in descending order due to backtracking
+    return res
+
+if __name__ == "__main__":
+    arr = [1, 16, 7, 8, 4]
+    res = largestSubset(arr)
+    print(" ".join(map(str, res)))
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Recursive function to find the largest divisible subset
+    // using memoization
+    static int lds(int[] arr, int[] memo, int[] parent, int i) {
+
+        // If this subproblem has already been solved, return the result
+        if (memo[i] != -1) {
+            return memo[i];
+        }
+
+        int maxLength = 1;
+        int bestParent = -1;
+
+        // Try to include arr[i] in the subset
+        for (int j = 0; j < i; j++) {
+            if (arr[j] % arr[i] == 0) {
+
+                // Adjusted for descending order
+                int length = lds(arr, memo, parent, j) + 1;
+                if (length > maxLength) {
+                    maxLength = length;
+                    bestParent = j;
+                }
+            }
+        }
+
+        // Store the result in memo and parent for backtracking
+        memo[i] = maxLength;
+        parent[i] = bestParent;
+        return maxLength;
+    }
+
+    // Main function to find the largest divisible subset
+    static List<int> largestSubset(int[] arr) {
+        int n = arr.Length;
+
+        // Sort in descending order
+        Array.Sort(arr);
+        Array.Reverse(arr);
+
+        int[] memo = new int[n];
+        int[] parent = new int[n];
+        Array.Fill(memo, -1);
+        Array.Fill(parent, -1);
+
+        // Find the largest subset size
+        int maxSize = 0;
+        int lastIndex = 0;
+
+        for (int i = 0; i < n; i++) {
+            int size = lds(arr, memo, parent, i);
+            if (size > maxSize) {
+                maxSize = size;
+                lastIndex = i;
+            }
+        }
+
+        // Backtrack to construct the subset
+        List<int> res = new List<int>();
+        while (lastIndex != -1) {
+            res.Add(arr[lastIndex]);
+            lastIndex = parent[lastIndex];
+        }
+
+        // Already in descending order
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = { 1, 16, 7, 8, 4 };
+        List<int> res = largestSubset(arr);
+        Console.WriteLine(string.Join(" ", res));
+    }
+}
+
+function lds(arr, memo, parent, i) {
+    // If this subproblem has already been solved,
+    // return the result
+    if (memo[i] !== -1) {
+        return memo[i];
+    }
+
+    let maxLength = 1;
+    let bestParent = -1;
+
+    // Try to include arr[i] in the subset
+    for (let j = 0; j < i; j++) {
+        if (arr[j] % arr[i] === 0) {
+
+            // Adjusted for descending order
+            let length = lds(arr, memo, parent, j) + 1;
+            if (length > maxLength) {
+                maxLength = length;
+                bestParent = j;
+            }
+        }
+    }
+
+    // Store the result in memo and parent
+    memo[i] = maxLength;
+    parent[i] = bestParent;
+    return maxLength;
+}
+
+// Main function to find the largest divisible subset
+function largestSubset(arr) {
+    const n = arr.length;
+
+    // Sort the array in descending order
+    arr.sort((a, b) => b - a);
+
+    const memo = new Array(n).fill(-1);
+    const parent = new Array(n).fill(-1);
+
+    // Find the largest subset size
+    let maxSize = 0;
+    let lastIndex = 0;
+
+    for (let i = 0; i < n; i++) {
+        const size = lds(arr, memo, parent, i);
+        if (size > maxSize) {
+            maxSize = size;
+            lastIndex = i;
+        }
+    }
+
+    // Backtrack to construct the subset
+    const res = [];
+    while (lastIndex !== -1) {
+        res.push(arr[lastIndex]);
+        lastIndex = parent[lastIndex];
+    }
+
+    // Already in descending order
+    return res;
+}
+
+const arr = [1, 16, 7, 8, 4];
+const res = largestSubset(arr);
+console.log(res.join(" "));
+
+1 4 8 16
+
+### [Expected Approach 2] Using Bottom-Up DP (Tabulation) – O(n^2) Time and O(n) Space
+
+The approach utilizes dynamic programming to iteratively build the solution by calculating it in a bottom-up manner. Instead of using recursion, we fill in a table that captures the size of the largest divisible subset for each element in the sorted array.
+
+- A one-dimensional array dp of size n is created to store the size of the largest divisible subset ending at each index, initialized to 1 (each element is a subset of itself).
+- A parent array of size n is also created to keep track of the indices of the preceding elements in the subset, initialized to -1.
+
+For each element arr[i], we look at all previous elements arr[j] (for j < i).
+
+The dynamic programming relation is as follows:
+
+> if (arr[i] % arr[j] == 0) and (dp[i] < dp[j]+1) THEN dp[i] = dp[j] + 1 parent[i] = j
+
+This means if arr[i] is divisible by arr[j] , we update dp[i] to include arr[i] i n the subset, incrementing the count from dp[j] , and set parent[i] to j to keep track of this relationship. During the filling of the dp array, we also maintain maxSize to keep track of the m aximum subset size found so far, along with lastIndex to record the index of the last element in that subset.
+
+Once the dp array is fully populated, we backtrack using the parent array starting from lastIndex to construct the actual largest divisible subset.
+
+Illustration
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Main function to find the largest divisible subset
+vector<int> largestSubset(vector<int> &arr) {
+
+  	int n  = arr.size();
+    sort(arr.rbegin(), arr.rend());
+
+    // Table to store the size of largest subset
+    vector<int> dp(n, 1);
+
+    // To keep track of previous elements
+    vector<int> parent(n, -1);
+
+    // Fill dp table
+    int maxSize = 1;
+    int lastIndex = 0;
+
+    for (int i = 1; i < n; i++) {
+        for (int j = 0; j < i; j++) {
+            if (arr[j] % arr[i] == 0 && dp[i] < dp[j] + 1) {
+                dp[i] = dp[j] + 1;
+                parent[i] = j;
+            }
+        }
+
+        // Update maxSize and lastIndex
+        if (dp[i] > maxSize) {
+            maxSize = dp[i];
+            lastIndex = i;
+        }
+    }
+
+    // Backtrack to construct the subset
+    vector<int> res;
+    for (int i = lastIndex; i >= 0; i = parent[i]) {
+        res.push_back(arr[i]);
+        if (parent[i] == -1)
+            break;
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> arr = {1, 16, 7, 8, 4};
+
+    vector<int> res = largestSubset(arr);
+	for (int num : res) {
+        cout << num << " ";
+    }
+
+    return 0;
+}
+
+import java.util.*;
+
+class GfG {
+
+    // Function to find the largest divisible subset
+    static ArrayList<Integer> largestSubset(int[] arr) {
+
+      	int n = arr.length;
+        Arrays.sort(arr);
+
+        for (int i = 0, j = arr.length - 1; i < j; i++, j--) {
+            int temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+        }
+        // Table to store the size of the
+      	// largest subset
+        int[] dp = new int[n];
+        Arrays.fill(dp, 1);
+
+        // To keep track of previous elements
+        int[] parent = new int[n];
+        Arrays.fill(parent, -1);
+
+        // Variables to track the maximum subset
+        // size and last index
+        int maxSize = 1;
+        int lastIndex = 0;
+
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < i; j++) {
+                if (arr[j] % arr[i] == 0
+                    && dp[i] < dp[j] + 1) {
+                    dp[i] = dp[j] + 1;
+                    parent[i] = j;
+                }
+            }
+
+            // Update maxSize and lastIndex
+            if (dp[i] > maxSize) {
+                maxSize = dp[i];
+                lastIndex = i;
+            }
+        }
+
+        // Backtrack to construct the subset
+        ArrayList<Integer> res = new ArrayList<>();
+        for (int i = lastIndex; i >= 0; i = parent[i]) {
+            res.add(arr[i]);
+            if (parent[i] == -1)
+                break;
+        }
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = { 1, 16, 7, 8, 4 };
+
+        ArrayList<Integer> res = largestSubset(arr);
+        for (int num : res) {
+            System.out.print(num + " ");
+        }
+    }
+}
+
+def largestSubset(arr):
+
+    arr.sort(reverse=True)
+    n = len(arr)
+
+    # Table to store the size of
+    # largest subset
+    dp = [1] * n
+
+    # To keep track of previous elements
+    parent = [-1] * n
+
+    # Fill dp table
+    max_size = 1
+    last_index = 0
+
+    for i in range(1, n):
+        for j in range(i):
+            if arr[j] % arr[i] == 0 and dp[i] < dp[j] + 1:
+                dp[i] = dp[j] + 1
+                parent[i] = j
+
+        # Update max_size and last_index
+        if dp[i] > max_size:
+            max_size = dp[i]
+            last_index = i
+
+    # Backtrack to construct the subset
+    res = []
+    while last_index >= 0:
+        res.append(arr[last_index])
+        last_index = parent[last_index]
+
+    # Reverse the result to get it
+    # in correct order
+    return res
+
+if __name__ == "__main__":
+
+    arr = [1, 16, 7, 8, 4]
+
+    res = largestSubset(arr)
+    for num in res:
+        print(num, end=" ")
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to find the largest divisible subset
+    static List<int> largestSubset(int[] arr) {
+
+        int n = arr.Length;
+
+        // Sort the array in descending order to ensure
+        // lexicographically greater subset
+        Array.Sort(arr, (a, b) => b.CompareTo(a));
+
+        // dp[i] will store the length of the
+        // largest divisible subset ending at index i
+        int[] dp = new int[n];
+        // Each number is a subset of size 1
+        Array.Fill(dp, 1);
+
+        // parent[i] stores the index of the previous element in
+        // the subset ending at i
+        int[] parent = new int[n];
+        // Initialize all parents as -1
+        Array.Fill(parent, -1);
+
+        // To keep track of the size of the largest subset found
+        int maxSize = 1;
+        // To remember the last index of that subset
+        int lastIndex = 0;
+
+        // Build the dp and parent tables
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < i; j++) {
+                // If arr[j] divides arr[i] and it leads to a longer subset
+                if (arr[j] % arr[i] == 0 && dp[i] < dp[j] + 1) {
+                    dp[i] = dp[j] + 1;
+                    parent[i] = j;
+                }
+            }
+
+            // Update the largest subset size and its last index
+            if (dp[i] > maxSize) {
+                maxSize = dp[i];
+                lastIndex = i;
+            }
+        }
+
+        // Backtrack using the parent array to reconstruct the subset
+        List<int> res = new List<int>();
+        for (int i = lastIndex; i >= 0; i = parent[i]) {
+            res.Add(arr[i]);
+            if (parent[i] == -1) break;
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        // Input array
+        int[] arr = { 1, 16, 7, 8, 4 };
+
+        // Compute the largest divisible subset
+        List<int> res = largestSubset(arr);
+
+        // Print the result
+        foreach (int num in res) {
+            Console.Write(num + " ");
+        }
+    }
+}
+
+function largestSubset(arr) {
+
+	let n = arr.length;
+    arr.sort((a, b) => b - a);
+
+    // Table to store the size of largest subset
+    const dp = new Array(n).fill(1);
+
+    // To keep track of previous elements
+    const parent = new Array(n).fill(-1);
+
+    // Fill dp table
+    let maxSize = 1;
+    let lastIndex = 0;
+
+    for (let i = 1; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+            if (arr[j] % arr[i] === 0
+                && dp[i] < dp[j] + 1) {
+                dp[i] = dp[j] + 1;
+                parent[i] = j;
+            }
+        }
+
+        // Update maxSize and lastIndex
+        if (dp[i] > maxSize) {
+            maxSize = dp[i];
+            lastIndex = i;
+        }
+    }
+
+    // Backtrack to construct the subset
+    const res = [];
+    for (let i = lastIndex; i >= 0; i = parent[i]) {
+        res.push(arr[i]);
+        if (parent[i] === -1)
+            break;
+    }
+    return res;
+}
+
+// Driver Code
+const arr = [ 1, 16, 7, 8, 4 ];
+const res = largestSubset(arr);
+console.log(res.join(" "));
+
+1 4 8 16

@@ -1,0 +1,300 @@
+Source: https://www.geeksforgeeks.org/dsa/justify-the-given-text-based-on-the-given-width-of-each-line/
+Title: Text Justification
+
+Given an array of words words[] and a line width l , format the words such that each line has exactly l characters and is fully justified (both left and right).
+
+- Pack as many words as possible into each line greedily.
+- Distribute extra spaces as evenly as possible between words on each line.
+- If spaces cannot be distributed evenly, the left gaps get one more space than the right gaps.
+- The last line is left-justified with a single space between words and trailing spaces to fill the line.
+
+Return a list of strings where each string represents one formatted line.
+
+Examples:
+
+> Input: words[] = ["geeksforgeeks", "is", "the", "best", "computer", "science", "portal", "for", "geeks"], l = 16 Output: ["geeksforgeeks is", "the         best", "computer science", "portal for geeks"] Explanation: "geeksforgeeks is": contains 13 and 2 characters separated by 1 space. "the         best": contains two words and 9 extra spaces. "computer science": contains 8 and 7 characters and 1 extra space. "portal for geeks":  is left-justified with single spaces. Input: words[] = ["geeks", "for", "geeks"], l = 8 Output: ["geeks   ", "for     ", "geeks   "] Explanation: Each line contains a single word, so the remaining positions are filled with trailing spaces.
+
+### Greedy Line Packing with Space Distribution - O(n × l) Time and O(n × l) Space
+
+> Pack as many words as possible into each line greedily, then distribute the remaining spaces mathematically. For a line with k words and g = k-1 gaps, compute spacePerGap = totalSpaces / g and extra = totalSpaces % g - the first extra gaps each get one more space than the rest. The last line is handled separately: single space between words, trailing spaces to fill.
+
+#include <vector>
+#include <string>
+#include <iostream>
+using namespace std;
+
+vector<string> justifyText(vector<string>& words, int l) {
+    vector<string> result;
+    int i = 0, n = words.size();
+    while (i < n) {
+
+        // Greedily pack words into the current line
+        int lineLen = words[i].size();
+        int j = i + 1;
+        while (j < n && lineLen + 1 + (int)words[j].size() <= l) {
+            lineLen += 1 + words[j].size();
+            j++;
+        }
+        int numWords = j - i;
+        int totalChars = 0;
+        for (int k = i; k < j; k++) totalChars += words[k].size();
+        int numSpaces = l - totalChars;
+        string line = "";
+
+        // Last line or single word: left justify with trailing spaces
+        if (j == n || numWords == 1) {
+            for (int k = i; k < j; k++) {
+                if (k > i) line += " ";
+                line += words[k];
+            }
+            line += string(l - line.size(), ' ');
+        } else {
+
+            // Distribute spaces evenly, left gaps get extra if uneven
+            int gaps = numWords - 1;
+            int spacePerGap = numSpaces / gaps;
+            int extra = numSpaces % gaps;
+            for (int k = i; k < j - 1; k++) {
+                line += words[k];
+                line += string(spacePerGap + (k - i < extra ? 1 : 0), ' ');
+            }
+            line += words[j - 1];
+        }
+        result.push_back(line);
+        i = j;
+    }
+    return result;
+}
+
+int main() {
+    vector<string> words = {"geeksforgeeks", "is", "the", "best", "computer",
+                            "science", "portal", "for", "geeks"};
+    int l = 16;
+    vector<string> ans = justifyText(words, l);
+    cout << "[";
+    for (int i = 0; i < ans.size(); i++) {
+        cout << "\"" << ans[i] << "\"";
+        if (i != ans.size() - 1) cout << ", ";
+    }
+    cout << "]" << endl;
+    return 0;
+}
+
+import java.util.ArrayList;
+
+class GFG {
+    static ArrayList<String> justifyText(String[] words, int l) {
+        ArrayList<String> result = new ArrayList<>();
+        int i = 0, n = words.length;
+        while (i < n) {
+
+            // Greedily pack words into the current line
+            int lineLen = words[i].length();
+            int j = i + 1;
+            while (j < n && lineLen + 1 + words[j].length() <= l) {
+                lineLen += 1 + words[j].length();
+                j++;
+            }
+            int numWords = j - i;
+            int totalChars = 0;
+            for (int k = i; k < j; k++) totalChars += words[k].length();
+            int numSpaces = l - totalChars;
+            StringBuilder line = new StringBuilder();
+
+            // Last line or single word: left justify with trailing spaces
+            if (j == n || numWords == 1) {
+                for (int k = i; k < j; k++) {
+                    if (k > i) line.append(" ");
+                    line.append(words[k]);
+                }
+                while (line.length() < l) line.append(" ");
+            } else {
+
+                // Distribute spaces evenly, left gaps get extra if uneven
+                int gaps = numWords - 1;
+                int spacePerGap = numSpaces / gaps;
+                int extra = numSpaces % gaps;
+                for (int k = i; k < j - 1; k++) {
+                    line.append(words[k]);
+                    int sp = spacePerGap + (k - i < extra ? 1 : 0);
+                    for (int s = 0; s < sp; s++) line.append(" ");
+                }
+                line.append(words[j - 1]);
+            }
+            result.add(line.toString());
+            i = j;
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        String[] words = {"geeksforgeeks", "is", "the", "best", "computer",
+                          "science", "portal", "for", "geeks"};
+        int l = 16;
+        ArrayList<String> ans = justifyText(words, l);
+        System.out.print("[");
+        for (int i = 0; i < ans.size(); i++) {
+            System.out.print("\"" + ans.get(i) + "\"");
+            if (i!= ans.size() - 1) System.out.print(", ");
+        }
+        System.out.println("]");
+    }
+}
+
+def justifyText(words, l):
+    result = []
+    i = 0
+    n = len(words)
+    while i < n:
+
+        # Greedily pack words into the current line
+        lineLen = len(words[i])
+        j = i + 1
+        while j < n and lineLen + 1 + len(words[j]) <= l:
+            lineLen += 1 + len(words[j])
+            j += 1
+        numWords = j - i
+        totalChars = sum(len(words[k]) for k in range(i, j))
+        numSpaces = l - totalChars
+        line = ""
+
+        # Last line or single word: left justify with trailing spaces
+        if j == n or numWords == 1:
+            line = " ".join(words[i:j])
+            line += " " * (l - len(line))
+        else:
+
+            # Distribute spaces evenly, left gaps get extra if uneven
+            gaps = numWords - 1
+            spacePerGap = numSpaces // gaps
+            extra = numSpaces % gaps
+            for k in range(i, j - 1):
+                line += words[k]
+                line += " " * (spacePerGap + (1 if k - i < extra else 0))
+            line += words[j - 1]
+        result.append(line)
+        i = j
+    return result
+
+if __name__ == "__main__":
+    words = ["geeksforgeeks", "is", "the", "best", "computer",
+             "science", "portal", "for", "geeks"]
+    l = 16
+    ans = justifyText(words, l)
+    print("[" + ", ".join("\"" + s + "\"" for s in ans) + "]")
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+class GFG {
+    static List<string> justifyText(string[] words, int l) {
+        List<string> result = new List<string>();
+        int i = 0, n = words.Length;
+        while (i < n) {
+
+            // Greedily pack words into the current line
+            int lineLen = words[i].Length;
+            int j = i + 1;
+            while (j < n && lineLen + 1 + words[j].Length <= l) {
+                lineLen += 1 + words[j].Length;
+                j++;
+            }
+            int numWords = j - i;
+            int totalChars = 0;
+            for (int k = i; k < j; k++) totalChars += words[k].Length;
+            int numSpaces = l - totalChars;
+            StringBuilder line = new StringBuilder();
+
+            // Last line or single word: left justify with trailing spaces
+            if (j == n || numWords == 1) {
+                for (int k = i; k < j; k++) {
+                    if (k > i) line.Append(" ");
+                    line.Append(words[k]);
+                }
+                while (line.Length < l) line.Append(" ");
+            } else {
+
+                // Distribute spaces evenly, left gaps get extra if uneven
+                int gaps = numWords - 1;
+                int spacePerGap = numSpaces / gaps;
+                int extra = numSpaces % gaps;
+                for (int k = i; k < j - 1; k++) {
+                    line.Append(words[k]);
+                    int sp = spacePerGap + (k - i < extra ? 1 : 0);
+                    for (int s = 0; s < sp; s++) line.Append(" ");
+                }
+                line.Append(words[j - 1]);
+            }
+            result.Add(line.ToString());
+            i = j;
+        }
+        return result;
+    }
+
+    static void Main() {
+        string[] words = {"geeksforgeeks", "is", "the", "best", "computer",
+                          "science", "portal", "for", "geeks"};
+        int l = 16;
+        List<string> ans = justifyText(words, l);
+        Console.Write("[");
+        for (int i = 0; i < ans.Count; i++) {
+            Console.Write("\"" + ans[i] + "\"");
+            if (i != ans.Count - 1) Console.Write(", ");
+        }
+        Console.WriteLine("]");
+    }
+}
+
+function justifyText(words, l) {
+    let result = [];
+    let i = 0, n = words.length;
+    while (i < n) {
+
+        // Greedily pack words into the current line
+        let lineLen = words[i].length;
+        let j = i + 1;
+        while (j < n && lineLen + 1 + words[j].length <= l) {
+            lineLen += 1 + words[j].length;
+            j++;
+        }
+        let numWords = j - i;
+        let totalChars = 0;
+        for (let k = i; k < j; k++) totalChars += words[k].length;
+        let numSpaces = l - totalChars;
+        let line = "";
+
+        // Last line or single word: left justify with trailing spaces
+        if (j === n || numWords === 1) {
+            for (let k = i; k < j; k++) {
+                if (k > i) line += " ";
+                line += words[k];
+            }
+            while (line.length < l) line += " ";
+        } else {
+
+            // Distribute spaces evenly, left gaps get extra if uneven
+            let gaps = numWords - 1;
+            let spacePerGap = Math.floor(numSpaces / gaps);
+            let extra = numSpaces % gaps;
+            for (let k = i; k < j - 1; k++) {
+                line += words[k];
+                let sp = spacePerGap + (k - i < extra ? 1 : 0);
+                for (let s = 0; s < sp; s++) line += " ";
+            }
+            line += words[j - 1];
+        }
+        result.push(line);
+        i = j;
+    }
+    return result;
+}
+
+// driver code
+let words = ["geeksforgeeks", "is", "the", "best", "computer",
+             "science", "portal", "for", "geeks"];
+let l = 16;
+let ans = justifyText(words, l);
+console.log("[" + ans.map(s => "\"" + s + "\"").join(", ") + "]");
+
+["geeksforgeeks is", "the         best", "computer science", "portal for geeks"]

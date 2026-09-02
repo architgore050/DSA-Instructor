@@ -1,0 +1,470 @@
+Source: https://www.geeksforgeeks.org/dsa/job-sequencing-problem-using-disjoint-set/
+Title: Job Sequencing Problem using Disjoint Set
+
+Given three arrays id[] , deadline[] , profit[] , where each job i is associated with id[i], deadline[i], and profit[i]. Each job takes 1 unit of time to complete, and only one job can be scheduled at a time. You will earn the profit associated with a job only if it is completed by its deadline. The task is to find the maximum profit that can be gained by completing the jobs and the count of jobs completed to earn the maximum profit.
+
+Examples:
+
+> Input: id[] = [1, 2, 3, 4] deadline[] = [4, 1, 1, 1] profit[] = [20, 10, 40, 30] Output: 2 60 Explanation: All jobs other than the first job have a deadline of 1, thus only one of these and the first job can be completed, with the total profit gain of 20 + 40 = 60. Input: id[] = [1, 2, 3, 4, 5] deadline[] = [2, 1, 2, 1, 1] profit[] = [100, 19, 27, 25, 15] Output: 2 127 Explanation: The first and third job have a deadline of 2, thus both of them can be completed and other jobs have a deadline of 1, thus any one of them can be completed. Both the jobs with a deadline of 2 is having the maximum associated profit, so these two will be completed, with the total profit gain of 100 + 27 = 127.
+
+A greedy solution of time complexity O(n Log n) is already discussed. Below is the simple Greedy Algorithm.
+
+1. Sort all jobs in decreasing order of profit.
+2. Initialize the result sequence as first job in sorted jobs.
+3. Do following for remaining n-1 jobs If  the current job can fit in the current result sequence without missing  the deadline, add current job to the result. Else ignore the current  job.
+
+The costly operation  in the Greedy solution is to assign a free slot for a job. We were  traversing each and every slot for a job and assigning the greatest  possible time slot(<deadline) which was available. What does greatest time slot means? Suppose  that a job J1 has a deadline of time t = 5. We assign the greatest time  slot which is free and less than the deadline i.e 4-5 for this job. Now  another job J2 with deadline of 5 comes in, so the time slot allotted  will be 3-4 since 4-5 has already been allotted to job J1. Why to assign greatest time slot(free) to a job? Now  we assign the greatest possible time slot since if we assign a time  slot even lesser than the available one then there might be some other  job which will miss its deadline.
+
+Example: J1 with deadline d1 = 5, profit 40 J2 with deadline d2 = 1, profit 20 Suppose  that for job J1 we assigned time slot of 0-1. Now job J2 cannot be  performed since we will perform Job J1 during that time slot. Using Disjoint Set for Job Sequencing All  time slots are individual sets initially. We first find the maximum  deadline of all jobs. Let the max deadline be m. We create m+1  individual sets. If a job is assigned a time slot of t where t >= 0,  then the job is scheduled during [t-1, t]. So a set with value X  represents the time slot [X-1, X]. We need to keep  track of the greatest time slot available which can be allotted to a  given job having deadline. We use the parent array of Disjoint Set Data  structures for this purpose. The root of the tree is always the latest  available slot. If for a deadline d, there is no slot available, then  root would
+
+Below are the detailed steps.
+
+- The idea is to Disjoint Sets and create individual set for all available time slots.
+- First find the maximum deadline of all the jobs, let's call it b. Now create a disjoint set with d + 1 nodes, where each set is independent of other.
+- Sort the jobs based on profit associated in descending order.
+- Start with the first job, and for each job find the available slot which is closest to its deadline . Occupy the available slot and merge the slot with slot-1, by assigning slot-1 as parent of slot. If slot value is 0, it means no slot is available, so move to the next job.
+- At last find the sum of all the jobs with allocated slots.
+
+How come find() of disjoint set returns the latest available time slot? Initially,  all time slots are individual slots. So the time slot returned is  always maximum. When we assign a time slot ‘t’ to a job, we do union of  ‘t’ with ‘t-1’ in a way that ‘t-1’ becomes the parent of ‘t’. To do this  we call union(t-1, t). This means that all future queries for time slot  t would now return the latest time slot available for set represented  by t-1.
+
+// C++ program to solve job sequencing
+// problem with maximum profit
+#include<bits/stdc++.h>
+using namespace std;
+
+// Disjoint Set Data Structure
+class DisjointSet {
+public:
+    vector<int> parent;
+
+    // Constructor
+    DisjointSet(int n) {
+        parent.resize(n+1);
+
+        // Every node is a parent of itself
+        for (int i = 0; i <= n; i++)
+            parent[i] = i;
+    }
+
+    // Path Compression
+    int find(int s) {
+
+        // Make the parent of the nodes in the path
+        //   from u--> parent[u] point to parent[u]
+        if (s == parent[s])
+            return s;
+        return parent[s] = find(parent[s]);
+    }
+
+    // Makes u as parent of v.
+    void merge(int u, int v){
+
+        //update the greatest available
+        //free slot to u
+        parent[v] = u;
+    }
+};
+
+bool comp(pair<int, int> a, pair<int, int> b) {
+    return a.first > b.first;
+}
+
+vector<int> jobSequencing(vector<int> &id,
+        vector<int> &deadline, vector<int> &profit) {
+    int n = id.size();
+    vector<int> ans = {0, 0};
+
+    // pair the profit and deadline of
+    // all the jos together
+    vector<pair<int, int>> jobs;
+    for (int i = 0; i < n; i++) {
+        jobs.push_back({profit[i], deadline[i]});
+    }
+
+    // sort the jobs based on profit
+    // in descending order
+    sort(jobs.begin(), jobs.end(), comp);
+
+    // Find maximum deadline
+    int d = INT_MIN;
+    for(int i = 0; i<n; i++) {
+        d = max(d, deadline[i]);
+    }
+
+    // create a disjoint set of d nodes
+    DisjointSet ds(d);
+
+    // Traverse through all the jobs
+    for (int i = 0; i < n; i++) {
+
+        // Find the maximum available free slot for
+        // this job (corresponding to its deadline)
+        int slots = ds.find(jobs[i].second);
+
+        // If maximum available free slot is greater
+        // than 0, then free slot available
+        if (slots > 0) {
+
+            // update greatest free slot.
+            ds.merge(ds.find(slots - 1), slots);
+
+            // update answer
+            ans[1] += jobs[i].first;
+            ans[0]++;
+        }
+    }
+
+    return ans;
+}
+
+int main() {
+    vector<int> id = {1, 2, 3, 4, 5};
+    vector<int> deadline = {2, 1, 2, 1, 1};
+    vector<int> profit = {100, 19, 27, 25, 15};
+    vector<int> ans = jobSequencing(id, deadline, profit);
+    cout<<ans[0]<<" "<<ans[1];
+    return 0;
+}
+
+// Java program to solve job sequencing
+// problem with maximum profit
+import java.util.*;
+
+class GfG {
+
+    // Disjoint Set Data Structure
+    static class DisjointSet {
+        int[] parent;
+
+        // Constructor
+        DisjointSet(int n) {
+            parent = new int[n + 1];
+            // Every node is a parent of itself
+            for (int i = 0; i <= n; i++)
+                parent[i] = i;
+        }
+
+        // Path Compression
+        int find(int s) {
+
+            // Make the parent of the nodes in the path
+            //   from u--> parent[u] point to parent[u]
+            if (s == parent[s])
+                return s;
+            return parent[s] = find(parent[s]);
+        }
+
+        // Makes u as parent of v.
+        void merge(int u, int v) {
+
+            // update the greatest available
+            // free slot to u
+            parent[v] = u;
+        }
+    }
+
+    static boolean comp(Pair a, Pair b) {
+        return a.first > b.first;
+    }
+
+    static ArrayList<Integer> jobSequencing(int[] id,
+                             int[] deadline, int[] profit) {
+        int n = id.length;
+        ArrayList<Integer> ans =
+          new ArrayList<>(Arrays.asList(0, 0));
+
+        // pair the profit and deadline of
+        // all the jobs together
+        ArrayList<Pair> jobs = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            jobs.add(new Pair(profit[i], deadline[i]));
+        }
+
+        // sort the jobs based on profit
+        // in descending order
+        jobs.sort((a, b) -> b.first - a.first);
+
+        // Find maximum deadline
+        int d = Integer.MIN_VALUE;
+        for (int i = 0; i < n; i++) {
+            d = Math.max(d, deadline[i]);
+        }
+
+        // create a disjoint set of d nodes
+        DisjointSet ds = new DisjointSet(d);
+
+        // Traverse through all the jobs
+        for (int i = 0; i < n; i++) {
+
+            // Find the maximum available free slot for
+            // this job (corresponding to its deadline)
+            int slots = ds.find(jobs.get(i).second);
+
+            // If maximum available free slot is greater
+            // than 0, then free slot available
+            if (slots > 0) {
+
+                // update greatest free slot.
+                ds.merge(ds.find(slots - 1), slots);
+
+                // update answer
+                ans.set(1, ans.get(1) + jobs.get(i).first);
+                ans.set(0, ans.get(0) + 1);
+            }
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int[] id = {1, 2, 3, 4, 5};
+        int[] deadline = {2, 1, 2, 1, 1};
+        int[] profit = {100, 19, 27, 25, 15};
+        ArrayList<Integer> ans = jobSequencing(id, deadline, profit);
+        System.out.println(ans.get(0) + " " + ans.get(1));
+    }
+}
+
+class Pair {
+    int first, second;
+
+    Pair(int first, int second) {
+        this.first = first;
+        this.second = second;
+    }
+}
+
+# Python program to solve job sequencing
+# problem with maximum profit
+
+class DisjointSet:
+    # Constructor
+    def __init__(self, n):
+        self.parent = list(range(n + 1))
+
+    # Path Compression
+    def find(self, s):
+        # Make the parent of the nodes in the path
+        #   from u--> parent[u] point to parent[u]
+        if s == self.parent[s]:
+            return s
+        self.parent[s] = self.find(self.parent[s])
+        return self.parent[s]
+
+    # Makes u as parent of v.
+    def merge(self, u, v):
+        # update the greatest available
+        # free slot to u
+        self.parent[v] = u
+
+def jobSequencing(id, deadline, profit):
+    n = len(id)
+    ans = [0, 0]
+
+    # pair the profit and deadline of
+    # all the jobs together
+    jobs = [(profit[i], deadline[i]) for i in range(n)]
+
+    # sort the jobs based on profit
+    # in descending order
+    jobs.sort(reverse=True)
+
+    # Find maximum deadline
+    d = max(deadline)
+
+    # create a disjoint set of d nodes
+    ds = DisjointSet(d)
+
+    # Traverse through all the jobs
+    for i in range(n):
+
+        # Find the maximum available free slot for
+        # this job (corresponding to its deadline)
+        slots = ds.find(jobs[i][1])
+
+        # If maximum available free slot is greater
+        # than 0, then free slot available
+        if slots > 0:
+
+            # update greatest free slot.
+            ds.merge(ds.find(slots - 1), slots)
+
+            # update answer
+            ans[1] += jobs[i][0]
+            ans[0] += 1
+
+    return ans
+
+if __name__ == "__main__":
+    id = [1, 2, 3, 4, 5]
+    deadline = [2, 1, 2, 1, 1]
+    profit = [100, 19, 27, 25, 15]
+    ans = jobSequencing(id, deadline, profit)
+    print(ans[0], ans[1])
+
+// C# program to solve job sequencing
+// problem with maximum profit
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Disjoint Set Data Structure
+    public class DisjointSet {
+        public int[] parent;
+
+        // Constructor
+        public DisjointSet(int n) {
+            parent = new int[n + 1];
+            // Every node is a parent of itself
+            for (int i = 0; i <= n; i++)
+                parent[i] = i;
+        }
+
+        // Path Compression
+        public int find(int s) {
+
+            // Make the parent of the nodes in the path
+            //   from u--> parent[u] point to parent[u]
+            if (s == parent[s])
+                return s;
+            return parent[s] = find(parent[s]);
+        }
+
+        // Makes u as parent of v.
+        public void merge(int u, int v) {
+
+            // update the greatest available
+            // free slot to u
+            parent[v] = u;
+        }
+    }
+
+    public static List<int> jobSequencing(int[] id, int[] deadline, int[] profit) {
+        int n = id.Length;
+        List<int> ans = new List<int> { 0, 0 };
+
+        // pair the profit and deadline of
+        // all the jobs together
+        List<(int, int)> jobs = new List<(int, int)>();
+        for (int i = 0; i < n; i++) {
+            jobs.Add((profit[i], deadline[i]));
+        }
+
+        // sort the jobs based on profit
+        // in descending order
+        jobs.Sort((a, b) => b.Item1.CompareTo(a.Item1));
+
+        // Find maximum deadline
+        int d = int.MinValue;
+        for (int i = 0; i < n; i++) {
+            d = Math.Max(d, deadline[i]);
+        }
+
+        // create a disjoint set of d nodes
+        DisjointSet ds = new DisjointSet(d);
+
+        // Traverse through all the jobs
+        for (int i = 0; i < n; i++) {
+
+            // Find the maximum available free slot for
+            // this job (corresponding to its deadline)
+            int slots = ds.find(jobs[i].Item2);
+
+            // If maximum available free slot is greater
+            // than 0, then free slot available
+            if (slots > 0) {
+
+                // update greatest free slot.
+                ds.merge(ds.find(slots - 1), slots);
+
+                // update answer
+                ans[1] += jobs[i].Item1;
+                ans[0]++;
+            }
+        }
+
+        return ans;
+    }
+
+    public static void Main() {
+        int[] id = { 1, 2, 3, 4, 5 };
+        int[] deadline = { 2, 1, 2, 1, 1 };
+        int[] profit = { 100, 19, 27, 25, 15 };
+        List<int> ans = jobSequencing(id, deadline, profit);
+        Console.WriteLine(ans[0] + " " + ans[1]);
+    }
+}
+
+// JavaScript program to solve job sequencing
+// problem with maximum profit
+
+class DisjointSet {
+    constructor(n) {
+        this.parent = Array.from({ length: n + 1 }, (_, i) => i);
+    }
+
+    // Path Compression
+    find(s) {
+        // Make the parent of the nodes in the path
+        //   from u--> parent[u] point to parent[u]
+        if (s === this.parent[s]) return s;
+        return (this.parent[s] = this.find(this.parent[s]));
+    }
+
+    // Makes u as parent of v.
+    merge(u, v) {
+        // update the greatest available
+        // free slot to u
+        this.parent[v] = u;
+    }
+}
+
+function jobSequencing(id, deadline, profit) {
+    const n = id.length;
+    const ans = [0, 0];
+
+    // pair the profit and deadline of
+    // all the jobs together
+    const jobs = profit.map((p, i) => [p, deadline[i]]);
+
+    // sort the jobs based on profit
+    // in descending order
+    jobs.sort((a, b) => b[0] - a[0]);
+
+    // Find maximum deadline
+    let d = Math.max(...deadline);
+
+    // create a disjoint set of d nodes
+    const ds = new DisjointSet(d);
+
+    // Traverse through all the jobs
+    for (let i = 0; i < n; i++) {
+        // Find the maximum available free slot for
+        // this job (corresponding to its deadline)
+        let slots = ds.find(jobs[i][1]);
+
+        // If maximum available free slot is greater
+        // than 0, then free slot available
+        if (slots > 0) {
+            // update greatest free slot.
+            ds.merge(ds.find(slots - 1), slots);
+
+            // update answer
+            ans[1] += jobs[i][0];
+            ans[0]++;
+        }
+    }
+
+    return ans;
+}
+
+const id = [1, 2, 3, 4, 5];
+const deadline = [2, 1, 2, 1, 1];
+const profit = [100, 19, 27, 25, 15];
+const ans = jobSequencing(id, deadline, profit);
+console.log(ans[0], ans[1]);
+
+2 127
+
+Time Complexity: O(n * log(d)), where d is the maximum deadline of all the jobs. Auxiliary Space: O(d)

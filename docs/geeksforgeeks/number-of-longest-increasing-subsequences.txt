@@ -1,0 +1,953 @@
+Source: https://www.geeksforgeeks.org/dsa/number-of-longest-increasing-subsequences/
+Title: Number of Longest Increasing Subsequences
+
+Given an array arr[] of size n , the task is to count the number of longest increasing subsequences present in the given array.
+
+Examples:
+
+> Input: arr[] = [2, 2, 2, 2, 2] Output: 5 Explanation: The length of the longest increasing subsequence is 1, i.e. {2}. Therefore, count of longest increasing subsequences of length 1 is 5. Input: arr[] = [1, 3, 5, 4, 7] Output: 2 Explanation: The length of the longest increasing subsequence is 4, and there are 2 longest increasing subsequences of length 4, i.e. {1, 3, 4, 7} and {1, 3, 5, 7}.
+
+Table of Content
+
+- Using Recursion - O(n*2^n) Time and O(n) Space
+- Using Bottom-Up DP (Tabulation) – O(n*n) Time and O(n) Space
+- Segment Tree Approach- O(n*logn) Time and O(n) Space
+
+### Using Recursion - O(n*2^n) Time and O(n) Space
+
+The simplest approach is to generate all possible subsequences present in the given array arr[] and count the increasing subsequences of maximum length. Print the count after checking all subsequences.
+
+### Using Bottom-Up DP (Tabulation) – O(n*n) Time and O(n) Space
+
+The idea is to modify the Longest Increasing Subsequence DP approach . We add an array count[] along with the lis[] array to store counts of LIS's ending with every index and we finally return the sum of all counts having longest LIS.If we notice carefully, we can observe that the above recursive solution holds the following two properties of Dynamic Programming :
+
+> Optimal Substructure: For each element arr[i] , to determine the LIS length ending at i, we look at all previous elements arr[j] where j < i and arr[j] < arr[i] . If including arr[i] extends the LIS ending at arr[j], then lis[i] = lis[j] + 1. Additionally, we maintain a count[] array, where count[i] holds the number of LIS's ending at index i. If lis[i] extends the LIS length ending at arr[j] , we add the count of subsequences ending at arr[j] to count[i]. At the end, the LIS length will be the maximum value in the lis[] array, and the total number of such subsequences is the sum of count[i] for all indices where lis[i] is equal to this maximum length. Overlapping Subproblems : By building lis[] and count[] iteratively, we avoid recomputing the LIS and count for previously processed indices, which would occur in a recursive approach. This dynamic programming approach efficiently reuses previously computed solutions, making it optimal for overlapping subproblems. Recurrence Relation: For each pair of indices i and j where j < i and arr[j] < arr[i]: 1. if lis[j] +  1 > lis[i]: lis[i] = lis[j] +1 count[i] = count[j] 2. if lis[j] +1 = lis[i]: count[i] += count[j] Base Cases: For each element i in array: lis[i] = 1, count[i] = 1, these indicate that each element alone can be an increasing subsequence of length 1 with count 1.
+
+// c++ program to count the number of
+// longest increasing subsequences (LIS)
+// in the array using tabulation
+
+#include <iostream>
+#include <vector>
+using namespace std;
+int numberofLIS(vector<int> &arr) {
+
+    int n = arr.size();
+
+    // Vector to store the length of the
+    // LIS ending at each element
+    vector<int> lis(n, 1);
+
+    // Vector to store the number of LIS
+    // of that length ending at each element
+    vector<int> count(n, 1);
+
+    // Variable to track the length of
+    // the longest LIS found
+    int maxLen = 1;
+
+    for (int i = 1; i < n; i++) {
+        for (int prev = 0; prev < i; prev++) {
+            if (arr[i] > arr[prev]) {
+
+                // If a longer subsequence is found,
+                // update the lis and reset the count
+                if (lis[i] < lis[prev] + 1) {
+                    lis[i] = lis[prev] + 1;
+                    count[i] = count[prev];
+                }
+
+                // If another subsequence of the
+                // same length is found, add to the count
+                else if (lis[i] == lis[prev] + 1)
+                    count[i] += count[prev];
+            }
+        }
+        maxLen = max(maxLen, lis[i]);
+    }
+
+    // Sum up counts of subsequences that
+    // have the maximum length
+    int res = 0;
+    for (int i = 0; i < n; i++) {
+        if (lis[i] == maxLen) {
+            res += count[i];
+        }
+    }
+
+    return res;
+}
+
+int main() {
+
+    vector<int> arr = {10, 10, 10, 10};
+    int res = numberofLIS(arr);
+    cout << res << endl;
+    return 0;
+}
+
+// java program to count the number of
+// longest increasing subsequences (LIS)
+// in the array using tabulation
+
+import java.util.*;
+class GfG {
+    static int numberofLIS(int[] arr) {
+        int n = arr.length;
+
+        // Array to store the length of the
+        // LIS ending at each element
+        int[] lis = new int[n];
+
+        // Array to store the number of LIS
+        // of that length ending at each element
+        int[] count = new int[n];
+
+        // Initialize LIS and count arrays
+        Arrays.fill(lis, 1);
+        Arrays.fill(count, 1);
+
+        // Variable to track the length of
+        // the longest LIS found
+        int maxLen = 1;
+
+        for (int i = 1; i < n; i++) {
+            for (int prev = 0; prev < i; prev++) {
+                if (arr[i] > arr[prev]) {
+
+                    // If a longer subsequence is found,
+                    // update the lis and reset the count
+                    if (lis[i] < lis[prev] + 1) {
+                        lis[i] = lis[prev] + 1;
+                        count[i] = count[prev];
+                    }
+
+                    // If another subsequence of the
+                    // same length is found, add to the
+                    // count
+                    else if (lis[i] == lis[prev] + 1) {
+                        count[i] += count[prev];
+                    }
+                }
+            }
+            if (lis[i] > maxLen) {
+                maxLen = lis[i];
+            }
+        }
+
+        // Sum up counts of subsequences that
+        // have the maximum length
+        int res = 0;
+        for (int i = 0; i < n; i++) {
+            if (lis[i] == maxLen) {
+                res += count[i];
+            }
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = { 10, 10, 10, 10 };
+        int res = numberofLIS(arr);
+        System.out.println(res);
+    }
+}
+
+# Python program to count the number of
+# longest increasing subsequences (LIS)
+# in the array using tabulation
+
+def numberofLIS(arr):
+    n = len(arr)
+    lis = [1] * n
+
+    # List to store the number of LIS
+    # of that length ending at each element
+    count = [1] * n
+
+    # Variable to track the length of
+    # the longest LIS found
+    max_len = 1
+
+    for i in range(1, n):
+        for prev in range(i):
+            if arr[i] > arr[prev]:
+
+                # If a longer subsequence is found,
+                # update the lis and reset the count
+                if lis[i] < lis[prev] + 1:
+                    lis[i] = lis[prev] + 1
+                    count[i] = count[prev]
+
+                # If another subsequence of the
+                # same length is found, add to the count
+                elif lis[i] == lis[prev] + 1:
+                    count[i] += count[prev]
+
+        max_len = max(max_len, lis[i])
+
+    # Sum up counts of subsequences that
+    # have the maximum length
+    res = sum(count[i] for i in range(n) if lis[i] == max_len)
+
+    return res
+
+arr = [10, 10, 10, 10]
+print(numberofLIS(arr))
+
+// c# program to count the number of
+// longest increasing subsequences (LIS)
+// in the array using tabulation
+
+using System;
+class GfG {
+    static int numberofLIS(int[] arr) {
+        int n = arr.Length;
+
+        // Array to store the length of the
+        // LIS ending at each element
+        int[] lis = new int[n];
+
+        // Array to store the number of LIS
+        // of that length ending at each element
+        int[] count = new int[n];
+
+        // Initialize LIS and count arrays
+        for (int i = 0; i < n; i++) {
+            lis[i] = 1;
+            count[i] = 1;
+        }
+
+        // Variable to track the length of
+        // the longest LIS found
+        int maxLen = 1;
+        for (int i = 1; i < n; i++) {
+            for (int prev = 0; prev < i; prev++) {
+                if (arr[i] > arr[prev]) {
+
+                    // If a longer subsequence is found,
+                    // update the lis and reset the count
+                    if (lis[i] < lis[prev] + 1) {
+                        lis[i] = lis[prev] + 1;
+                        count[i] = count[prev];
+                    }
+
+                    // If another subsequence of the
+                    // same length is found, add to the
+                    // count
+                    else if (lis[i] == lis[prev] + 1) {
+                        count[i] += count[prev];
+                    }
+                }
+            }
+            if (lis[i] > maxLen) {
+                maxLen = lis[i];
+            }
+        }
+
+        // Sum up counts of subsequences that
+        // have the maximum length
+        int res = 0;
+        for (int i = 0; i < n; i++) {
+            if (lis[i] == maxLen) {
+                res += count[i];
+            }
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = { 10, 10, 10, 10 };
+        int res = numberofLIS(arr);
+        Console.WriteLine(res);
+    }
+}
+
+// Javascript program to count the number of
+// longest increasing subsequences (LIS)
+// in the array using tabulation
+
+function numberofLIS(arr) {
+
+    let n = arr.length;
+
+    // Array to store the length of the
+    // LIS ending at each element
+    const lis = new Array(n).fill(1);
+
+    // Array to store the number of LIS
+    // of that length ending at each element
+    const count = new Array(n).fill(1);
+
+    // Variable to track the length of
+    // the longest LIS found
+    let maxLen = 1;
+
+    for (let i = 1; i < n; i++) {
+        for (let prev = 0; prev < i; prev++) {
+            if (arr[i] > arr[prev]) {
+
+                // If a longer subsequence is found,
+                // update the lis and reset the count
+                if (lis[i] < lis[prev] + 1) {
+                    lis[i] = lis[prev] + 1;
+                    count[i] = count[prev];
+                }
+
+                // If another subsequence of the
+                // same length is found, add to the count
+                else if (lis[i] === lis[prev] + 1) {
+                    count[i] += count[prev];
+                }
+            }
+        }
+        if (lis[i] > maxLen) {
+            maxLen = lis[i];
+        }
+    }
+
+    // Sum up counts of subsequences that
+    // have the maximum length
+    let res = 0;
+    for (let i = 0; i < n; i++) {
+        if (lis[i] === maxLen) {
+            res += count[i];
+        }
+    }
+
+    return res;
+}
+
+const arr = [ 10, 10, 10, 10 ];
+let res = numberofLIS(arr);
+console.log(res);
+
+4
+
+### Segment Tree Approach- O(n*logn) Time and O(n) Space
+
+We can solve this problem using segment trees . The idea is to build a segment tree and then querying for the range [0,arr[i]-1] . The reason is arr[i] can be appended to any number which is less than it to make a increasing subsequence.
+
+For example if arr[i]=5, arr[i] can append after 0,1,2,3,4 to make increasing subsequence. This logic is what we will try to implement using a segment Tree. We will have a segment tree having nodes containing a pair . The pair contains the LIS length, ways ending at node . Our result would be at the root of the tree.
+
+We make the segment Tree using the maximum value in the array. If it is too large, then we need to step it down using RANKING method . For example, {9,1,4,2} and {3,0,2,1} have the same LIS counts. It is because if you observe, the ordering is the same. We can exploit this idea to minimize the space requirement in our segment Tree to just O(4*n), where n is the size of the array.
+
+> Let us briefly go over the implementation of ranking arrangement. Given an array arr = [1, 9, 100, 2, 2], we want to replace each element with its rank based on its position in the sorted list of unique values. Sort Unique Values : First, create a sorted list of unique values from arr, giving temp = [1, 2, 9, 100]. Map Values to Ranks : Create a mapping of each unique value in temp to its rank (its index in temp). For example: {1: 0, 2: 1, 9: 2, 100: 3}. Replace Elements : Use this mapping to replace each element in arr with its rank, resulting in arr = [0, 2, 3, 1, 1].
+
+This is our new stepped down array. This technique is very useful when only the ordering of elements matter more than the value of element.
+
+// c++ program to count the number of
+// longest increasing subsequences (LIS)
+// in the array using segment tree
+
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<pair<int, int>> tree;
+
+int ranker(vector<int> &arr) {
+    int n = arr.size();
+
+    vector<int> temp = arr;
+    sort(temp.begin(), temp.end());
+
+    unordered_map<int, int> rank;
+    int mx = 0;
+
+    for (int i = 0; i < n; i++) {
+        if (rank.find(temp[i]) == rank.end()) {
+            rank[temp[i]] = mx++;
+        }
+    }
+
+    for (int i = 0; i < n; i++) {
+        arr[i] = rank[arr[i]];
+    }
+
+    return mx;
+}
+
+pair<int, int> chooseBest(pair<int, int> &left, pair<int, int> &right) {
+
+    // We will choose the longest
+  	// length LIS's ways.
+    pair<int, int> res;
+
+    int maxLenLeft = left.first;
+    int waysLeft = left.second;
+
+    int maxLenRight = right.first;
+    int waysRight = right.second;
+
+    if (maxLenLeft > maxLenRight) {
+        res = {maxLenLeft, waysLeft};
+    }
+    else if (maxLenLeft < maxLenRight) {
+        res = {maxLenRight, waysRight};
+    }
+    else {
+
+      	// same length, so we will add up the ways
+        res.first = maxLenLeft;
+        res.second = waysLeft + waysRight;
+    }
+    return res;
+}
+
+void update(int start, int end, int parent, int element,
+            int mxLength, int ways) {
+    if (start == end) {
+        if (tree[parent].first == mxLength) {
+
+            // if same maxlength is achieved
+          	// again, add ways
+            tree[parent].second += ways;
+        }
+        else {
+
+            // if achieved more length, update
+          	// length and ways
+            tree[parent] = {mxLength, ways};
+        }
+        return;
+    }
+    int mid = (start + end) / 2;
+
+    if (element <= mid) {
+        update(start, mid, 2 * parent + 1, element,
+               mxLength, ways);
+    }
+    else {
+        update(mid + 1, end, 2 * parent + 2, element,
+               mxLength, ways);
+    }
+
+    tree[parent] = chooseBest(tree[2 * parent + 1],
+                              tree[2 * parent + 2]);
+}
+
+pair<int, int> maxLen(int start, int end, int qstart, int qend, int parent) {
+
+    if (start > qend || end < qstart) {
+        return {0, 0};
+    }
+    if (start >= qstart && end <= qend) {
+        return tree[parent];
+    }
+    int mid = (start + end) / 2;
+    pair<int, int> left = maxLen(start, mid,
+                                 qstart, qend, 2 * parent + 1);
+    pair<int, int> right = maxLen(mid + 1, end,
+                                  qstart, qend, 2 * parent + 2);
+    return chooseBest(left, right);
+}
+
+int numberofLIS(vector<int> &arr) {
+
+    int n = arr.size();
+    int mx = ranker(arr);
+    tree.resize(4 * mx + 5);
+
+    // As each element can be a subseq in itself
+    // with len=1 and way=1 to form itself
+    for (int i = 0; i < n; i++)
+    {
+
+        // mxLen- maximum length achieved
+      	// for this index
+        int mxLen = 1;
+
+        // ways- number of ways to achieve mxLen at this index
+        int ways = 1;
+
+        if (arr[i] > 0) {
+            pair<int, int> info = maxLen(0, mx, 0, arr[i] - 1, 0);
+            if (info.first + 1 > mxLen) {
+
+                // +1 because arr[i] is getting appended
+                mxLen = info.first + 1;
+                ways = info.second;
+            }
+        }
+
+        // update the largest len and the ways for arr[i]
+        update(0, mx, 0, arr[i], mxLen, ways);
+    }
+    return tree[0].second;
+}
+
+int main() {
+
+    vector<int> arr = {10, 10, 10, 10};
+    int res = numberofLIS(arr);
+    cout << res << endl;
+}
+
+// Java program to count the number of
+// longest increasing subsequences (LIS)
+// in the array using tabulation
+
+import java.util.*;
+
+class GfG {
+    static int ranker(int[] arr) {
+        int n = arr.length;
+        int[] temp = Arrays.copyOf(arr, n);
+        Arrays.sort(temp);
+        Map<Integer, Integer> rank = new HashMap<>();
+        int mx = 0;
+        for (int i = 0; i < n; i++) {
+            if (!rank.containsKey(temp[i])) {
+                rank.put(temp[i], mx);
+                mx++;
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            arr[i] = rank.get(arr[i]);
+        }
+        return mx;
+    }
+
+    static int[] chooseBest(int[] left, int[] right) {
+
+        // We will choose the longest length LIS's ways.
+        int maxLenLeft = left[0];
+        int waysLeft = left[1];
+        int maxLenRight = right[0];
+        int waysRight = right[1];
+
+        if (maxLenLeft > maxLenRight) {
+            return new int[] { maxLenLeft, waysLeft };
+        }
+        else if (maxLenLeft < maxLenRight) {
+            return new int[] { maxLenRight, waysRight };
+        }
+        else {
+
+            // same length, so we will add up the ways
+            return new int[] { maxLenLeft,
+                               waysLeft + waysRight };
+        }
+    }
+
+    static void update(int start, int end, int parent,
+                       int element, int mxLength, int ways,
+                       int[][] tree) {
+
+        if (start == end) {
+
+            // if same maxlength is achieved again, add ways
+            if (tree[parent][0] == mxLength) {
+                tree[parent][1] += ways;
+            }
+            else {
+
+                // if achieved more length, update length
+                // and ways
+                tree[parent][0] = mxLength;
+                tree[parent][1] = ways;
+            }
+            return;
+        }
+        int mid = (start + end) / 2;
+        if (element <= mid) {
+            update(start, mid, 2 * parent + 1, element,
+                   mxLength, ways, tree);
+        }
+        else {
+            update(mid + 1, end, 2 * parent + 2, element,
+                   mxLength, ways, tree);
+        }
+        tree[parent] = chooseBest(tree[2 * parent + 1],
+                                  tree[2 * parent + 2]);
+    }
+
+    static int[] maxLen(int start, int end, int qstart,
+                        int qend, int parent, int[][] tree) {
+
+        if (start > qend || end < qstart) {
+            return new int[] { 0, 0 };
+        }
+        if (start >= qstart && end <= qend) {
+            return tree[parent];
+        }
+        int mid = (start + end) / 2;
+        int[] left = maxLen(start, mid, qstart, qend,
+                            2 * parent + 1, tree);
+        int[] right = maxLen(mid + 1, end, qstart, qend,
+                             2 * parent + 2, tree);
+        return chooseBest(left, right);
+    }
+
+    static int numberofLIS(int[] arr) {
+
+        int n = arr.length;
+
+        // step down the array
+        int mx = ranker(arr);
+
+        int[][] tree = new int[4 * mx + 5][2];
+        for (int i = 0; i < n; i++) {
+            // As each element can be a subseq in itself
+            // with len=1 and way=1 to form itself
+
+            // mxLen- maximum length achieved for this index
+            int mxLen = 1;
+
+            // ways- number of ways to achieve mxLen at this
+            // index
+            int ways = 1;
+            if (arr[i] > 0) {
+                int[] info
+                    = maxLen(0, mx, 0, arr[i] - 1, 0, tree);
+                if (info[0] + 1 > mxLen) {
+                    mxLen = info[0] + 1;
+                    ways = info[1];
+                }
+            }
+
+            // update the largest len and the ways for
+            // arr[i]
+            update(0, mx, 0, arr[i], mxLen, ways, tree);
+        }
+
+        // return ways from root of the tree
+        return tree[0][1];
+    }
+
+    public static void main(String[] args) {
+
+        int[] arr = { 10, 10, 10, 10 };
+        int res = numberofLIS(arr);
+        System.out.println(res);
+    }
+}
+
+# python program to count the number of
+# longest increasing subsequences (LIS)
+# in the array using tabulation
+
+def RANKER(arr):
+
+    n = len(arr)
+    temp = arr.copy()
+    temp.sort()
+    rank = {}
+    mx = 0
+    for i in range(n):
+        if temp[i] not in rank:
+            rank[temp[i]] = mx
+            mx += 1
+    for i in range(n):
+        arr[i] = rank[arr[i]]
+    return mx
+
+def chooseBest(left, right):
+
+     # Given two pairs, return the pair that has the longer maximum length,
+    # and if they have the same maximum length, add their ways together.
+    maxLenLeft, waysLeft = left
+    maxLenRight, waysRight = right
+
+    if maxLenLeft > maxLenRight:
+        res = (maxLenLeft, waysLeft)
+    elif maxLenLeft < maxLenRight:
+        res = (maxLenRight, waysRight)
+    else:
+        res = (maxLenLeft, waysLeft + waysRight)
+
+    return res
+
+def update(start, end, parent, element, mxLength, ways, tree):
+
+      # Update the segment tree to reflect the
+      # new element added to the array.
+    if start == end:
+        if tree[parent][0] == mxLength:
+            tree[parent] = (mxLength, tree[parent][1] + ways)
+        else:
+            tree[parent] = (mxLength, ways)
+        return
+    mid = (start + end) // 2
+    if element <= mid:
+        update(start, mid, 2 * parent + 1, element, mxLength, ways, tree)
+    else:
+        update(mid + 1, end, 2 * parent + 2, element, mxLength, ways, tree)
+    tree[parent] = chooseBest(tree[2 * parent + 1], tree[2 * parent + 2])
+
+def maxLen(start, end, qstart, qend, parent, tree):
+
+      # Given the range qstart to qend, return the pair with
+      # the longest maximum length.
+    if start > qend or end < qstart:
+        return (0, 0)
+    if start >= qstart and end <= qend:
+        return tree[parent]
+    mid = (start + end) // 2
+    left = maxLen(start, mid, qstart, qend, 2 * parent + 1, tree)
+    right = maxLen(mid + 1, end, qstart, qend, 2 * parent + 2, tree)
+    return chooseBest(left, right)
+
+def numberofLIS(arr):
+
+      # Given an array, find the number of longest
+      # increasing subsequences.
+    n = len(arr)
+    mx = RANKER(arr)
+    tree = [(0, 0)] * (4 * mx + 5)
+    for i in range(n):
+
+          # initialize the max length and ways
+          # for this element
+        mxLen = 1
+        ways = 1
+
+         # if arr[i] is not the first element
+        if arr[i] > 0:
+            info = maxLen(0, mx, 0, arr[i] - 1, 0, tree)
+            if info[0] + 1 > mxLen:
+                mxLen = info[0] + 1
+                ways = info[1]
+        update(0, mx, 0, arr[i], mxLen, ways, tree)
+    return tree[0][1]
+
+arr = [10, 10, 10, 10]
+print(numberofLIS(arr))
+
+// c# program to count the number of
+// longest increasing subsequences (LIS)
+// in the array using tabulation
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class GfG {
+    static int Ranker(int[] arr) {
+        int n = arr.Length;
+        int[] temp = arr.ToArray();
+        Array.Sort(temp);
+        Dictionary<int, int> rank
+            = new Dictionary<int, int>();
+        int mx = 0;
+        for (int i = 0; i < n; i++) {
+            if (!rank.ContainsKey(temp[i])) {
+                rank[temp[i]] = mx;
+                mx++;
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            arr[i] = rank[arr[i]];
+        }
+        return mx;
+    }
+
+    static int[] ChooseBest(int[] left, int[] right) {
+
+        // We will choose the longest length LIS's ways.
+        int maxLenLeft = left[0];
+        int waysLeft = left[1];
+        int maxLenRight = right[0];
+        int waysRight = right[1];
+
+        if (maxLenLeft > maxLenRight) {
+            return new int[] { maxLenLeft, waysLeft };
+        }
+        else if (maxLenLeft < maxLenRight) {
+            return new int[] { maxLenRight, waysRight };
+        }
+        else {
+
+            // same length, so we will add up the ways
+            return new int[] { maxLenLeft,
+                               waysLeft + waysRight };
+        }
+    }
+
+    static void Update(int start, int end, int parent,
+                       int element, int mxLength, int ways,
+                       int[][] tree) {
+        if (start == end) {
+
+            // if same maxlength is achieved again, add ways
+            if (tree[parent][0] == mxLength) {
+                tree[parent][1] += ways;
+            }
+            else {
+
+                // if achieved more length, update length
+                // and ways
+                tree[parent][0] = mxLength;
+                tree[parent][1] = ways;
+            }
+            return;
+        }
+        int mid = (start + end) / 2;
+        if (element <= mid) {
+            Update(start, mid, 2 * parent + 1, element,
+                   mxLength, ways, tree);
+        }
+        else {
+            Update(mid + 1, end, 2 * parent + 2, element,
+                   mxLength, ways, tree);
+        }
+        tree[parent] = ChooseBest(tree[2 * parent + 1],
+                                  tree[2 * parent + 2]);
+    }
+
+    static int[] MaxLen(int start, int end, int qstart,
+                        int qend, int parent, int[][] tree) {
+
+        if (start > qend || end < qstart) {
+            return new int[] { 0, 0 };
+        }
+        if (start >= qstart && end <= qend) {
+            return tree[parent];
+        }
+        int mid = (start + end) / 2;
+        int[] left = MaxLen(start, mid, qstart, qend,
+                            2 * parent + 1, tree);
+        int[] right = MaxLen(mid + 1, end, qstart, qend,
+                             2 * parent + 2, tree);
+        return ChooseBest(left, right);
+    }
+
+    static int numberofLIS(int[] arr) {
+
+        int n = arr.Length;
+
+        // step down the array
+        int mx = Ranker(arr);
+
+        int[][] tree = new int[4 * mx + 5][];
+        for (int i = 0; i < tree.Length; i++) {
+            tree[i] = new int[2];
+        }
+        for (int i = 0; i < n; i++) {
+            int mxLen = 1;
+            int ways = 1;
+            if (arr[i] > 0) {
+                int[] info
+                    = MaxLen(0, mx, 0, arr[i] - 1, 0, tree);
+                if (info[0] + 1 > mxLen) {
+                    mxLen = info[0] + 1;
+                    ways = info[1];
+                }
+            }
+            Update(0, mx, 0, arr[i], mxLen, ways, tree);
+        }
+        return tree[0][1];
+    }
+
+    public static void Main(string[] args) {
+        int[] arr = { 10, 10, 10, 10 };
+        Console.WriteLine(numberofLIS(arr));
+    }
+}
+
+// JavaScript program to count the number of
+// longest increasing subsequences (LIS)
+// in the array using tabulation
+
+function ranker(arr) {
+    const n = arr.length;
+    const temp = arr.slice();
+    temp.sort();
+    const rank = {};
+    let mx = 0;
+    for (let i = 0; i < n; i++) {
+        if (!(temp[i] in rank)) {
+            rank[temp[i]] = mx;
+            mx++;
+        }
+    }
+    for (let i = 0; i < n; i++) {
+        arr[i] = rank[arr[i]];
+    }
+    return mx;
+}
+
+function chooseBest(left, right) {
+
+    const [maxLenLeft, waysLeft] = left;
+    const [maxLenRight, waysRight] = right;
+
+    if (maxLenLeft > maxLenRight) {
+        return [ maxLenLeft, waysLeft ];
+    }
+    else if (maxLenLeft < maxLenRight) {
+        return [ maxLenRight, waysRight ];
+    }
+    else {
+        return [ maxLenLeft, waysLeft + waysRight ];
+    }
+}
+
+function update(start, end, parent, element, mxLength, ways,
+                tree) {
+    if (start === end) {
+        if (tree[parent][0] === mxLength) {
+            tree[parent] =
+                [ mxLength, tree[parent][1] + ways ];
+        }
+        else {
+            tree[parent] = [ mxLength, ways ];
+        }
+        return;
+    }
+    const mid = Math.floor((start + end) / 2);
+    if (element <= mid) {
+        update(start, mid, 2 * parent + 1, element,
+               mxLength, ways, tree);
+    }
+    else {
+        update(mid + 1, end, 2 * parent + 2, element,
+               mxLength, ways, tree);
+    }
+    tree[parent] = chooseBest(tree[2 * parent + 1],
+                              tree[2 * parent + 2]);
+}
+
+function maxLen(start, end, qstart, qend, parent, tree) {
+
+    if (start > qend || end < qstart) {
+        return [ 0, 0 ];
+    }
+    if (start >= qstart && end <= qend) {
+        return tree[parent];
+    }
+    const mid = Math.floor((start + end) / 2);
+    const left = maxLen(start, mid, qstart, qend,
+                        2 * parent + 1, tree);
+    const right = maxLen(mid + 1, end, qstart, qend,
+                         2 * parent + 2, tree);
+    return chooseBest(left, right);
+}
+
+function numberofLIS(arr) {
+
+    const n = arr.length;
+    const mx = ranker(arr);
+    const tree = Array(4 * mx + 5).fill([ 0, 0 ]);
+    for (let i = 0; i < n; i++) {
+        let mxLen = 1;
+        let ways = 1;
+        if (arr[i] > 0) {
+            const info
+                = maxLen(0, mx, 0, arr[i] - 1, 0, tree);
+            if (info[0] + 1 > mxLen) {
+                mxLen = info[0] + 1;
+                ways = info[1];
+            }
+        }
+        update(0, mx, 0, arr[i], mxLen, ways, tree);
+    }
+    return tree[0][1];
+}
+
+const arr = [ 10, 10, 10, 10 ]
+console.log(numberofLIS(arr))
+
+4

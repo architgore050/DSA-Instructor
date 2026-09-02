@@ -1,0 +1,716 @@
+Source: https://www.geeksforgeeks.org/dsa/cutting-a-rod-dp-13/
+Title: Rod Cutting
+
+Given a rod of length n and an array price[]. price[i] denotes the price of a piece of length i. Determine the maximum amount obtained by cutting the rod into pieces and selling the pieces.
+
+Note: price[0] is always 0.
+
+> Input: price[] =  [0, 1, 5, 8, 9, 10, 17, 17, 20] Output: 22 Explanation :  The maximum obtainable value is 22 by cutting in two pieces of lengths 2 and 6, i.e., 5 + 17 = 22. Input : price[] =  [0, 3, 5, 8, 9, 10, 17, 17, 20] Output : 24 Explanation : The maximum obtainable value is 24 by cutting the rod into 8 pieces of length 1, i.e, 8*price[1]= 8*3 = 24. Input : price[] =  [0, 3] Output : 3 Explanation: There is only 1 way to pick a piece of length 1.
+
+Table of Content
+
+- Using Recursion - O(2^n) Time and O(n) Space
+- Using the idea of Unbounded Knapsack - O(n^2) time and O(n^2) space
+- Using Top-Down DP (Memoization) - O(n^2) Time and O(n) Space
+- Using Bottom-Up DP (Tabulation) - O(n^2) Time and O(n) Space
+
+### Using Recursion - O(2^n) Time and O(n) Space
+
+- For a rod of length i, try all possible cuts j (1 ≤ j ≤ i).
+- For each cut, add the price of length j with the best profit of remaining rod (i − j).
+- Take the maximum profit among all possible cuts.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int cutRodRecur(int i, vector<int>& price) {
+
+    // Base case
+    if (i == 0) return 0;
+
+    int ans = 0;
+
+    // Find maximum value for rod of length i
+    // by considering each cut of length j
+    // such that j <= i
+    for (int j = 1; j <= i; j++) {
+        ans = max(ans, price[j] + cutRodRecur(i - j, price));
+    }
+
+    return ans;
+}
+
+int cutRod(vector<int>& price) {
+    int n = price.size() - 1;
+
+    return cutRodRecur(n, price);
+}
+
+int main() {
+    vector<int> price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+    cout << cutRod(price);
+    return 0;
+}
+
+class GFG {
+
+    static int cutRodRecur(int i, int[] price) {
+
+        // Base case
+        if (i == 0) return 0;
+
+        int ans = 0;
+
+        // Find maximum value for rod of length i
+        // by considering each cut of length j
+        // such that j <= i
+        for (int j = 1; j <= i; j++) {
+            ans = Math.max(ans, price[j] + cutRodRecur(i - j, price));
+        }
+
+        return ans;
+    }
+
+    static int cutRod(int[] price) {
+        int n = price.length-1;
+
+        return cutRodRecur(n, price);
+    }
+
+    public static void main(String[] args) {
+        int[] price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+        System.out.println(cutRod(price));
+    }
+}
+
+def cutRodRecur(i, price):
+
+    # Base case
+    if i == 0:
+        return 0
+
+    ans = 0
+
+    # Find maximum value for rod of length i
+    # by considering each cut of length j
+    # such that j <= i
+    for j in range(1, i + 1):
+        ans = max(ans, price[j] + cutRodRecur(i - j, price))
+
+    return ans
+
+def cutRod(price):
+    n = len(price) - 1
+
+    return cutRodRecur(n, price)
+
+if __name__ == "__main__":
+    price = [1, 5, 8, 9, 10, 17, 17, 20]
+    print(cutRod(price))
+
+using System;
+
+class GFG {
+
+    static int cutRodRecur(int i, int[] price) {
+
+        // Base case
+        if (i == 0) return 0;
+
+        int ans = 0;
+
+        // Find maximum value for rod of length i
+        // by considering each cut of length j
+        // such that j <= i
+        for (int j = 1; j <= i; j++) {
+            ans = Math.Max(ans, price[j] + cutRodRecur(i - j, price));
+        }
+
+        return ans;
+    }
+
+    static int cutRod(int[] price) {
+        int n = price.Length - 1;
+
+        return cutRodRecur(n, price);
+    }
+
+    public static void Main(string[] args) {
+        int[] price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+        Console.WriteLine(cutRod(price));
+    }
+}
+
+function cutRodRecur(i, price) {
+
+    // Base case
+    if (i === 0) return 0;
+
+    let ans = 0;
+
+    // Find maximum value for rod of length i
+    // by considering each cut of length j
+    // such that j <= i
+    for (let j = 1; j <= i; j++) {
+        ans = Math.max(ans, price[j] + cutRodRecur(i - j, price));
+    }
+
+    return ans;
+}
+
+function cutRod(price) {
+    const n = price.length-1;
+
+    return cutRodRecur(n, price);
+}
+
+// Driver code
+const price = [1, 5, 8, 9, 10, 17, 17, 20];
+console.log(cutRod(price));
+
+22
+
+### Using the idea of Unbounded Knapsack - O(n^2) time and O(n^2) space
+
+- This problem can be treated like an Unbounded Knapsack, where each cut length can be used multiple times.
+- For each cut length, we have two choices: take the cut (if it fits) or skip it.
+- We choose the maximum profit from these choices to get the best way to cut the rod.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// i - length of current rod
+// j - remaining rod length
+int cutRodRecur(int i, int j, const vector<int>& price,
+                vector<vector<int>>& dp) {
+
+    // base case
+    if (i == 0 || j == 0) return 0;
+
+    // If value is stored in dp array
+    if (dp[i][j] != -1) return dp[i][j];
+
+    // There are two options:
+    // 1. Break it into (i) and (i-j) rods and
+    // take value of ith rod.
+    int take = 0;
+    if (i <= j) {
+        take = price[i] + cutRodRecur(i, j - i, price, dp);
+    }
+
+    // 2. Skip i'th length rod.
+    int noTake = cutRodRecur(i - 1, j, price, dp);
+
+    return dp[i][j] = max(take, noTake);
+}
+
+int cutRod(const vector<int>& price) {
+    int n = price.size() - 1;
+    vector<vector<int>> dp(n + 1, vector<int>(n + 1, -1));
+
+    return cutRodRecur(n, n, price, dp);
+}
+
+int main() {
+    vector<int> price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+    cout << cutRod(price);
+}
+
+import java.util.Arrays;
+
+class GFG {
+
+    // i - length of current rod
+    // j - remaining rod length
+    static int cutRodRecur(int i, int j,
+                           int[] price, int[][] dp) {
+
+        // base case
+        if (i == 0 || j == 0) return 0;
+
+        // If value is stored in dp array
+        if (dp[i][j] != -1) return dp[i][j];
+
+        // There are two options:
+        // 1. Break it into (i) and (i-j) rods and
+        // take value of ith rod.
+        int take = 0;
+        if (i <= j) {
+            take = price[i] + cutRodRecur(i, j - i, price, dp);
+        }
+
+        // 2. Skip i'th length rod.
+        int noTake = cutRodRecur(i - 1, j, price, dp);
+
+        return dp[i][j] = Math.max(take, noTake);
+    }
+
+    static int cutRod(int[] price) {
+        int n = price.length-1;
+        int[][] dp = new int[n + 1][n + 1];
+
+        // filling the dp array with invalid values
+        for (int[] row : dp) {
+            Arrays.fill(row, -1);
+        }
+
+        return cutRodRecur(n, n, price, dp);
+    }
+
+    public static void main(String[] args) {
+        int[] price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+        System.out.println(cutRod(price));
+    }
+}
+
+# i - length of current rod
+# j - remaining rod length
+def cutRodRecur(i, j, price, dp):
+
+    # base case
+    if i == 0 or j == 0:
+        return 0
+
+    # If value is stored in dp array
+    if dp[i][j] != -1:
+        return dp[i][j]
+
+    # There are two options:
+    # 1. Break it into (i) and (i-j) rods and
+    # take value of ith rod.
+    take = 0
+    if i <= j:
+        take = price[i] + cutRodRecur(i, j - i, price, dp)
+
+    # 2. Skip i'th length rod.
+    noTake = cutRodRecur(i - 1, j, price, dp)
+
+    dp[i][j] = max(take, noTake)
+    return dp[i][j]
+
+def cutRod(price):
+    n = len(price) - 1
+    dp = [[-1] * (n + 1) for _ in range(n + 1)]
+
+    return cutRodRecur(n, n, price, dp)
+
+if __name__ == "__main__":
+    price = [0, 1, 5, 8, 9, 10, 17, 17, 20]
+    print(cutRod(price))
+
+using System;
+
+class GFG {
+
+    // i - length of current rod
+    // j - remaining rod length
+    static int cutRodRecur(int i, int j, int[] price, int[][] dp) {
+
+        // base case
+        if (i == 0 || j == 0) return 0;
+
+        // If value is stored in dp array
+        if (dp[i][j] != -1) return dp[i][j];
+
+        // There are two options:
+        // 1. Break it into (i) and (i-j) rods and
+        // take value of ith rod.
+        int take = 0;
+        if (i <= j) {
+            take = price[i] + cutRodRecur(i, j - i, price, dp);
+        }
+
+        // 2. Skip i'th length rod.
+        int noTake = cutRodRecur(i - 1, j, price, dp);
+
+        return dp[i][j] = Math.Max(take, noTake);
+    }
+
+    static int cutRod(int[] price) {
+        int n = price.Length - 1;
+        int[][] dp = new int[n + 1][];
+
+        for (int k = 0; k <= n; k++) {
+            dp[k] = new int[n + 1];
+            for (int t = 0; t <= n; t++)
+                dp[k][t] = -1;
+        }
+
+        return cutRodRecur(n, n, price, dp);
+    }
+
+    public static void Main() {
+        int[] price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+        Console.WriteLine(cutRod(price));
+    }
+}
+
+// i - length of current rod
+// j - remaining rod length
+function cutRodRecur(i, j, price, dp) {
+
+    // base case
+    if (i === 0 || j === 0) return 0;
+
+    // If value is stored in dp array
+    if (dp[i][j] !== -1) return dp[i][j];
+
+    // There are two options:
+    // 1. Break it into (i) and (i-j) rods and
+    // take value of ith rod.
+    let take = 0;
+    if (i <= j) {
+        take = price[i] + cutRodRecur(i, j - i, price, dp);
+    }
+
+    // 2. Skip i'th length rod.
+    let noTake = cutRodRecur(i - 1, j, price, dp);
+
+    return dp[i][j] = Math.max(take, noTake);
+}
+
+function cutRod(price) {
+    let n = price.length - 1;
+    let dp = Array.from({ length: n + 1 }, () =>
+        Array(n + 1).fill(-1)
+    );
+
+    return cutRodRecur(n, n, price, dp);
+}
+
+// Driver code
+let price = [0, 1, 5, 8, 9, 10, 17, 17, 20];
+console.log(cutRod(price));
+
+22
+
+### Using Top-Down DP (Memoization) - O(n^2) Time and O(n) Space
+
+- In recursion, the same rod lengths are solved multiple times.
+- Since there are only n possible rod lengths, we store their results in a DP array.
+- If a result is already stored, we reuse it instead of recomputing, improving efficiency.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+
+using namespace std;
+
+int cutRodRecur(int i, vector<int>& price, vector<int>& dp) {
+
+    // Base case
+    if (i == 0) return 0;
+
+    // If answer for this dp
+    // state is already calculated
+    if (dp[i] != -1) return dp[i];
+
+    int ans = 0;
+
+    // Find maximum value for each cut.
+    // Take value of rod of length j, and
+    // recursively find value of rod of
+    // length (i-j).
+    for (int j = 1; j <= i; j++) {
+        ans = max(ans, price[j] + cutRodRecur(i - j, price, dp));
+    }
+
+    return dp[i] = ans;
+}
+
+int cutRod(vector<int>& price) {
+    int n = price.size() - 1;
+    vector<int> dp(n + 1, -1);
+
+    return cutRodRecur(n, price, dp);
+}
+
+int main() {
+    vector<int> price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+    cout << cutRod(price);
+    return 0;
+}
+
+import java.util.Arrays;
+
+class GFG {
+
+    static int cutRodRecur(int i, int[] price, int[] dp) {
+
+        // Base case
+        if (i == 0) return 0;
+
+        // If answer for this dp
+        // state is already calculated
+        if (dp[i] != -1) return dp[i];
+
+        int ans = 0;
+
+        // Find maximum value for each cut.
+        // Take value of rod of length j, and
+        // recursively find value of rod of
+        // length (i-j).
+        for (int j = 1; j <= i; j++) {
+            ans = Math.max(ans, price[j] + cutRodRecur(i - j, price, dp));
+        }
+
+        return dp[i] = ans;
+    }
+
+    static int cutRod(int[] price) {
+        int n = price.length-1;
+        int[] dp = new int[n+1];
+        Arrays.fill(dp, -1);
+        return cutRodRecur(n, price, dp);
+    }
+
+    public static void main(String[] args) {
+        int[] price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+        System.out.println(cutRod(price));
+    }
+}
+
+def cutRodRecur(i, price, dp):
+
+    # Base case
+    if i == 0:
+        return 0
+
+    # If answer for this dp
+    # state is already calculated
+    if dp[i] != -1:
+        return dp[i]
+
+    ans = 0
+
+    # Find maximum value for each cut.
+    # Take value of rod of length j, and
+    # recursively find value of rod of
+    # length (i-j).
+    for j in range(1, i + 1):
+        ans = max(ans, price[j] + cutRodRecur(i - j, price, dp))
+
+    dp[i] = ans
+    return ans
+
+def cutRod(price):
+    n = len(price) - 1
+    dp = [-1] * (n + 1)
+    return cutRodRecur(n, price, dp)
+
+if __name__ == "__main__":
+    price = [0, 1, 5, 8, 9, 10, 17, 17, 20]
+    print(cutRod(price))
+
+using System;
+
+class GFG {
+
+    static int cutRodRecur(int i, int[] price, int[] dp) {
+
+        // Base case
+        if (i == 0) return 0;
+
+        // If answer for this dp
+        // state is already calculated
+        if (dp[i] != -1) return dp[i];
+
+        int ans = 0;
+
+        // Find maximum value for each cut.
+        // Take value of rod of length j, and
+        // recursively find value of rod of
+        // length (i-j).
+        for (int j = 1; j <= i; j++) {
+            ans = Math.Max(ans, price[j] + cutRodRecur(i - j, price, dp));
+        }
+
+        return dp[i] = ans;
+    }
+
+    static int cutRod(int[] price) {
+        int n = price.Length - 1;
+        int[] dp = new int[n + 1];
+        for (int k = 0; k <= n; k++) dp[k] = -1;
+
+        return cutRodRecur(n, price, dp);
+    }
+
+    public static void Main(string[] args) {
+        int[] price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+        Console.WriteLine(cutRod(price));
+    }
+}
+
+function cutRodRecur(i, price, dp) {
+
+    // Base case
+    if (i === 0) return 0;
+
+    // If answer for this dp
+    // state is already calculated
+    if (dp[i] !== -1) return dp[i];
+
+    let ans = 0;
+
+    // Find maximum value for each cut.
+    // Take value of rod of length j, and
+    // recursively find value of rod of
+    // length (i-j).
+    for (let j = 1; j <= i; j++) {
+        ans = Math.max(ans, price[j] + cutRodRecur(i - j, price, dp));
+    }
+
+    return dp[i] = ans;
+}
+
+function cutRod(price) {
+    const n = price.length - 1;
+    const dp = Array(n + 1).fill(-1);
+    return cutRodRecur(n, price, dp);
+}
+
+// Driver code
+const price = [0, 1, 5, 8, 9, 10, 17, 17, 20];
+console.log(cutRod(price));
+
+22
+
+### Using Bottom-Up DP (Tabulation) - O(n^2) Time and O(n) Space
+
+- We compute the maximum profit starting from smaller rod lengths and move to larger ones.
+- For a rod of length i, we try all cuts j and (i − j).
+- Since smaller lengths are already solved, we reuse their results to fill the DP table.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int cutRod(vector<int>& price) {
+    int n = price.size() - 1;
+    vector<int> dp(n + 1, 0);
+
+    // Find maximum value for all
+    // rod of length i.
+    for (int i = 1; i <= n; i++) {
+
+        // dividing rod of length i
+        // into smaller piecess recursively
+        for (int j = 1; j <= i; j++) {
+            dp[i] = max(dp[i], price[j] + dp[i - j]);
+        }
+    }
+
+    return dp[n];
+}
+
+int main() {
+    vector<int> price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+    cout << cutRod(price);
+    return 0;
+}
+
+class GFG {
+
+    static int cutRod(int[] price) {
+        int n = price.length-1;
+        int[] dp = new int[n + 1];
+
+        // Find maximum value for all
+        // rod of length i.
+        for (int i = 1; i <= n; i++) {
+
+            // dividing rod of length i
+            // into smaller piecess recursively
+            for (int j = 1; j <= i; j++) {
+                dp[i] = Math.max(dp[i], price[j] + dp[i - j]);
+            }
+        }
+
+        return dp[n];
+    }
+
+    public static void main(String[] args) {
+        int[] price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+        System.out.println(cutRod(price));
+    }
+}
+
+def cutRod(price):
+    n = len(price) - 1
+    dp = [0] * (n + 1)
+
+    # Find maximum value for all
+    # rod of length i.
+    for i in range(1, n + 1):
+
+        # dividing rod of length i
+        # into smaller piecess recursively
+        for j in range(1, i + 1):
+            dp[i] = max(dp[i], price[j] + dp[i - j])
+
+    return dp[n]
+
+if __name__ == "__main__":
+    price = [0, 1, 5, 8, 9, 10, 17, 17, 20]
+    print(cutRod(price))
+
+using System;
+
+class GFG {
+
+    static int cutRod(int[] price) {
+        int n = price.Length - 1;
+        int[] dp = new int[n + 1];
+
+        // Find maximum value for all
+        // rod of length i.
+        for (int i = 1; i <= n; i++) {
+
+            // dividing rod of length i
+            // into smaller piecess recursively
+            for (int j = 1; j <= i; j++) {
+                dp[i] = Math.Max(dp[i], price[j] + dp[i - j]);
+            }
+        }
+
+        return dp[n];
+    }
+
+    public static void Main(string[] args) {
+        int[] price = {0, 1, 5, 8, 9, 10, 17, 17, 20};
+        Console.WriteLine(cutRod(price));
+    }
+}
+
+function cutRod(price) {
+    const n = price.length - 1;
+    const dp = new Array(n + 1).fill(0);
+
+    // Find maximum value for all
+    // rod of length i.
+    for (let i = 1; i <= n; i++) {
+
+        // dividing rod of length i
+        // into smaller piecess recursively
+        for (let j = 1; j <= i; j++) {
+            dp[i] = Math.max(dp[i], price[j] + dp[i - j]);
+        }
+    }
+
+    return dp[n];
+}
+
+// Driver code
+const price = [0, 1, 5, 8, 9, 10, 17, 17, 20];
+console.log(cutRod(price));
+
+22

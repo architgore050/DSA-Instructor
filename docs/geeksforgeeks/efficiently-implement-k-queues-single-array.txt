@@ -1,0 +1,997 @@
+Source: https://www.geeksforgeeks.org/dsa/efficiently-implement-k-queues-single-array/
+Title: Implement k Queues in a single array
+
+Given two integers n and k . Implement k queues using a single array of size n. Multiple queue must share the same array space while supporting the following operations:
+
+> enqueue(qn, x) : Adds the element x into the qn-th queue. dequeue(qn) : Removes the front element from the qn-th queue and return it. If the queue is empty, return -1. isEmpty(qn) : Checks if the qn-th queue is empty.
+
+Table of Content
+
+- [Naive Approach] Dividing Array into k Segments - O(1) Time and O(n+k) Space
+- [Expected Approach] Using Space Optimized Method - O(1) Time and O(n+k) Space
+
+### [Naive Approach] Dividing Array into k Segments - O(1) Time and O(n+k) Space
+
+> The idea is to divide the array of size n into k equal segments, each of size n/k. Each segment serves as dedicated storage for one of the k queues. To manage these queues, we maintain two arrays front and rear which track the beginning and end of each queue. Both are initialized to -1 to represent empty queues.
+
+We use a circular array technique within each segment. This ensures that space is utilized optimally when elements are enqueued and dequeued.
+
+- Enqueue: When inserting an element into queue i , we update the rear pointer (with wrap-around support) and place the element at that position.
+- Dequeue: When removing an element from queue i , we return the element at the front position and move the front pointer forward, again considering wrap-around logic to reuse the allocated space effectively.
+
+#include <iostream>
+#include<vector>
+using namespace std;
+
+class kQueues {
+private:
+    vector<int> arr;
+    int n, k;
+    vector<int> front;
+    vector<int> rear;
+
+public:
+    kQueues(int n, int k) {
+        this->n = n;
+        this->k = k;
+        arr.resize(n);
+        front.resize(k, -1);
+        rear.resize(k, -1);
+    }
+
+    // Function to check if queue 'qn' is empty
+    bool isEmpty(int qn) {
+        return (front[qn] == -1);
+    }
+
+    // Function to check if queue 'qn' is full
+    bool isFull(int qn) {
+
+        // Calculate the next position after rear
+        int nextPos = (rear[qn] + 1) % (n/k);
+
+        // Queue is full if next position is front
+        return (nextPos == front[qn] % (n/k) && front[qn] != -1);
+    }
+
+    // Function to enqueue 'x' into queue 'qn'
+    bool enqueue(int x, int qn) {
+
+        // Check if queue is full
+        if (isFull(qn))
+            return false;
+
+        // Calculate the base index for this queue
+        int base = qn * (n/k);
+
+        // For empty queue, set front index
+        if (isEmpty(qn))
+            front[qn] = base;
+
+        // Update rear and add element
+        rear[qn] = (rear[qn] == -1) ?
+            base :
+            base + (rear[qn] + 1 - base) % (n/k);
+        arr[rear[qn]] = x;
+
+        return true;
+    }
+
+    // Function to dequeue from queue 'qn'
+    int dequeue(int qn) {
+
+        // Check if queue is empty
+        if (isEmpty(qn))
+            return -1;
+
+        // Get the base index for this queue
+        int base = qn * (n/k);
+
+        // Get the element to be dequeued
+        int x = arr[front[qn]];
+
+        // If this is the last element, reset front and rear
+        if (front[qn] == rear[qn]) {
+            front[qn] = -1;
+            rear[qn] = -1;
+        } else {
+
+            // Move front to next position,
+            // considering wrap-around within segment
+            front[qn] = base + (front[qn] + 1 - base) % (n/k);
+        }
+
+        return x;
+    }
+};
+
+int main() {
+    int n = 10, k = 3;
+    kQueues queues(n, k);
+
+    cout << queues.enqueue(10, 0) << " ";
+    cout << queues.enqueue(20, 1) << " ";
+    cout << queues.enqueue(30, 0) << " ";
+    cout << queues.enqueue(40, 2) << " ";
+
+    cout << queues.dequeue(0) << " ";
+    cout << queues.dequeue(1) << " ";
+    cout << queues.dequeue(2) << " ";
+    cout << queues.dequeue(0) << " ";
+    cout << queues.dequeue(0) << " ";
+
+    return 0;
+}
+
+import java.util.Arrays;
+
+class kQueues {
+    int[] arr;
+    int n, k;
+    int[] front;
+    int[] rear;
+
+    kQueues(int n, int k) {
+        this.n = n;
+        this.k = k;
+        arr = new int[n];
+        front = new int[k];
+        rear = new int[k];
+        Arrays.fill(front, -1);
+        Arrays.fill(rear, -1);
+    }
+
+    // Function to check if queue 'qn' is empty
+    boolean isEmpty(int qn) {
+        return (front[qn] == -1);
+    }
+
+    // Function to check if queue 'qn' is full
+    boolean isFull(int qn) {
+        int nextPos = (rear[qn] + 1) % (n / k);
+        return (nextPos == front[qn] % (n / k) && front[qn] != -1);
+    }
+
+    // Function to enqueue 'x' into queue 'qn'
+    boolean enqueue(int x, int qn) {
+        if (isFull(qn))
+            return false;
+
+        int base = qn * (n / k);
+        if (isEmpty(qn))
+            front[qn] = base;
+
+        rear[qn] = (rear[qn] == -1) ?
+            base :
+            base + (rear[qn] + 1 - base) % (n / k);
+        arr[rear[qn]] = x;
+
+        return true;
+    }
+
+    // Function to dequeue from queue 'qn'
+    int dequeue(int qn) {
+        if (isEmpty(qn))
+            return -1;
+
+        int base = qn * (n / k);
+        int x = arr[front[qn]];
+
+        if (front[qn] == rear[qn]) {
+            front[qn] = -1;
+            rear[qn] = -1;
+        } else {
+            front[qn] = base + (front[qn] + 1 - base) % (n / k);
+        }
+
+        return x;
+    }
+}
+
+public class GfG {
+    public static void main(String[] args) {
+        int n = 10, k = 3;
+        kQueues queues = new kQueues(n, k);
+
+        System.out.print(queues.enqueue(10, 0) + " ");
+        System.out.print(queues.enqueue(20, 1) + " ");
+        System.out.print(queues.enqueue(30, 0) + " ");
+        System.out.print(queues.enqueue(40, 2) + " ");
+
+        System.out.print(queues.dequeue(0) + " ");
+        System.out.print(queues.dequeue(1) + " ");
+        System.out.print(queues.dequeue(2) + " ");
+        System.out.print(queues.dequeue(0) + " ");
+        System.out.print(queues.dequeue(0) + " ");
+    }
+}
+
+class kQueues:
+    def __init__(self, n, k):
+        self.n = n
+        self.k = k
+        self.arr = [0] * n
+        self.front = [-1] * k
+        self.rear = [-1] * k
+
+    # Function to check if queue 'qn' is empty
+    def isEmpty(self, qn):
+        return self.front[qn] == -1
+
+    # Function to check if queue 'qn' is full
+    def isFull(self, qn):
+        nextPos = (self.rear[qn] + 1) % (self.n // self.k)
+
+        return (nextPos == self.front[qn] % (self.n // self.k) and self.front[qn] != -1)
+
+    # Function to enqueue 'x' into queue 'qn'
+    def enqueue(self, x, qn):
+        if self.isFull(qn):
+            return False
+
+        base = qn * (self.n // self.k)
+        if self.isEmpty(qn):
+            self.front[qn] = base
+
+        self.rear[qn] = base if self.rear[qn] == -1 \
+        else base + (self.rear[qn] + 1 - base) % (self.n // self.k)
+
+        self.arr[self.rear[qn]] = x
+
+        return True
+
+    # Function to dequeue from queue 'qn'
+    def dequeue(self, qn):
+        if self.isEmpty(qn):
+            return -1
+
+        base = qn * (self.n // self.k)
+        x = self.arr[self.front[qn]]
+
+        if self.front[qn] == self.rear[qn]:
+            self.front[qn] = -1
+            self.rear[qn] = -1
+        else:
+            self.front[qn] = base + (self.front[qn] + 1 - base) % (self.n // self.k)
+
+        return x
+
+if __name__ == "__main__":
+    n, k = 10, 3
+    queues = kQueues(n, k)
+
+    print(queues.enqueue(10, 0), end=" ")
+    print(queues.enqueue(20, 1), end=" ")
+    print(queues.enqueue(30, 0), end=" ")
+    print(queues.enqueue(40, 2), end=" ")
+
+    print(queues.dequeue(0), end=" ")
+    print(queues.dequeue(1), end=" ")
+    print(queues.dequeue(2), end=" ")
+    print(queues.dequeue(0), end=" ")
+    print(queues.dequeue(0), end=" ")
+
+using System;
+
+class kQueues {
+    int[] arr;
+    int n, k;
+    int[] front;
+    int[] rear;
+
+    public kQueues(int n, int k) {
+        this.n = n;
+        this.k = k;
+        arr = new int[n];
+        front = new int[k];
+        rear = new int[k];
+        for (int i = 0; i < k; i++) {
+            front[i] = -1;
+            rear[i] = -1;
+        }
+    }
+
+    // Function to check if queue 'qn' is empty
+    static bool isEmpty(int[] front, int qn) {
+        return (front[qn] == -1);
+    }
+
+    // Function to check if queue 'qn' is full
+    static bool isFull(int[] front, int[] rear, int qn, int n, int k) {
+        int nextPos = (rear[qn] + 1) % (n / k);
+        return (nextPos == front[qn] % (n / k) && front[qn] != -1);
+    }
+
+    // Function to enqueue 'x' into queue 'qn'
+    public bool enqueue(int x, int qn) {
+        if (isFull(front, rear, qn, n, k))
+            return false;
+
+        int baseIndex = qn * (n / k);
+        if (isEmpty(front, qn))
+            front[qn] = baseIndex;
+
+        rear[qn] = (rear[qn] == -1) ?
+            baseIndex :
+            baseIndex + (rear[qn] + 1 - baseIndex) % (n / k);
+        arr[rear[qn]] = x;
+
+        return true;
+    }
+
+    // Function to dequeue from queue 'qn'
+    public int dequeue(int qn) {
+        if (isEmpty(front, qn))
+            return -1;
+
+        int baseIndex = qn * (n / k);
+        int x = arr[front[qn]];
+
+        if (front[qn] == rear[qn]) {
+            front[qn] = -1;
+            rear[qn] = -1;
+        } else {
+            front[qn] = baseIndex + (front[qn] + 1 - baseIndex) % (n / k);
+        }
+
+        return x;
+    }
+}
+
+class GfG {
+    static void Main(string[] args) {
+        int n = 10, k = 3;
+        kQueues queues = new kQueues(n, k);
+
+        Console.Write(queues.enqueue(10, 0) + " ");
+        Console.Write(queues.enqueue(20, 1) + " ");
+        Console.Write(queues.enqueue(30, 0) + " ");
+        Console.Write(queues.enqueue(40, 2) + " ");
+
+        Console.Write(queues.dequeue(0) + " ");
+        Console.Write(queues.dequeue(1) + " ");
+        Console.Write(queues.dequeue(2) + " ");
+        Console.Write(queues.dequeue(0) + " ");
+        Console.Write(queues.dequeue(0) + " ");
+    }
+}
+
+class kQueues {
+    constructor(n, k) {
+        this.n = n;
+        this.k = k;
+        this.arr = new Array(n);
+        this.front = new Array(k).fill(-1);
+        this.rear = new Array(k).fill(-1);
+    }
+
+    // Function to check if queue 'qn' is empty
+    isEmpty(qn) {
+        return this.front[qn] === -1;
+    }
+
+    // Function to check if queue 'qn' is full
+    isFull(qn) {
+        let nextPos =
+        (this.rear[qn] + 1) % (this.n / this.k);
+        return (nextPos === this.front[qn] %
+        (this.n / this.k) && this.front[qn] !== -1);
+    }
+
+    // Function to enqueue 'x' into queue 'qn'
+    enqueue(x, qn) {
+        if (this.isFull(qn))
+            return false;
+
+        let base = qn * (this.n / this.k);
+        if (this.isEmpty(qn))
+            this.front[qn] = base;
+
+        this.rear[qn] = (this.rear[qn] === -1) ?
+            base :
+            base + (this.rear[qn] + 1 - base) % (this.n / this.k);
+        this.arr[this.rear[qn]] = x;
+
+        return true;
+    }
+
+    // Function to dequeue from queue 'qn'
+    dequeue(qn) {
+        if (this.isEmpty(qn))
+            return -1;
+
+        let base = qn * (this.n / this.k);
+        let x = this.arr[this.front[qn]];
+
+        if (this.front[qn] === this.rear[qn]) {
+            this.front[qn] = -1;
+            this.rear[qn] = -1;
+        } else {
+            this.front[qn] = base +
+            (this.front[qn] + 1 - base) % (this.n / this.k);
+        }
+
+        return x;
+    }
+}
+
+let n = 10, k = 3;
+let queues = new kQueues(n, k);
+
+console.log(
+    queues.enqueue(10, 0),
+    queues.enqueue(20, 1),
+    queues.enqueue(30, 0),
+    queues.enqueue(40, 2),
+    queues.dequeue(0),
+    queues.dequeue(1),
+    queues.dequeue(2),
+    queues.dequeue(0),
+    queues.dequeue(0)
+);
+
+1 1 1 1 10 20 40 30 -1
+
+Drawback: The main limitation of above approach is that it allocates a fixed block of space for each queue, regardless of actual usage. If one queue requires more space than its allocated n/k slots while another queue remains underutilized, the extra unused space cannot be shared. This results in internal fragmentation some queues may overflow even when free space exists in other segments leading to inefficient memory utilization.
+
+### [Expected Approach] Using Space Optimized Method - O(1) Time and O(n+k) Space
+
+> Instead of dividing the array into fixed blocks for each queue, we let all queues share the same array dynamically. We keep a free list that tells us which slots in the array are free, so any queue can use them. This way, no space is wasted and all queues can grow as needed.
+
+Following are the extra arrays used:
+
+1. front[]: This is of size k and stores indexes of front elements in all queues. front[i] = -1 indicates an empty queue.
+2. rear[]: This is of size k and stores indexes of rear elements in all queues. rear[i] = -1 indicates an empty queue.
+3. next[]: This is of size n and stores indexes of next item for the items in array arr[]. For queue elements, it points to the next queue element index and for free slots, it indicates the index of next free slot.
+
+Working:
+
+Initialization:
+
+- front[k] = rear[k] = -1 all queues empty.
+- next[n] links elements and manages free slots: next[i] = i+1, next[n-1] = -1.
+- freeIndex = 0 first free slot.
+
+Enqueue(x, qn):
+
+- If freeIndex == -1, array is full return false.
+- Allocate i = freeIndex, update freeIndex = next[i].
+- If queue empty front[qn] = rear[qn] = i.
+- Else  link to rear: next[rear[qn]] = i, then rear[qn] = i.
+- End of queue  next[i] = -1.
+- Store value: arr[i] = x.
+
+Dequeue(qn):
+
+- If front[qn] == -1, queue empty return -1.
+- Get front index: i = front[qn], update front[qn] = next[i].
+- If queue becomes empty rear[qn] = -1.
+- Return index to free list: next[i] = freeIndex, freeIndex = i.
+- Return arr[i].
+
+> The best part of this implementation is that any free slot in the array can be used by any queue. This avoids space wastage compared to fixed-segment allocation. Although it needs extra arrays (front[], rear[], next[]), the overhead is small because queue elements are usually large objects (e.g., employees, students, tasks).
+
+#include <iostream>
+#include<vector>
+using namespace std;
+
+class kQueues {
+private:
+    vector<int> arr;
+    int n, k;
+    vector<int> front;
+    vector<int> rear;
+    vector<int> next;
+    int freeIndex;
+
+public:
+    kQueues(int n, int k) {
+        this->n = n;
+        this->k = k;
+        arr.resize(n);
+        front.resize(k, -1);
+        rear.resize(k, -1);
+        next.resize(n);
+
+        // Initialize all spaces as free
+        freeIndex = 0;
+        for (int i = 0; i < n-1; i++)
+            next[i] = i + 1;
+
+        // -1 is used to indicate end of free list
+        next[n-1] = -1;
+    }
+
+    // Function to check if queue 'qn' is empty
+    bool isEmpty(int qn) {
+        return (front[qn] == -1);
+    }
+
+    // Function to check if array is full
+    bool isFull() {
+        return (freeIndex == -1);
+    }
+
+    // Function to enqueue 'x' into queue 'qn'
+    bool enqueue(int x, int qn) {
+
+        // Check if array is full
+        if (isFull())
+            return false;
+
+        // Get next free index
+        int i = freeIndex;
+        freeIndex = next[i];
+
+        // If queue is empty, update
+        // both front and rear
+        if (isEmpty(qn))
+            front[qn] = i;
+        else {
+
+            // Link new element to the previous rear
+            next[rear[qn]] = i;
+        }
+
+        // Update rear
+        rear[qn] = i;
+
+        // Store the element
+        arr[i] = x;
+
+        // Mark end of queue
+        next[i] = -1;
+
+        return true;
+    }
+
+    // Function to dequeue from queue 'qn'
+    int dequeue(int qn) {
+
+        // Check if queue is empty
+        if (isEmpty(qn))
+            return -1;
+
+        // Get the front index of queue
+        int i = front[qn];
+
+        // Update front
+        front[qn] = next[i];
+
+        // If queue becomes empty
+        if (front[qn] == -1)
+            rear[qn] = -1;
+
+        // Add the dequeued position to free list
+        next[i] = freeIndex;
+        freeIndex = i;
+
+        // Return the dequeued element
+        return arr[i];
+    }
+};
+
+int main() {
+    int n = 10, k = 3;
+    kQueues queues(n, k);
+
+    cout << queues.enqueue(10, 0) << " ";
+    cout << queues.enqueue(20, 1) << " ";
+    cout << queues.enqueue(30, 0) << " ";
+    cout << queues.enqueue(40, 2) << " ";
+
+    cout << queues.dequeue(0) << " ";
+    cout << queues.dequeue(1) << " ";
+    cout << queues.dequeue(2) << " ";
+    cout << queues.dequeue(0) << " ";
+    cout << queues.dequeue(0) << " ";
+
+    return 0;
+}
+
+class kQueues {
+    int[] arr;
+    int n, k;
+    int[] front;
+    int[] rear;
+    int[] next;
+    int freeIndex;
+
+    kQueues(int n, int k) {
+        this.n = n;
+        this.k = k;
+        arr = new int[n];
+        front = new int[k];
+        rear = new int[k];
+        next = new int[n];
+
+        for (int i = 0; i < k; i++)
+            front[i] = rear[i] = -1;
+
+        // Initialize all spaces as free
+        freeIndex = 0;
+        for (int i = 0; i < n - 1; i++)
+            next[i] = i + 1;
+
+        // -1 is used to indicate end of free list
+        next[n - 1] = -1;
+    }
+
+    // Function to check if queue 'qn' is empty
+    boolean isEmpty(int qn) {
+        return (front[qn] == -1);
+    }
+
+    // Function to check if array is full
+    boolean isFull() {
+        return (freeIndex == -1);
+    }
+
+    // Function to enqueue 'x' into queue 'qn'
+    boolean enqueue(int x, int qn) {
+
+        // Check if array is full
+        if (isFull())
+            return false;
+
+        // Get next free index
+        int i = freeIndex;
+        freeIndex = next[i];
+
+        // If queue is empty, update
+        // both front and rear
+        if (isEmpty(qn))
+            front[qn] = i;
+        else {
+
+            // Link new element to the previous rear
+            next[rear[qn]] = i;
+        }
+
+        // Update rear
+        rear[qn] = i;
+
+        // Store the element
+        arr[i] = x;
+
+        // Mark end of queue
+        next[i] = -1;
+
+        return true;
+    }
+
+    // Function to dequeue from queue 'qn'
+    int dequeue(int qn) {
+
+        // Check if queue is empty
+        if (isEmpty(qn))
+            return -1;
+
+        // Get the front index of queue
+        int i = front[qn];
+
+        // Update front
+        front[qn] = next[i];
+
+        // If queue becomes empty
+        if (front[qn] == -1)
+            rear[qn] = -1;
+
+        // Add the dequeued position to free list
+        next[i] = freeIndex;
+        freeIndex = i;
+
+        // Return the dequeued element
+        return arr[i];
+    }
+}
+
+class GfG {
+    public static void main(String[] args) {
+        int n = 10, k = 3;
+        kQueues queues = new kQueues(n, k);
+
+        System.out.print(queues.enqueue(10, 0) + " ");
+        System.out.print(queues.enqueue(20, 1) + " ");
+        System.out.print(queues.enqueue(30, 0) + " ");
+        System.out.print(queues.enqueue(40, 2) + " ");
+
+        System.out.print(queues.dequeue(0) + " ");
+        System.out.print(queues.dequeue(1) + " ");
+        System.out.print(queues.dequeue(2) + " ");
+        System.out.print(queues.dequeue(0) + " ");
+        System.out.print(queues.dequeue(0) + " ");
+    }
+}
+
+class kQueues:
+    def __init__(self, n, k):
+        self.n = n
+        self.k = k
+        self.arr = [0] * n
+        self.front = [-1] * k
+        self.rear = [-1] * k
+        self.next = [0] * n
+
+        # Initialize all spaces as free
+        self.freeIndex = 0
+        for i in range(n - 1):
+            self.next[i] = i + 1
+
+        # -1 is used to indicate end of free list
+        self.next[n - 1] = -1
+
+    # Function to check if queue 'qn' is empty
+    def isEmpty(self, qn):
+        return self.front[qn] == -1
+
+    # Function to check if array is full
+    def isFull(self):
+        return self.freeIndex == -1
+
+    # Function to enqueue 'x' into queue 'qn'
+    def enqueue(self, x, qn):
+        # Check if array is full
+        if self.isFull():
+            return False
+
+        # Get next free index
+        i = self.freeIndex
+        self.freeIndex = self.next[i]
+
+        # If queue is empty, update
+        # both front and rear
+        if self.isEmpty(qn):
+            self.front[qn] = i
+        else:
+            # Link new element to the previous rear
+            self.next[self.rear[qn]] = i
+
+        # Update rear
+        self.rear[qn] = i
+
+        # Store the element
+        self.arr[i] = x
+
+        # Mark end of queue
+        self.next[i] = -1
+
+        return True
+
+    # Function to dequeue from queue 'qn'
+    def dequeue(self, qn):
+        # Check if queue is empty
+        if self.isEmpty(qn):
+            return -1
+
+        # Get the front index of queue
+        i = self.front[qn]
+
+        # Update front
+        self.front[qn] = self.next[i]
+
+        # If queue becomes empty
+        if self.front[qn] == -1:
+            self.rear[qn] = -1
+
+        # Add the dequeued position to free list
+        self.next[i] = self.freeIndex
+        self.freeIndex = i
+
+        # Return the dequeued element
+        return self.arr[i]
+
+if __name__ == "__main__":
+    n = 10
+    k = 3
+    queues = kQueues(n, k)
+
+    print(queues.enqueue(10, 0), end=" ")
+    print(queues.enqueue(20, 1), end=" ")
+    print(queues.enqueue(30, 0), end=" ")
+    print(queues.enqueue(40, 2), end=" ")
+
+    print(queues.dequeue(0), end=" ")
+    print(queues.dequeue(1), end=" ")
+    print(queues.dequeue(2), end=" ")
+    print(queues.dequeue(0), end=" ")
+    print(queues.dequeue(0), end=" ")
+
+using System;
+
+class kQueues {
+    int[] arr;
+    int n, k;
+    int[] front;
+    int[] rear;
+    int[] next;
+    int freeIndex;
+
+    public kQueues(int n, int k) {
+        this.n = n;
+        this.k = k;
+        arr = new int[this.n];
+        front = new int[this.k];
+        rear = new int[this.k];
+        next = new int[this.n];
+
+        for (int i = 0; i < k; i++)
+            front[i] = rear[i] = -1;
+
+        // Initialize all spaces as free
+        freeIndex = 0;
+        for (int i = 0; i < n - 1; i++)
+            next[i] = i + 1;
+
+        // -1 is used to indicate end of free list
+        next[n - 1] = -1;
+    }
+
+    // Function to check if queue 'qn' is empty
+    bool isEmpty(int qn) {
+        return (front[qn] == -1);
+    }
+
+    // Function to check if array is full
+    bool isFull() {
+        return (freeIndex == -1);
+    }
+
+    // Function to enqueue 'x' into queue 'qn'
+    public bool enqueue(int x, int qn) {
+
+        // Check if array is full
+        if (isFull())
+            return false;
+
+        // Get next free index
+        int i = freeIndex;
+        freeIndex = next[i];
+
+        // If queue is empty, update
+        // both front and rear
+        if (isEmpty(qn))
+            front[qn] = i;
+        else {
+            // Link new element to the previous rear
+            next[rear[qn]] = i;
+        }
+
+        // Update rear
+        rear[qn] = i;
+
+        // Store the element
+        arr[i] = x;
+
+        // Mark end of queue
+        next[i] = -1;
+
+        return true;
+    }
+
+    // Function to dequeue from queue 'qn'
+    public int dequeue(int qn) {
+        // Check if queue is empty
+        if (isEmpty(qn))
+            return -1;
+
+        // Get the front index of queue
+        int i = front[qn];
+
+        // Update front
+        front[qn] = next[i];
+
+        // If queue becomes empty
+        if (front[qn] == -1)
+            rear[qn] = -1;
+
+        // Add the dequeued position to free list
+        next[i] = freeIndex;
+        freeIndex = i;
+
+        // Return the dequeued element
+        return arr[i];
+    }
+}
+
+class GfG {
+    static void Main() {
+        int n = 10, k = 3;
+        kQueues queues = new kQueues(n, k);
+
+        Console.Write(queues.enqueue(10, 0) + " ");
+        Console.Write(queues.enqueue(20, 1) + " ");
+        Console.Write(queues.enqueue(30, 0) + " ");
+        Console.Write(queues.enqueue(40, 2) + " ");
+
+        Console.Write(queues.dequeue(0) + " ");
+        Console.Write(queues.dequeue(1) + " ");
+        Console.Write(queues.dequeue(2) + " ");
+        Console.Write(queues.dequeue(0) + " ");
+        Console.Write(queues.dequeue(0) + " ");
+    }
+}
+
+class kQueues {
+    constructor(n, k) {
+        this.n = n;
+        this.k = k;
+        this.arr = new Array(n);
+        this.front = new Array(k).fill(-1);
+        this.rear = new Array(k).fill(-1);
+        this.next = new Array(n);
+
+        // Initialize all spaces as free
+        this.freeIndex = 0;
+        for (let i = 0; i < n - 1; i++)
+            this.next[i] = i + 1;
+
+        // -1 is used to indicate end of free list
+        this.next[n - 1] = -1;
+    }
+
+    // Function to check if queue 'qn' is empty
+    isEmpty(qn) {
+        return this.front[qn] === -1;
+    }
+
+    // Function to check if array is full
+    isFull() {
+        return this.freeIndex === -1;
+    }
+
+    // Function to enqueue 'x' into queue 'qn'
+    enqueue(x, qn) {
+        if (this.isFull())
+            return false;
+
+        let i = this.freeIndex;
+        this.freeIndex = this.next[i];
+
+        if (this.isEmpty(qn))
+            this.front[qn] = i;
+        else
+            this.next[this.rear[qn]] = i;
+
+        this.rear[qn] = i;
+        this.arr[i] = x;
+        this.next[i] = -1;
+
+        return true;
+    }
+
+    // Function to dequeue from queue 'qn'
+    dequeue(qn) {
+        if (this.isEmpty(qn))
+            return -1;
+
+        let i = this.front[qn];
+        this.front[qn] = this.next[i];
+
+        if (this.front[qn] === -1)
+            this.rear[qn] = -1;
+
+        this.next[i] = this.freeIndex;
+        this.freeIndex = i;
+
+        return this.arr[i];
+    }
+}
+
+let n = 10, k = 3;
+let queues = new kQueues(n, k);
+
+console.log(
+    queues.enqueue(10, 0),
+    queues.enqueue(20, 1),
+    queues.enqueue(30, 0),
+    queues.enqueue(40, 2),
+
+    queues.dequeue(0),
+    queues.dequeue(1),
+    queues.dequeue(2),
+    queues.dequeue(0),
+    queues.dequeue(0)
+);
+
+1 1 1 1 10 20 40 30 -1

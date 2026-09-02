@@ -1,0 +1,610 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-number-platforms-required-railwaybus-station/
+Title: Minimum Platforms Required
+
+Given two arrays arr[] and dep[], that represent the arrival and departure time of i-th train respectively. Find the minimum number of platforms required so that no train has to wait. If the departure time of one train is the same as the arrival time of another train, both trains cannot use the same platform at that time.
+
+Note: Time intervals are in the 24-hour format (HHMM), where the first two characters represent hour (between 00 to 23) and the last two characters represent minutes (this will be <= 59 and >= 0). Leading zeros for hours less than 10 are optional (e.g., 0900 is the same as 900).
+
+Examples:
+
+> Input: arr[] = [1000, 935, 1100], dep[] = [1200, 1240, 1130] Output: 3 Explanation: We need 3 platforms for the arrival of these trains because all three trains have overlapping time. Input: arr[] = [900, 1235, 1100], dep[] = [1000, 1240, 1200] Output: 1 Explanation: Only 1 platform is required for all the three trains because the departure time of each train is less then arrival time of next train.
+
+Table of Content
+
+- [Naive Approach] Using Two Nested Loops - O(n2) time and O(1) space
+- [Expected Approach] Traverse all events in sorted order - O(n log(n)) Time and O(1) Space
+- [Expected Approach 2] Sweep Line
+
+### [Naive Approach] Using Two Nested Loops - O(n 2 ) time and O(1) space
+
+- Run two nested loops, where the outer loop iterates through each arrival time.
+- For every arrival time, count the number of trains present at the station at that instant.
+- Return the maximum count obtained, which is the minimum number of platforms required.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int minPlatform(vector<int>& arr, vector<int>& dep) {
+    int n = arr.size();
+    int res = 0;
+
+    // Consider each arrival time
+    for (int i = 0; i < n; i++) {
+
+        int cnt = 0;
+
+        // Count trains present at arr[i]
+        for (int j = 0; j < n; j++) {
+            if (arr[j] <= arr[i] && dep[j] >= arr[i])
+                cnt++;
+        }
+
+        res = max(res, cnt);
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> arr = {1000, 935, 1100};
+    vector<int> dep = {1200, 1240, 1130};
+
+    cout << minPlatform(arr, dep) << endl;
+
+    return 0;
+}
+
+import java.util.*;
+
+class GFG {
+
+    static int minPlatform(int[] arr, int[] dep) {
+        int n = arr.length;
+        int res = 0;
+
+        // Consider each arrival time
+        for (int i = 0; i < n; i++) {
+
+            int cnt = 0;
+
+            // Count trains present at arr[i]
+            for (int j = 0; j < n; j++) {
+                if (arr[j] <= arr[i] && dep[j] >= arr[i])
+                    cnt++;
+            }
+
+            res = Math.max(res, cnt);
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1000, 935, 1100};
+        int[] dep = {1200, 1240, 1130};
+
+        System.out.println(minPlatform(arr, dep));
+    }
+}
+
+def minPlatform(arr, dep):
+    n = len(arr)
+    res = 0
+
+    # Consider each arrival time
+    for i in range(n):
+
+        cnt = 0
+
+        # Count trains present at arr[i]
+        for j in range(n):
+            if arr[j] <= arr[i] and dep[j] >= arr[i]:
+                cnt += 1
+
+        res = max(res, cnt)
+
+    return res
+
+arr = [1000, 935, 1100]
+dep = [1200, 1240, 1130]
+print(minPlatform(arr, dep))
+
+using System;
+
+class GFG {
+
+    static int minPlatform(int[] arr, int[] dep) {
+        int n = arr.Length;
+        int res = 0;
+
+        // Consider each arrival time
+        for (int i = 0; i < n; i++) {
+
+            int cnt = 0;
+
+            // Count trains present at arr[i]
+            for (int j = 0; j < n; j++) {
+                if (arr[j] <= arr[i] && dep[j] >= arr[i])
+                    cnt++;
+            }
+
+            res = Math.Max(res, cnt);
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {1000, 935, 1100};
+        int[] dep = {1200, 1240, 1130};
+
+        Console.WriteLine(minPlatform(arr, dep));
+    }
+}
+
+function minPlatform(arr, dep) {
+    let n = arr.length;
+    let res = 0;
+
+    // Consider each arrival time
+    for (let i = 0; i < n; i++) {
+
+        let cnt = 0;
+
+        // Count trains present at arr[i]
+        for (let j = 0; j < n; j++) {
+            if (arr[j] <= arr[i] && dep[j] >= arr[i])
+                cnt++;
+        }
+
+        res = Math.max(cnt, res);
+    }
+
+    return res;
+}
+
+let arr = [1000, 935, 1100];
+let dep = [1200, 1240, 1130];
+
+console.log(minPlatform(arr, dep));
+
+3
+
+### [Expected Approach] Traverse all events in sorted order - O(n log(n)) Time and O(1) Space
+
+The idea is to consider all events in sorted order. Once the events are in sorted order, trace the number of trains at any time keeping track of  trains that have arrived, but not departed.
+
+Below are the steps
+
+- Sort arr[] in ascending order
+- Sort dep[] in ascending order
+- Now traverse all events in ascending order, we mainly use the idea of the merge() function of merge sort here to merge two sorted arrays.
+
+> arr[]  = {9:00,  9:40, 9:50,  11:00, 15:00, 18:00} dep[]  = {9:10, 12:00, 11:20, 11:30, 19:00, 20:00} All events are sorted by time. Total platforms at any time can be obtained by subtracting total departures from total arrivals by that time. Time      Event Type     Count at this Time 9:00       Arrival                  1 9:10       Departure            0 9:40       Arrival                  1 9:50       Arrival                  2 11:00      Arrival                  3 11:20      Departure           2 11:30      Departure           1 12:00      Departure          0 15:00      Arrival                 1 18:00      Arrival                 2 19:00      Departure          1 20:00      Departure         0 Minimum Platforms = Maximum platforms needed at any time = 3
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int minPlatform(vector<int> &arr, vector<int>& dep) {
+    int n = arr.size();
+    int res = 1;
+
+    sort(arr.begin(), arr.end());
+    sort(dep.begin(), dep.end());
+
+    // cnt indicates number of platforms
+    // needed at a time
+    int cnt = 1;
+    int i = 1, j = 0;
+
+    // Similar to merge in merge sort to process
+    // all events in sorted order
+    while (i < n && j < n) {
+
+        // If next event in sorted order is arrival,
+        // increment count of platforms needed
+        if (arr[i] <= dep[j]) {
+            cnt++;
+            i++;
+        }
+
+        // Else decrement count of platforms needed
+        else if (arr[i] > dep[j]) {
+            cnt--;
+            j++;
+        }
+
+        // Update result if needed
+        res = max(res, cnt);
+    }
+
+    return res;
+}
+
+int main() {
+
+    vector<int> arr = {900, 940, 950, 1100, 1500, 1800};
+    vector<int> dep = {910, 1200, 1120, 1130, 1900, 2000};
+    cout << minPlatform(arr, dep);
+    return 0;
+}
+
+import java.util.*;
+
+class GFG {
+
+    static int minPlatform(int[] arr, int[] dep) {
+        int n = arr.length;
+        int res = 1;
+
+        Arrays.sort(arr);
+        Arrays.sort(dep);
+
+        // cnt indicates number of platforms
+        // needed at a time
+        int cnt = 1;
+        int i = 1, j = 0;
+
+        // Similar to merge in merge sort to process
+        // all events in sorted order
+        while (i < n && j < n) {
+
+            // If next event in sorted order is arrival,
+            // increment count of platforms needed
+            if (arr[i] <= dep[j]) {
+                cnt++;
+                i++;
+            }
+
+            // Else decrement count of platforms needed
+            else if (arr[i] > dep[j]) {
+                cnt--;
+                j++;
+            }
+
+            // Update result if needed
+            res = Math.max(res, cnt);
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {900, 940, 950, 1100, 1500, 1800};
+        int[] dep = {910, 1200, 1120, 1130, 1900, 2000};
+        System.out.println(minPlatform(arr, dep));
+    }
+}
+
+def minPlatform(arr, dep):
+    n = len(arr)
+    res = 1
+
+    arr.sort()
+    dep.sort()
+
+    # cnt indicates number of platforms
+    # needed at a time
+    cnt = 1
+    i = 1
+    j = 0
+
+    # Similar to merge in merge sort to process
+    # all events in sorted order
+    while i < n and j < n:
+
+        # If next event in sorted order is arrival,
+        # increment count of platforms needed
+        if arr[i] <= dep[j]:
+            cnt += 1
+            i += 1
+
+        # Else decrement count of platforms needed
+        else:
+            cnt -= 1
+            j += 1
+
+        # Update result if needed
+        res = max(res, cnt)
+
+    return res
+
+arr = [900, 940, 950, 1100, 1500, 1800]
+dep = [910, 1200, 1120, 1130, 1900, 2000]
+print(minPlatform(arr, dep))
+
+using System;
+
+class GFG {
+
+    static int minPlatform(int[] arr, int[] dep) {
+        int n = arr.Length;
+        int res = 1;
+
+        Array.Sort(arr);
+        Array.Sort(dep);
+
+        // cnt indicates number of platforms
+        // needed at a time
+        int cnt = 1;
+        int i = 1, j = 0;
+
+        // Similar to merge in merge sort to process
+        // all events in sorted order
+        while (i < n && j < n) {
+
+            // If next event in sorted order is arrival,
+            // increment count of platforms needed
+            if (arr[i] <= dep[j]) {
+                cnt++;
+                i++;
+            }
+
+            // Else decrement count of platforms needed
+            else if (arr[i] > dep[j]) {
+                cnt--;
+                j++;
+            }
+
+            // Update result if needed
+            res = Math.Max(res, cnt);
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {900, 940, 950, 1100, 1500, 1800};
+        int[] dep = {910, 1200, 1120, 1130, 1900, 2000};
+        Console.WriteLine(minPlatform(arr, dep));
+    }
+}
+
+function minPlatform(arr, dep) {
+    let n = arr.length;
+    let res = 1;
+
+    arr.sort((a, b) => a - b);
+    dep.sort((a, b) => a - b);
+
+    // cnt indicates number of platforms
+    // needed at a time
+    let cnt = 1;
+    let i = 1, j = 0;
+
+    // Similar to merge in merge sort to process
+    // all events in sorted order
+    while (i < n && j < n) {
+
+        // If next event in sorted order is arrival,
+        // increment count of platforms needed
+        if (arr[i] <= dep[j]) {
+            cnt++;
+            i++;
+        }
+
+        // Else decrement count of platforms needed
+        else if (arr[i] > dep[j]) {
+            cnt--;
+            j++;
+        }
+
+        // Update result if needed
+        res = Math.max(res, cnt);
+    }
+
+    return res;
+}
+
+let arr = [900, 940, 950, 1100, 1500, 1800];
+let dep = [910, 1200, 1120, 1130, 1900, 2000];
+console.log(minPlatform(arr, dep));
+
+3
+
+### [Expected Approach 2] Sweep Line
+
+The Sweep Line Algorithm is an efficient technique for solving interval-based problems.
+
+> It works by treating each train's arrival and departure times as events on a timeline. By processing these events in time order, we can track how many trains are at the station at any moment, which directly gives the number of platforms needed at that time. The maximum overlap of trains during this process determines the minimum number of platforms required.
+
+Step by Step implementation:
+
+- Create an array v[] of size greater than the maximum departure time. This array will help track the number of platforms needed at each time.
+- Mark arrivals and departures:
+- For each arrival time, increment v[arrival_time] by 1, indicating that a platform is needed.
+- For each departure time, decrement v[departure_time + 1] by 1, indicating that a platform is freed as the train has left.
+- Iterate through v[] and compute the cumulative sum.
+- The running sum keeps track of the number of trains present at any given time.
+- The maximum value encountered represents the minimum number of platforms required.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int minPlatform(vector<int> &arr, vector<int>& dep) {
+    int n = arr.size();
+    int res = 0;
+
+    // Find the max Departure time
+    int maxDep = dep[0];
+    for (int i = 1; i < n; i++) {
+        maxDep = max(maxDep, dep[i]);
+    }
+    vector<int> v(maxDep + 2, 0);
+
+    // Increment the count at the arrival time and decrement
+    // at the departure time
+    for (int i = 0; i < n; i++) {
+        v[arr[i]]++;
+        v[dep[i] + 1]--;
+    }
+
+    int count = 0;
+
+    // Iterate over the vector and keep track of the maximum
+    // sum seen so far
+    for (int i = 0; i <= maxDep + 1; i++) {
+        count += v[i];
+        res = max(res, count);
+    }
+
+    return res;
+}
+
+int main() {
+
+    vector<int> arr = {900, 940, 950, 1100, 1500, 1800};
+    vector<int> dep = {910, 1200, 1120, 1130, 1900, 2000};
+    cout << minPlatform(arr, dep);
+    return 0;
+}
+
+import java.util.Arrays;
+
+class GfG {
+    static int minPlatform(int[] arr, int[] dep) {
+        int n = arr.length;
+        int res = 0;
+
+        // Find the max Departure time
+        int maxDep = dep[0];
+        for (int i = 1; i < n; i++) {
+            maxDep = Math.max(maxDep, dep[i]);
+        }
+        int[] v = new int[maxDep + 2];
+
+        // Increment the count at the arrival time and decrement
+        // at the departure time
+        for (int i = 0; i < n; i++) {
+            v[arr[i]]++;
+            v[dep[i] + 1]--;
+        }
+
+        int count = 0;
+
+        // Iterate over the array and keep track of the maximum
+        // sum seen so far
+        for (int i = 0; i <= maxDep + 1; i++) {
+            count += v[i];
+            res = Math.max(res, count);
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {900, 940, 950, 1100, 1500, 1800};
+        int[] dep = {910, 1200, 1120, 1130, 1900, 2000};
+        System.out.println(minPlatform(arr, dep));
+    }
+}
+
+def minPlatform(arr, dep):
+    n = len(arr)
+    res = 0
+
+    # Find the max Departure time
+    maxDep = max(dep)
+    v = [0] * (maxDep + 2)
+
+    # Increment the count at the arrival time and decrement
+    # at the departure time
+    for i in range(n):
+        v[arr[i]] += 1
+        v[dep[i] + 1] -= 1
+
+    count = 0
+
+    # Iterate over the list and keep track of the maximum
+    # sum seen so far
+    for i in range(maxDep + 2):
+        count += v[i]
+        res = max(res, count)
+
+    return res
+
+if __name__ == "__main__":
+    arr = [900, 940, 950, 1100, 1500, 1800]
+    dep = [910, 1200, 1120, 1130, 1900, 2000]
+    print(minPlatform(arr, dep))
+
+using System;
+
+class GfG {
+    static int minPlatform(int[] arr, int[] dep) {
+        int n = arr.Length;
+        int res = 0;
+
+        // Find the max Departure time
+        int maxDep = dep[0];
+        for (int i = 1; i < n; i++) {
+            maxDep = Math.Max(maxDep, dep[i]);
+        }
+        int[] v = new int[maxDep + 2];
+
+        // Increment the count at the arrival time and decrement
+        // at the departure time
+        for (int i = 0; i < n; i++) {
+            v[arr[i]]++;
+            v[dep[i] + 1]--;
+        }
+
+        int count = 0;
+
+        // Iterate over the array and keep track of the maximum
+        // sum seen so far
+        for (int i = 0; i <= maxDep + 1; i++) {
+            count += v[i];
+            res = Math.Max(res, count);
+        }
+
+        return res;
+    }
+
+    static void Main(string[] args) {
+        int[] arr = {900, 940, 950, 1100, 1500, 1800};
+        int[] dep = {910, 1200, 1120, 1130, 1900, 2000};
+        Console.WriteLine(minPlatform(arr, dep));
+    }
+}
+
+function minPlatform(arr, dep) {
+    let n = arr.length;
+    let res = 0;
+
+    // Find the max Departure time
+    let maxDep = Math.max(...dep);
+    let v = new Array(maxDep + 2).fill(0);
+
+    // Increment the count at the arrival time and decrement
+    // at the departure time
+    for (let i = 0; i < n; i++) {
+        v[arr[i]]++;
+        v[dep[i] + 1]--;
+    }
+
+    let count = 0;
+
+    // Iterate over the array and keep track of the maximum
+    // sum seen so far
+    for (let i = 0; i <= maxDep + 1; i++) {
+        count += v[i];
+        res = Math.max(res, count);
+    }
+
+    return res;
+}
+
+// Driver Code
+let arr = [900, 940, 950, 1100, 1500, 1800];
+let dep = [910, 1200, 1120, 1130, 1900, 2000];
+console.log(minPlatform(arr, dep));
+
+3
+
+Time Complexity : O(n + k), where n is the number of trains and k is the maximum value present in the arrays. Auxiliary space : O(k), where k is the maximum value present in both the arrays.

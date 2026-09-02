@@ -1,0 +1,428 @@
+Source: https://www.geeksforgeeks.org/dsa/convert-infix-expression-to-postfix-expression/
+Title: Infix to Postfix Expression
+
+Given a string s representing an infix expression ("operand1 operator operand2" ), Convert it into its postfix notation ("operand1 operand2 operator").
+
+Note: The precedence order is as follows: (^) has the highest precedence and is evaluated from right to left, (* and /) come next with left to right associativity, and (+ and -) have the lowest precedence with left to right associativity.
+
+Examples:
+
+> Input: s = "a*(b+c)/d" Output: abc+*d/ Explanation: The expression is a * (b + c) / d. First, inside the brackets, b + c becomes bc+. Now the expression looks like a * (bc+) / d. Next, multiply a with (bc+), so it becomes abc+* . Finally, divide this result by d, so it becomes abc+*d/. Input: s = "a+b*c+d" Output: abc*+d+ Explanation: The expression a + b * c + d is converted by first doing b * c → bc*, then adding a → abc*+, and finally adding d → abc*+d+.
+
+### [Approach] Using Stack - O(n) Time and O(n) Space
+
+> The idea is to scan the expression from left to right, directly placing operands (a, b, c…) in the same order as they appear into the result and place operators (+, -, *, /, ^) after their operands. Operators are handled using a stack so that precedence and associativity are maintained.
+
+How to Maintain Precedence and Associativity?
+
+To maintain operator precedence and associativity, compare each new operator with the top of the stack. Pop operators from the stack if they have higher precedence, or if they have equal precedence and the new operator is left-associative (+, -, *, /). If the new operator is right-associative (^), leave the stack operators in place. Push the new operator onto the stack. Parentheses are handled specially: '(' is pushed onto the stack, and when ')' is encountered, operators are popped until a matching '(' is found.
+
+### Illustration:
+
+#include <iostream>
+#include <stack>
+using namespace std;
+
+// Function to return precedence of operators
+int prec(char c) {
+    if (c == '^')
+        return 3;
+    else if (c == '/' || c == '*')
+        return 2;
+    else if (c == '+' || c == '-')
+        return 1;
+    else
+        return -1;
+}
+
+// Function to check if operator is right-associative
+bool isRightAssociative(char c) {
+    return c == '^';
+}
+
+string infixToPostfix(string &s) {
+    stack<char> st;
+    string res;
+
+    for (int i = 0; i < s.length(); i++) {
+        char c = s[i];
+
+        // If operand, add to result
+        if ((c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9'))
+            res += c;
+
+        // If '(', push to stack
+        else if (c == '(')
+            st.push('(');
+
+        // If ')', pop until '('
+        else if (c == ')') {
+            while (!st.empty() && st.top() != '(') {
+                res += st.top();
+                st.pop();
+            }
+            st.pop();
+        }
+
+        // If operator
+        else {
+            while (!st.empty() && st.top() != '(' &&
+                   (prec(st.top()) > prec(c) ||
+                   (prec(st.top()) == prec(c) && !isRightAssociative(c)))) {
+                res += st.top();
+                st.pop();
+            }
+            st.push(c);
+        }
+    }
+
+    // Pop remaining operators
+    while (!st.empty()) {
+        res += st.top();
+        st.pop();
+    }
+
+    return res;
+}
+
+int main() {
+    string exp = "a*(b+c)/d";
+    cout << infixToPostfix(exp);
+    return 0;
+}
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+int prec(char c) {
+    if (c == '^')
+        return 3;
+    else if (c == '/' || c == '*')
+        return 2;
+    else if (c == '+' || c == '-')
+        return 1;
+    else
+        return -1;
+}
+
+// Check if operator is right-associative
+int isRightAssociative(char c) {
+    return c == '^';
+}
+
+void infixToPostfix(char* exp) {
+    int len = strlen(exp);
+    char result[len + 1];
+    char stack[len];
+    int j = 0;
+    int top = -1;
+
+    for (int i = 0; i < len; i++) {
+        char c = exp[i];
+
+        // If operand, add to result
+        if (isalnum(c)) {
+            result[j++] = c;
+        }
+        // If '(', push to stack
+        else if (c == '(') {
+            stack[++top] = '(';
+        }
+        // If ')', pop until '('
+        else if (c == ')') {
+            while (top != -1 && stack[top] != '(') {
+                result[j++] = stack[top--];
+            }
+
+            // pop '('
+            top--;
+        }
+
+        // If operator
+        else {
+            while (top != -1 && stack[top] != '(' &&
+                  (prec(stack[top]) > prec(c) ||
+                  (prec(stack[top]) == prec(c) && !isRightAssociative(c)))) {
+                result[j++] = stack[top--];
+            }
+            stack[++top] = c;
+        }
+    }
+
+    // Pop remaining operators
+    while (top != -1) {
+        result[j++] = stack[top--];
+    }
+
+    result[j] = '\0';
+    printf("%s\n", result);
+}
+
+int main() {
+    char exp1[] = "a*(b+c)/d";
+    infixToPostfix(exp1);
+    return 0;
+}
+
+import java.util.Stack;
+
+public class GfG {
+
+    // Function to return precedence of operators
+    static int prec(char c) {
+        if (c == '^')
+            return 3;
+        else if (c == '/' || c == '*')
+            return 2;
+        else if (c == '+' || c == '-')
+            return 1;
+        else
+            return -1;
+    }
+
+    // Function to check if operator is right-associative
+    static boolean isRightAssociative(char c) {
+        return c == '^';
+    }
+
+    public static String infixToPostfix(String s) {
+        Stack<Character> st = new Stack<>();
+        StringBuilder res = new StringBuilder();
+
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            // If operand, add to result
+            if ((c >= 'a' && c <= 'z') ||
+                (c >= 'A' && c <= 'Z') ||
+                (c >= '0' && c <= '9'))
+                res.append(c);
+
+            // If '(', push to stack
+            else if (c == '(')
+                st.push('(');
+
+            // If ')', pop until '( '
+            else if (c == ')') {
+                while (!st.isEmpty() && st.peek() != '(') {
+                    res.append(st.pop());
+                }
+                st.pop();
+            }
+
+            // If operator
+            else {
+                while (!st.isEmpty() && st.peek() != '(' &&
+                       (prec(st.peek()) > prec(c) ||
+                       (prec(st.peek()) == prec(c) && !isRightAssociative(c)))) {
+                    res.append(st.pop());
+                }
+                st.push(c);
+            }
+        }
+
+        // Pop remaining operators
+        while (!st.isEmpty()) {
+            res.append(st.pop());
+        }
+
+        return res.toString();
+    }
+
+    public static void main(String[] args) {
+        String exp = "a*(b+c)/d";
+        System.out.println(infixToPostfix(exp));
+    }
+}
+
+def prec(c):
+    if c == '^':
+        return 3
+    elif c == '/' or c == '*':
+        return 2
+    elif c == '+' or c == '-':
+        return 1
+    else:
+        return -1
+
+def isRightAssociative(c):
+    return c == '^'
+
+def infixToPostfix(s):
+    st = []
+    res = []
+
+    for c in s:
+        # If operand, add to result
+        if ('a' <= c <= 'z') or ('A' <= c <= 'Z') or ('0' <= c <= '9'):
+            res.append(c)
+
+        # If '(', push to stack
+        elif c == '(':
+            st.append('(')
+
+        # If ')', pop until '('
+        elif c == ')':
+            while st and st[-1] != '(':
+                res.append(st.pop())
+            st.pop()
+
+        # If operator
+        else:
+            while st and st[-1] != '(' and \
+                (prec(st[-1]) > prec(c) or (prec(st[-1]) == prec(c) \
+                                    and not isRightAssociative(c))):
+                res.append(st.pop())
+            st.append(c)
+
+    # Pop remaining operators
+    while st:
+        res.append(st.pop())
+
+    return ''.join(res)
+
+if __name__ == '__main__':
+    exp = "a*(b+c)/d"
+    print(infixToPostfix(exp))
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to return precedence of operators
+    static int prec(char c) {
+        if (c == '^')
+            return 3;
+        else if (c == '/' || c == '*')
+            return 2;
+        else if (c == '+' || c == '-')
+            return 1;
+        else
+            return -1;
+    }
+
+    // Function to check if operator is right-associative
+    static bool isRightAssociative(char c) {
+        return c == '^';
+    }
+
+    static string infixToPostfix(string s) {
+        Stack<char> st = new Stack<char>();
+        string res = "";
+
+        for (int i = 0; i < s.Length; i++) {
+            char c = s[i];
+
+            // If operand, add to result
+            if ((c >= 'a' && c <= 'z') ||
+                (c >= 'A' && c <= 'Z') ||
+                (c >= '0' && c <= '9'))
+                res += c;
+
+            // If '(', push to stack
+            else if (c == '(')
+                st.Push('(');
+
+            // If ')', pop until '('
+            else if (c == ')') {
+                while (st.Count > 0 && st.Peek() != '(') {
+                    res += st.Pop();
+                }
+                st.Pop();
+            }
+
+            // If operator
+            else {
+                while (st.Count > 0 && st.Peek() != '(' &&
+                       (prec(st.Peek()) > prec(c) ||
+                        (prec(st.Peek()) == prec(c) && !isRightAssociative(c))))
+                {
+                    res += st.Pop();
+                }
+                st.Push(c);
+            }
+        }
+
+        // Pop remaining operators
+        while (st.Count > 0) {
+            res += st.Pop();
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        string exp = "a*(b+c)/d";
+        Console.WriteLine(infixToPostfix(exp));
+    }
+}
+
+function prec(c) {
+    if (c === '^')
+        return 3;
+    else if (c === '/' || c === '*')
+        return 2;
+    else if (c === '+' || c === '-')
+        return 1;
+    else
+        return -1;
+}
+
+function isRightAssociative(c) {
+    return c === '^';
+}
+
+function infixToPostfix(s) {
+    let st = [];
+    let res = '';
+
+    for (let i = 0; i < s.length; i++) {
+        let c = s[i];
+
+        // If operand, add to result
+        if ((c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9'))
+            res += c;
+
+        // If '(', push to stack
+        else if (c === '(')
+            st.push('(');
+
+        // If ')', pop until '('
+        else if (c === ')') {
+            while (st.length > 0 && st[st.length - 1] !== '(') {
+                res += st.pop();
+            }
+            st.pop();
+        }
+
+        // If operator
+        else {
+            while (st.length > 0 && st[st.length - 1] !== '(' &&
+                   (prec(st[st.length - 1]) > prec(c) ||
+                    (prec(st[st.length - 1]) === prec(c) && !isRightAssociative(c)))) {
+                res += st.pop();
+            }
+            st.push(c);
+        }
+    }
+
+    // Pop remaining operators
+    while (st.length > 0) {
+        res += st.pop();
+    }
+
+    return res;
+}
+
+// Driver Code
+let exp = "a*(b+c)/d";
+console.log(infixToPostfix(exp));
+
+abc+*d/

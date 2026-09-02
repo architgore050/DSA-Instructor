@@ -1,0 +1,823 @@
+Source: https://www.geeksforgeeks.org/dsa/search-element-sorted-matrix/
+Title: Search in a sorted matrix
+
+You are given a 2D matrix mat[][] of size n × m , where:
+
+- Each row is sorted in increasing order .
+- The first element of each row is greater than or equal to the last element o f the previous row (i.e., mat[i][0] ≥ mat[i−1][m−1] for all 1 ≤ i < n ).
+
+Given an integer x , check whether x is present in the matrix or not.
+
+Examples:
+
+> Input: x = 14, mat[][] = [[ 1,  5,  9], [14, 20, 21], [30, 34, 43]] Output: true Explanation: The value 14 is present in the second row, first column of the matrix. Input: x = 42, mat[][] = [[ 1,  5,  9,  11], [14, 20, 21, 26], [30, 34, 43, 50]] Output: false Explanation: x is not present in matrix.
+
+Table of Content
+
+- [Naive Approach] By Traversing all elements – O(n × m) Time and O(1) Space
+- [Better Approach] Using Binary Search Twice - O(log n + log m) Time and O(1) Space
+- [Expected Approach] Using Binary Search Once - O(log(n × m)) and O(1) Space
+
+### [Naive Approach] By Traversing all elements – O(n × m) Time and O(1) Space
+
+> The idea is to iterate through the entire matrix mat[][] and compare each element with x. If an element matches the x, we will return true. Otherwise, at the end of the traversal, we will return false.
+
+Follow the  steps to implement:
+
+- Iterate through each element of the matrix.
+- Compare each element with x.
+- If a match is found, return true; otherwise, return false.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+bool searchMatrix(vector<vector<int>>& mat, int x) {
+    int n = mat.size();
+    int m = mat[0].size();
+
+    // traverse every element in the matrix
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            if (mat[i][j] == x)
+                return true;
+        }
+    }
+
+    return false;
+}
+
+int main() {
+    vector<vector<int>> mat = {
+        {1, 5, 9},
+        {14, 20, 21},
+        {30, 34, 43}
+    };
+    int x = 14;
+    cout << (searchMatrix(mat, x) ? "true" : "false") << endl;
+}
+
+#include <stdbool.h>
+#include <stdio.h>
+
+bool searchMatrix(int n, int m, int mat[n][m], int x)
+{
+    // Traverse every element in the matrix
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < m; j++)
+        {
+            if (mat[i][j] == x)
+                return true;
+        }
+    }
+    return false;
+}
+
+int main()
+{
+    int mat[3][3] = {{1, 5, 9}, {14, 20, 21}, {30, 34, 43}};
+    int n = 3, m = 3;
+    int x = 14;
+
+    if (searchMatrix(n, m, mat, x))
+        printf("true\n");
+    else
+        printf("false\n");
+
+    return 0;
+}
+
+class GfG {
+    public static boolean searchMatrix(int[][] mat, int x) {
+        int n = mat.length;
+        int m = mat[0].length;
+
+        // traverse every element in the matrix
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (mat[i][j] == x)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static void main(String[] args) {
+        int[][] mat = {
+            {1, 5, 9},
+            {14, 20, 21},
+            {30, 34, 43}
+        };
+        int x = 14;
+        System.out.println(searchMatrix(mat, x) ? "true" : "false");
+    }
+}
+
+def searchMatrix(mat, x):
+    n = len(mat)
+    m = len(mat[0])
+
+    # traverse every element in the matrix
+    for i in range(n):
+        for j in range(m):
+            if mat[i][j] == x:
+                return True
+
+    return False
+
+if __name__ == "__main__":
+    mat = [
+        [1, 5, 9],
+        [14, 20, 21],
+        [30, 34, 43]
+    ]
+    x = 14
+    print("true" if searchMatrix(mat, x) else "false")
+
+using System;
+
+class GfG {
+    public static bool searchMatrix(int[][] mat, int x) {
+        int n = mat.Length;
+        int m = mat[0].Length;
+
+        // traverse every element in the matrix
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (mat[i][j] == x)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static void Main(string[] args) {
+        int[][] mat = new int[][] {
+            new int[] {1, 5, 9},
+            new int[] {14, 20, 21},
+            new int[] {30, 34, 43}
+        };
+        int x = 14;
+        Console.WriteLine(searchMatrix(mat, x) ? "true" : "false");
+    }
+}
+
+function searchMatrix(mat, x) {
+    let n = mat.length;
+    let m = mat[0].length;
+
+    // traverse every element in the matrix
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < m; j++) {
+            if (mat[i][j] === x)
+                return true;
+        }
+    }
+
+    return false;
+}
+
+// Driver Code
+let mat = [
+    [1, 5, 9],
+    [14, 20, 21],
+    [30, 34, 43]
+];
+let x = 14;
+console.log(searchMatrix(mat, x) ? "true" : "false");
+
+true
+
+### [Better Approach] Using Binary Search Twice - O(log n + log m) Time and O(1) Space
+
+> To search efficiently, we first use binary search to find the row where the target x might be located. This is done by comparing x with the first element of the middle row in each step. Once the possible row is identified, we then perform a second binary search within that row to check if x is present.
+
+Step By Step Implementations:
+
+- Start by setting low = 0 and high = n - 1 .
+- Find the middle row using (low + high) / 2 .
+- If x is smaller than the first element of the middle row, then x cannot be in that row or any row below it. So, move your search to the rows above by setting high = mid - 1 .
+- If x is greater than or equal to the first element of the middle row, then it might be in that row or one of the rows below. So, store this row as a possible candidate and move your search downward by setting low = mid + 1 .
+- After finding the correct row where x could be, just do a simple binary search in that row to check if x is present.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// function to binary search for x in arr[]
+bool search(vector<int> &arr, int x) {
+    int lo = 0, hi = arr.size() - 1;
+
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2;
+
+        if (x == arr[mid])
+            return true;
+        if (x < arr[mid])
+            hi = mid - 1;
+        else
+            lo = mid + 1;
+    }
+    return false;
+}
+
+// function to search element x in fully
+// sorted matrix
+bool searchMatrix(vector<vector<int>> &mat, int x) {
+    int n = mat.size(), m = mat[0].size();
+    int lo = 0, hi = n - 1;
+    int row = -1;
+
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2;
+
+        // if the first element of mid row is equal to x,
+        // return true
+        if (x == mat[mid][0])
+            return true;
+
+        // if x is greater than first element of mid row,
+        // store the mid row and search in lower half
+        if (x > mat[mid][0]) {
+            row = mid;
+            lo = mid + 1;
+        }
+
+        // if x is smaller than first element of mid row,
+        // search in upper half
+        else
+            hi = mid - 1;
+    }
+
+    // if x is smaller than all elements of mat[][]
+    if (row == -1)
+        return false;
+
+    return search(mat[row], x);
+}
+
+int main() {
+    vector<vector<int>> mat = {{1, 5, 9}, {14, 20, 21}, {30, 34, 43}};
+    int x = 14;
+
+    if (searchMatrix(mat, x))
+        cout << "true";
+    else
+        cout << "false";
+
+    return 0;
+}
+
+#include <stdbool.h>
+#include <stdio.h>
+
+// Function to binary search for x in arr[]
+bool search(int m, int arr[m], int x)
+{
+    int lo = 0, hi = m - 1;
+
+    while (lo <= hi)
+    {
+        int mid = (lo + hi) / 2;
+
+        if (x == arr[mid])
+            return true;
+        if (x < arr[mid])
+            hi = mid - 1;
+        else
+            lo = mid + 1;
+    }
+    return false;
+}
+
+// Function to search element x in fully sorted matrix
+bool searchMatrix(int n, int m, int mat[n][m], int x)
+{
+    int lo = 0, hi = n - 1;
+    int row = -1;
+
+    while (lo <= hi)
+    {
+        int mid = (lo + hi) / 2;
+
+        if (x == mat[mid][0])
+            return true;
+
+        if (x > mat[mid][0])
+        {
+            row = mid;
+            lo = mid + 1;
+        }
+        else
+        {
+            hi = mid - 1;
+        }
+    }
+
+    // If x is smaller than all elements of matrix
+    if (row == -1)
+        return false;
+
+    return search(m, mat[row], x);
+}
+
+int main()
+{
+    int mat[3][3] = {{1, 5, 9}, {14, 20, 21}, {30, 34, 43}};
+    int n = 3, m = 3;
+    int x = 14;
+
+    if (searchMatrix(n, m, mat, x))
+        printf("true\n");
+    else
+        printf("false\n");
+
+    return 0;
+}
+
+class GfG {
+
+    // function to binary search for x in arr[]
+    static boolean search(int[] arr, int x) {
+        int lo = 0, hi = arr.length - 1;
+
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+
+            if (x == arr[mid])
+                return true;
+            if (x < arr[mid])
+                hi = mid - 1;
+            else
+                lo = mid + 1;
+        }
+        return false;
+    }
+
+    // function to search element x in fully
+    // sorted matrix
+    static boolean searchMatrix(int[][] mat, int x) {
+        int n = mat.length, m = mat[0].length;
+        int lo = 0, hi = n - 1;
+        int row = -1;
+
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+
+            // if the first element of mid row is equal to x,
+            // return true
+            if (x == mat[mid][0])
+                return true;
+
+            // if x is greater than first element of mid row,
+            // store the mid row and search in lower half
+            if (x > mat[mid][0]) {
+                row = mid;
+                lo = mid + 1;
+            }
+
+            // if x is smaller than first element of mid row,
+            // search in upper half
+            else
+                hi = mid - 1;
+        }
+
+        // if x is smaller than all elements of mat[][]
+        if (row == -1)
+            return false;
+
+        return search(mat[row], x);
+    }
+
+    public static void main(String[] args) {
+        int[][] mat = {
+            {1, 5, 9},
+            {14, 20, 21},
+            {30, 34, 43}
+        };
+        int x = 14;
+
+        if (searchMatrix(mat, x))
+            System.out.println("true");
+        else
+            System.out.println("false");
+    }
+}
+
+# function to binary search for x in arr[]
+def search(arr, x):
+    lo = 0
+    hi = len(arr) - 1
+
+    while lo <= hi:
+        mid = (lo + hi) // 2
+
+        if x == arr[mid]:
+            return True
+        if x < arr[mid]:
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    return False
+
+# function to search element x in fully
+# sorted matrix
+def searchMatrix(mat, x):
+    n = len(mat)
+    m = len(mat[0])
+    lo = 0
+    hi = n - 1
+    row = -1
+
+    while lo <= hi:
+        mid = (lo + hi) // 2
+
+        # if the first element of mid row is equal to x,
+        # return true
+        if x == mat[mid][0]:
+            return True
+
+        # if x is greater than first element of mid row,
+        # store the mid row and search in lower half
+        if x > mat[mid][0]:
+            row = mid
+            lo = mid + 1
+
+        # if x is smaller than first element of mid row,
+        # search in upper half
+        else:
+            hi = mid - 1
+
+    # if x is smaller than all elements of mat[][]
+    if row == -1:
+        return False
+
+    return search(mat[row], x)
+
+if __name__ == "__main__":
+    mat = [[1, 5, 9], [14, 20, 21], [30, 34, 43]]
+    x = 14
+
+    if searchMatrix(mat, x):
+        print("true")
+    else:
+        print("false")
+
+using System;
+
+class GfG {
+
+    // function to binary search for x in arr[]
+    static bool Search(int[] arr, int x) {
+        int lo = 0, hi = arr.Length - 1;
+
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+
+            if (x == arr[mid])
+                return true;
+            if (x < arr[mid])
+                hi = mid - 1;
+            else
+                lo = mid + 1;
+        }
+        return false;
+    }
+
+    // function to search element x in fully
+    // sorted matrix
+    static bool SearchMatrix(int[][] mat, int x) {
+        int n = mat.Length, m = mat[0].Length;
+        int lo = 0, hi = n - 1;
+        int row = -1;
+
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+
+            // if the first element of mid row is equal to x,
+            // return true
+            if (x == mat[mid][0])
+                return true;
+
+            // if x is greater than first element of mid row,
+            // store the mid row and search in lower half
+            if (x > mat[mid][0]) {
+                row = mid;
+                lo = mid + 1;
+            }
+
+            // if x is smaller than first element of mid row,
+            // search in upper half
+            else
+                hi = mid - 1;
+        }
+
+        // if x is smaller than all elements of mat[][]
+        if (row == -1)
+            return false;
+
+        return Search(mat[row], x);
+    }
+
+    static void Main(string[] args) {
+        int[][] mat = new int[][] {
+            new int[] {1, 5, 9},
+            new int[] {14, 20, 21},
+            new int[] {30, 34, 43}
+        };
+        int x = 14;
+
+        if (SearchMatrix(mat, x))
+            Console.WriteLine("true");
+        else
+            Console.WriteLine("false");
+    }
+}
+
+// function to binary search for x in arr[]
+function search(arr, x) {
+    let lo = 0, hi = arr.length - 1;
+
+    while (lo <= hi) {
+        let mid = Math.floor((lo + hi) / 2);
+
+        if (x === arr[mid])
+            return true;
+        if (x < arr[mid])
+            hi = mid - 1;
+        else
+            lo = mid + 1;
+    }
+    return false;
+}
+
+// function to search element x in fully
+// sorted matrix
+function searchMatrix(mat, x) {
+    let n = mat.length, m = mat[0].length;
+    let lo = 0, hi = n - 1;
+    let row = -1;
+
+    while (lo <= hi) {
+        let mid = Math.floor((lo + hi) / 2);
+
+        // if the first element of mid row is equal to x,
+        // return true
+        if (x === mat[mid][0])
+            return true;
+
+        // if x is greater than first element of mid row,
+        // store the mid row and search in lower half
+        if (x > mat[mid][0]) {
+            row = mid;
+            lo = mid + 1;
+        }
+
+        // if x is smaller than first element of mid row,
+        // search in upper half
+        else
+            hi = mid - 1;
+    }
+
+    // if x is smaller than all elements of mat[][]
+    if (row === -1)
+        return false;
+
+    return search(mat[row], x);
+}
+
+// Driver code
+const mat = [
+    [1, 5, 9],
+    [14, 20, 21],
+    [30, 34, 43]
+];
+const x = 14;
+if (searchMatrix(mat, x))
+    console.log("true");
+else
+    console.log("false");
+
+true
+
+### [Expected Approach] Using Binary Search Once - O(log(n × m)) and O(1) Space
+
+The idea is to consider the given matrix as 1D array and apply only one binary search. For example, for a matrix of size n x m and we can consider it as a 1D array of size n*m, then the first index would be 0 and last index would n*m-1. So, we need to do binary search from low = 0 to high = (n*m-1).
+
+How to find the element in 2D matrix corresponding to index = mid?
+
+> Since each row of mat[][] will have m elements, so we can find the row of the element as (mid / m) and the column of the element as (mid % m) . Then, we can compare x with arr[mid/m][mid%m] for each mid and complete our binary search.
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+bool searchMatrix(vector<vector<int>>& mat, int x) {
+    int n = mat.size(), m = mat[0].size();
+
+    int lo = 0, hi = n * m - 1;
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2;
+
+        // find row and column of element at mid index
+        int row = mid / m;
+        int col = mid % m;
+
+        // if x is found, return true
+        if (mat[row][col] == x)
+            return true;
+
+        // if x is greater than mat[row][col], search
+        // in right half
+        if (mat[row][col] < x)
+            lo = mid + 1;
+
+        // if x is less than mat[row][col], search
+        // in left half
+        else
+            hi = mid - 1;
+    }
+    return false;
+}
+
+int main() {
+    vector<vector<int>> mat = {{1, 5, 9},
+                               {14, 20, 21},
+                               {30, 34, 43}};
+    int x = 14;
+
+    if (searchMatrix(mat, x))
+        cout << "true";
+    else
+        cout << "false";
+
+    return 0;
+}
+
+class GfG {
+
+    static boolean searchMatrix(int[][] mat, int x) {
+        int n = mat.length, m = mat[0].length;
+
+        int lo = 0, hi = n * m - 1;
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+
+            // find row and column of element at mid index
+            int row = mid / m;
+            int col = mid % m;
+
+            // if x is found, return true
+            if (mat[row][col] == x)
+                return true;
+
+            // if x is greater than mat[row][col], search
+            // in right half
+            if (mat[row][col] < x)
+                lo = mid + 1;
+
+            // if x is less than mat[row][col], search
+            // in left half
+            else
+                hi = mid - 1;
+        }
+        return false;
+    }
+
+    public static void main(String[] args) {
+        int[][] mat = {{1, 5, 9},
+                       {14, 20, 21},
+                       {30, 34, 43}};
+        int x = 14;
+
+        if (searchMatrix(mat, x))
+            System.out.println("true");
+        else
+            System.out.println("false");
+    }
+}
+
+def searchMatrix(mat, x):
+    n = len(mat)
+    m = len(mat[0])
+
+    lo, hi = 0, n * m - 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+
+        # find row and column of element at mid index
+        row = mid // m
+        col = mid % m
+
+        # if x is found, return true
+        if mat[row][col] == x:
+            return True
+
+        # if x is greater than mat[row][col], search
+        # in right half
+        if mat[row][col] < x:
+            lo = mid + 1
+
+        # if x is less than mat[row][col], search
+        # in left half
+        else:
+            hi = mid - 1
+
+    return False
+
+if __name__ == "__main__":
+    mat =  [[1, 5, 9],
+            [14, 20, 21],
+            [30, 34, 43]]
+    x = 14
+
+    if searchMatrix(mat, x):
+        print("true")
+    else:
+        print("false")
+
+using System;
+
+class GfG {
+
+    // function to search for x in the matrix
+    // using binary search
+    static bool searchMatrix(int[,] mat, int x) {
+        int n = mat.GetLength(0), m = mat.GetLength(1);
+
+        int lo = 0, hi = n * m - 1;
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+
+            // find row and column of element at mid index
+            int row = mid / m;
+            int col = mid % m;
+
+            // if x is found, return true
+            if (mat[row, col] == x)
+                return true;
+
+            // if x is greater than mat[row, col], search
+            // in right half
+            if (mat[row, col] < x)
+                lo = mid + 1;
+
+            // if x is less than mat[row, col], search
+            // in left half
+            else
+                hi = mid - 1;
+        }
+        return false;
+    }
+
+    static void Main() {
+        int[,] mat = { { 1, 5, 9 }, { 14, 20, 21 }, { 30, 34, 43 } };
+        int x = 14;
+        if (searchMatrix(mat, x))
+            Console.WriteLine("true");
+        else
+            Console.WriteLine("false");
+    }
+}
+
+function searchMatrix(mat, x) {
+    let n = mat.length, m = mat[0].length;
+
+    let lo = 0, hi = n * m - 1;
+    while (lo <= hi) {
+        let mid = Math.floor((lo + hi) / 2);
+
+        // find row and column of element at mid index
+        let row = Math.floor(mid / m);
+        let col = mid % m;
+
+        // if x is found, return true
+        if (mat[row][col] === x)
+            return true;
+
+        // if x is greater than mat[row][col], search
+        // in right half
+        if (mat[row][col] < x)
+            lo = mid + 1;
+
+        // if x is less than mat[row][col], search
+        // in left half
+        else
+            hi = mid - 1;
+    }
+    return false;
+}
+
+// Driver Code
+let mat = [[1, 5, 9], [14, 20, 21], [30, 34, 43]];
+let x = 14;
+
+if (searchMatrix(mat, x))
+    console.log("true");
+else
+    console.log("false");
+
+true

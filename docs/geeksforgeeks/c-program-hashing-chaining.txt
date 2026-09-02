@@ -1,0 +1,878 @@
+Source: https://www.geeksforgeeks.org/dsa/c-program-hashing-chaining/
+Title: Hashing with Chaining Implementation
+
+In hashing there is a hash function that maps keys to some values. But these hashing functions may lead to a collision that is two or more keys are mapped to same value. Chain hashing avoids collision. The idea is to make each cell of hash table point to a linked list of records that have same hash function value.
+
+For a more detailed explanation and theoretical background on this approach, please refer to Hashing | Set 2 (Separate Chaining) .
+
+Let's create a hash function, such that our hash table has 'n' number of buckets.
+
+To insert a node into the hash table, we first compute the hash index for the given key using a hash function: hashIndex = key % noOfBuckets . This index determines the appropriate bucket where the node should be inserted.
+
+Example: noOfBuckets = 7 keys to insert = [15, 11, 27, 8]
+
+For each key:
+
+- 15 % 7 = 1
+- 11 % 7 = 4
+- 27 % 7 = 6
+- 8  % 7 = 1
+
+Insert : Move to the bucket corresponding to the above-calculated hash index and insert the new node at the end of the list. Delete : To delete a node from hash table, calculate the hash index for the key, move to the bucket corresponding to the calculated hash index, and search the list in the current bucket to find and remove the node with the given key (if found).
+
+Table of Content
+
+- Simple Chaining
+- Chaining with Rehashing
+
+### Simple Chaining
+
+This method has not concept of rehashing. It only has a fixed size array i.e. fixed numbers of buckets.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+class Hash {
+    // Number of buckets
+    int bucketCount;
+    vector<vector<int>> table;
+
+public:
+    // Constructor to initialize the hash
+    // table with given bucket count
+    Hash(int buckets) {
+        bucketCount = buckets;
+        table.resize(bucketCount);
+    }
+
+    // Function to insert a key into hash table
+    void insert(int key) {
+        // Get the hash index for the key
+        int index = getHashIndex(key);
+
+        // Insert the key into the corresponding bucket
+        table[index].push_back(key);
+    }
+
+    // Function to delete a key from hash table
+    void remove(int key) {
+        // Get the hash index for the key
+        int index = getHashIndex(key);
+
+        // Find and remove the key from the bucket
+        auto it = find(table[index].begin(), table[index].end(), key);
+
+        // Erase the key if found
+        if (it != table[index].end()) {
+            table[index].erase(it);
+        }
+    }
+
+    // Function to display the hash table
+    void display() {
+        for (int i = 0; i < bucketCount; i++) {
+            cout << i;
+
+            // Print all keys in current bucket
+            for (int key : table[i]) {
+                cout << " --> " << key;
+            }
+
+            cout << endl;
+        }
+    }
+
+private:
+    // Simple hash function to map key to index
+    int getHashIndex(int key) {
+        return key % bucketCount;
+    }
+};
+
+int main() {
+    vector<int> keys = {7, 18, 12, 25};
+
+    Hash hashTable(7);
+
+    for (int key : keys) {
+        hashTable.insert(key);
+    }
+
+    hashTable.remove(12);
+
+    hashTable.display();
+
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Hash {
+    // Number of buckets
+    private int bucketCount ;
+
+    // List of lists to store chains
+    private List<List<Integer>> table ;
+
+    // Constructor to initialize the hash
+    // table with given bucket count
+    public Hash(int buckets) {
+        bucketCount = buckets ;
+        table = new ArrayList<>() ;
+        for (int i = 0; i < bucketCount; i++) {
+            table.add(new ArrayList<>());
+        }
+    }
+
+    // Function to insert a key into hash table
+    public void insert(int key) {
+        // Get the hash index for the key
+        int index = getHashIndex(key);
+
+        // Insert the key into the corresponding bucket
+        table.get(index).add(key);
+    }
+
+    // Function to delete a key from hash table
+    public void remove(int key) {
+        // Get the hash index for the key
+        int index = getHashIndex(key);
+
+        // Find and remove the key from the bucket
+        table.get(index).remove(Integer.valueOf(key));
+    }
+
+    // Function to display the hash table
+    public void display() {
+        for (int i = 0; i < bucketCount; i++) {
+            System.out.print(i);
+
+            // Print all keys in current bucket
+            for (int key : table.get(i)) {
+                System.out.print(" --> " + key);
+            }
+
+            System.out.println();
+        }
+    }
+
+    // Simple hash function to map key to index
+    private int getHashIndex(int key) {
+        return key % bucketCount;
+    }
+
+    public static void main(String[] args) {
+        int[] keys = {7, 18, 12, 25};
+
+        Hash hashTable = new Hash(7);
+
+        for (int key : keys) {
+            hashTable.insert(key);
+        }
+
+        hashTable.remove(12);
+        hashTable.display();
+    }
+}
+
+class Hash:
+    def __init__(self, buckets):
+        # Number of buckets
+        self.bucket_count = buckets
+
+        # Create empty chains for each bucket
+        self.table = [[] for _ in range(self.bucket_count)]
+
+    # Insert a key into hash table
+    def insert(self, key):
+        # Compute hash index
+        index = self.get_hash_index(key)
+
+        # Append key to corresponding chain
+        self.table[index].append(key)
+
+    # Remove a key from hash table
+    def remove(self, key):
+        # Compute hash index
+        index = self.get_hash_index(key)
+
+        # Remove key if present in chain
+        if key in self.table[index]:
+            self.table[index].remove(key)
+
+    # Display contents of hash table
+    def display(self):
+        for i in range(self.bucket_count):
+            print(i, end="")
+
+            # Print all keys in chain
+            for key in self.table[i]:
+                print(" -->", key, end="")
+
+            print()
+
+    # Hash function
+    def get_hash_index(self, key):
+        return key % self.bucket_count
+
+if __name__ == "__main__":
+    keys = [7, 18, 12, 25]
+
+    hash_table = Hash(7)
+
+    for key in keys:
+        hash_table.insert(key)
+
+    hash_table.remove(12)
+    hash_table.display()
+
+using System;
+using System.Collections.Generic;
+
+public class Hash {
+    // Number of buckets
+    private int bucketCount;
+    private List<List<int>> table;
+
+    // Constructor to initialize the hash
+    // table with given bucket count
+    public Hash(int buckets) {
+        bucketCount = buckets;
+        table = new List<List<int>>(buckets);
+        for (int i = 0; i < bucketCount; i++) {
+            table.Add(new List<int>());
+        }
+    }
+
+    // Function to insert a key into hash table
+    public void Insert(int key) {
+        // Get the hash index for the key
+        int index = GetHashIndex(key) ;
+
+        table[index].Add(key) ;
+    }
+
+    // Function to delete a key from hash table
+    public void Remove(int key) {
+        // Get the hash index for the key
+        int index = GetHashIndex(key);
+
+        // Remove the key from the bucket if it exists
+        table[index].Remove(key);
+    }
+
+    // Function to display the hash table
+    public void Display() {
+        for (int i = 0; i < bucketCount; i++) {
+            Console.Write(i);
+
+            // Print all keys in current bucket
+            foreach (int key in table[i]) {
+                Console.Write(" --> " + key);
+            }
+
+            Console.WriteLine();
+        }
+    }
+
+    // Simple hash function to map key to index
+    private int GetHashIndex(int key) {
+        return key % bucketCount;
+    }
+
+    public static void Main(string[] args) {
+        int[] keys = { 7, 18, 12, 25 };
+
+        Hash hashTable = new Hash(7);
+
+        foreach (int key in keys) {
+            hashTable.Insert(key);
+        }
+
+        hashTable.Remove(12);
+        hashTable.Display();
+    }
+}
+
+class Hash {
+    // Constructor to initialize the hash table with given bucket count
+    constructor(buckets) {
+        // Number of buckets
+        this.bucketCount = buckets;
+
+        // Array of arrays to store chains
+        this.table = new Array(this.bucketCount).fill(null).map(() => []);
+    }
+
+    // Function to insert a key into hash table
+    insert(key) {
+        // Get the hash index for the key
+        const index = this.getHashIndex(key);
+
+        // Insert the key into the corresponding bucket
+        this.table[index].push(key);
+    }
+
+    // Function to delete a key from hash table
+    remove(key) {
+        // Get the hash index for the key
+        const index = this.getHashIndex(key);
+
+        // Remove the key from the bucket if it exists
+        const pos = this.table[index].indexOf(key);
+        if (pos !== -1) {
+            this.table[index].splice(pos, 1);
+        }
+    }
+
+    // Function to display the hash table
+    display() {
+        for (let i = 0; i < this.bucketCount; i++) {
+            let output = i.toString();
+
+            // Print all keys in current bucket
+            for (const key of this.table[i]) {
+                output += " --> " + key;
+            }
+
+            console.log(output);
+        }
+    }
+
+    // Simple hash function to map key to index
+    getHashIndex(key) {
+        return key % this.bucketCount;
+    }
+}
+
+// Driver Code
+const keys = [7, 18, 12, 25];
+
+const hashTable = new Hash(7);
+
+for (const key of keys) {
+    hashTable.insert(key);
+}
+
+hashTable.remove(12);
+hashTable.display();
+
+0 --> 7
+1
+2
+3
+4 --> 18 --> 25
+5
+6
+
+Time Complexity:
+
+- Search : O(1+(n/m))
+- Delete : O(1+(n/m)) where n =  Total elements in hash table m = Size of hash table
+- Here n/m is the Load Factor .
+- Load Factor (∝) must be as small as possible.
+- If load factor increases, then possibility of collision increases.
+- Load factor is trade of space and time .
+- Assume , uniform distribution of keys,
+- Expected chain length : O(∝)
+- Expected time to search : O( 1 + ∝ )
+- Expected time to insert/ delete :  O( 1 + ∝ )
+
+Auxiliary Space: O(1), since no extra space has been taken.
+
+### Chaining with Rehashing
+
+Let's discuss another method where there is no limitation on the number of buckets. The number of buckets increases when the load factor exceeds 0.5.
+
+We will do rehashing when the value of load factor is greater than 0.5. In rehashing, we double the size of array and add all the values again to new array (doubled size array is new array) based on hash function. Hash function should also be change as it is depends on number of buckets. Therefore, hash function behaves differently from the previous one.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// HashTable class to handle insert, delete,
+// display, and rehash operations
+class Hash {
+
+    // Number of buckets
+    int bucketCount;
+
+    // Number of elements
+    int numOfElements;
+
+    // Vector of chains
+    vector<vector<int>> table;
+
+public:
+
+    // Constructor to initialize the hash table
+    Hash(int buckets) {
+        bucketCount = buckets;
+        numOfElements = 0;
+        table.resize(bucketCount);
+    }
+
+    // Insert a key into the hash table
+    void insert(int key) {
+        while (getLoadFactor() > 0.5) {
+            rehash();
+        }
+        int index = getHashIndex(key);
+        table[index].push_back(key);
+        numOfElements++;
+    }
+
+    // Remove a key from the hash table
+    void remove(int key) {
+        int index = getHashIndex(key);
+        auto it = find(table[index].begin(),
+                        table[index].end(), key);
+        if (it != table[index].end()) {
+            table[index].erase(it);
+            numOfElements--;
+        }
+    }
+
+    // Display the current hash table
+    void display() {
+        for (int i = 0; i < bucketCount; i++) {
+            cout << i;
+            for (int key : table[i]) {
+                cout << " --> " << key;
+            }
+            cout << endl;
+        }
+    }
+
+private:
+    // Hash function to map key to index
+    int getHashIndex(int key) {
+        return key % bucketCount;
+    }
+
+    // Calculate load factor
+    float getLoadFactor() {
+        return (float)numOfElements / bucketCount;
+    }
+
+    // Rehash the table by doubling the size
+    void rehash() {
+        vector<vector<int>> oldTable = table;
+        bucketCount *= 2;
+        table.clear();
+        table.resize(bucketCount);
+        numOfElements = 0;
+        for (const auto& bucket : oldTable) {
+            for (int key : bucket) {
+                insert(key);
+            }
+        }
+    }
+};
+
+int main() {
+    vector<int> keys = {15, 11, 27};
+
+    Hash hashTable(5);
+
+    for (int key : keys) {
+        hashTable.insert(key);
+    }
+
+    hashTable.remove(11);
+    hashTable.display();
+
+    hashTable.insert(19);
+
+    cout << "\nAfter rehashing:\n";
+    hashTable.display();
+
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Hash {
+    private int bucketCount;
+
+    private int numOfElements;
+
+    private List<List<Integer>> table;
+
+    // Constructor to initialize the table
+    public Hash(int buckets) {
+        bucketCount = buckets;
+        numOfElements = 0;
+        table = new ArrayList<>();
+        for (int i = 0; i < bucketCount; i++) {
+            table.add(new ArrayList<>());
+        }
+    }
+
+    // Insert a key into the hash table
+    public void insert(int key) {
+        // If load factor exceeds 0.5, perform rehashing
+        while (getLoadFactor() > 0.5) {
+            rehash();
+        }
+
+        // Compute index for the key
+        int index = getHashIndex(key);
+
+        // Insert key into the corresponding bucket
+        table.get(index).add(key);
+
+        // Increase element count
+        numOfElements++;
+    }
+
+    // Remove a key from the hash table
+    public void remove(int key) {
+        // Get index of the key
+        int index = getHashIndex(key);
+
+        // Remove the key from its bucket if it exists
+        table.get(index).remove((Integer) key);
+        numOfElements--;
+    }
+
+    // Display all buckets and elements
+    public void display() {
+        for (int i = 0; i < bucketCount; i++) {
+            System.out.print(i);
+            for (int key : table.get(i)) {
+                System.out.print(" --> " + key);
+            }
+            System.out.println();
+        }
+    }
+
+    // Hash function to map key to index
+    private int getHashIndex(int key) {
+        return key % bucketCount;
+    }
+
+    // Calculate current load factor
+    private float getLoadFactor() {
+        return (float) numOfElements / bucketCount;
+    }
+
+    // Rehash: double size and re-insert all elements
+    private void rehash() {
+        List<List<Integer>> oldTable = table;
+        bucketCount *= 2;
+        table = new ArrayList<>();
+        for (int i = 0; i < bucketCount; i++) {
+            table.add(new ArrayList<>());
+        }
+        numOfElements = 0;
+        for (List<Integer> bucket : oldTable) {
+            for (int key : bucket) {
+                insert(key);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        int[] keys = {15, 11, 27};
+
+        Hash hashTable = new Hash(5);
+
+        for (int key : keys) {
+            hashTable.insert(key);
+        }
+
+        hashTable.remove(11);
+        hashTable.display();
+        hashTable.insert(19);
+
+        System.out.println("\nAfter rehashing:");
+        hashTable.display();
+    }
+}
+
+class HashTable:
+
+    # Constructor to initialize buckets
+    def __init__(self, buckets):
+        self.bucket_count = buckets
+        self.num_of_elements = 0
+        self.table = [[] for _ in range(buckets)]
+
+    # Insert a key into the table
+    def insert(self, key):
+        # Rehash if load factor > 0.5
+        while self.get_load_factor() > 0.5:
+            self.rehash()
+
+        # Get hash index
+        index = self.get_hash_index(key)
+
+        # Insert key in bucket
+        self.table[index].append(key)
+        self.num_of_elements += 1
+
+    # Remove a key from the table
+    def remove(self, key):
+        index = self.get_hash_index(key)
+
+        # If key exists, remove it
+        if key in self.table[index]:
+            self.table[index].remove(key)
+            self.num_of_elements -= 1
+
+    # Display the hash table
+    def display(self):
+        for i in range(self.bucket_count):
+            print(i, end="")
+            for key in self.table[i]:
+                print(f" --> {key}", end="")
+            print()
+
+    # Hash function
+    def get_hash_index(self, key):
+        return key % self.bucket_count
+
+    # Load factor calculation
+    def get_load_factor(self):
+        return self.num_of_elements / self.bucket_count
+
+    # Rehash the table by doubling size
+    def rehash(self):
+        old_table = self.table
+        self.bucket_count *= 2
+        self.table = [[] for _ in range(self.bucket_count)]
+        self.num_of_elements = 0
+
+        # Re-insert keys into new table
+        for bucket in old_table:
+            for key in bucket:
+                self.insert(key)
+
+keys = [15, 11, 27]
+hashTable = HashTable(5)
+
+for key in keys:
+    hashTable.insert(key)
+
+hashTable.remove(11)
+
+hashTable.display()
+
+hashTable.insert(19)
+
+print("\nAfter rehashing:")
+hashTable.display()
+
+using System;
+using System.Collections.Generic;
+
+class HashTable {
+    // Number of buckets
+    private int bucketCount;
+
+    // Number of elements
+    private int numOfElements;
+
+    // List of chains
+    private List<List<int>> table;
+
+    // Constructor to initialize
+    public HashTable(int buckets) {
+        bucketCount = buckets;
+        numOfElements = 0;
+        table = new List<List<int>>(buckets);
+        for (int i = 0; i < bucketCount; i++) {
+            table.Add(new List<int>());
+        }
+    }
+
+    // Insert a key
+    public void Insert(int key) {
+        // Check load factor
+        while (GetLoadFactor() > 0.5f) {
+            Rehash();
+        }
+
+        // Get hash index
+        int index = GetHashIndex(key);
+
+        // Insert into bucket
+        table[index].Add(key);
+        numOfElements++;
+    }
+
+    // Remove a key
+    public void Remove(int key) {
+        int index = GetHashIndex(key);
+        if (table[index].Remove(key)) {
+            numOfElements--;
+        }
+    }
+
+    // Display all elements
+    public void Display() {
+        for (int i = 0; i < bucketCount; i++) {
+            Console.Write(i);
+            foreach (int key in table[i]) {
+                Console.Write(" --> " + key);
+            }
+            Console.WriteLine();
+        }
+    }
+
+    // Hash function
+    private int GetHashIndex(int key) {
+        return key % bucketCount;
+    }
+
+    // Load factor
+    private float GetLoadFactor() {
+        return (float)numOfElements / bucketCount;
+    }
+
+    // Rehashing
+    private void Rehash() {
+        var oldTable = table;
+        bucketCount *= 2;
+        table = new List<List<int>>(bucketCount);
+        for (int i = 0; i < bucketCount; i++) {
+            table.Add(new List<int>());
+        }
+        numOfElements = 0;
+
+        // Re-insert elements
+        foreach (var bucket in oldTable) {
+            foreach (int key in bucket) {
+                Insert(key);
+            }
+        }
+    }
+
+    public static void Main() {
+        int[] keys = {15, 11, 27};
+        HashTable hashTable = new HashTable(5);
+
+        foreach (int key in keys) {
+            hashTable.Insert(key);
+        }
+
+        hashTable.Remove(11);
+
+        hashTable.Display();
+
+        hashTable.Insert(19);
+        Console.WriteLine("\nAfter rehashing:");
+        hashTable.Display();
+    }
+}
+
+class HashTable {
+    // Constructor to initialize table
+    constructor(buckets) {
+        this.bucketCount = buckets;
+        this.numOfElements = 0;
+        this.table = Array.from({ length: buckets }, () => []);
+    }
+
+    // Insert a key
+    insert(key) {
+        // Rehash if needed
+        while (this.getLoadFactor() > 0.5) {
+            this.rehash();
+        }
+
+        // Get hash index
+        const index = this.getHashIndex(key);
+
+        // Insert key
+        this.table[index].push(key);
+        this.numOfElements++;
+    }
+
+    // Remove a key
+    remove(key) {
+        const index = this.getHashIndex(key);
+        const idx = this.table[index].indexOf(key);
+        if (idx !== -1) {
+            this.table[index].splice(idx, 1);
+            this.numOfElements--;
+        }
+    }
+
+    // Display table
+    display() {
+        for (let i = 0; i < this.bucketCount; i++) {
+            let output = `${i}`;
+            for (let key of this.table[i]) {
+                output += ` --> ${key}`;
+            }
+            console.log(output);
+        }
+    }
+
+    // Hash function
+    getHashIndex(key) {
+        return key % this.bucketCount;
+    }
+
+    // Load factor
+    getLoadFactor() {
+        return this.numOfElements / this.bucketCount;
+    }
+
+    // Rehashing function
+    rehash() {
+        const oldTable = this.table;
+        this.bucketCount *= 2;
+        this.table = Array.from({ length: this.bucketCount }, () => []);
+        this.numOfElements = 0;
+
+        // Re-insert all keys from old table
+        for (let bucket of oldTable) {
+            for (let key of bucket) {
+                this.insert(key);
+            }
+        }
+    }
+}
+
+// Driver Code
+const keys = [15, 11, 27];
+const hashTable = new HashTable(5);
+for (let key of keys) {
+    hashTable.insert(key);
+}
+hashTable.remove(11);
+hashTable.display();
+hashTable.insert(19);
+console.log("\nAfter rehashing:");
+hashTable.display();
+
+0 --> 15
+1
+2 --> 27
+3
+4
+
+After rehashing:
+0 --> 15
+1
+2 --> 27
+3
+4 --> 19
+
+Complexity analysis of Insert:
+
+- Time Complexity: O(n), as we are checking the load factor each time and when it is greater than 0.5 we call rehashing function which takes O(n) time.
+- Auxiliary Space : O(n)
+
+Complexity analysis of Search:
+
+- Time Complexity: O(n)
+- Auxiliary Space: O(1)

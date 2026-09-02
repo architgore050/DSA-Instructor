@@ -1,0 +1,221 @@
+Source: https://www.geeksforgeeks.org/dsa/given-an-array-of-numbers-arrange-the-numbers-to-form-the-biggest-number/
+Title: Create Largest Concatenated Number
+
+Given an array of non-negative integers arr[] , arrange them such that their concatenation forms the largest possible number. Return the result as a string , since it may be too large for standard integer types.
+
+Examples:
+
+> Input: arr[] =  [3, 30, 34, 5, 9] Output: 9534330 Explanation: The arrangement [9, 5, 34, 3, 30], gives the largest value 9534330. Input: arr[] =  [54, 546, 548, 60] Output: 6054854654 Explanation: The arrangement [60, 548, 546, 54], gives the largest value 6054854654.
+
+### [Approach] Using Custom Comparator Sort - O(n × log(n)) Time and O(n) Space
+
+Can we simply sort the numbers in descending order and concatenate them?
+
+No, this approach fails because we care about digit order after concatenation, not just numeric value. For example, consider: arr[] = [2, 3, 10] If we sort in descending numeric order, we get [10, 3, 2] → "1032" But the correct result is "3210" because "3" followed by "2" followed by "10" forms the largest number when digits are placed together. So, we must focus on concatenation-based comparison, not numerical sorting.
+
+Can we sort the array as strings in descending order?
+
+Still incorrect in some cases. Example: arr[] = ["20", "2", "3"] Sorting lexicographically in descending order gives: "3", "20", "2" → "3202" But the correct result is "3220". This fails because sorting strings directly doesn't account for the impact of order during concatenation.
+
+Correct Approach: Use a Custom Comparator Based on Concatenation
+
+The key idea is to sort strings such that their concatenation forms the largest number.
+
+For any two strings X and Y, compare the values of  XY = X + Y   and   YX = Y + X
+
+- If XY > YX, then X should come before Y in the final arrangement.
+- Otherwise, Y should come before X.
+
+This ensures that we always place the number that leads to a larger combined value in front.
+
+Example:
+
+Let X = "2" and Y = "20" => XY = "220" => YX = "202" Since "220" > "202", "2" should come before "20". So final result becomes "3220", not "3202"
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Custom comparator to compare concatenated strings
+static bool myCompare(string& s1, string& s2) {
+    return (s1 + s2) > (s2 + s1);
+}
+
+// Function to return the largest concatenated number
+string findLargest(vector<int>& arr) {
+
+    vector<string> numbers;
+    for(int ele: arr) {
+        numbers.push_back(to_string(ele));
+    }
+
+    // Sort the array using the custom comparator
+    sort(numbers.begin(), numbers.end(), myCompare);
+
+    // Handle the case where all numbers are zero.
+  	// We are sorting is descending order, so zero
+  	// in front means complete array contains zero
+    if (numbers[0] == "0") {
+        return "0";
+    }
+
+    // Concatenate the sorted array
+    string res = "";
+    for (string& num : numbers) {
+        res.append(num);
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> arr = { 3, 30, 34, 5, 9 };
+    cout << findLargest(arr) << endl;
+    return 0;
+}
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+class GfG {
+
+    // Custom comparator to compare concatenated strings
+    static boolean myCompare(String s1, String s2) {
+        return (s1 + s2).compareTo(s2 + s1) > 0;
+    }
+
+    // Function to return the largest concatenated number
+    static String findLargest(int[] arr) {
+
+        // Convert the array of integers to an array of strings
+        ArrayList<String> numbers = new ArrayList<>();
+        for (int ele : arr) {
+            numbers.add(Integer.toString(ele));
+        }
+
+        // Sort the array using the custom comparator
+        Collections.sort(numbers, (s1, s2) -> myCompare(s1, s2) ? -1 : 1);
+
+        // Handle the case where all numbers are zero.
+        // We are sorting in descending order, so zero
+        // in front means complete array contains zero
+        if (numbers.get(0).equals("0")) {
+            return "0";
+        }
+
+        // Concatenate the sorted array
+        StringBuilder res = new StringBuilder();
+        for (String num : numbers) {
+            res.append(num);
+        }
+
+        return res.toString();
+    }
+
+    public static void main(String[] args) {
+        int[] arr = { 3, 30, 34, 5, 9 };
+        System.out.println(findLargest(arr));
+    }
+}
+
+from functools import cmp_to_key
+
+def myCompare(s1, s2):
+    if s1 + s2 > s2 + s1:
+        return -1
+    else:
+        return 1
+
+# Function to return the largest concatenated number
+def findLargest(arr):
+    numbers = [str(ele) for ele in arr]
+
+    # Sort the array using the custom comparator
+    numbers.sort(key=cmp_to_key(myCompare))
+
+    # Handle the case where all numbers are zero.
+    # We are sorting in descending order, so zero
+    # in front means complete array contains zero
+    if numbers[0] == "0":
+        return "0"
+
+    # Concatenate the sorted array
+    res = "".join(numbers)
+
+    return res
+
+if __name__ == "__main__":
+    arr = [3, 30, 34, 5, 9]
+    print(findLargest(arr))
+
+using System;
+
+class GfG {
+
+    // Custom comparator to compare concatenated strings
+    public static bool myCompare(string s1, string s2) {
+        return (s1 + s2).CompareTo(s2 + s1) > 0;
+    }
+
+    // Function to return the largest concatenated number
+    public static string findLargest(int[] arr) {
+        string[] numbers = new string[arr.Length];
+        for (int i = 0; i < arr.Length; i++) {
+            numbers[i] = arr[i].ToString();
+        }
+
+        // Sort the array using the custom comparator
+        Array.Sort(numbers, (s1, s2) => myCompare(s1, s2) ? -1 : 1);
+
+        // Handle the case where all numbers are zero.
+        // We are sorting in descending order, so zero
+        // in front means complete array contains zero
+        if (numbers[0] == "0") {
+            return "0";
+        }
+
+        // Concatenate the sorted array
+        var res = new System.Text.StringBuilder();
+        foreach (string num in numbers) {
+            res.Append(num);
+        }
+        return res.ToString();
+    }
+
+    static void Main() {
+        int[] arr = { 3, 30, 34, 5, 9 };
+        Console.WriteLine(findLargest(arr));
+    }
+}
+
+// Custom comparator to compare concatenated strings
+function myCompare(s1, s2) {
+    return (s1 + s2) > (s2 + s1);
+}
+
+// Function to return the largest concatenated number
+function findLargest(arr) {
+
+    // Convert the array elements to strings
+    let numbers = arr.map(String);
+
+    // Sort the array using the custom comparator
+    numbers.sort((s1, s2) => myCompare(s1, s2) ? -1 : 1);
+
+    // Handle the case where all numbers are zero.
+    // We are sorting in descending order, so zero
+    // in front means the complete array contains zero
+    if (numbers[0] === "0") {
+        return "0";
+    }
+
+    // Concatenate the sorted array
+    return numbers.join('');
+}
+
+// Driver Code
+let arr = [3, 30, 34, 5, 9];
+console.log(findLargest(arr));
+
+9534330

@@ -1,0 +1,571 @@
+Source: https://www.geeksforgeeks.org/dsa/build-lowest-number-by-removing-n-digits-from-a-given-number/
+Title: Lowest Number by Removing k digits
+
+Given a string s of digits and an integer k , remove k digits from s to form the smallest possible number while keeping the order of the remaining digits. The resulting string should not have leading zeros and if it becomes empty, return "0".
+
+Examples:
+
+> Input: s = "4325043", k = 3 Output: " 2043" Explanation: By removing three digits (4, 3, 5) while preserving the order of the remaining digits, we obtain "2043", which is the smallest possible number. Input: s = "765028321", k = 5 Output: "221" Explanation: Removing five digits (7, 6, 5, 8, 3) results in "0221". Since the number should not contain leading zeros, the final answer is "221".
+
+Table of Content
+
+- [Naive Approach] Iterative Greedy Removal - O(n*k) Time and O(n) Space
+- [Better Approach] Using Stack - O(n) Time and O(n) Space
+- [Expected Approach] In-Place Digit Removal - O(n) Time and O(1) Space
+
+### [Naive Approach] Iterative Greedy Removal - O(n*k) Time and O(n) Space
+
+> We run two nested loop where the outer loops runs through the current string and the inner loop removes the first digit that is greater than its next digit, since removing a larger digit earlier leads to a smaller number. If no such digit exists, remove the last digit.
+
+#include <iostream>
+using namespace std;
+
+string removeKdig(string s, int k) {
+    while (k--) {
+        int i = 0;
+
+        // Find first digit greater than next
+        while (i < s.size() - 1 && s[i] <= s[i + 1]) {
+            i++;
+        }
+
+        // Remove that digit
+        s.erase(i, 1);
+    }
+
+    // Remove leading zeros
+    int i = 0;
+    while (i < s.size() && s[i] == '0') i++;
+
+    s = s.substr(i);
+
+    return s.empty() ? "0" : s;
+}
+
+int main() {
+    string s = "765028321";
+    int k = 5;
+    cout << removeKdig(s, k);
+    return 0;
+}
+
+import java.util.*;
+
+class GFG {
+    public static String removeKdig(String s, int k) {
+
+        while (k-- > 0) {
+            int i = 0;
+
+            // Find first digit greater than next
+            while (i < s.length() - 1 && s.charAt(i) <= s.charAt(i + 1)) {
+                i++;
+            }
+
+            // Remove that digit
+            s = s.substring(0, i) + s.substring(i + 1);
+        }
+
+        // Remove leading zeros
+        int i = 0;
+        while (i < s.length() && s.charAt(i) == '0') i++;
+
+        // Return result directly
+        String result = (i == s.length()) ? "" : s.substring(i);
+        return result.isEmpty() ? "0" : result;
+    }
+
+    public static void main(String[] args) {
+        String s = "765028321";
+        int k = 5;
+        System.out.println(removeKdig(s, k));
+    }
+}
+
+def removeKdig(s: str, k: int) -> str:
+    while k > 0:
+        i = 0
+
+        # Find first digit greater than next
+        while i < len(s) - 1 and s[i] <= s[i + 1]:
+            i += 1
+
+        # Remove that digit
+        s = s[:i] + s[i + 1:]
+        k -= 1
+
+    # Remove leading zeros
+    i = 0
+    while i < len(s) and s[i] == '0':
+        i += 1
+
+    # Return result
+    result = s[i:]
+    return result if result else "0"
+
+if __name__ == "__main__":
+    s = "765028321"
+    k = 5
+    print(removeKdig(s, k))
+
+using System;
+
+class GFG {
+    public static string RemoveKdig(string s, int k) {
+        while (k-- > 0) {
+            int i = 0;
+
+            // Find first digit greater than next
+            while (i < s.Length - 1 && s[i] <= s[i + 1]) {
+                i++;
+            }
+
+            // Remove that digit
+            s = s.Substring(0, i) + s.Substring(i + 1);
+        }
+
+        // Remove leading zeros
+        int j = 0;
+        while (j < s.Length && s[j] == '0') {
+            j++;
+        }
+
+        string result = (j == s.Length) ? "" : s.Substring(j);
+        return string.IsNullOrEmpty(result) ? "0" : result;
+    }
+
+    static void Main(string[] args) {
+        string s = "765028321";
+        int k = 5;
+        Console.WriteLine(RemoveKdig(s, k));
+    }
+}
+
+function removeKdig(s, k) {
+    while (k > 0) {
+        let i = 0;
+
+        // Find first digit greater than next
+        while (i < s.length - 1 && s[i] <= s[i + 1]) {
+            i++;
+        }
+
+        // Remove that digit
+        s = s.slice(0, i) + s.slice(i + 1);
+        k--;
+    }
+
+    // Remove leading zeros
+    let i = 0;
+    while (i < s.length && s[i] === '0') {
+        i++;
+    }
+
+    let result = s.slice(i);
+    return result.length ? result : "0";
+}
+
+// Driver Code
+const s = "765028321";
+const k = 5;
+console.log(removeKdig(s, k));
+
+221
+
+### [Better Approach] Using Stack - O(n) Time and O(n) Space
+
+> We use a stack to build the smallest number by maintaining digits in increasing order. For each digit, we remove up to k larger digits from the stack before pushing the current one. This ensures smaller digits appear earlier while preserving the original order.
+
+Illustration of the example using stack based approach:
+
+Below is the implementation of the above approach.
+
+#include <iostream>
+#include <stack>
+using namespace std;
+
+string removeKdig(string &s, int k) {
+    int n = s.size();
+    stack<char> st;
+
+    for (int i = 0; i < s.size(); ++i) {
+        char c = s[i];
+
+        // Remove larger digits when possible
+        while (!st.empty() && k > 0 && st.top() > c) {
+            st.pop();
+            k -= 1;
+        }
+
+        if (!st.empty() || c != '0')
+            st.push(c);
+    }
+
+    // Remove remaining digits if any
+    while (!st.empty() && k--)
+        st.pop();
+
+    if (st.empty())
+        return "0";
+
+    // Build result from stack
+    while (!st.empty()) {
+        s[n - 1] = st.top();
+        st.pop();
+        n -= 1;
+    }
+
+    return s.substr(n);
+}
+
+int main() {
+    string s = "765028321";
+    int k = 5;
+    cout << removeKdig(s, k);
+    return 0;
+}
+
+import java.util.Stack;
+
+public class GfG {
+    static String removeKdig(String s, int k) {
+        int n = s.length();
+        Stack<Character> st = new Stack<>();
+
+        for (int i = 0; i < s.length(); ++i) {
+            char c = s.charAt(i);
+
+            // Remove larger digits when possible
+            while (!st.isEmpty() && k > 0 && st.peek() > c) {
+                st.pop();
+                k -= 1;
+            }
+
+            if (!st.isEmpty() || c != '0')
+                st.push(c);
+        }
+
+        // Remove remaining digits if any
+        while (!st.isEmpty() && k-- > 0)
+            st.pop();
+
+        if (st.isEmpty())
+            return "0";
+
+        // Build result from stack
+        StringBuilder result = new StringBuilder();
+        while (!st.isEmpty()) {
+            result.append(st.pop());
+        }
+        return result.reverse().toString();
+    }
+
+    public static void main(String[] args) {
+        String s = "765028321";
+        int k = 5;
+        System.out.println(removeKdig(s, k));
+    }
+}
+
+def removeKdig(s, k):
+    n = len(s)
+    st = []
+
+    for c in s:
+        # Remove larger digits when possible
+        while st and k > 0 and st[-1] > c:
+            st.pop()
+            k -= 1
+
+        if st or c != '0':
+            st.append(c)
+
+    # Remove remaining digits if any
+    while st and k > 0:
+        st.pop()
+        k -= 1
+
+    if not st:
+        return "0"
+
+    # Build result from stack
+    result = ''.join(st)
+    return result
+
+if __name__ == "__main__":
+    s = "765028321"
+    k = 5
+    print(removeKdig(s, k))
+
+using System;
+using System.Collections.Generic;
+
+public class GfG{
+    static string removeKdig(string s, int k) {
+        int n = s.Length;
+        Stack<char> st = new Stack<char>();
+
+        for (int i = 0; i < s.Length; ++i) {
+            char c = s[i];
+
+            // Remove larger digits when possible
+            while (st.Count > 0 && k > 0 && st.Peek() > c) {
+                st.Pop();
+                k -= 1;
+            }
+
+            if (st.Count > 0 || c != '0')
+                st.Push(c);
+        }
+
+        // Remove remaining digits if any
+        while (st.Count > 0 && k-- > 0)
+            st.Pop();
+
+        if (st.Count == 0)
+            return "0";
+
+        // Build result from stack
+        char[] result = new char[st.Count];
+        int index = 0;
+        while (st.Count > 0) {
+            result[index++] = st.Pop();
+        }
+        Array.Reverse(result);
+        return new string(result);
+    }
+
+    public static void Main() {
+        string s = "765028321";
+        int k = 5;
+        Console.WriteLine(removeKdig(s, k));
+    }
+}
+
+function removeKdig(s, k) {
+    let n = s.length;
+    let st = [];
+
+    for (let i = 0; i < s.length; ++i) {
+        let c = s[i];
+
+        // Remove larger digits when possible
+        while (st.length > 0 && k > 0 && st[st.length - 1] > c) {
+            st.pop();
+            k -= 1;
+        }
+
+        if (st.length > 0 || c !== '0')
+            st.push(c);
+    }
+
+    // Remove remaining digits if any
+    while (st.length > 0 && k-- > 0)
+        st.pop();
+
+    if (st.length === 0)
+        return "0";
+
+    // Build result from stack
+    let result = st.join('');
+    return result;
+}
+
+// Driver Code
+let s = "765028321";
+let k = 5;
+console.log(removeKdig(s, k));
+
+221
+
+### [Expected Approach] In-Place Digit Removal - O(n) Time and O(1) Space
+
+> We treat the input string as a stack using a pointer top. For each digit, we overwrite the previous digits if they are larger and we still have digits to remove (k > 0). This builds the smallest number in-place while avoiding extra memory. Remaining digits are trimmed from the end, and leading zeros are skipped.
+
+#include <iostream>
+using namespace std;
+
+string removeKdig(string &s, int k) {
+    int n = s.size();
+    int top = 0; // acts like a stack pointer
+
+    for (int i = 0; i < n; ++i) {
+        char c = s[i];
+
+        // Remove larger digits when possible (up to k digits)
+        while (top > 0 && k > 0 && s[top - 1] > c) {
+            top--;
+            k--;
+        }
+
+        // Avoid leading zeros
+        if (top > 0 || c != '0')
+            s[top++] = c;
+    }
+
+    // Remove remaining digits if any
+    top = max(0, top - k);
+
+    if (top == 0)
+        return "0";
+
+    // Build result from the string itself
+    return s.substr(0, top);
+}
+
+int main() {
+    string s = "765028321";
+    int k = 5;
+    cout << removeKdig(s, k);
+    return 0;
+}
+
+import java.util.*;
+
+class GFG {
+    public static String removeKdig(String s, int k) {
+        int n = s.length();
+        char[] arr = s.toCharArray();
+        int top = 0; // acts like a stack pointer
+
+        for (int i = 0; i < n; i++) {
+            char c = arr[i];
+
+            // Remove larger digits when possible (up to k digits)
+            while (top > 0 && k > 0 && arr[top - 1] > c) {
+                top--;
+                k--;
+            }
+
+            // Avoid leading zeros
+            if (top > 0 || c != '0') {
+                arr[top++] = c;
+            }
+        }
+
+        // Remove remaining digits if any
+        top = Math.max(0, top - k);
+
+        if (top == 0) return "0";
+
+        return new String(arr, 0, top);
+    }
+
+    public static void main(String[] args) {
+        String s = "765028321";
+        int k = 5;
+        System.out.println(removeKdig(s, k));
+    }
+}
+
+def removeKdig(s: str, k: int) -> str:
+    n = len(s)
+    arr = list(s)  # convert string to list for in-place modification
+    top = 0  # acts like a stack pointer
+
+    for i in range(n):
+        c = arr[i]
+
+        # Remove larger digits when possible (up to k digits)
+        while top > 0 and k > 0 and arr[top - 1] > c:
+            top -= 1
+            k -= 1
+
+        # Avoid leading zeros
+        if top > 0 or c != '0':
+            arr[top] = c
+            top += 1
+
+    # Remove remaining digits if any
+    top = max(0, top - k)
+
+    if top == 0:
+        return "0"
+
+    return ''.join(arr[:top])
+
+if __name__ == "__main__":
+    s = "765028321"
+    k = 5
+    print(removeKdig(s, k))
+
+using System;
+
+class GFG
+{
+    public static string RemoveKdig(string s, int k)
+    {
+        int n = s.Length;
+        char[] arr = s.ToCharArray();
+        int top = 0; // acts like a stack pointer
+
+        for (int i = 0; i < n; i++)
+        {
+            char c = arr[i];
+
+            // Remove larger digits when possible (up to k digits)
+            while (top > 0 && k > 0 && arr[top - 1] > c)
+            {
+                top--;
+                k--;
+            }
+
+            // Avoid leading zeros
+            if (top > 0 || c != '0')
+            {
+                arr[top] = c;
+                top++;
+            }
+        }
+
+        // Remove remaining digits if any
+        top = Math.Max(0, top - k);
+
+        if (top == 0) return "0";
+
+        return new string(arr, 0, top);
+    }
+
+    static void Main(string[] args)
+    {
+        string s = "765028321";
+        int k = 5;
+        Console.WriteLine(RemoveKdig(s, k));
+    }
+}
+
+function removeKdig(s, k) {
+    let n = s.length;
+    let arr = s.split(''); // convert string to array for in-place modification
+    let top = 0; // acts like a stack pointer
+
+    for (let i = 0; i < n; i++) {
+        let c = arr[i];
+
+        // Remove larger digits when possible (up to k digits)
+        while (top > 0 && k > 0 && arr[top - 1] > c) {
+            top--;
+            k--;
+        }
+
+        // Avoid leading zeros
+        if (top > 0 || c !== '0') {
+            arr[top] = c;
+            top++;
+        }
+    }
+
+    // Remove remaining digits if any
+    top = Math.max(0, top - k);
+
+    if (top === 0) return "0";
+
+    return arr.slice(0, top).join('');
+}
+
+// Driver Code
+const s = "765028321";
+const k = 5;
+console.log(removeKdig(s, k)); // Output: 221
+
+221

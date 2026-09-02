@@ -1,0 +1,832 @@
+Source: https://www.geeksforgeeks.org/dsa/find-smallest-range-containing-elements-from-k-lists/
+Title: Smallest Range with Elements from k Sorted Lists
+
+Given a 2D integer array mat[][] , where each row is sorted in ascending order, find the smallest range that includes at least one element from each of the rows. If more than one such range exists, consider the first one. Note: If there are two possible ranges [a, b] and [c, d] with the same size, choose the one with the smaller starting value, i.e., consider [a, b] if a < c.
+
+Examples:
+
+> Input: mat[][] = [[4, 7, 9, 12, 15], [0, 8, 10, 14, 20], [6, 12, 16, 30, 50]] Output: [6, 8] Explanation: Smallest range [6, 8] include at least one element from each rows(6, 7, 8). Input: mat[][] = [[2, 4 ], [1, 7 ], [20, 40]] Output: [4, 20] Explanation: The range [4, 20] contains 4, 7, 20 which contains element from all the three arrays.[]Naive
+
+Table of Content
+
+- [Naive Approach] By Trying All Combinations - O(n^k) Time and O(k) Space
+- [Better Approach] Using k Pointers - O(n *k^2) Time and O(k) Space
+- [Expected Approach 2] - Using Min Heap - O(n* k* Log k) Time and O(k) Space
+
+### [Naive Approach] By Trying All Combinations - O(n^k) Time and O(k) Space
+
+> The idea is to try all possible combinations by picking one element from each row and forming a range [min, max] from these elements. Then, track the range with the smallest size among all possible combinations.
+
+Why It’s Not Feasible? For each row, if there are n elements, the total number of combinations is n × n × … × n = n^k. This grows exponentially with k. Even for small n and moderate k, it becomes computationally infeasible.
+
+### [Better Approach] Using k Pointers - O(n *k 2 ) Time and O(k) Space
+
+> The idea is to keep one pointer for each row, initially all pointers start at the first element of their respective rows. These k elements form one possible set containing one element from each row. Now, check: The minimum among these k elements → this could be the current low. The maximum among these k elements → this could be the current high. So, the current range = [min, max]. Now we have to minimize (max - min)  and find the smallest possible range. To possibly shrink the range, we must move forward in the row that currently contributes the smallest element and continue this process until one of the rows runs out of elements.
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <climits>
+using namespace std;
+//Driver Code Ends
+
+vector<int> findSmallestRange(vector<vector<int>>& mat) {
+
+    int k = mat.size();
+    int n = mat[0].size();
+
+    // Pointers for each of the k rows
+    vector<int> ptr(k, 0);
+
+    int minRange = INT_MAX;
+    int start = -1, end = -1;
+
+    while (true) {
+
+        int minVal = INT_MAX;
+        int maxVal = INT_MIN;
+        int minRow = -1;
+
+        // Traverse all k rows to get current min and max
+        for (int i = 0; i < k; i++) {
+
+            // If any list is exhausted, stop the loop
+            if (ptr[i] == n) {
+                return {start, end};
+            }
+
+            // Track min value and its row index
+            if (mat[i][ptr[i]] < minVal) {
+                minVal = mat[i][ptr[i]];
+                minRow = i;
+            }
+
+            // Track current max value
+            if (mat[i][ptr[i]] > maxVal) {
+                maxVal = mat[i][ptr[i]];
+            }
+        }
+
+        // Update the result range if a
+        // smaller range is found
+        if (maxVal - minVal < minRange) {
+            minRange = maxVal - minVal;
+            start = minVal;
+            end = maxVal;
+        }
+
+        // Move the pointer of the
+        // row with minimum value
+        ptr[minRow]++;
+    }
+
+    return {start, end};
+}
+
+//Driver Code Starts
+int main() {
+
+    vector<vector<int>>mat = {
+        {4, 7, 9, 12, 15},
+        {0, 8, 10, 14, 20},
+        {6, 12, 16, 30, 50}
+    };
+
+    vector<int> res = findSmallestRange(mat);
+
+    cout << res[0] << " " << res[1];
+
+    return 0;
+}
+//Driver Code Ends
+
+//Driver Code Starts
+import java.util.ArrayList;
+
+class GFG {
+//Driver Code Ends
+
+    static ArrayList<Integer> findSmallestRange(int[][] mat) {
+        int k = mat.length;
+        int n = mat[0].length;
+
+        // Pointers for each of the k rows
+        int[] ptr = new int[k];
+
+        int minRange = Integer.MAX_VALUE;
+        int start = -1, end = -1;
+
+        while (true) {
+            int minVal = Integer.MAX_VALUE;
+            int maxVal = Integer.MIN_VALUE;
+            int minRow = -1;
+
+            // Traverse all k rows to get current min and max
+            for (int i = 0; i < k; i++) {
+                // If any list is exhausted, stop the loop
+                if (ptr[i] == n) {
+                    ArrayList<Integer> result = new ArrayList<>();
+                    result.add(start);
+                    result.add(end);
+                    return result;
+                }
+
+                // Track min value and its row index
+                if (mat[i][ptr[i]] < minVal) {
+                    minVal = mat[i][ptr[i]];
+                    minRow = i;
+                }
+
+                // Track current max value
+                if (mat[i][ptr[i]] > maxVal) {
+                    maxVal = mat[i][ptr[i]];
+                }
+            }
+
+            // Update the result range if a smaller range is found
+            if (maxVal - minVal < minRange) {
+                minRange = maxVal - minVal;
+                start = minVal;
+                end = maxVal;
+            }
+
+            // Move the pointer of the row with minimum value
+            ptr[minRow]++;
+        }
+    }
+
+//Driver Code Starts
+    public static void main(String[] args) {
+        int[][] mat = {
+            {4, 7, 9, 12, 15},
+            {0, 8, 10, 14, 20},
+            {6, 12, 16, 30, 50}
+        };
+
+        ArrayList<Integer> res = findSmallestRange(mat);
+
+        System.out.println(res.get(0) + " " + res.get(1));
+    }
+}
+
+//Driver Code Ends
+
+def findSmallestRange(mat):
+    k = len(mat)
+    n = len(mat[0])
+
+    # Pointers for each of the k rows
+    ptr = [0] * k
+
+    min_range = float('inf')
+    start = -1
+    end = -1
+
+    while True:
+        min_val = float('inf')
+        max_val = float('-inf')
+        min_row = -1
+
+        # Traverse all k rows to get current min and max
+        for i in range(k):
+
+            # If any list is exhausted, stop the loop
+            if ptr[i] == n:
+                return [start, end]
+
+            # Track min value and its row index
+            if mat[i][ptr[i]] < min_val:
+                min_val = mat[i][ptr[i]]
+                min_row = i
+
+            # Track current max value
+            if mat[i][ptr[i]] > max_val:
+                max_val = mat[i][ptr[i]]
+
+        # Update the result range if a smaller range is found
+        if max_val - min_val < min_range:
+            min_range = max_val - min_val
+            start = min_val
+            end = max_val
+
+        # Move the pointer of the row with minimum value
+        ptr[min_row] += 1
+
+#Driver Code Starts
+if __name__ == "__main__":
+    mat = [
+        [4, 7, 9, 12, 15],
+        [0, 8, 10, 14, 20],
+        [6, 12, 16, 30, 50]
+    ]
+
+    res = findSmallestRange(mat)
+
+    print(res[0], res[1])
+#Driver Code Ends
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+class GFG{
+//Driver Code Ends
+
+    static List<int> findSmallestRange(int[,] mat) {
+        int k = mat.GetLength(0);
+        int n = mat.GetLength(1);
+
+        // Pointers for each of the k rows
+        int[] ptr = new int[k];
+
+        int minRange = int.MaxValue;
+        int start = -1, end = -1;
+
+        while (true) {
+            int minVal = int.MaxValue;
+            int maxVal = int.MinValue;
+            int minRow = -1;
+
+            // Traverse all k rows to get current min and max
+            for (int i = 0; i < k; i++) {
+                // If any list is exhausted, stop the loop
+                if (ptr[i] == n) {
+                    return new List<int> { start, end };
+                }
+
+                int current = mat[i, ptr[i]];
+
+                if (current < minVal) {
+                    minVal = current;
+                    minRow = i;
+                }
+
+                if (current > maxVal) {
+                    maxVal = current;
+                }
+            }
+
+            // Update the result range if a smaller range is found
+            if (maxVal - minVal < minRange) {
+                minRange = maxVal - minVal;
+                start = minVal;
+                end = maxVal;
+            }
+
+            // Move the pointer of the row with minimum value
+            ptr[minRow]++;
+        }
+    }
+
+//Driver Code Starts
+    public static void Main(string[] args) {
+        int[,] mat = {
+            { 4, 7, 9, 12, 15 },
+            { 0, 8, 10, 14, 20 },
+            { 6, 12, 16, 30, 50 }
+        };
+
+        List<int> res = findSmallestRange(mat);
+
+        Console.WriteLine(res[0] + " " + res[1]);
+    }
+}
+
+//Driver Code Ends
+
+function findSmallestRange(mat) {
+    let k = mat.length;
+    let n = mat[0].length;
+
+    // Pointers for each of the k rows
+    let ptr = new Array(k).fill(0);
+
+    let minRange = Infinity;
+    let start = -1, end = -1;
+
+    while (true) {
+        let minVal = Infinity;
+        let maxVal = -Infinity;
+        let minRow = -1;
+
+        // Traverse all k rows to get current min and max
+        for (let i = 0; i < k; i++) {
+            // If any list is exhausted, stop the loop
+            if (ptr[i] === n) {
+                return [start, end];
+            }
+
+            // Track min value and its row index
+            if (mat[i][ptr[i]] < minVal) {
+                minVal = mat[i][ptr[i]];
+                minRow = i;
+            }
+
+            // Track current max value
+            if (mat[i][ptr[i]] > maxVal) {
+                maxVal = mat[i][ptr[i]];
+            }
+        }
+
+        // Update the result range if a smaller range is found
+        if (maxVal - minVal < minRange) {
+            minRange = maxVal - minVal;
+            start = minVal;
+            end = maxVal;
+        }
+
+        // Move the pointer of the row with minimum value
+        ptr[minRow]++;
+    }
+}
+
+// Driver Code
+//Driver Code Starts
+const mat = [
+    [4, 7, 9, 12, 15],
+    [0, 8, 10, 14, 20],
+    [6, 12, 16, 30, 50]
+];
+
+const res = findSmallestRange(mat);
+
+console.log(res[0] + ' ' + res[1]);
+//Driver Code Ends
+
+6 8
+
+### [Expected Approach 2] - Using Min Heap - O(n* k* log k) Time and O(k) Space
+
+> This approach is an optimization over the naive method. In the naive version, we explicitly search for the minimum element among the k current elements in every iteration. To improve efficiency, we use a min-heap that helps us quickly get the minimum element. Each heap node stores the element value along with its row and column index(To know from which row the element belongs). We start by inserting the first element of each row into the heap and track the current maximum. Then, we repeatedly extract the minimum element from the heap, update the smallest range if needed, and insert the next element from the same row into the heap while updating the maximum. This continues until one of the rows is exhausted.
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <climits>
+using namespace std;
+//Driver Code Ends
+
+// Class to represent elements in the heap
+class Node {
+public:
+    int val, row, col;
+
+    Node(int v, int r, int c) {
+        val = v;
+        row = r;
+        col = c;
+    }
+
+    // Overload > operator for min-heap
+    bool operator>(const Node& other) const {
+        return val > other.val;
+    }
+};
+
+vector<int> findSmallestRange(vector<vector<int>>& mat) {
+    int N = mat.size();
+    int K = mat[0].size();
+    priority_queue<Node, vector<Node>, greater<Node>> pq;
+    int maxVal = INT_MIN;
+
+    // Push the first element of each list into the min-heap
+    for (int i = 0; i < N; i++) {
+        pq.push(Node(mat[i][0], i, 0));
+        maxVal = max(maxVal, mat[i][0]);
+    }
+
+    int minRange = INT_MAX, minEl = 0, maxEl = 0;
+
+    while (true) {
+        Node curr = pq.top(); pq.pop();
+        int minVal = curr.val;
+
+        // Update range if better
+        if (maxVal - minVal < minRange) {
+            minRange = maxVal - minVal;
+            minEl = minVal;
+            maxEl = maxVal;
+        }
+
+        // If we've reached the end of a list, break
+        if (curr.col + 1 == K) break;
+
+        // Push next element from the same list
+        int nextVal = mat[curr.row][curr.col + 1];
+        pq.push(Node(nextVal, curr.row, curr.col + 1));
+        maxVal = max(maxVal, nextVal);
+    }
+
+    return {minEl, maxEl};
+}
+
+//Driver Code Starts
+int main() {
+    vector<vector<int>> mat = {
+        {4, 7, 9, 12, 15},
+        {0, 8, 10, 14, 20},
+        {6, 12, 16, 30, 50}
+    };
+
+    vector<int> result = findSmallestRange(mat);
+    cout << result[0] << " " << result[1];
+
+    return 0;
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+import java.util.ArrayList;
+import java.util.PriorityQueue;
+//Driver Code Ends
+
+// Class to represent elements in the heap
+class Node implements Comparable<Node> {
+    public int val, row, col;
+
+    Node(int v, int r, int c) {
+        val = v;
+        row = r;
+        col = c;
+    }
+
+    // Overload compareTo for min-heap
+    @Override
+    public int compareTo(Node other) {
+        return this.val - other.val;
+    }
+}
+
+public class GFG {
+
+    static ArrayList<Integer> findSmallestRange(int[][] mat) {
+        int N = mat.length;
+        int K = mat[0].length;
+        PriorityQueue<Node> pq = new PriorityQueue<>();
+        int maxVal = Integer.MIN_VALUE;
+
+        // Push the first element of each list into the min-heap
+        for (int i = 0; i < N; i++) {
+            pq.add(new Node(mat[i][0], i, 0));
+            maxVal = Math.max(maxVal, mat[i][0]);
+        }
+
+        int minRange = Integer.MAX_VALUE, minEl = 0, maxEl = 0;
+
+        while (true) {
+            Node curr = pq.poll();
+            int minVal = curr.val;
+
+            // Update range if better
+            if (maxVal - minVal < minRange) {
+                minRange = maxVal - minVal;
+                minEl = minVal;
+                maxEl = maxVal;
+            }
+
+            // If we've reached the end of a list, break
+            if (curr.col + 1 == K) break;
+
+            // Push next element from the same list
+            int nextVal = mat[curr.row][curr.col + 1];
+            pq.add(new Node(nextVal, curr.row, curr.col + 1));
+            maxVal = Math.max(maxVal, nextVal);
+        }
+
+        ArrayList<Integer> result = new ArrayList<>();
+        result.add(minEl);
+        result.add(maxEl);
+        return result;
+    }
+
+//Driver Code Starts
+    public static void main(String[] args) {
+        int[][] mat = {
+            {4, 7, 9, 12, 15},
+            {0, 8, 10, 14, 20},
+            {6, 12, 16, 30, 50}
+        };
+
+        ArrayList<Integer> result = findSmallestRange(mat);
+        System.out.println(result.get(0) + " " + result.get(1));
+    }
+}
+
+//Driver Code Ends
+
+#Driver Code Starts
+import heapq
+import sys
+#Driver Code Ends
+
+# Class to represent elements in the heap
+class Node:
+    def __init__(self, val, row, col):
+        self.val = val
+        self.row = row
+        self.col = col
+
+    # For min-heap comparison
+    def __lt__(self, other):
+        return self.val < other.val
+
+def findSmallestRange(mat):
+    N = len(mat)
+    K = len(mat[0])
+    pq = []
+    maxVal = -sys.maxsize
+
+    # Push the first element of each list into the min-heap
+    for i in range(N):
+        heapq.heappush(pq, Node(mat[i][0], i, 0))
+        maxVal = max(maxVal, mat[i][0])
+
+    minRange = sys.maxsize
+    minEl = 0
+    maxEl = 0
+
+    while True:
+        curr = heapq.heappop(pq)
+        minVal = curr.val
+
+        # Update range if better
+        if maxVal - minVal < minRange:
+            minRange = maxVal - minVal
+            minEl = minVal
+            maxEl = maxVal
+
+        # If we've reached the end of a list, break
+        if curr.col + 1 == K:
+            break
+
+        # Push next element from the same list
+        nextVal = mat[curr.row][curr.col + 1]
+        heapq.heappush(pq, Node(nextVal, curr.row, curr.col + 1))
+        maxVal = max(maxVal, nextVal)
+
+    return [minEl, maxEl]
+
+#Driver Code Starts
+if __name__ == "__main__":
+    mat = [
+        [4, 7, 9, 12, 15],
+        [0, 8, 10, 14, 20],
+        [6, 12, 16, 30, 50]
+    ]
+
+    result = findSmallestRange(mat)
+    print(result[0], result[1])
+
+#Driver Code Ends
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+class MinHeap {
+    private List<Node> heap = new List<Node>();
+
+    private void Swap(int i, int j) {
+        var temp = heap[i];
+        heap[i] = heap[j];
+        heap[j] = temp;
+    }
+
+    public void Add(Node node) {
+        heap.Add(node);
+        int i = heap.Count - 1;
+        while (i > 0)
+        {
+            int parent = (i - 1) / 2;
+            if (heap[i].val >= heap[parent].val) break;
+            Swap(i, parent);
+            i = parent;
+        }
+    }
+
+    public Node Pop()
+    {
+        if (heap.Count == 0) return null;
+        Node root = heap[0];
+        Node last = heap[heap.Count - 1];
+        heap[0] = last;
+        heap.RemoveAt(heap.Count - 1);
+
+        int i = 0;
+        while (true)
+        {
+            int left = 2 * i + 1;
+            int right = 2 * i + 2;
+            int smallest = i;
+
+            if (left < heap.Count && heap[left].val < heap[smallest].val)
+                smallest = left;
+            if (right < heap.Count && heap[right].val < heap[smallest].val)
+                smallest = right;
+            if (smallest == i) break;
+
+            Swap(i, smallest);
+            i = smallest;
+        }
+
+        return root;
+    }
+
+    public Node Peek()
+    {
+        return heap.Count > 0 ? heap[0] : null;
+    }
+
+    public int Count()
+    {
+        return heap.Count;
+    }
+}
+//Driver Code Ends
+
+// Class to represent elements in the heap
+class Node {
+    public int val, row, col;
+    public Node(int v, int r, int c) {
+        val = v;
+        row = r;
+        col = c;
+    }
+}
+
+class GFG {
+    static List<int> findSmallestRange(int[,] mat) {
+        int N = mat.GetLength(0);
+        int K = mat.GetLength(1);
+
+        MinHeap pq = new MinHeap();
+        int maxVal = int.MinValue;
+
+        // Add first element of each row
+        for (int i = 0; i < N; i++) {
+            Node node = new Node(mat[i, 0], i, 0);
+            pq.Add(node);
+            maxVal = Math.Max(maxVal, mat[i, 0]);
+        }
+
+        int minRange = int.MaxValue, minEl = 0, maxEl = 0;
+
+        while (true) {
+            Node curr = pq.Pop();
+            int minVal = curr.val;
+
+            // Update range if better
+            if (maxVal - minVal < minRange)
+            {
+                minRange = maxVal - minVal;
+                minEl = minVal;
+                maxEl = maxVal;
+            }
+
+            // If end of list, break
+            if (curr.col + 1 == K) break;
+
+            // Add next element from the same row
+            int nextVal = mat[curr.row, curr.col + 1];
+            pq.Add(new Node(nextVal, curr.row, curr.col + 1));
+            maxVal = Math.Max(maxVal, nextVal);
+        }
+
+        return new List<int> { minEl, maxEl };
+    }
+
+//Driver Code Starts
+    public static void Main(){
+        int[,] mat = new int[,]
+        {
+            { 4, 7, 9, 12, 15 },
+            { 0, 8, 10, 14, 20 },
+            { 6, 12, 16, 30, 50 }
+        };
+
+        List<int> result = findSmallestRange(mat);
+        Console.WriteLine(result[0] + " " + result[1]);
+    }
+}
+
+//Driver Code Ends
+
+//Driver Code Starts
+// Min-Heap implementation
+class MinHeap {
+    constructor() {
+        this.heap = [];
+    }
+
+    size() {
+        return this.heap.length;
+    }
+
+    peek() {
+        return this.heap[0];
+    }
+
+    push(node) {
+        this.heap.push(node);
+        this.bubbleUp(this.heap.length - 1);
+    }
+
+    pop() {
+        const min = this.heap[0];
+        const last = this.heap.pop();
+        if (this.heap.length > 0) {
+            this.heap[0] = last;
+            this.bubbleDown(0);
+        }
+        return min;
+    }
+
+    bubbleUp(index) {
+        while (index > 0) {
+            let parent = Math.floor((index - 1) / 2);
+            if (this.heap[index].val >= this.heap[parent].val) break;
+            [this.heap[index], this.heap[parent]] = [this.heap[parent], this.heap[index]];
+            index = parent;
+        }
+    }
+
+    bubbleDown(index) {
+        const n = this.heap.length;
+        while (true) {
+            let left = 2 * index + 1;
+            let right = 2 * index + 2;
+            let smallest = index;
+
+            if (left < n && this.heap[left].val < this.heap[smallest].val) smallest = left;
+            if (right < n && this.heap[right].val < this.heap[smallest].val) smallest = right;
+
+            if (smallest === index) break;
+            [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
+            index = smallest;
+        }
+    }
+}
+//Driver Code Ends
+
+// Class to represent elements in the heap
+class Node {
+    constructor(val, row, col) {
+        this.val = val;
+        this.row = row;
+        this.col = col;
+    }
+}
+
+function findSmallestRange(mat) {
+    const N = mat.length;
+    const K = mat[0].length;
+    const pq = new MinHeap();
+    let maxVal = -Infinity;
+
+    // Push the first element of each list into the min-heap
+    for (let i = 0; i < N; i++) {
+        pq.push(new Node(mat[i][0], i, 0));
+        maxVal = Math.max(maxVal, mat[i][0]);
+    }
+
+    let minRange = Infinity, minEl = 0, maxEl = 0;
+
+    while (true) {
+        const curr = pq.pop();
+        const minVal = curr.val;
+
+        // Update range if better
+        if (maxVal - minVal < minRange) {
+            minRange = maxVal - minVal;
+            minEl = minVal;
+            maxEl = maxVal;
+        }
+
+        // If we've reached the end of a list, break
+        if (curr.col + 1 === K) break;
+
+        // Push next element from the same list
+        const nextVal = mat[curr.row][curr.col + 1];
+        pq.push(new Node(nextVal, curr.row, curr.col + 1));
+        maxVal = Math.max(maxVal, nextVal);
+    }
+
+    return [minEl, maxEl];
+}
+
+//Driver Code Starts
+// Driver code
+const mat = [
+    [4, 7, 9, 12, 15],
+    [0, 8, 10, 14, 20],
+    [6, 12, 16, 30, 50]
+];
+
+const result = findSmallestRange(mat);
+console.log(result[0], result[1]);
+
+//Driver Code Ends
+
+6 8

@@ -1,0 +1,445 @@
+Source: https://www.geeksforgeeks.org/dsa/koko-eating-bananas/
+Title: Koko Eating Bananas
+
+Given an array arr[] where each element denotes the number of bananas in a pile , and an integer k representing the total number of hours available . In one hour, up to x bananas can be eaten from a single pile. If a pile contains fewer than x bananas, the entire pile is consumed in one hour. It is guaranteed that the number of piles is less than or equal to k. Determine the minimum value of x such that all piles can be completed within k hours.
+
+Examples:
+
+> Input: arr[] = [5, 10, 3], k = 4 Output: 5 Explanation: If Koko eats at the rate of 5 bananas per hour. => First pile of 5 bananas will be finished in 1 hour. => Second pile of 10 bananas will be finished in 2 hours. => Third pile of 3 bananas will be finished in 1 hours. Therefore, Koko can finish all piles of bananas in 1 + 2 + 1 = 4 hours. Input: arr[] = [5, 10, 15, 20], k = 7 Output: 10 Explanation: If Koko eats at the rate of 10 bananas per hour, it will take 6 hours to finish all the piles.
+
+Table of Content
+
+- [Naive Approach] Using Linear Search - O(n × m) time and O(1) space
+- [Expected Approach] Using Binary Search on Answer
+
+### [Naive Approach] Using Linear Search - O(n × m) time and O(1) space
+
+> The idea is to try every possible eating speed from 1 to max(arr) and, for each speed, calculate the total time required to finish all piles. For a given speed x, the time to finish a pile is (pile + x - 1) // x, and we sum this over all piles. The smallest speed for which the total time is less than or equal to k is the required answer.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int kokoEat(vector<int>& arr, int k) {
+
+    int mx = *max_element(arr.begin(), arr.end());
+
+    for (int speed = 1; speed <= mx; speed++) {
+        long long reqTime = 0;
+
+        for (int i = 0; i < arr.size(); i++) {
+
+            // add the time needed to eat this pile
+            // at the current speed
+            reqTime +=
+                (arr[i] + speed - 1) / speed;
+        }
+
+        // if total time is within allowed hours,
+        // return this speed
+        if (reqTime <= k) {
+            return speed;
+        }
+    }
+
+    // if no smaller speed works, return
+    // the max pile size
+    return mx;
+}
+
+int main() {
+
+    vector<int> arr = {5, 10, 3};
+    int k = 4;
+    int minSpeed = kokoEat(arr, k);
+    cout << minSpeed << endl;
+    return 0;
+
+}
+
+import java.util.Arrays;
+
+class GfG {
+    static int kokoEat(int[] arr, int k) {
+        int mx = Arrays.stream(arr).max().getAsInt();
+
+        for (int speed = 1; speed <= mx; speed++) {
+
+            long reqTime = 0;
+            for (int i = 0; i < arr.length; i++) {
+
+                // time required to eat this pile
+                // of bananas at current speed
+                reqTime += (arr[i] + speed - 1) / speed;
+            }
+
+            // if total eating time at current speed
+            // is smaller than given time
+            if (reqTime <= k) {
+                return speed;
+            }
+        }
+
+        return mx;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {5, 10, 3};
+        int k = 4;
+        System.out.println(kokoEat(arr, k));
+    }
+}
+
+def kokoEat(arr, k):
+    mx = max(arr)
+
+    for speed in range(1, mx + 1):
+
+        reqTime = 0
+        for i in range(len(arr)):
+
+            # time required to eat this pile
+            # of bananas at current speed
+            reqTime += \
+                (arr[i] + speed - 1) // speed
+
+        # if total eating time at current speed
+        # is smaller than given time
+        if reqTime <= k:
+            return speed
+
+    return mx
+
+if __name__ == "__main__":
+    arr = [5, 10, 3]
+    k = 4
+    print(kokoEat(arr, k))
+
+using System;
+using System.Linq;
+
+class GfG {
+    static int kokoEat(int[] arr, int k) {
+        int mx = arr.Max();
+
+        for (int speed = 1; speed <= mx; speed++){
+
+            long reqTime = 0;
+            for (int i = 0; i < arr.Length; i++) {
+
+                // time required to eat this pile
+                // of bananas at current speed
+                reqTime +=
+                    (arr[i] + speed - 1) / speed;
+            }
+
+            // if total eating time at current speed
+            // is smaller than given time
+            if (reqTime <= k) {
+                return speed;
+            }
+        }
+
+        return mx;
+    }
+
+    static void Main() {
+        int[] arr = {5, 10, 3};
+        int k = 4;
+        Console.WriteLine(kokoEat(arr, k));
+    }
+}
+
+function kokoEat(arr, k) {
+    let mx = Math.max(...arr);
+
+    for (let speed = 1; speed <= mx; speed++) {
+
+        let reqTime = 0;
+        for (let i = 0; i < arr.length; i++) {
+
+            // time required to eat this pile
+            // of bananas at current speed
+            reqTime +=
+                Math.floor((arr[i] + speed - 1) / speed);
+
+        }
+
+        // if total eating time at current speed
+        // is smaller than given time
+        if (reqTime <= k) {
+            return speed;
+        }
+    }
+
+    return mx;
+}
+
+// Driver Code
+let arr = [5, 10, 3];
+let k = 4;
+console.log(kokoEat(arr, k));
+
+5
+
+### [Expected Approach] Using Binary Search on Answer
+
+> The core idea is to use binary search on the answer —specifically, on the eating speed x. For a given speed x, we can compute how many hours it would take to eat all the piles. This function is monotonic because - As x increases, the total time required decreases or stays the same. Therefore, if a certain speed x allows completion within k hours, any higher speed will also work This monotonic behavior allows us to apply binary search to efficiently find the minimum valid speed.
+
+Step by Step Implementation:
+
+- Initialize the binary search range: => Set low = 1 because the minimum possible eating speed is 1 banana per hour. => Set high = max(arr) since Koko never needs to eat faster than the largest pile. => Initialize a variable answer to store the minimum valid speed found.
+- Start binary search loop: While low <= high: => Calculate the middle speed: mid = (low + high) // 2 - Initialize totalHours = 0 - Loop through each pile in arr: For each pile, compute time required as (pile + mid - 1) // mid, add this time to totalHours
+- Decision based on total hours: => If totalHours <= k, then mid is a valid speed: Store mid in answer (it could be the minimum) and reduce the search space to the left half: high = mid - 1 => If totalHours > k, then mid is too slow: Shift search to the right half: low = mid + 1
+- After the loop ends, answer contains the minimum speed that allows finishing all piles within k hours.
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+// function to check whether current speed is enough
+bool check(vector<int>& arr, int mid, int k) {
+
+    int totalHours = 0;
+    for (int i = 0; i < arr.size(); i++) {
+        totalHours += (arr[i] + mid - 1) / mid;
+    }
+
+    // return true if total hours needed is within limit
+    return totalHours <= k;
+}
+
+// Function to find the minimum eating speed
+int kokoEat(vector<int>& arr, int k) {
+    int lo = 1;
+    int hi = *max_element(arr.begin(), arr.end());
+    int res = hi;
+
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+
+        if (check(arr, mid, k)) {
+            // update result and try slower speed
+            res = mid;
+            hi = mid - 1;
+        } else {
+             // need faster speed
+            lo = mid + 1;
+        }
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> arr = {5, 10, 3};
+    int k = 4;
+    cout << kokoEat(arr, k) << endl;
+    return 0;
+}
+
+import java.util.Arrays;
+
+class GfG {
+
+    // function to check whether mid speed is enough
+    // to eat all piles of bananas under k hours
+    static boolean check(int[] arr, int mid, int k) {
+        int totalHours = 0;
+        for (int i = 0; i < arr.length; i++) {
+            totalHours += (arr[i] + mid - 1) / mid;
+        }
+
+        // return true if required time is less than
+        // or equals to given hour, otherwise return false
+        return totalHours <= k;
+    }
+
+    static int kokoEat(int[] arr, int k) {
+
+        // minimum speed of eating is 1 banana/hours
+        int lo = 1;
+
+        // maximum speed of eating is
+        // the maximum bananas in given piles
+        int hi = Arrays.stream(arr).max().getAsInt();
+        int res = hi;
+
+        while (lo <= hi) {
+            int mid = lo + (hi - lo) / 2;
+
+            // check if the mid(hours) is valid
+            if (check(arr, mid, k) == true) {
+
+                // if valid continue to search at
+                // lower speed
+                hi = mid - 1;
+                res = mid;
+            }
+            else {
+
+                // if cant finish bananas in given
+                // hours, then increase the speed
+                lo = mid + 1;
+            }
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {5, 10, 3};
+        int k = 4;
+        System.out.println(kokoEat(arr, k));
+    }
+}
+
+# function to check whether mid speed is enough
+# to eat all piles of bananas under k hours
+def check(arr, mid, k):
+    totalHours = 0
+    for i in range(len(arr)):
+        totalHours += (arr[i] + mid - 1) // mid
+
+    # return true if required time is less than
+    # or equals to given hour, otherwise return false
+    return totalHours <= k
+
+def kokoEat(arr, k):
+
+    # minimum speed of eating is 1 banana/hours
+    lo = 1
+
+    # maximum speed of eating is
+    # the maximum bananas in given piles
+    hi = max(arr)
+    res = hi
+
+    while lo <= hi:
+        mid = lo + (hi - lo) // 2
+
+        # check if the mid(hours) is valid
+        if check(arr, mid, k) == True:
+
+            # if valid continue to search at
+            # lower speed
+            hi = mid - 1
+            res = mid
+        else:
+
+            # if cant finish bananas in given
+            # hours, then increase the speed
+            lo = mid + 1
+
+    return res
+
+if __name__ == "__main__":
+    arr = [5, 10, 3]
+    k = 4
+    print(kokoEat(arr, k))
+
+using System;
+using System.Linq;
+
+class GfG {
+    // function to check whether mid speed is enough
+    // to eat all piles of bananas under k hours
+    static bool check(int[] arr, int mid, int k) {
+        int totalHours = 0;
+        for (int i = 0; i < arr.Length; i++) {
+            totalHours += (arr[i] + mid - 1) / mid;
+        }
+        // return true if required time is less than
+        // or equals to given hour, otherwise return false
+        return totalHours <= k;
+    }
+
+    static int kokoEat(int[] arr, int k) {
+        // minimum speed of eating is 1 banana/hours
+        int lo = 1;
+
+        // maximum speed of eating is
+        // the maximum bananas in given piles
+        int hi = arr.Max();
+        int res = hi;
+
+        while (lo <= hi) {
+            int mid = lo + (hi - lo) / 2;
+            // check if the mid(hours) is valid
+            if (check(arr, mid, k) == true) {
+                // if valid continue to search at
+                // lower speed
+                hi = mid - 1;
+                res = mid;
+            }
+            else {
+                // if cant finish bananas in given
+                // hours, then increase the speed
+                lo = mid + 1;
+            }
+        }
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {5, 10, 3};
+        int k = 4;
+        Console.WriteLine(kokoEat(arr, k));
+    }
+}
+
+// function to check whether mid speed is enough
+// to eat all piles of bananas under k hours
+function check(arr, mid, k) {
+    let totalHours = 0;
+    for (let i = 0; i < arr.length; i++) {
+        totalHours += Math.floor((arr[i] + mid - 1) / mid);
+    }
+
+    // return true if required time is less than
+    // or equals to given hour, otherwise return false
+    return totalHours <= k;
+}
+
+function kokoEat(arr, k) {
+    // minimum speed of eating is 1 banana/hours
+    let lo = 1;
+
+    // maximum speed of eating is
+    // the maximum bananas in given piles
+    let hi = Math.max(...arr);
+    let res = hi;
+
+    while (lo <= hi) {
+        let mid = lo + Math.floor((hi - lo) / 2);
+
+        // check if the mid(hours) is valid
+        if (check(arr, mid, k) === true) {
+
+            // if valid continue to search at
+            // lower speed
+            hi = mid - 1;
+            res = mid;
+        }
+        else {
+
+            // if cant finish bananas in given
+            // hours, then increase the speed
+            lo = mid + 1;
+        }
+    }
+    return res;
+}
+
+// Driver Code
+let arr = [5, 10, 3];
+let k = 4;
+console.log(kokoEat(arr, k));
+
+5
+
+Time Complexity: O(n × log m), binary search runs in O(log m) time, where m is the maximum pile size. For each candidate speed, we compute the total hours by iterating over all n piles, giving O(n) work per step. Auxiliary Space: O(1)
