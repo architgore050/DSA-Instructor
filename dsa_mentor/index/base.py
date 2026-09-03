@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import numpy as np
 
@@ -39,15 +39,64 @@ class FAISSIndex:
         # Import FAISS lazily
         import faiss  # noqa: F811
 
-        if metric == "cosine":
-            # For cosine similarity with FAISS:
-            # L2-normalize vectors, then use InnerProduct index.
-            # FAISS IP returns dot product = cosine similarity for unit vectors.
-            self._index = faiss.IndexFlatIP(dimensions)
+        # Auto-detect GPU: use GPU index if CUDA is available and faiss has
+        # GPU support; otherwise fall back to CPU.  No config flag needed —
+        # the code just works when CUDA + faiss-gpu are installed.
+        self._use_gpu = self._detect_gpu()
+        self._resources: Any | None = None
+
+        if self._use_gpu:
+            self._resources = faiss.StandardGpuResources()
+            if metric == "cosine":
+                self._index = faiss.GpuIndexFlatIP(
+                    self._resources, dimensions, faiss.FLOAT32
+                )
+            else:
+                self._index = faiss.GpuIndexFlatL2(
+                    self._resources, dimensions, faiss.FLOAT32
+                )
+            logger.info("Using GPU FAISS index (%d dims, %s)", dimensions, metric)
         else:
-            self._index = faiss.IndexFlatL2(dimensions)
+            if metric == "cosine":
+                self._index = faiss.IndexFlatIP(dimensions)
+            else:
+                self._index = faiss.IndexFlatL2(dimensions)
+            logger.info("Using CPU FAISS index (%d dims, %s)", dimensions, metric)
 
         self._metadata: list[str] = []  # paragraph id for each vector
+
+    @staticmethod
+    def _detect_gpu() -> bool:
+        """Return True if CUDA is available and FAISS has GPU support."""
+        try:
+            import torch  # noqa: F811
+            if not torch.cuda.is_available():
+                return False
+        except ImportError:
+            pass
+        # Verify FAISS can actually create a GPU index (faiss-gpu installed)
+        try:
+            import faiss  # noqa: F811
+            res = faiss.StandardGpuResources()
+            idx = faiss.GpuIndexFlatIP(res, 8, faiss.FLOAT32)
+            del idx, res
+            return True
+        except Exception:
+            return False
+
+    def _to_cpu_index(self) -> Any:
+        """Copy a GPU index to CPU for serialization."""
+        import faiss  # noqa: F811
+        if self._use_gpu:
+            return faiss.index_gpu_to_cpu(self._index)
+        return self._index
+
+    def _to_gpu_index(self, cpu_index: Any) -> Any:
+        """Copy a CPU index to GPU."""
+        import faiss  # noqa: F811
+        if self._use_gpu and self._resources is not None:
+            return faiss.index_cpu_to_gpu(self._resources, 0, cpu_index)
+        return cpu_index
 
     # ------------------------------------------------------------------
     # Core operations
@@ -164,14 +213,16 @@ class FAISSIndex:
         ----------
         path : str
             Directory path. Saves:
-              - index.faiss  (FAISS binary)
+              - index.faiss  (FAISS binary, always stored as CPU index)
               - metadata.json (paragraph id → index mapping)
         """
         p = Path(path)
         p.mkdir(parents=True, exist_ok=True)
 
         import faiss  # noqa: F811
-        faiss.write_index(self._index, str(p / "index.faiss"))
+        # Always serialize as CPU index — GPU indices cannot be written
+        # directly; copy to CPU first.
+        faiss.write_index(self._to_cpu_index(), str(p / "index.faiss"))
 
         meta_path = p / "metadata.json"
         with open(meta_path, "w", encoding="utf-8") as f:
@@ -196,7 +247,7 @@ class FAISSIndex:
         Returns
         -------
         FAISSIndex
-            Restored index instance.
+            Restored index instance (re-creates GPU index if CUDA is available).
         """
         p = Path(path)
 
@@ -211,16 +262,38 @@ class FAISSIndex:
         metric = meta["metric"]
 
         import faiss  # noqa: F811
-        index = faiss.read_index(str(p / "index.faiss"))
+        cpu_index = faiss.read_index(str(p / "index.faiss"))
 
         instance = cls.__new__(cls)
         instance._dimensions = dimensions
         instance._metric = metric
-        instance._index = index
-        instance._metadata = meta["ids"]
+        instance._use_gpu = instance._detect_gpu()
+        instance._resources: Any | None = None
 
-        logger.info("Loaded FAISSIndex (%d vectors, %d dims) from %s",
-                     len(instance._metadata), dimensions, p)
+        if instance._use_gpu:
+            instance._resources = faiss.StandardGpuResources()
+            if metric == "cosine":
+                instance._index = faiss.GpuIndexFlatIP(
+                    instance._resources, dimensions, faiss.FLOAT32
+                )
+            else:
+                instance._index = faiss.GpuIndexFlatL2(
+                    instance._resources, dimensions, faiss.FLOAT32
+                )
+            # Copy loaded CPU data onto GPU
+            instance._index.copyFrom(cpu_index)
+            logger.info(
+                "Loaded FAISSIndex (%d vectors, %d dims) from %s [GPU]",
+                len(meta["ids"]), dimensions, p,
+            )
+        else:
+            instance._index = cpu_index
+            logger.info(
+                "Loaded FAISSIndex (%d vectors, %d dims) from %s [CPU]",
+                len(meta["ids"]), dimensions, p,
+            )
+
+        instance._metadata = meta["ids"]
         return instance
 
     # ------------------------------------------------------------------
