@@ -213,13 +213,16 @@ The full experimental matrix covers 3 model tiers × 2 RAG states × 5 retrieval
 
 | Package | Purpose |
 |---|---|
-| `faiss-cpu` | Vector similarity search |
-| `sentence-transformers` | Local embedding model (`all-MiniLM-L6-v2`) |
+| `faiss-cpu` | Vector similarity search (auto-detects `faiss-gpu` / CUDA; falls back to CPU if unavailable) |
+| `sentence-transformers` | Local embedding model (`all-MiniLM-L6-v2`, auto-detects GPU/CUDA) |
+| `torch` | GPU detection for FAISS and embeddings (optional if only using CPU) |
 | `scikit-learn` | TF-IDF fallback embedding backend |
 | `pypdf` | PDF text extraction |
 | `streamlit` | Chat UI |
 | `requests` | HTTP client for LLM API |
 | `numpy` | Numerical operations |
+
+**GPU support:** The project auto-detects CUDA at runtime. If `torch` reports CUDA available and `faiss-gpu` is installed, both the embedding model and FAISS indices run on GPU automatically. Otherwise everything falls back to CPU transparently — no config changes needed.
 
 ---
 
