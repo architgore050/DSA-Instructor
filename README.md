@@ -9,10 +9,11 @@ The system preserves the natural hierarchy of DSA textbooks, retrieves from coar
 ## Quick Start
 
 ```bash
-# Install dependencies (GPU: use faiss-gpu; CPU: use faiss-cpu)
-pip install torch sentence-transformers faiss-gpu scikit-learn pypdf streamlit requests
-# or for CPU-only:
-# pip install torch sentence-transformers faiss-cpu scikit-learn pypdf streamlit requests
+# Install dependencies
+pip install -r requirements.txt
+
+# GPU-only: install faiss-gpu (replaces faiss-cpu in requirements.txt)
+pip install faiss-gpu
 
 # Build the knowledge base (ingests docs/ → knowledge_base.json + FAISS indices)
 python -m dsa_mentor.ingestion.build
@@ -213,10 +214,13 @@ The full experimental matrix covers 3 model tiers × 2 RAG states × 5 retrieval
 
 ## Dependencies
 
+All dependencies are listed in `requirements.txt`. Install with `pip install -r requirements.txt`.
+
 | Package | Purpose |
 |---|---|
 | `torch` | GPU detection for FAISS and embeddings (required, even for CPU-only setups) |
-| `faiss-cpu` | Vector similarity search (CPU; use `faiss-gpu` instead if CUDA is available) |
+| `faiss-cpu` | Vector similarity search (CPU; install `faiss-gpu` instead if CUDA is available) |
+| `faiss-gpu` | GPU-accelerated vector search (alternative to `faiss-cpu` when CUDA is available) |
 | `sentence-transformers` | Local embedding model (`all-MiniLM-L6-v2`) |
 | `scikit-learn` | TF-IDF fallback embedding backend |
 | `pypdf` | PDF text extraction |
