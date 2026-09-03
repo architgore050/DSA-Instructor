@@ -15,8 +15,14 @@ pip install -r requirements.txt
 # GPU-only: install faiss-gpu (replaces faiss-cpu in requirements.txt)
 pip install faiss-gpu
 
-# Build the knowledge base (ingests docs/ → knowledge_base.json + FAISS indices)
+# Build the knowledge base (ingests docs/ → knowledge_base.json)
 python -m dsa_mentor.ingestion.build
+
+# Build FAISS indices (required before launching the chat UI)
+# This is done automatically the first time you click "Build Index" in the UI,
+# or you can run it manually:
+streamlit run app/streamlit_app.py
+# Then click "Build Index" in the sidebar
 
 # Launch the chat UI
 streamlit run app/streamlit_app.py
@@ -30,6 +36,70 @@ The UI provides:
 - **Retrieval Inspector** — expandable panel showing books, chapters, topics, paragraphs with similarity scores and knee detection results
 - **RAG toggle** — switch between RAG ON (retrieval + tool calling) and RAG OFF (model parametric knowledge only)
 - **Model selector** — Large / Medium / Small
+
+---
+
+## Running Benchmarks
+
+The benchmark suite evaluates retrieval quality and answer correctness across models and retrieval methods.
+
+### Prerequisites
+
+The FAISS index must be built before running benchmarks (see Quick Start above).
+
+### Single Run
+
+Run one model × one RAG state × one retrieval method:
+
+```bash
+# RAG ON, large model, knee detection (default)
+python -m benchmark
+
+# Specify options
+python -m benchmark --model medium --rag off --method fixed_top_10
+
+# Custom questions and output
+python -m benchmark --questions benchmark/sample_questions.jsonl --output my_results.jsonl
+```
+
+### Full Experiment Matrix
+
+Run all combinations (3 models × 2 RAG states × 5 retrieval methods = 30 runs):
+
+```bash
+python -m benchmark --full
+```
+
+Output files:
+- `benchmark/results.jsonl` — per-question results for the last run
+- `benchmark/results_{model}_{rag}_{method}.jsonl` — individual result files from `--full`
+- `benchmark/results.json` — full experiment results (only from `--full`)
+
+### Available Options
+
+| Option | Values | Default |
+|---|---|---|
+| `--model` | `large`, `medium`, `small` | `large` |
+| `--rag` | `on`, `off` | `on` |
+| `--method` | `knee`, `fixed_top_5`, `fixed_top_10`, `fixed_top_20`, `flat` | `knee` |
+| `--questions` | Path to JSONL file | `benchmark/sample_questions.jsonl` |
+| `--output` | Output file path | `benchmark/results.jsonl` |
+| `--full` | Flag — run full matrix | off |
+
+### Ablation Studies
+
+Run individual ablation levels (A–F) programmatically:
+
+```python
+from benchmark.ablations import AblationStudy
+
+# Run all ablation levels
+AblationStudy.run_all(config_path="config.json")
+
+# Run a specific level
+AblationStudy.run_level_A(config_path="config.json")  # LLM only (RAG OFF)
+AblationStudy.run_level_D(config_path="config.json")  # Hierarchical + knee detection
+```
 
 ---
 

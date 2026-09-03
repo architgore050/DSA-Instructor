@@ -31,6 +31,13 @@ class _Block:
     start_line: int
 
 
+@dataclass
+class _SubtopicBlock:
+    """A subtopic (### heading) containing sub-blocks (####+ headings or content)."""
+    heading: Optional[_Heading]
+    sub_blocks: List[_Block]
+
+
 # ---------------------------------------------------------------------------
 # Heading regex
 # ---------------------------------------------------------------------------
@@ -74,10 +81,23 @@ def parse_paragraphs(
         if not text or not text.strip():
             continue
 
-        blocks = _extract_blocks(text)
-        paragraphs = _blocks_to_paragraphs(
-            blocks, fpath, metadata, paragraph_max_chars, paragraph_overlap_chars
-        )
+        # MD files: use ## (h2) headings as subtopic boundaries
+        subtopic_blocks = _extract_subtopic_blocks(text, heading_level=2)
+
+        if subtopic_blocks:
+            paragraphs = _subtopics_to_paragraphs(
+                subtopic_blocks, fpath, metadata, paragraph_max_chars, paragraph_overlap_chars
+            )
+        else:
+            # No ## headings — create one implicit subtopic from the whole file
+            blocks = _extract_blocks(text)
+            implicit_st = [_SubtopicBlock(heading=None, sub_blocks=blocks)]
+            paragraphs = _subtopics_to_paragraphs(
+                implicit_st, fpath, metadata, paragraph_max_chars, paragraph_overlap_chars
+            )
+
+        # Link adjacent paragraphs within this source file only
+        _link_adjacent_paragraphs(paragraphs)
         all_paragraphs.extend(paragraphs)
 
     return all_paragraphs
@@ -156,67 +176,168 @@ def _extract_blocks(text: str) -> List[_Block]:
     return blocks
 
 
+def _extract_subtopic_blocks(text: str, heading_level: int = 3) -> List[_SubtopicBlock]:
+    """Extract subtopic blocks from markdown text.
+
+    Subtopics are delimited by headings of the specified level.
+    Within each subtopic, deeper headings create sub-blocks.
+
+    Args:
+        text: Markdown text to parse.
+        heading_level: Heading level to treat as subtopic boundary (2 for ##, 3 for ###).
+
+    Returns:
+        List of subtopic blocks. Empty list if no headings of the specified level exist.
+    """
+    lines = text.split("\n")
+    subtopics: List[_SubtopicBlock] = []
+    current_subtopic: Optional[_SubtopicBlock] = None
+    current_lines: List[str] = []
+    current_heading: Optional[_Heading] = None
+    current_start = 0
+    in_code_fence = False
+    fence_char = ""
+
+    def _save_current_sub_block() -> None:
+        """Save the current accumulating lines as a sub-block in current_subtopic."""
+        nonlocal current_lines, current_heading, current_start
+        if current_subtopic is not None:
+            stripped = "\n".join(current_lines).strip()
+            if current_heading is not None or stripped:
+                current_subtopic.sub_blocks.append(
+                    _Block(current_heading, current_lines, current_start)
+                )
+            current_lines = []
+            current_heading = None
+            current_start = 0
+
+    def _add_current_subtopic() -> None:
+        """Finalize current subtopic and add it to the list."""
+        nonlocal current_subtopic
+        _save_current_sub_block()
+        if current_subtopic is not None:
+            subtopics.append(current_subtopic)
+            current_subtopic = None
+
+    for i, line in enumerate(lines):
+        # Track code fences
+        fence_match = _CODE_FENCE_RE.match(line.strip())
+        if fence_match:
+            fence = fence_match.group(1)
+            if not in_code_fence:
+                in_code_fence = True
+                fence_char = fence[0]
+                if current_subtopic is not None:
+                    current_lines.append(line)
+                continue
+            elif fence.startswith(fence_char) and len(fence) >= len(fence_char):
+                in_code_fence = False
+                if current_subtopic is not None:
+                    current_lines.append(line)
+                continue
+
+        if in_code_fence:
+            if current_subtopic is not None:
+                current_lines.append(line)
+            continue
+
+        heading_match = _HEADING_RE.match(line)
+        if heading_match:
+            level = len(heading_match.group(1))
+            title = heading_match.group(2).strip()
+
+            if level == heading_level:
+                # New heading at target level — finalize previous subtopic, start new one
+                _add_current_subtopic()
+                current_subtopic = _SubtopicBlock(
+                    heading=_Heading(level, title, i),
+                    sub_blocks=[],
+                )
+                current_lines = [line]
+                current_heading = _Heading(level, title, i)
+                current_start = i
+            elif current_subtopic is not None and level > heading_level:
+                # Deeper heading within a subtopic — save current, start sub-block
+                _save_current_sub_block()
+                current_lines = [line]
+                current_heading = _Heading(level, title, i)
+                current_start = i
+            else:
+                # Higher level heading (e.g., ## when looking for ###), or no current subtopic
+                pass
+        else:
+            if current_subtopic is not None:
+                current_lines.append(line)
+
+    # Finalize last subtopic
+    _add_current_subtopic()
+
+    return subtopics
+
+
 # ---------------------------------------------------------------------------
 # Block → Paragraph conversion
 # ---------------------------------------------------------------------------
 
-def _blocks_to_paragraphs(
-    blocks: List[_Block],
+def _subtopics_to_paragraphs(
+    subtopic_blocks: List[_SubtopicBlock],
     source_file: str,
     metadata: Dict[str, str],
     paragraph_max_chars: int,
     paragraph_overlap_chars: int,
 ) -> List[Paragraph]:
-    """Convert parsed blocks into Paragraph nodes.
+    """Convert parsed subtopic blocks into Paragraph nodes.
 
-    For blocks with a heading, the heading text becomes the paragraph title
-    and the block text becomes the content.  Oversized paragraphs are split
-    into overlapping segments per spec §6.
+    Each subtopic gets a subtopic_id. Sub-blocks within each subtopic become
+    paragraphs with that subtopic_id attached.
     """
     paragraphs: List[Paragraph] = []
     source_url = metadata.get("source_url")
     corpus_id = metadata.get("corpus_id")
     license_val = metadata.get("license")
 
-    for block in blocks:
-        text = "\n".join(block.lines).strip()
-
-        # Skip empty blocks (no heading and no content)
-        if block.heading is None and not text:
-            continue
-
-        if block.heading is None:
-            # Orphan text without a heading — treat as a single paragraph
-            para = _make_paragraph(
-                title="Untitled",
-                content=text,
-                source_file=source_file,
-                source_url=source_url,
-                corpus_id=corpus_id,
-                license=license_val,
-                page_number=None,
-                paragraph_max_chars=paragraph_max_chars,
-                paragraph_overlap_chars=paragraph_overlap_chars,
-            )
-            paragraphs.extend(para)
+    for st_idx, st_block in enumerate(subtopic_blocks):
+        if st_block.heading is not None:
+            subtopic_title = st_block.heading.title
         else:
-            heading = block.heading
-            # Use heading title as paragraph-level content
-            para = _make_paragraph(
-                title=heading.title,
-                content=text,
-                source_file=source_file,
-                source_url=source_url,
-                corpus_id=corpus_id,
-                license=license_val,
-                page_number=None,
-                paragraph_max_chars=paragraph_max_chars,
-                paragraph_overlap_chars=paragraph_overlap_chars,
-            )
-            paragraphs.extend(para)
+            subtopic_title = "Whole File"
+        subtopic_id = f"{source_file}:subtopic-{st_idx}"
 
-    # Link prev/next within the same source file
-    _link_adjacent_paragraphs(paragraphs)
+        for sb in st_block.sub_blocks:
+            text = "\n".join(sb.lines).strip()
+
+            # Skip empty sub-blocks
+            if sb.heading is None and not text:
+                continue
+
+            if sb.heading is None:
+                para = _make_paragraph(
+                    title="Untitled",
+                    content=text,
+                    source_file=source_file,
+                    source_url=source_url,
+                    corpus_id=corpus_id,
+                    license=license_val,
+                    page_number=None,
+                    paragraph_max_chars=paragraph_max_chars,
+                    paragraph_overlap_chars=paragraph_overlap_chars,
+                    subtopic_id=subtopic_id,
+                )
+                paragraphs.extend(para)
+            else:
+                para = _make_paragraph(
+                    title=sb.heading.title,
+                    content=text,
+                    source_file=source_file,
+                    source_url=source_url,
+                    corpus_id=corpus_id,
+                    license=license_val,
+                    page_number=None,
+                    paragraph_max_chars=paragraph_max_chars,
+                    paragraph_overlap_chars=paragraph_overlap_chars,
+                    subtopic_id=subtopic_id,
+                )
+                paragraphs.extend(para)
 
     return paragraphs
 
@@ -231,6 +352,7 @@ def _make_paragraph(
     page_number: Optional[int],
     paragraph_max_chars: int,
     paragraph_overlap_chars: int,
+    subtopic_id: Optional[str] = None,
 ) -> List[Paragraph]:
     """Create one or more Paragraph nodes from title+content.
 
@@ -238,14 +360,14 @@ def _make_paragraph(
     """
     if len(content) <= paragraph_max_chars:
         return [_create_single(title, content, source_file, source_url,
-                               corpus_id, license, page_number)]
+                                corpus_id, license, page_number, subtopic_id)]
 
     segments = _split_text(content, paragraph_max_chars, paragraph_overlap_chars)
     result = []
     for i, seg in enumerate(segments):
         seg_title = title if len(segments) == 1 else f"{title} ({i + 1}/{len(segments)})"
         result.append(_create_single(seg_title, seg, source_file, source_url,
-                                      corpus_id, license, page_number))
+                                      corpus_id, license, page_number, subtopic_id))
     return result
 
 
@@ -257,6 +379,7 @@ def _create_single(
     corpus_id: Optional[str],
     license: Optional[str],
     page_number: Optional[int],
+    subtopic_id: Optional[str] = None,
 ) -> Paragraph:
     """Create a single Paragraph node with a deterministic id."""
     raw_id = f"{source_file}:{hashlib.md5(content.encode('utf-8')[:256]).hexdigest()[:12]}"
@@ -275,7 +398,7 @@ def _create_single(
         book_id=None,
         chapter_id=None,
         topic_id=None,
-        subtopic_id=None,
+        subtopic_id=subtopic_id,
         paragraph_id=raw_id,
         prev_paragraph_id=None,
         next_paragraph_id=None,

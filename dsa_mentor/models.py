@@ -49,6 +49,7 @@ class Paragraph(HierarchyNode):
     chapter_id: Optional[str] = None
     topic_id: Optional[str] = None
     subtopic_id: Optional[str] = None
+    hierarchical_chunk_id: Optional[str] = None
     paragraph_id: Optional[str] = None
     prev_paragraph_id: Optional[str] = None
     next_paragraph_id: Optional[str] = None

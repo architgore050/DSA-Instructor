@@ -18,7 +18,9 @@ from dsa_mentor.models import Paragraph
 from dsa_mentor.ingestion.md_parser import (
     _read_file,
     _extract_blocks,
-    _blocks_to_paragraphs,
+    _extract_subtopic_blocks,
+    _SubtopicBlock,
+    _subtopics_to_paragraphs,
 )
 
 
@@ -124,10 +126,21 @@ def parse_paragraphs(
         if not body_text:
             continue
 
-        blocks = _extract_blocks(body_text)
-        paragraphs = _blocks_to_paragraphs(
-            blocks, fpath, file_meta, paragraph_max_chars, paragraph_overlap_chars
-        )
+        # Try to extract ### subtopic blocks from body text (GfG uses h3 for sections)
+        subtopic_blocks = _extract_subtopic_blocks(body_text, heading_level=3)
+
+        if subtopic_blocks:
+            # GfG files with ### headings — multiple subtopics
+            paragraphs = _subtopics_to_paragraphs(
+                subtopic_blocks, fpath, file_meta, paragraph_max_chars, paragraph_overlap_chars
+            )
+        else:
+            # No ### headings — create one implicit subtopic from the whole file
+            blocks = _extract_blocks(body_text)
+            implicit_st = [_SubtopicBlock(heading=None, sub_blocks=blocks)]
+            paragraphs = _subtopics_to_paragraphs(
+                implicit_st, fpath, file_meta, paragraph_max_chars, paragraph_overlap_chars
+            )
         all_paragraphs.extend(paragraphs)
 
     return all_paragraphs

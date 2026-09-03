@@ -105,9 +105,10 @@ def _parse_pdf(
     license_val = metadata.get("license")
 
     for page_num, text in page_texts:
+        subtopic_id = f"{source_file}:subtopic-{page_num - 1}"
         para_list = _text_to_paragraphs(
             text, source_file, source_url, corpus_id, license_val,
-            page_num, paragraph_max_chars, paragraph_overlap_chars
+            page_num, paragraph_max_chars, paragraph_overlap_chars, subtopic_id
         )
         paragraphs.extend(para_list)
 
@@ -146,6 +147,7 @@ def _text_to_paragraphs(
     page_number: int,
     paragraph_max_chars: int,
     paragraph_overlap_chars: int,
+    subtopic_id: Optional[str] = None,
 ) -> List[Paragraph]:
     """Split raw page text into paragraph nodes.
 
@@ -183,7 +185,7 @@ def _text_to_paragraphs(
                     paras = _split_into_paragraphs(
                         current_title or "Section", block_text, source_file,
                         source_url, corpus_id, license, page_number,
-                        paragraph_max_chars, paragraph_overlap_chars
+                        paragraph_max_chars, paragraph_overlap_chars, subtopic_id
                     )
                     paragraphs.extend(paras)
                 current_lines = []
@@ -198,7 +200,7 @@ def _text_to_paragraphs(
                     paras = _split_into_paragraphs(
                         current_title or "Paragraph", block_text, source_file,
                         source_url, corpus_id, license, page_number,
-                        paragraph_max_chars, paragraph_overlap_chars
+                        paragraph_max_chars, paragraph_overlap_chars, subtopic_id
                     )
                     paragraphs.extend(paras)
                 current_lines = []
@@ -215,7 +217,7 @@ def _text_to_paragraphs(
             paras = _split_into_paragraphs(
                 current_title or "Paragraph", block_text, source_file,
                 source_url, corpus_id, license, page_number,
-                paragraph_max_chars, paragraph_overlap_chars
+                paragraph_max_chars, paragraph_overlap_chars, subtopic_id
             )
             paragraphs.extend(paras)
 
@@ -232,6 +234,7 @@ def _split_into_paragraphs(
     page_number: int,
     paragraph_max_chars: int,
     paragraph_overlap_chars: int,
+    subtopic_id: Optional[str] = None,
 ) -> List[Paragraph]:
     """Split a text block into one or more Paragraph nodes.
 
@@ -257,7 +260,7 @@ def _split_into_paragraphs(
             book_id=None,
             chapter_id=None,
             topic_id=None,
-            subtopic_id=None,
+            subtopic_id=subtopic_id,
             paragraph_id=raw_id,
             prev_paragraph_id=None,
             next_paragraph_id=None,
@@ -284,7 +287,7 @@ def _split_into_paragraphs(
             book_id=None,
             chapter_id=None,
             topic_id=None,
-            subtopic_id=None,
+            subtopic_id=subtopic_id,
             paragraph_id=raw_id,
             prev_paragraph_id=None,
             next_paragraph_id=None,

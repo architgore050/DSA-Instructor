@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from collections import OrderedDict
+
 from .models import Paragraph, RetrievalResult, Topic
 from .prompts import get_system_prompt
 
@@ -128,7 +130,11 @@ class ContextBuilder:
 
     @staticmethod
     def _format_retrieved(result: RetrievalResult) -> str:
-        """Format the retrieved knowledge section (topics + paragraphs)."""
+        """Format the retrieved knowledge section (topics + subtopic chunks).
+
+        Paragraphs are aggregated by subtopic_id into subtopic-level chunks
+        so the LLM receives coherent units rather than fragmented paragraphs.
+        """
         sections: list[str] = []
 
         # Expanded topics (spec §7 — full topic text)
@@ -154,12 +160,33 @@ class ContextBuilder:
                 if full_text and full_text.strip():
                     sections.append(f"[TOPIC] {topic_line}\n{full_text}")
 
-        # Paragraphs
+        # Paragraphs — aggregate by subtopic into subtopic-level chunks
         if result.paragraphs:
+            subtopic_chunks: OrderedDict[str, list] = OrderedDict()
             for para in result.paragraphs:
-                para_line = ContextBuilder._paragraph_heading(para)
-                content = para.content if isinstance(para, Paragraph) else getattr(para, "content", "")
-                sections.append(f"[PARAGRAPH] {para_line}\n{content or ''}")
+                st_id = getattr(para, "subtopic_id", None) or getattr(para, "hierarchical_chunk_id", None)
+                if st_id:
+                    subtopic_chunks.setdefault(st_id, []).append(para)
+
+            for st_id, para_list in subtopic_chunks.items():
+                # Derive subtopic title from first paragraph
+                first_para = para_list[0]
+                st_title = getattr(first_para, "title", "Subtopic")
+                st_book = getattr(first_para, "book_id", "")
+                st_chapter = getattr(first_para, "chapter_id", "")
+                st_topic = getattr(first_para, "topic_id", "")
+                st_parts = [p for p in (st_book, st_chapter, st_topic, st_title) if p]
+                heading = " / ".join(st_parts)
+
+                # Combine all paragraph contents within this subtopic
+                para_contents = []
+                for p in para_list:
+                    content = p.content if isinstance(p, Paragraph) else getattr(p, "content", "")
+                    if content:
+                        para_contents.append(content)
+
+                chunk_text = "\n\n".join(para_contents)
+                sections.append(f"[SUBTOPIC] {heading}\n{chunk_text}")
 
         return "\n\n".join(sections)
 

@@ -349,7 +349,7 @@ class KneeHierarchicalRetriever:
         expanded_paras = self._neighbor_expander.expand(
             top_paragraphs,
             topic_paragraph_map,
-            all_paragraphs_by_id,
+            all_para_by_id,
         )
         logger.info("Knee retrieve: neighbor-expanded %d → %d paragraphs",
                      len(top_paragraphs), len(expanded_paras))

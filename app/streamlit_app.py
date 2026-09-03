@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -60,81 +61,29 @@ def _load_config() -> Config:
 
 
 def _index_exists() -> bool:
-    """Check whether the multi-index directory has been built."""
-    return _INDEX_DIR.is_dir() and any(_INDEX_DIR.iterdir())
+    """Check whether the multi-index directory has been built (FAISS files present)."""
+    if not _INDEX_DIR.is_dir():
+        return False
+    # Check for actual FAISS index files (not just empty JSON shells)
+    for sub in ("books", "chapters", "topics", "paragraphs"):
+        faiss_path = _INDEX_DIR / sub / "index.faiss"
+        if not faiss_path.exists():
+            return False
+    return True
 
 
-def _knowledge_base_exists() -> bool:
-    return _KB_FILE.is_file()
-
-
-def _build_index(cfg: Config) -> None:
-    """Run ingestion + indexing when the index does not exist yet."""
+def _load_retriever(cfg: Config) -> Optional[KneeHierarchicalRetriever]:
+    """Load the multi-index and return a KneeHierarchicalRetriever.
+    
+    Returns None if index doesn't exist.
+    """
+    if not _index_exists():
+        return None
+    
     import importlib
-
-    msg = st.empty()
-    msg.info("Building knowledge base and index … this may take a while.")
-
-    try:
-        # Phase 1: ingestion → knowledge_base.json
-        if not _knowledge_base_exists():
-            build_mod = importlib.import_module("dsa_mentor.ingestion.build")
-            build_mod.main(["--config", str(_PROJECT_ROOT / "config.json")])
-
-        # Phase 2: build multi-level FAISS indices
-        multi_mod = importlib.import_module("dsa_mentor.index.multi")
-        embed_mod = importlib.import_module("dsa_mentor.embeddings")
-
-        kb_path = str(_KB_FILE)
-        index_path = str(_INDEX_DIR)
-
-        # Load knowledge base
-        with open(kb_path, "r", encoding="utf-8") as f:
-            kb_data = json.load(f)
-
-        # Reconstruct hierarchy nodes
-        nodes: Dict[str, Any] = {}
-        for node_dict in kb_data.get("nodes", []):
-            level = node_dict.get("level", "")
-            if level == "paragraph":
-                nodes[node_dict["id"]] = Paragraph(**node_dict)
-            elif level == "book":
-                nodes[node_dict["id"]] = Book(**node_dict)
-            elif level == "chapter":
-                nodes[node_dict["id"]] = Chapter(**node_dict)
-            elif level == "topic":
-                nodes[node_dict["id"]] = Topic(**node_dict)
-            elif level == "subtopic":
-                from dsa_mentor.models import Subtopic
-                nodes[node_dict["id"]] = Subtopic(**node_dict)
-
-        paragraphs = [n for n in nodes.values() if isinstance(n, Paragraph)]
-
-        # Build embedding client
-        emb_client = embed_mod.EmbeddingClient(cfg)
-
-        # Build multi-index
-        mgr = multi_mod.MultiIndexManager(embedding_client=emb_client)
-        mgr.build_index(paragraphs, nodes)
-        mgr.save(index_path)
-
-        msg.success(
-            f"Index built successfully: {len(paragraphs)} paragraphs indexed "
-            f"across {len(set(getattr(p, 'book_id', None) for p in paragraphs))} books."
-        )
-
-    except Exception as exc:
-        msg.error(f"Index build failed: {exc}")
-        raise
-
-
-def _build_retriever(cfg: Config) -> KneeHierarchicalRetriever:
-    """Load the multi-index and return a KneeHierarchicalRetriever."""
-    import importlib
-
     multi_mod = importlib.import_module("dsa_mentor.index.multi")
     embed_mod = importlib.import_module("dsa_mentor.embeddings")
-
+    
     index_path = str(_INDEX_DIR)
     emb_client = embed_mod.EmbeddingClient(cfg)
     mgr = multi_mod.MultiIndexManager.load(index_path, embedding_client=emb_client)
@@ -334,6 +283,22 @@ def _render_source_citations(result: RetrievalResult) -> str:
 
 
 # ===================================================================
+# Message formatting
+# ===================================================================
+
+def _format_message(content: str) -> str:
+    """Format message content for proper newline rendering in Streamlit.
+
+    Wraps content in a preformatted div that preserves whitespace and newlines,
+    while still allowing Markdown rendering for other syntax.
+    """
+    if not content:
+        return ""
+    # Use HTML pre tag to preserve whitespace/newlines, then render as HTML
+    return f"<pre style='margin:0;padding:0;font-family:inherit;white-space:pre-wrap;word-wrap:break-word;'>{content}</pre>"
+
+
+# ===================================================================
 # Session state helpers
 # ===================================================================
 
@@ -345,8 +310,6 @@ def _init_session_state() -> None:
         st.session_state.retrieval_result: Optional[RetrievalResult] = None
     if "conversation_history" not in st.session_state:
         st.session_state.conversation_history: List[Tuple[str, str]] = []
-    if "index_built" not in st.session_state:
-        st.session_state.index_built = _index_exists() and _knowledge_base_exists()
     if "llm_client" not in st.session_state:
         cfg = _load_config()
         st.session_state.llm_client = LLMClient(cfg)
@@ -354,7 +317,7 @@ def _init_session_state() -> None:
         st.session_state.config = _load_config()
     if "retriever" not in st.session_state:
         try:
-            st.session_state.retriever = _build_retriever(
+            st.session_state.retriever = _load_retriever(
                 st.session_state.config
             )
         except Exception:
@@ -376,13 +339,16 @@ def _build_conversation_context() -> str:
 
 
 def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: bool) -> None:
-    """Run the full query pipeline and display the result."""
+    """Run the full query pipeline and display the result with streaming."""
     client: LLMClient = st.session_state.llm_client
     config: Config = st.session_state.config
     retriever: Optional[KneeHierarchicalRetriever] = st.session_state.retriever
 
+    # Add user message immediately
+    st.session_state.messages.append({"role": "user", "content": user_query})
+
     if not rag_enabled:
-        # RAG OFF: direct LLM call, no retrieval
+        # RAG OFF: direct LLM call with streaming
         system_prompt = _get_mode_system_prompt(config, mode, rag_enabled=False)
         messages = [{"role": "system", "content": system_prompt}]
 
@@ -394,35 +360,32 @@ def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: boo
 
         messages.append({"role": "user", "content": user_query})
 
-        with st.spinner("Thinking…"):
-            try:
-                response = client.chat(messages, model=model_tier)
-                content = response["choices"][0]["message"].get("content", "")
-            except Exception as exc:
-                st.error(f"LLM call failed: {exc}")
-                content = f"Error: {exc}"
+        # Create placeholder for streaming assistant response
+        assistant_placeholder = st.empty()
+        streaming_content = ""
 
-        st.session_state.messages.append({"role": "user", "content": user_query})
-        st.session_state.messages.append({"role": "assistant", "content": content})
-        st.session_state.conversation_history.append((user_query, content))
+        try:
+            for token_delta, full_content in client.chat_stream(messages, model=model_tier):
+                streaming_content = full_content
+                assistant_placeholder.markdown(_format_message(full_content))
+        except Exception as exc:
+            error_msg = f"Error: {exc}"
+            assistant_placeholder.markdown(_format_message(error_msg))
+            streaming_content = error_msg
+
+        st.session_state.messages.append({"role": "assistant", "content": streaming_content})
+        st.session_state.conversation_history.append((user_query, streaming_content))
         st.session_state.retrieval_result = None
         return
 
     # RAG ON
     if not retriever:
         st.error(
-            "Retriever not available. Please build the index first using the "
-            "'Build Index' button in the sidebar."
+            "Retriever not available. Please build the index first by running:\n"
+            "`python -m dsa_mentor.ingestion.build --index`"
         )
+        st.session_state.messages.pop()
         return
-
-    if not _index_exists() or not _knowledge_base_exists():
-        st.error(
-            "Index does not exist. Please click **Build Index** in the sidebar first."
-        )
-        return
-
-    system_prompt = _get_mode_system_prompt(config, mode, rag_enabled=True)
 
     # Step 1: Retrieve
     with st.spinner("Retrieving relevant knowledge …"):
@@ -432,14 +395,14 @@ def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: boo
             st.warning(
                 f"Retrieval failed ({exc}). Falling back to RAG OFF mode."
             )
-            # Fallback: RAG OFF behavior
+            st.session_state.messages.pop()
             _process_query(user_query, mode, model_tier, rag_enabled=False)
             return
 
     # Step 2: Build conversation context
     conv_context = _build_conversation_context()
 
-    # Step 3: Call LLM with tools (agentic retrieval)
+    # Step 3: Run agentic tool loop (non-streaming, needs structured responses)
     with st.spinner("Generating response …"):
         try:
             tool_result: ToolLoopResult = client.chat_with_tools(
@@ -450,15 +413,25 @@ def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: boo
                 max_tool_calls=config.agentic_retrieval.max_tool_calls,
                 model=model_tier,
             )
-            content = tool_result.content
+            final_content = tool_result.content
         except Exception as exc:
             st.error(f"LLM call failed: {exc}")
-            content = f"Error: {exc}"
+            final_content = f"Error: {exc}"
 
-    # Store results
-    st.session_state.messages.append({"role": "user", "content": user_query})
-    st.session_state.messages.append({"role": "assistant", "content": content})
-    st.session_state.conversation_history.append((user_query, content))
+    # Step 4: Stream the final answer
+    assistant_placeholder = st.empty()
+    streaming_content = ""
+
+    # Stream the final content character by character for UX
+    for i in range(0, len(final_content), 1):
+        chunk = final_content[:i+1]
+        streaming_content = chunk
+        assistant_placeholder.markdown(_format_message(chunk))
+        time.sleep(0.002)  # small delay for smooth streaming effect
+
+    # Store final results
+    st.session_state.messages.append({"role": "assistant", "content": streaming_content})
+    st.session_state.conversation_history.append((user_query, streaming_content))
     st.session_state.retrieval_result = retrieval_result
 
 
@@ -506,33 +479,6 @@ def _render_sidebar(cfg: Config) -> Tuple[str, bool, str]:
         )
         model_tier = model_tier_map[model_tier]
 
-        # Build Index button
-        if not st.session_state.index_built:
-            if st.button("📦 Build Index", type="primary", use_container_width=True):
-                with st.spinner("Building index …"):
-                    try:
-                        _build_index(cfg)
-                        st.session_state.index_built = True
-                        st.session_state.retriever = _build_retriever(cfg)
-                        st.rerun()
-                    except Exception:
-                        pass  # error already shown in _build_index
-        else:
-            st.success("Index ready ✓")
-            if st.button("🔄 Rebuild Index", type="secondary", use_container_width=True):
-                with st.spinner("Rebuilding index …"):
-                    try:
-                        # Remove old index
-                        if _INDEX_DIR.is_dir():
-                            import shutil
-                            shutil.rmtree(_INDEX_DIR)
-                        _build_index(cfg)
-                        st.session_state.index_built = True
-                        st.session_state.retriever = _build_retriever(cfg)
-                        st.rerun()
-                    except Exception:
-                        pass
-
         # Conversation controls
         st.divider()
         if st.button("🗑️ Clear Chat", use_container_width=True):
@@ -552,10 +498,10 @@ def _render_chat_area() -> None:
         content = msg["content"]
         if role == "user":
             with st.chat_message("user"):
-                st.markdown(content)
+                st.markdown(_format_message(content))
         elif role == "assistant":
             with st.chat_message("assistant"):
-                st.markdown(content)
+                st.markdown(_format_message(content))
                 # Show source citations if retrieval was used
                 rr = st.session_state.retrieval_result
                 if rr and rr.books:
@@ -600,6 +546,14 @@ def main() -> None:
 
     # Init session state (must happen after st.markdown for sidebar)
     _init_session_state()
+
+    # Warn if no index exists
+    if not _index_exists():
+        st.warning(
+            "⚠️ **Vector index not found.** "
+            "Run `python -m dsa_mentor.ingestion.build --index` to build the knowledge base and FAISS indices.\n\n"
+            "Until then, RAG retrieval is disabled."
+        )
 
     # Render sidebar and capture values
     mode, rag_enabled, model_tier = _render_sidebar(config)

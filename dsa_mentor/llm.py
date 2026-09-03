@@ -388,6 +388,74 @@ class LLMClient:
             payload["tool_choice"] = tool_choice
         return payload
 
+    def chat_stream(
+        self,
+        messages: list[dict],
+        model: Optional[str] = None,
+        tools: Optional[list[dict]] = None,
+        tool_choice: Any = None,
+        **sampling_overrides: Any,
+    ):
+        """Send a streaming chat completion request and yield tokens.
+
+        Yields (content_delta: str, full_content: str) tuples as tokens arrive.
+        Uses Server-Sent Events (SSE) streaming from the OpenAI-compatible API.
+
+        Args:
+            messages: OpenAI-style message list.
+            model: tier name or explicit model id.
+            tools: optional tool schemas.
+            tool_choice: optional tool_choice.
+            **sampling_overrides: per-call sampling overrides.
+
+        Yields:
+            tuple[str, str]: (token_delta, accumulated_full_content)
+        """
+        payload = self._build_payload(
+            messages, model=model, tools=tools, tool_choice=tool_choice,
+            sampling_overrides=sampling_overrides,
+        )
+        payload["stream"] = True
+        url = f"{self.base_url}/chat/completions"
+
+        try:
+            response = self._session.post(
+                url, json=payload, headers=self._headers(),
+                timeout=self.timeout_seconds, stream=True,
+            )
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+            raise LLMConnectionError(f"streaming request to {url} failed: {exc}") from exc
+
+        if response.status_code != 200:
+            raise LLMHTTPError(
+                f"LLM endpoint {url} returned HTTP {response.status_code}",
+                status_code=response.status_code,
+                url=url,
+                body_snippet=_snippet(response.text),
+            )
+
+        full_content = ""
+        for line in response.iter_lines():
+            if not line:
+                continue
+            text = line.decode("utf-8")
+            if text.startswith("data: "):
+                data_str = text[6:]  # strip "data: " prefix
+                if data_str.strip() == "[DONE]":
+                    break
+                try:
+                    data = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+                choices = data.get("choices", [])
+                if not choices:
+                    continue
+                delta = choices[0].get("delta", {})
+                content_delta = delta.get("content", "")
+                if content_delta:
+                    full_content += content_delta
+                    yield content_delta, full_content
+
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
         if self.api_key:  # empty key (placeholder) → no Authorization header
