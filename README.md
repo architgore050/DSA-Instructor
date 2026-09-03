@@ -9,8 +9,10 @@ The system preserves the natural hierarchy of DSA textbooks, retrieves from coar
 ## Quick Start
 
 ```bash
-# Install dependencies
-pip install faiss-cpu sentence-transformers scikit-learn pypdf streamlit requests
+# Install dependencies (GPU: use faiss-gpu; CPU: use faiss-cpu)
+pip install torch sentence-transformers faiss-gpu scikit-learn pypdf streamlit requests
+# or for CPU-only:
+# pip install torch sentence-transformers faiss-cpu scikit-learn pypdf streamlit requests
 
 # Build the knowledge base (ingests docs/ → knowledge_base.json + FAISS indices)
 python -m dsa_mentor.ingestion.build
@@ -213,16 +215,16 @@ The full experimental matrix covers 3 model tiers × 2 RAG states × 5 retrieval
 
 | Package | Purpose |
 |---|---|
-| `faiss-cpu` | Vector similarity search (auto-detects `faiss-gpu` / CUDA; falls back to CPU if unavailable) |
-| `sentence-transformers` | Local embedding model (`all-MiniLM-L6-v2`, auto-detects GPU/CUDA) |
-| `torch` | GPU detection for FAISS and embeddings (optional if only using CPU) |
+| `torch` | GPU detection for FAISS and embeddings (required, even for CPU-only setups) |
+| `faiss-cpu` | Vector similarity search (CPU; use `faiss-gpu` instead if CUDA is available) |
+| `sentence-transformers` | Local embedding model (`all-MiniLM-L6-v2`) |
 | `scikit-learn` | TF-IDF fallback embedding backend |
 | `pypdf` | PDF text extraction |
 | `streamlit` | Chat UI |
 | `requests` | HTTP client for LLM API |
 | `numpy` | Numerical operations |
 
-**GPU support:** The project auto-detects CUDA at runtime. If `torch` reports CUDA available and `faiss-gpu` is installed, both the embedding model and FAISS indices run on GPU automatically. Otherwise everything falls back to CPU transparently — no config changes needed.
+**GPU support:** The project auto-detects CUDA at runtime. Install `faiss-gpu` (instead of `faiss-cpu`) and the embedding model + FAISS indices will run on GPU automatically. If no CUDA is available, everything falls back to CPU transparently — no config changes needed.
 
 ---
 
