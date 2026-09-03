@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from dsa_mentor.config import Config
+from dsa_mentor.config import Config, load_config
 from dsa_mentor.models import (
     Book,
     Chapter,
@@ -397,7 +397,7 @@ def build(
         output_path: Output path for knowledge_base.json (default: same dir as config).
         docs_dir:    Directory containing source documents.
     """
-    config = Config.get(config_path)
+    config = load_config(config_path)
 
     if output_path is None:
         config_dir = os.path.dirname(os.path.abspath(config_path))
