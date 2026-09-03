@@ -1,0 +1,898 @@
+Source: https://www.geeksforgeeks.org/dsa/quad-tree/
+Title: Quad Tree
+Extractor: 2
+
+Quadtrees are trees used to efficiently store data of points on a two-dimensional space. Each node of a Quad Tree has at most four children. We can construct a quadtree from a two-dimensional area using the following steps:
+
+1. Divide the current two-dimensional space into four boxes.
+2. If a box contains one or more points in it, create a child object, storing in it the two-dimensional space of the box.
+3. If a box does not contain any points, do not create a child for it.
+4. Recurse for each of the children.
+
+Quadtrees are used in image compression, where each node contains the average colour of each of its children. The deeper you traverse in the tree, the more the detail of the image. Quadtrees are also used in searching for nodes in a two-dimensional area. For instance, if you want to find the closest point to given coordinates, you can do it using quadtrees.
+
+Insert Function:
+
+> The insert functions is used to insert a node into an existing Quad Tree. This function first checks whether the given node is within the boundaries of the current quad. If it is not, then we immediately cease the insertion. If it is within the boundaries, we select the appropriate child to contain this node based on its location. This function is O(Log N) where N is the size of distance.
+
+Search Function:
+
+> The search function is used to locate a node in the given quad. It can also be modified to return the closest node to the given point. This function is implemented by taking the given point, comparing with the boundaries of the child quads and recursing. This function is O(Log N) where N is size of distance.
+
+The program given below demonstrates storage of nodes in a quadtree:
+
+CPP
+
+// C++ Implementation of Quad Tree
+#include <cmath>
+#include <iostream>
+using namespace std;
+
+// Used to hold details of a point
+struct Point {
+    int x;
+    int y;
+    Point(int _x, int _y)
+    {
+        x = _x;
+        y = _y;
+    }
+    Point()
+    {
+        x = 0;
+        y = 0;
+    }
+};
+
+// The objects that we want stored in the quadtree
+struct Node {
+    Point pos;
+    int data;
+    Node(Point _pos, int _data)
+    {
+        pos = _pos;
+        data = _data;
+    }
+    Node() { data = 0; }
+};
+
+// The main quadtree class
+class Quad {
+    // Hold details of the boundary of this node
+    Point topLeft;
+    Point botRight;
+
+    // Contains details of node
+    Node* n;
+
+    // Children of this tree
+    Quad* topLeftTree;
+    Quad* topRightTree;
+    Quad* botLeftTree;
+    Quad* botRightTree;
+
+public:
+    Quad()
+    {
+        topLeft = Point(0, 0);
+        botRight = Point(0, 0);
+        n = NULL;
+        topLeftTree = NULL;
+        topRightTree = NULL;
+        botLeftTree = NULL;
+        botRightTree = NULL;
+    }
+    Quad(Point topL, Point botR)
+    {
+        n = NULL;
+        topLeftTree = NULL;
+        topRightTree = NULL;
+        botLeftTree = NULL;
+        botRightTree = NULL;
+        topLeft = topL;
+        botRight = botR;
+    }
+    void insert(Node*);
+    Node* search(Point);
+    bool inBoundary(Point);
+};
+
+// Insert a node into the quadtree
+void Quad::insert(Node* node)
+{
+    if (node == NULL)
+        return;
+
+    // Current quad cannot contain it
+    if (!inBoundary(node->pos))
+        return;
+
+    // We are at a quad of unit area
+    // We cannot subdivide this quad further
+    if (abs(topLeft.x - botRight.x) <= 1
+        && abs(topLeft.y - botRight.y) <= 1) {
+        if (n == NULL)
+            n = node;
+        return;
+    }
+
+    if ((topLeft.x + botRight.x) / 2 >= node->pos.x) {
+        // Indicates topLeftTree
+        if ((topLeft.y + botRight.y) / 2 >= node->pos.y) {
+            if (topLeftTree == NULL)
+                topLeftTree = new Quad(
+                    Point(topLeft.x, topLeft.y),
+                    Point((topLeft.x + botRight.x) / 2,
+                          (topLeft.y + botRight.y) / 2));
+            topLeftTree->insert(node);
+        }
+
+        // Indicates botLeftTree
+        else {
+            if (botLeftTree == NULL)
+                botLeftTree = new Quad(
+                    Point(topLeft.x,
+                          (topLeft.y + botRight.y) / 2),
+                    Point((topLeft.x + botRight.x) / 2,
+                          botRight.y));
+            botLeftTree->insert(node);
+        }
+    }
+    else {
+        // Indicates topRightTree
+        if ((topLeft.y + botRight.y) / 2 >= node->pos.y) {
+            if (topRightTree == NULL)
+                topRightTree = new Quad(
+                    Point((topLeft.x + botRight.x) / 2,
+                          topLeft.y),
+                    Point(botRight.x,
+                          (topLeft.y + botRight.y) / 2));
+            topRightTree->insert(node);
+        }
+
+        // Indicates botRightTree
+        else {
+            if (botRightTree == NULL)
+                botRightTree = new Quad(
+                    Point((topLeft.x + botRight.x) / 2,
+                          (topLeft.y + botRight.y) / 2),
+                    Point(botRight.x, botRight.y));
+            botRightTree->insert(node);
+        }
+    }
+}
+
+// Find a node in a quadtree
+Node* Quad::search(Point p)
+{
+    // Current quad cannot contain it
+    if (!inBoundary(p))
+        return NULL;
+
+    // We are at a quad of unit length
+    // We cannot subdivide this quad further
+    if (n != NULL)
+        return n;
+
+    if ((topLeft.x + botRight.x) / 2 >= p.x) {
+        // Indicates topLeftTree
+        if ((topLeft.y + botRight.y) / 2 >= p.y) {
+            if (topLeftTree == NULL)
+                return NULL;
+            return topLeftTree->search(p);
+        }
+
+        // Indicates botLeftTree
+        else {
+            if (botLeftTree == NULL)
+                return NULL;
+            return botLeftTree->search(p);
+        }
+    }
+    else {
+        // Indicates topRightTree
+        if ((topLeft.y + botRight.y) / 2 >= p.y) {
+            if (topRightTree == NULL)
+                return NULL;
+            return topRightTree->search(p);
+        }
+
+        // Indicates botRightTree
+        else {
+            if (botRightTree == NULL)
+                return NULL;
+            return botRightTree->search(p);
+        }
+    }
+};
+
+// Check if current quadtree contains the point
+bool Quad::inBoundary(Point p)
+{
+    return (p.x >= topLeft.x && p.x <= botRight.x
+            && p.y >= topLeft.y && p.y <= botRight.y);
+}
+
+// Driver program
+int main()
+{
+    Quad center(Point(0, 0), Point(8, 8));
+    Node a(Point(1, 1), 1);
+    Node b(Point(2, 5), 2);
+    Node c(Point(7, 6), 3);
+    center.insert(&a);
+    center.insert(&b);
+    center.insert(&c);
+    cout << "Node a: " << center.search(Point(1, 1))->data
+         << "\n";
+    cout << "Node b: " << center.search(Point(2, 5))->data
+         << "\n";
+    cout << "Node c: " << center.search(Point(7, 6))->data
+         << "\n";
+    cout << "Non-existing node: "
+         << center.search(Point(5, 5));
+    return 0;
+}
+
+Java
+
+// Java code with comments
+
+class Point {
+    int x, y;
+
+    Point(int _x, int _y) {
+        x = _x;
+        y = _y;
+    }
+
+    Point() {
+        x = 0;
+        y = 0;
+    }
+}
+
+class Node {
+    Point pos;
+    int data;
+
+    Node(Point _pos, int _data) {
+        pos = _pos;
+        data = _data;
+    }
+
+    Node() {
+        data = 0;
+    }
+}
+
+public class Quad {
+    Point topLeft;
+    Point botRight;
+    Node n;
+    Quad topLeftTree;
+    Quad topRightTree;
+    Quad botLeftTree;
+    Quad botRightTree;
+
+    // Default constructor
+    public Quad() {
+        topLeft = new Point(0, 0);
+        botRight = new Point(0, 0);
+        n = null;
+        topLeftTree = null;
+        topRightTree = null;
+        botLeftTree = null;
+        botRightTree = null;
+    }
+
+    // Parameterized constructor
+    public Quad(Point topL, Point botR) {
+        n = null;
+        topLeftTree = null;
+        topRightTree = null;
+        botLeftTree = null;
+        botRightTree = null;
+        topLeft = topL;
+        botRight = botR;
+    }
+
+    // Insert a node into the quadtree
+    void insert(Node node) {
+        if (node == null)
+            return;
+
+        if (!inBoundary(node.pos))
+            return;
+
+        if (Math.abs(topLeft.x - botRight.x) <= 1 && Math.abs(topLeft.y - botRight.y) <= 1) {
+            // We are at a quad of unit area; cannot subdivide further
+            if (n == null)
+                n = node;
+            return;
+        }
+
+        if ((topLeft.x + botRight.x) / 2 >= node.pos.x) {
+            if ((topLeft.y + botRight.y) / 2 >= node.pos.y) {
+                // Indicates topLeftTree
+                if (topLeftTree == null)
+                    topLeftTree = new Quad(
+                            new Point(topLeft.x, topLeft.y),
+                            new Point((topLeft.x + botRight.x) / 2, (topLeft.y + botRight.y) / 2));
+                topLeftTree.insert(node);
+            } else {
+                // Indicates botLeftTree
+                if (botLeftTree == null)
+                    botLeftTree = new Quad(
+                            new Point(topLeft.x, (topLeft.y + botRight.y) / 2),
+                            new Point((topLeft.x + botRight.x) / 2, botRight.y));
+                botLeftTree.insert(node);
+            }
+        } else {
+            if ((topLeft.y + botRight.y) / 2 >= node.pos.y) {
+                // Indicates topRightTree
+                if (topRightTree == null)
+                    topRightTree = new Quad(
+                            new Point((topLeft.x + botRight.x) / 2, topLeft.y),
+                            new Point(botRight.x, (topLeft.y + botRight.y) / 2));
+                topRightTree.insert(node);
+            } else {
+                // Indicates botRightTree
+                if (botRightTree == null)
+                    botRightTree = new Quad(
+                            new Point((topLeft.x + botRight.x) / 2, (topLeft.y + botRight.y) / 2),
+                            new Point(botRight.x, botRight.y));
+                botRightTree.insert(node);
+            }
+        }
+    }
+
+    // Search for a node in the quadtree
+    Node search(Point p) {
+        if (!inBoundary(p))
+            return null;
+
+        if (n != null)
+            return n;
+
+        if ((topLeft.x + botRight.x) / 2 >= p.x) {
+            if ((topLeft.y + botRight.y) / 2 >= p.y) {
+                // Indicates topLeftTree
+                if (topLeftTree == null)
+                    return null;
+                return topLeftTree.search(p);
+            } else {
+                // Indicates botLeftTree
+                if (botLeftTree == null)
+                    return null;
+                return botLeftTree.search(p);
+            }
+        } else {
+            if ((topLeft.y + botRight.y) / 2 >= p.y) {
+                // Indicates topRightTree
+                if (topRightTree == null)
+                    return null;
+                return topRightTree.search(p);
+            } else {
+                // Indicates botRightTree
+                if (botRightTree == null)
+                    return null;
+                return botRightTree.search(p);
+            }
+        }
+    }
+
+    // Check if a point is within the boundary of the quadtree
+    boolean inBoundary(Point p) {
+        return (p.x >= topLeft.x && p.x <= botRight.x && p.y >= topLeft.y && p.y <= botRight.y);
+    }
+
+    // Driver program
+    public static void main(String[] args) {
+        Quad center = new Quad(new Point(0, 0), new Point(8, 8));
+        Node a = new Node(new Point(1, 1), 1);
+        Node b = new Node(new Point(2, 5), 2);
+        Node c = new Node(new Point(7, 6), 3);
+        center.insert(a);
+        center.insert(b);
+        center.insert(c);
+        System.out.println("Node a: " + center.search(new Point(1, 1)).data);
+        System.out.println("Node b: " + center.search(new Point(2, 5)).data);
+        System.out.println("Node c: " + center.search(new Point(7, 6)).data);
+        System.out.println("Non-existing node: " + center.search(new Point(5, 5)));
+    }
+}
+
+// This code is contributed by shivamgupta310570
+
+Python
+
+# Used to hold details of a point
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+# The objects that we want stored in the quadtree
+class Node:
+    def __init__(self, pos, data):
+        self.pos = pos
+        self.data = data
+
+# The main quadtree class
+class Quad:
+    def __init__(self, topL, botR):
+        self.topLeft = topL
+        self.botRight = botR
+        self.n = None
+        self.topLeftTree = None
+        self.topRightTree = None
+        self.botLeftTree = None
+        self.botRightTree = None
+
+    # Insert a node into the quadtree
+    def insert(self, node):
+        if node is None:
+            return
+
+        # Current quad cannot contain it
+        if not self.inBoundary(node.pos):
+            return
+
+        # We are at a quad of unit area
+        # We cannot subdivide this quad further
+        if abs(self.topLeft.x - self.botRight.x) <= 1 and abs(self.topLeft.y - self.botRight.y) <= 1:
+            if self.n is None:
+                self.n = node
+            return
+
+        if (self.topLeft.x + self.botRight.x) / 2 >= node.pos.x:
+            # Indicates topLeftTree
+            if (self.topLeft.y + self.botRight.y) / 2 >= node.pos.y:
+                if self.topLeftTree is None:
+                    self.topLeftTree = Quad(self.topLeft, Point((self.topLeft.x + self.botRight.x) / 2, (self.topLeft.y + self.botRight.y) / 2))
+                self.topLeftTree.insert(node)
+            # Indicates botLeftTree
+            else:
+                if self.botLeftTree is None:
+                    self.botLeftTree = Quad(Point(self.topLeft.x, (self.topLeft.y + self.botRight.y) / 2), Point((self.topLeft.x + self.botRight.x) / 2, self.botRight.y))
+                self.botLeftTree.insert(node)
+        else:
+            # Indicates topRightTree
+            if (self.topLeft.y + self.botRight.y) / 2 >= node.pos.y:
+                if self.topRightTree is None:
+                    self.topRightTree = Quad(Point((self.topLeft.x + self.botRight.x) / 2, self.topLeft.y), Point(self.botRight.x, (self.topLeft.y + self.botRight.y) / 2))
+                self.topRightTree.insert(node)
+            # Indicates botRightTree
+            else:
+                if self.botRightTree is None:
+                    self.botRightTree = Quad(Point((self.topLeft.x + self.botRight.x) / 2, (self.topLeft.y + self.botRight.y) / 2), self.botRight)
+                self.botRightTree.insert(node)
+
+    # Find a node in a quadtree
+    def search(self, p):
+        # Current quad cannot contain it
+        if not self.inBoundary(p):
+            return 0  # Return 0 if point is not found
+
+        # We are at a quad of unit length
+        # We cannot subdivide this quad further
+        if self.n is not None:
+            return self.n
+
+        if (self.topLeft.x + self.botRight.x) / 2 >= p.x:
+            # Indicates topLeftTree
+            if (self.topLeft.y + self.botRight.y) / 2 >= p.y:
+                if self.topLeftTree is None:
+                    return 0
+                return self.topLeftTree.search(p)
+            # Indicates botLeftTree
+            else:
+                if self.botLeftTree is None:
+                    return 0
+                return self.botLeftTree.search(p)
+        else:
+            # Indicates topRightTree
+            if (self.topLeft.y + self.botRight.y) / 2 >= p.y:
+                if self.topRightTree is None:
+                    return 0
+                return self.topRightTree.search(p)
+            # Indicates botRightTree
+            else:
+                if self.botRightTree is None:
+                    return 0
+                return self.botRightTree.search(p)
+
+    # Check if current quadtree contains the point
+    def inBoundary(self, p):
+        return p.x >= self.topLeft.x and p.x <= self.botRight.x and p.y >= self.topLeft.y and p.y <= self.botRight.y
+
+# Driver program
+center = Quad(Point(0, 0), Point(8, 8))
+a = Node(Point(1, 1), 1)
+b = Node(Point(2, 5), 2)
+c = Node(Point(7, 6), 3)
+center.insert(a)
+center.insert(b)
+center.insert(c)
+print("Node a:", center.search(Point(1, 1)).data)
+print("Node b:", center.search(Point(2, 5)).data)
+print("Node c:", center.search(Point(7, 6)).data)
+print("Non-existing node:", center.search(Point(5, 5)))
+
+# This code is contributed by arindam369
+
+C#
+
+using System;
+
+// Used to hold details of a point
+struct Point
+{
+    public int x;
+    public int y;
+
+    public Point(int _x, int _y)
+    {
+        x = _x;
+        y = _y;
+    }
+}
+
+// The objects that we want stored in the quadtree
+struct Node
+{
+    public Point pos;
+    public int data;
+
+    public Node(Point _pos, int _data)
+    {
+        pos = _pos;
+        data = _data;
+    }
+}
+
+// The main quadtree class
+class Quad
+{
+    // Hold details of the boundary of this node
+    private Point topLeft;
+    private Point botRight;
+
+    // Contains details of node
+    private Node n;
+
+    // Children of this tree
+    private Quad topLeftTree;
+    private Quad topRightTree;
+    private Quad botLeftTree;
+    private Quad botRightTree;
+
+    public Quad()
+    {
+        topLeft = new Point(0, 0);
+        botRight = new Point(0, 0);
+        n = new Node(); // Initialize to default Node
+        topLeftTree = null;
+        topRightTree = null;
+        botLeftTree = null;
+        botRightTree = null;
+    }
+
+    public Quad(Point topL, Point botR)
+    {
+        n = new Node(); // Initialize to default Node
+        topLeftTree = null;
+        topRightTree = null;
+        botLeftTree = null;
+        botRightTree = null;
+        topLeft = topL;
+        botRight = botR;
+    }
+
+    public void Insert(Node node)
+    {
+        if (node.Equals(default(Node)))
+            return;
+
+        // Current quad cannot contain it
+        if (!InBoundary(node.pos))
+            return;
+
+        // We are at a quad of unit area
+        // We cannot subdivide this quad further
+        if (Math.Abs(topLeft.x - botRight.x) <= 1
+            && Math.Abs(topLeft.y - botRight.y) <= 1)
+        {
+            if (n.Equals(default(Node)))
+                n = node;
+            return;
+        }
+
+        if ((topLeft.x + botRight.x) / 2 >= node.pos.x)
+        {
+            // Indicates topLeftTree
+            if ((topLeft.y + botRight.y) / 2 >= node.pos.y)
+            {
+                if (topLeftTree == null)
+                    topLeftTree = new Quad(
+                        new Point(topLeft.x, topLeft.y),
+                        new Point((topLeft.x + botRight.x) / 2,
+                                  (topLeft.y + botRight.y) / 2));
+                topLeftTree.Insert(node);
+            }
+
+            // Indicates botLeftTree
+            else
+            {
+                if (botLeftTree == null)
+                    botLeftTree = new Quad(
+                        new Point(topLeft.x,
+                                  (topLeft.y + botRight.y) / 2),
+                        new Point((topLeft.x + botRight.x) / 2,
+                                  botRight.y));
+                botLeftTree.Insert(node);
+            }
+        }
+        else
+        {
+            // Indicates topRightTree
+            if ((topLeft.y + botRight.y) / 2 >= node.pos.y)
+            {
+                if (topRightTree == null)
+                    topRightTree = new Quad(
+                        new Point((topLeft.x + botRight.x) / 2,
+                                  topLeft.y),
+                        new Point(botRight.x,
+                                  (topLeft.y + botRight.y) / 2));
+                topRightTree.Insert(node);
+            }
+
+            // Indicates botRightTree
+            else
+            {
+                if (botRightTree == null)
+                    botRightTree = new Quad(
+                        new Point((topLeft.x + botRight.x) / 2,
+                                  (topLeft.y + botRight.y) / 2),
+                        new Point(botRight.x, botRight.y));
+                botRightTree.Insert(node);
+            }
+        }
+    }
+
+    public Node Search(Point p)
+    {
+        // Current quad cannot contain it
+        if (!InBoundary(p))
+            return default(Node);
+
+        // We are at a quad of unit length
+        // We cannot subdivide this quad further
+        if (!n.Equals(default(Node)))
+            return n;
+
+        if ((topLeft.x + botRight.x) / 2 >= p.x)
+        {
+            // Indicates topLeftTree
+            if ((topLeft.y + botRight.y) / 2 >= p.y)
+            {
+                if (topLeftTree == null)
+                    return default(Node);
+                return topLeftTree.Search(p);
+            }
+
+            // Indicates botLeftTree
+            else
+            {
+                if (botLeftTree == null)
+                    return default(Node);
+                return botLeftTree.Search(p);
+            }
+        }
+        else
+        {
+            // Indicates topRightTree
+            if ((topLeft.y + botRight.y) / 2 >= p.y)
+            {
+                if (topRightTree == null)
+                    return default(Node);
+                return topRightTree.Search(p);
+            }
+
+            // Indicates botRightTree
+            else
+            {
+                if (botRightTree == null)
+                    return default(Node);
+                return botRightTree.Search(p);
+            }
+        }
+    }
+
+    // Check if current quadtree contains the point
+    private bool InBoundary(Point p)
+    {
+        return (p.x >= topLeft.x && p.x <= botRight.x
+                && p.y >= topLeft.y && p.y <= botRight.y);
+    }
+}
+
+// Driver program
+class Program
+{
+    static void Main()
+    {
+        Quad center = new Quad(new Point(0, 0), new Point(8, 8));
+        Node a = new Node(new Point(1, 1), 1);
+        Node b = new Node(new Point(2, 5), 2);
+        Node c = new Node(new Point(7, 6), 3);
+        center.Insert(a);
+        center.Insert(b);
+        center.Insert(c);
+
+        Console.WriteLine("Node a: " + center.Search(new Point(1, 1)).data);
+        Console.WriteLine("Node b: " + center.Search(new Point(2, 5)).data);
+        Console.WriteLine("Node c: " + center.Search(new Point(7, 6)).data);
+        Console.WriteLine("Non-existing node: " + center.Search(new Point(5, 5)).data);
+    }
+}
+
+JavaScript
+
+// Used to hold details of a point
+class Point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+// The objects that we want stored in the quadtree
+class Node {
+    constructor(pos, data) {
+        this.pos = pos;
+        this.data = data;
+    }
+}
+
+// The main quadtree class
+class Quad {
+    constructor(topL, botR) {
+        this.topLeft = topL;
+        this.botRight = botR;
+        this.n = null;
+        this.topLeftTree = null;
+        this.topRightTree = null;
+        this.botLeftTree = null;
+        this.botRightTree = null;
+    }
+
+    // Insert a node into the quadtree
+    insert(node) {
+        if (node === null) {
+            return;
+        }
+
+        // Current quad cannot contain it
+        if (!this.inBoundary(node.pos)) {
+            return;
+        }
+
+        // We are at a quad of unit area
+        // We cannot subdivide this quad further
+        if (Math.abs(this.topLeft.x - this.botRight.x) <= 1 && Math.abs(this.topLeft.y - this.botRight.y) <= 1) {
+            if (this.n === null) {
+                this.n = node;
+            }
+            return;
+        }
+
+        if ((this.topLeft.x + this.botRight.x) / 2 >= node.pos.x) {
+            // Indicates topLeftTree
+            if ((this.topLeft.y + this.botRight.y) / 2 >= node.pos.y) {
+                if (this.topLeftTree === null) {
+                    this.topLeftTree = new Quad(this.topLeft, new Point((this.topLeft.x + this.botRight.x) / 2, (this.topLeft.y + this.botRight.y) / 2));
+                }
+                this.topLeftTree.insert(node);
+            }
+            // Indicates botLeftTree
+            else {
+                if (this.botLeftTree === null) {
+                    this.botLeftTree = new Quad(new Point(this.topLeft.x, (this.topLeft.y + this.botRight.y) / 2), new Point((this.topLeft.x + this.botRight.x) / 2, this.botRight.y));
+                }
+                this.botLeftTree.insert(node);
+            }
+        } else {
+            // Indicates topRightTree
+            if ((this.topLeft.y + this.botRight.y) / 2 >= node.pos.y) {
+                if (this.topRightTree === null) {
+                    this.topRightTree = new Quad(new Point((this.topLeft.x + this.botRight.x) / 2, this.topLeft.y), new Point(this.botRight.x, (this.topLeft.y + this.botRight.y) / 2));
+                }
+                this.topRightTree.insert(node);
+            }
+            // Indicates botRightTree
+            else {
+                if (this.botRightTree === null) {
+                    this.botRightTree = new Quad(new Point((this.topLeft.x + this.botRight.x) / 2, (this.topLeft.y + this.botRight.y) / 2), this.botRight);
+                }
+                this.botRightTree.insert(node);
+            }
+        }
+    }
+
+    // Find a node in a quadtree
+    search(p) {
+        // Current quad cannot contain it
+        if (!this.inBoundary(p)) {
+            return 0;  // Return 0 if point is not found
+        }
+
+        // We are at a quad of unit length
+        // We cannot subdivide this quad further
+        if (this.n !== null) {
+            return this.n;
+        }
+
+        if ((this.topLeft.x + this.botRight.x) / 2 >= p.x) {
+            // Indicates topLeftTree
+            if ((this.topLeft.y + this.botRight.y) / 2 >= p.y) {
+                if (this.topLeftTree === null) {
+                    return 0;
+                }
+                return this.topLeftTree.search(p);
+            }
+            // Indicates botLeftTree
+            else {
+                if (this.botLeftTree === null) {
+                    return 0;
+                }
+                return this.botLeftTree.search(p);
+            }
+        } else {
+            // Indicates topRightTree
+            if ((this.topLeft.y + this.botRight.y) / 2 >= p.y) {
+                if (this.topRightTree === null) {
+                    return 0;
+                }
+                return this.topRightTree.search(p);
+            }
+            // Indicates botRightTree
+            else {
+                if (this.botRightTree === null) {
+                    return 0;
+                }
+                return this.botRightTree.search(p);
+            }
+        }
+    }
+
+    // Check if current quadtree contains the point
+    inBoundary(p) {
+        return p.x >= this.topLeft.x && p.x <= this.botRight.x && p.y >= this.topLeft.y && p.y <= this.botRight.y;
+    }
+}
+
+// Driver program
+const center = new Quad(new Point(0, 0), new Point(8, 8));
+const a = new Node(new Point(1, 1), 1);
+const b = new Node(new Point(2, 5), 2);
+const c = new Node(new Point(7, 6), 3);
+center.insert(a);
+center.insert(b);
+center.insert(c);
+console.log("Node a:", center.search(new Point(1, 1)).data);
+console.log("Node b:", center.search(new Point(2, 5)).data);
+console.log("Node c:", center.search(new Point(7, 6)).data);
+console.log("Non-existing node:", center.search(new Point(5, 5)));
+
+// This Code is Contributed by Yash Agarwal(yashagarwal2852002)
+
+Output
+
+Node a: 1
+Node b: 2
+Node c: 3
+Non-existing node: 0
+
+Exercise: Implement a Quad Tree which returns 4 closest nodes to a given point.

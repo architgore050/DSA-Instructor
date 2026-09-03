@@ -1,0 +1,642 @@
+Source: https://www.geeksforgeeks.org/dsa/transitive-closure-of-a-graph-using-dfs/
+Title: Transitive Closure of a Graph
+Extractor: 2
+
+Given a directed graph with n vertices numbered from 0 to n - 1 , the graph is represented by an n × n adjacency matrix adj[][]. adj[i][j] is 1 if there is a direct edge from vertex i to vertex j, otherwise it is 0.  Return the transitive closure of the graph as an n × n matrix, where closure[i][j] is 1 if vertex j is reachable from vertex i, otherwise it is 0.
+
+- A vertex j is reachable from vertex i if there is a path from i to j. The path may contain multiple edges and may pass through other vertices
+- Each vertex is considered reachable from itself.
+
+Examples:
+
+> Input: adj[][] = [[1, 1, 0, 1], [0, 1, 1, 0], [0, 0, 1, 1], [0, 0, 0, 1]] Output: [[1, 1, 1, 1], [0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]] Explanation: Vertex 0: We can directly reach vertices 1 and 3. Also, we can reach vertex 2 through vertex 1 (0 -> 1 -> 2). Therefore, vertices 0, 1, 2, 3 are all reachable from 0. Vertex 1: We can directly reach vertex 2. From 2, we can reach 3 (1 -> 2 -> 3). Therefore, vertices 1, 2, 3 are reachable from 1, but vertex 0 is not reachable. Vertex 2: We can directly reach vertex 3. There is no path from 2 to vertices 0 or 1. Therefore, only vertices 2 and 3 are reachable from 2. Vertex 3: There are no outgoing edges to other vertices. Since every vertex is considered reachable from itself, only vertex 3 is reachable from 3. Input: adj[][] = [[1, 1, 0], [0, 1, 1], [1, 0, 1]] Output: [[1, 1, 1], [1, 1, 1], [1, 1, 1]] Explanation: Vertex 0 can reach 1 directly and 2 through 1 (0 -> 1 -> 2). Vertex 1 can reach 2 directly and 0 through 2 (1 -> 2 -> 0). Vertex 2 can reach 0 directly and 1 through 0 (2 -> 0 -> 1). Every vertex can also reach itself. Therefore, every vertex can reach every other vertex.
+
+Table of Content
+
+- Using Floyd Warshall Algorithm - O(n^3) Time and O(n^2) Space
+- Using Depth First Search(DFS) - O(n^3) Time and O(n^2) Space
+
+### Using Floyd Warshall Algorithm - O(n^3) Time and O(n^2) Space
+
+> In Floyd-Warshall algorithm , we find the shortest distance between every pair of vertices. Here, instead of finding the shortest distance, we simply check whether a path exists between each pair.
+
+- Initialize ans as a copy of the given adjacency matrix adj.
+- Set ans[i][i] = 1 for every vertex i, since every vertex is reachable from itself.
+- Consider each vertex k as an intermediate vertex.
+- For every pair of vertices i and j, check whether i can reach k and k can reach j.
+- If both paths exist, set ans[i][j] = 1 to indicate that j is reachable from i.
+- Return ans as the transitive closure of the directed graph.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<vector<int>> transitiveClosure(vector<vector<int>> adj)
+{
+    int n = adj.size();
+
+    // Copy the adjacency matrix into the resultant matrix.
+    vector<vector<int>> ans = adj;
+
+    // Every vertex is reachable from itself.
+    for (int i = 0; i < n; i++)
+        ans[i][i] = 1;
+
+    // Apply Floyd-Warshall Algorithm.
+    // Consider each vertex k as an intermediate vertex.
+    for (int k = 0; k < n; k++)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                // If i can reach k and k can reach j,
+                // then i can reach j.
+                if (ans[i][k] == 1 && ans[k][j] == 1)
+                {
+                    ans[i][j] = 1;
+                }
+            }
+        }
+    }
+
+    return ans;
+}
+
+int main()
+{
+    vector<vector<int>> adj = {{1, 1, 0, 1}, {0, 1, 1, 0}, {0, 0, 1, 1}, {0, 0, 0, 1}};
+
+    vector<vector<int>> ans = transitiveClosure(adj);
+
+    for (int i = 0; i < adj.size(); i++)
+    {
+        for (int j = 0; j < adj.size(); j++)
+        {
+            cout << ans[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+    static ArrayList<ArrayList<Integer> >
+    transitiveClosure(int[][] adj)
+    {
+        int n = adj.length;
+        ArrayList<ArrayList<Integer> > ans
+            = new ArrayList<>();
+
+        // Copy the adjacency matrix into resultant matrix
+        for (int i = 0; i < n; i++) {
+            ArrayList<Integer> row = new ArrayList<>();
+
+            for (int j = 0; j < n; j++) {
+                row.add(adj[i][j]);
+            }
+
+            ans.add(row);
+        }
+
+        // Every vertex is reachable from itself.
+        for (int i = 0; i < n; i++)
+            ans.get(i).set(i, 1);
+
+        // Apply Floyd-Warshall Algorithm.
+        // For each intermediate vertex k.
+        for (int k = 0; k < n; k++) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+
+                    // If a path exists from i to k and
+                    // from k to j, then i can reach j.
+                    if (ans.get(i).get(k) == 1
+                        && ans.get(k).get(j) == 1) {
+
+                        ans.get(i).set(j, 1);
+                    }
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args)
+    {
+        int[][] adj = { { 1, 1, 0, 1 },
+                        { 0, 1, 1, 0 },
+                        { 0, 0, 1, 1 },
+                        { 0, 0, 0, 1 } };
+
+        ArrayList<ArrayList<Integer> > ans
+            = transitiveClosure(adj);
+
+        for (int i = 0; i < adj.length; i++) {
+            for (int j = 0; j < adj.length; j++) {
+                System.out.print(ans.get(i).get(j) + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+
+Python
+
+def transitiveClosure(adj):
+    n = len(adj)
+
+    # Copy the adjacency matrix into resultant matrix
+    ans = [[adj[i][j] for j in range(n)] for i in range(n)]
+
+    # Every vertex is reachable from itself
+    for i in range(n):
+        ans[i][i] = 1
+
+    # Apply Floyd-Warshall Algorithm
+    # For each intermediate vertex k
+    for k in range(n):
+        for i in range(n):
+            for j in range(n):
+
+                # If a path exists from i to k and
+                # from k to j, then i can reach j.
+                if ans[i][k] == 1 and ans[k][j] == 1:
+                    ans[i][j] = 1
+
+    return ans
+
+# Driver Code
+if __name__ == "__main__":
+    adj = [
+        [1, 1, 0, 1],
+        [0, 1, 1, 0],
+        [0, 0, 1, 1],
+        [0, 0, 0, 1]
+    ]
+
+    ans = transitiveClosure(adj)
+
+    for i in range(len(adj)):
+        for j in range(len(adj)):
+            print(ans[i][j], end=" ")
+        print()
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static List<List<int> >
+    transitiveClosure(List<List<int> > adj)
+    {
+        int n = adj.Count;
+        List<List<int> > ans = new List<List<int> >();
+
+        // Copy the adjacency matrix into resultant matrix
+        for (int i = 0; i < n; i++) {
+            List<int> row = new List<int>();
+
+            for (int j = 0; j < n; j++) {
+                row.Add(adj[i][j]);
+            }
+
+            ans.Add(row);
+        }
+
+        // Every vertex is reachable from itself.
+        for (int i = 0; i < n; i++)
+            ans[i][i] = 1;
+
+        // Apply Floyd-Warshall Algorithm.
+        // For each intermediate vertex k.
+        for (int k = 0; k < n; k++) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+
+                    // If a path exists from i to k and
+                    // from k to j, then i can reach j.
+                    if (ans[i][k] == 1 && ans[k][j] == 1) {
+                        ans[i][j] = 1;
+                    }
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    public static void Main()
+    {
+        List<List<int> > adj = new List<List<int> >{
+            new List<int>{ 1, 1, 0, 1 },
+            new List<int>{ 0, 1, 1, 0 },
+            new List<int>{ 0, 0, 1, 1 },
+            new List<int>{ 0, 0, 0, 1 }
+        };
+
+        List<List<int> > ans = transitiveClosure(adj);
+
+        for (int i = 0; i < adj.Count; i++) {
+            for (int j = 0; j < adj.Count; j++) {
+                Console.Write(ans[i][j] + " ");
+            }
+
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+function transitiveClosure(adj)
+{
+    let n = adj.length;
+
+    // Copy the adjacency matrix into resultant matrix
+    let ans = adj.map(row => [...row]);
+
+    // Every vertex is reachable from itself.
+    for (let i = 0; i < n; i++) {
+        ans[i][i] = 1;
+    }
+
+    // Apply Floyd-Warshall Algorithm.
+    // For each intermediate vertex k.
+    for (let k = 0; k < n; k++) {
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+
+                // If a path exists from i to k and
+                // from k to j, then i can reach j.
+                if (ans[i][k] === 1 && ans[k][j] === 1) {
+                    ans[i][j] = 1;
+                }
+            }
+        }
+    }
+
+    return ans;
+}
+
+// Driver Code
+let adj = [
+    [ 1, 1, 0, 1 ], [ 0, 1, 1, 0 ], [ 0, 0, 1, 1 ],
+    [ 0, 0, 0, 1 ]
+];
+
+let ans = transitiveClosure(adj);
+
+for (let i = 0; i < adj.length; i++) {
+    let row = "";
+
+    for (let j = 0; j < adj.length; j++) {
+        row += ans[i][j] + " ";
+    }
+
+    console.log(row);
+}
+
+Output
+
+1 1 1 1
+0 1 1 1
+0 0 1 1
+0 0 0 1
+
+### Using Depth First Search(DFS) - O(n^3) Time and O(n^2) Space
+
+> We perform a Depth First Search (DFS) starting from each vertex. DFS explores all the vertices that can be reached from a given starting vertex, including vertices that are reachable through multiple intermediate vertices.
+
+- Initialize an n × n result matrix ans with 0s.
+- For every vertex i, create a visited array and start a DFS from i.
+- During DFS, mark the current vertex u as visited and set ans[i][u] = 1, indicating that u is reachable from i.
+- Explore all vertices v having a direct edge from u and recursively visit the unvisited ones.
+- Repeat the DFS for every vertex so that we find all vertices reachable from each starting vertex.
+- Return ans as the transitive closure of the graph.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// DFS to find all vertices reachable from src
+void dfs(int src, int u, vector<vector<int>> &adj, vector<vector<int>> &ans, vector<int> &visited)
+{
+    // Mark the current vertex as visited
+    visited[u] = 1;
+
+    // u is reachable from src
+    ans[src][u] = 1;
+
+    // Visit all adjacent vertices
+    for (int v = 0; v < adj.size(); v++)
+    {
+        if (adj[u][v] == 1 && !visited[v])
+        {
+            dfs(src, v, adj, ans, visited);
+        }
+    }
+}
+
+vector<vector<int>> transitiveClosure(vector<vector<int>> &adj)
+{
+    int n = adj.size();
+
+    // Resultant matrix initially contains all 0s
+    vector<vector<int>> ans(n, vector<int>(n, 0));
+
+    // Run DFS from every vertex
+    for (int i = 0; i < n; i++)
+    {
+        vector<int> visited(n, 0);
+
+        // Find all vertices reachable from i
+        dfs(i, i, adj, ans, visited);
+    }
+
+    return ans;
+}
+
+int main()
+{
+    vector<vector<int>> adj = {{1, 1, 0, 1}, {0, 1, 1, 0}, {0, 0, 1, 1}, {0, 0, 0, 1}};
+
+    vector<vector<int>> ans = transitiveClosure(adj);
+
+    // Print the transitive closure
+    for (int i = 0; i < adj.size(); i++)
+    {
+        for (int j = 0; j < adj.size(); j++)
+        {
+            cout << ans[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    // DFS to find all vertices reachable from src
+    static void dfs(int src, int u, int[][] adj,
+                    ArrayList<ArrayList<Integer> > ans,
+                    int[] visited)
+    {
+        // Mark the current vertex as visited
+        visited[u] = 1;
+
+        // u is reachable from src
+        ans.get(src).set(u, 1);
+
+        // Visit all adjacent vertices
+        for (int v = 0; v < adj.length; v++) {
+            if (adj[u][v] == 1 && visited[v] == 0) {
+                dfs(src, v, adj, ans, visited);
+            }
+        }
+    }
+
+    static ArrayList<ArrayList<Integer> >
+    transitiveClosure(int[][] adj)
+    {
+        int n = adj.length;
+
+        ArrayList<ArrayList<Integer> > ans
+            = new ArrayList<>();
+
+        // Initialize the result matrix with 0s
+        for (int i = 0; i < n; i++) {
+            ArrayList<Integer> row = new ArrayList<>();
+
+            for (int j = 0; j < n; j++) {
+                row.add(0);
+            }
+
+            ans.add(row);
+        }
+
+        // Run DFS from every vertex
+        for (int i = 0; i < n; i++) {
+            int[] visited = new int[n];
+
+            // Find all vertices reachable from i
+            dfs(i, i, adj, ans, visited);
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args)
+    {
+        int[][] adj = { { 1, 1, 0, 1 },
+                        { 0, 1, 1, 0 },
+                        { 0, 0, 1, 1 },
+                        { 0, 0, 0, 1 } };
+
+        ArrayList<ArrayList<Integer> > ans
+            = transitiveClosure(adj);
+
+        // Print the transitive closure
+        for (int i = 0; i < adj.length; i++) {
+            for (int j = 0; j < adj.length; j++) {
+                System.out.print(ans.get(i).get(j) + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+
+Python
+
+# DFS to find all vertices reachable from src
+def dfs(src, u, adj, ans, visited):
+
+    # Mark the current vertex as visited
+    visited[u] = True
+
+    # u is reachable from src
+    ans[src][u] = 1
+
+    # Visit all adjacent vertices
+    for v in range(len(adj)):
+
+        if adj[u][v] == 1 and not visited[v]:
+            dfs(src, v, adj, ans, visited)
+
+def transitiveClosure(adj):
+    n = len(adj)
+
+    # Initialize the result matrix with 0s
+    ans = [[0] * n for _ in range(n)]
+
+    # Run DFS from every vertex
+    for i in range(n):
+        visited = [False] * n
+
+        # Find all vertices reachable from i
+        dfs(i, i, adj, ans, visited)
+
+    return ans
+
+# Driver Code
+if __name__ == "__main__":
+    adj = [
+        [1, 1, 0, 1],
+        [0, 1, 1, 0],
+        [0, 0, 1, 1],
+        [0, 0, 0, 1]
+    ]
+
+    ans = transitiveClosure(adj)
+
+    # Print the transitive closure
+    for row in ans:
+        print(*row)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // DFS to find all vertices reachable from src
+    static void Dfs(int src, int u, List<List<int> > adj,
+                    List<List<int> > ans, bool[] visited)
+    {
+        // Mark the current vertex as visited
+        visited[u] = true;
+
+        // u is reachable from src
+        ans[src][u] = 1;
+
+        // Visit all adjacent vertices
+        for (int v = 0; v < adj.Count; v++) {
+            if (adj[u][v] == 1 && !visited[v]) {
+                Dfs(src, v, adj, ans, visited);
+            }
+        }
+    }
+
+    static List<List<int> >
+    transitiveClosure(List<List<int> > adj)
+    {
+        int n = adj.Count;
+
+        // Initialize the result matrix with 0s
+        List<List<int> > ans = new List<List<int> >();
+
+        for (int i = 0; i < n; i++) {
+            ans.Add(new List<int>());
+
+            for (int j = 0; j < n; j++) {
+                ans[i].Add(0);
+            }
+        }
+
+        // Run DFS from every vertex
+        for (int i = 0; i < n; i++) {
+            bool[] visited = new bool[n];
+
+            // Find all vertices reachable from i
+            Dfs(i, i, adj, ans, visited);
+        }
+
+        return ans;
+    }
+
+    public static void Main()
+    {
+        List<List<int> > adj = new List<List<int> >{
+            new List<int>{ 1, 1, 0, 1 },
+            new List<int>{ 0, 1, 1, 0 },
+            new List<int>{ 0, 0, 1, 1 },
+            new List<int>{ 0, 0, 0, 1 }
+        };
+
+        List<List<int> > ans = transitiveClosure(adj);
+
+        // Print the transitive closure
+        for (int i = 0; i < adj.Count; i++) {
+            for (int j = 0; j < adj.Count; j++) {
+                Console.Write(ans[i][j] + " ");
+            }
+
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+// DFS to find all vertices reachable from src
+function dfs(src, u, adj, ans, visited)
+{
+
+    // Mark the current vertex as visited
+    visited[u] = true;
+
+    // u is reachable from src
+    ans[src][u] = 1;
+
+    // Visit all adjacent vertices
+    for (let v = 0; v < adj.length; v++) {
+
+        if (adj[u][v] === 1 && !visited[v]) {
+            dfs(src, v, adj, ans, visited);
+        }
+    }
+}
+
+function transitiveClosure(adj)
+{
+    let n = adj.length;
+
+    // Initialize the result matrix with 0s
+    let ans = Array.from({length : n},
+                         () => new Array(n).fill(0));
+
+    // Run DFS from every vertex
+    for (let i = 0; i < n; i++) {
+        let visited = new Array(n).fill(false);
+
+        // Find all vertices reachable from i
+        dfs(i, i, adj, ans, visited);
+    }
+
+    return ans;
+}
+
+// Driver Code
+let adj = [
+    [ 1, 1, 0, 1 ], [ 0, 1, 1, 0 ], [ 0, 0, 1, 1 ],
+    [ 0, 0, 0, 1 ]
+];
+
+let ans = transitiveClosure(adj);
+
+// Print the transitive closure
+for (let i = 0; i < adj.length; i++) {
+    console.log(ans[i].join(" "));
+}
+
+Output
+
+1 1 1 1
+0 1 1 1
+0 0 1 1
+0 0 0 1

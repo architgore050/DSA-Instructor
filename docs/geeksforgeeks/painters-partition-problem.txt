@@ -1,0 +1,1427 @@
+Source: https://www.geeksforgeeks.org/dsa/painters-partition-problem/
+Title: The Painter's Partition Problem
+Extractor: 2
+
+Given an array arr[] and an integer k , where the array represents the boards and each element denotes the length of a board, and k painters are available to paint these boards. Each unit length of a board takes 1 unit of time to paint. Find the minimum time required to paint all the boards such that each painter paints only contiguous sections of the array. A painter can paint boards like [2, 3, 4], [1], or even no board, but cannot paint non-contiguous boards like [2, 4, 5].
+
+Examples:
+
+> Input: arr[] = [5, 10, 30, 20, 15], k = 3 Output: 35 Explanation: The most optimal way will be: Painter 1 allocation : [5,10], Painter 2 allocation : [30], Painter 3 allocation : [20, 15], Job will be done when all painters finish i.e. at time = max(5 + 10, 30, 20 + 15) = 35 Input: arr[] = [10, 20, 30, 40], k = 2 Output: 60 Explanation: The most optimal way to paint: Painter 1 allocation : [10, 20, 30], Painter 2 allocation : [40], Job will be complete at time = 60
+
+Table of Content
+
+- [Naive Approach] Using recursion - O(n^(k-1)) Time and O(k) Space
+- [Better Approach - 1] Using Memoization - O(n*n*k) Time and O(n*k) Space
+- [Better Approach - 2] Using Tabulation - O(n*n*k) Time and O(n*k) Space
+- [Expected Approach] Using Binary Search
+
+### [Naive Approach] Using recursion - O(n^(k-1)) Time and O(k) Space
+
+A brute force solution is to consider all possible ways to divide the array into at most k contiguous partitions and calculate the maximum sum for each partitioning. The minimum among all such maximum values is returned as the answer.
+
+> Try every possible way to assign a continuous segment of boards to the current painter. Recursively solve the remaining boards for the remaining painters and choose the partition that minimizes the maximum painting time.
+
+- Define minTime(curr, k) as the minimum time to paint boards from index curr using k painters.
+- Assign the current painter every possible continuous segment starting from curr.
+- Recursively compute the minimum time for the remaining boards with k - 1 painters.
+- For each partition, the required time is: max(time taken by current painter, time for remaining painters).
+- Return the minimum value among all possible partitions.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <algorithm>
+using namespace std;
+
+int minimizeTime(int curr, int n, vector<int> &arr, int k) {
+
+    // If all boards are painted, return 0
+    if (curr >= n)
+        return 0;
+
+    // If no painters are left
+    if (k == 0)
+        return INT_MAX;
+
+    // If only one painter remains, assign all remaining boards
+    if (k == 1) {
+        int sum = 0;
+        for (int i = curr; i < n; i++)
+            sum += arr[i];
+        return sum;
+    }
+
+   // Current workload for this painter
+    int currSum = 0;
+
+   // Result to store the minimum possible time
+    int res = INT_MAX;
+
+    // Divide the boards among painters starting from curr
+    for (int i = curr; i <= n - k; i++) {
+        currSum += arr[i];
+
+     // Find the maximum time if we assign arr[curr..i] to
+     // this painter
+        int remTime = minimizeTime(i + 1, n, arr, k - 1);
+
+        if (remTime != INT_MAX) {
+            int remaining = max(currSum, remTime);
+
+            // Update the result
+            res = min(res, remaining);
+        }
+    }
+
+    return res;
+}
+
+int minTime(vector<int> &arr, int k) {
+    int n = arr.size();
+    return minimizeTime(0, n, arr, k);
+}
+
+int main() {
+    vector<int> arr = {5, 10, 30, 20, 15};
+    int k = 3;
+    int res = minTime(arr, k);
+    cout << res << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    static int minimizeTime(int curr, int n, int[] arr,
+                            int k) {
+
+        // If all boards are painted, return 0
+        if (curr >= n)
+            return 0;
+
+        // If no painters are left
+        if (k == 0)
+            return Integer.MAX_VALUE;
+
+        // If only one painter remains, assign all remaining boards
+        if (k == 1) {
+            int sum = 0;
+            for (int i = curr; i < n; i++)
+                sum += arr[i];
+            return sum;
+        }
+
+       // Current workload for this painter
+        int currSum = 0;
+
+       // Result to store the minimum possible time
+        int res = Integer.MAX_VALUE;
+
+        // Divide the boards among painters starting from curr
+        for (int i = curr; i <= n - k; i++) {
+            currSum += arr[i];
+
+         // Find the maximum time if we assign arr[curr..i] to
+         // this painter
+            int remTime
+                = minimizeTime(i + 1, n, arr, k - 1);
+
+            if (remTime != Integer.MAX_VALUE) {
+                int remaining = Math.max(currSum, remTime);
+
+                // Update the result
+                res = Math.min(res, remaining);
+            }
+        }
+
+        return res;
+    }
+
+    static int minTime(int[] arr, int k) {
+        int n = arr.length;
+        return minimizeTime(0, n, arr, k);
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {5, 10, 30, 20, 15};
+        int k = 3;
+        int res = minTime(arr, k);
+        System.out.println(res);
+    }
+}
+
+Python
+
+def minimizeTime(curr, n, arr, k):
+
+    # If all boards are painted, return 0
+    if curr >= n:
+        return 0
+
+    # If no painters are left
+    if k == 0:
+        return float('inf')
+
+    # If only one painter remains, assign all remaining boards
+    if k == 1:
+        sum = 0
+        for i in range(curr, n):
+            sum += arr[i]
+        return sum
+
+   # Current workload for this painter
+    currSum = 0
+
+   # Result to store the minimum possible time
+    res = float('inf')
+
+    # Divide the boards among painters starting from curr
+    for i in range(curr, n - k + 1):
+        currSum += arr[i]
+
+     # Find the maximum time if we assign arr[curr..i] to
+     # this painter
+        remTime = minimizeTime(i + 1, n, arr, k - 1)
+
+        if remTime != float('inf'):
+            remaining = max(currSum, remTime)
+
+            # Update the result
+            res = min(res, remaining)
+
+    return res
+
+def minTime(arr, k):
+    n = len(arr)
+    return minimizeTime(0, n, arr, k)
+
+if __name__ == "__main__":
+    arr = [5, 10, 30, 20, 15]
+    k = 3
+    res = minTime(arr, k)
+    print(res)
+
+C#
+
+using System;
+
+class GFG {
+
+    static int minimizeTime(int curr, int n, int[] arr,
+                            int k) {
+
+        // If all boards are painted, return 0
+        if (curr >= n)
+            return 0;
+
+        // If no painters are left
+        if (k == 0)
+            return int.MaxValue;
+
+        // If only one painter remains, assign all remaining boards
+        if (k == 1) {
+            int sum = 0;
+            for (int i = curr; i < n; i++)
+                sum += arr[i];
+            return sum;
+        }
+
+       // Current workload for this painter
+        int currSum = 0;
+
+       // Result to store the minimum possible time
+        int res = int.MaxValue;
+
+        // Divide the boards among painters starting from curr
+        for (int i = curr; i <= n - k; i++) {
+            currSum += arr[i];
+
+         // Find the maximum time if we assign arr[curr..i] to
+         // this painter
+            int remTime
+                = minimizeTime(i + 1, n, arr, k - 1);
+
+            if (remTime != int.MaxValue) {
+                int remaining = Math.Max(currSum, remTime);
+
+                // Update the result
+                res = Math.Min(res, remaining);
+            }
+        }
+
+        return res;
+    }
+
+    static int minTime(int[] arr, int k) {
+        int n = arr.Length;
+        return minimizeTime(0, n, arr, k);
+    }
+
+    static void Main(string[] args) {
+        int[] arr = {5, 10, 30, 20, 15};
+        int k = 3;
+        int res = minTime(arr, k);
+        Console.WriteLine(res);
+    }
+}
+
+JavaScript
+
+function minimizeTime(curr, n, arr, k) {
+
+    // If all boards are painted, return 0
+    if (curr >= n)
+        return 0;
+
+    // If no painters are left
+    if (k === 0)
+        return Infinity;
+
+    // If only one painter remains, assign all remaining boards
+    if (k === 1) {
+        let sum = 0;
+        for (let i = curr; i < n; i++)
+            sum += arr[i];
+        return sum;
+    }
+
+   // Current workload for this painter
+    let currSum = 0;
+
+   // Result to store the minimum possible time
+    let res = Infinity;
+
+    // Divide the boards among painters starting from curr
+    for (let i = curr; i <= n - k; i++) {
+        currSum += arr[i];
+
+     // Find the maximum time if we assign arr[curr..i] to
+     // this painter
+        let remTime = minimizeTime(i + 1, n, arr, k - 1);
+
+        if (remTime !== Infinity) {
+            let remaining = Math.max(currSum, remTime);
+
+            // Update the result
+            res = Math.min(res, remaining);
+        }
+    }
+
+    return res;
+}
+
+function minTime(arr, k) {
+    const n = arr.length;
+    return minimizeTime(0, n, arr, k);
+}
+
+// Driver Code
+const arr = [5, 10, 30, 20, 15];
+const k = 3;
+const res = minTime(arr, k);
+console.log(res);
+
+Output
+
+35
+
+### [Better Approach - 1] Using Memoization - O(n*n*k) Time and O(n*k) Space
+
+> The recursive solution solves the same subproblems multiple times. Store the result of each state (curr, k) so that it is computed only once, eliminating redundant recursive calls.
+
+- Use a 2D DP array dp[n][k + 1] initialized with -1.
+- Each state dp[curr][k] stores the minimum time to paint boards from index curr using k painters.
+- Before solving a state, check if its value is already stored in dp.
+- If available, return the stored value; otherwise, compute it recursively and store the result before returning.
+- The recurrence relation and base cases remain the same as the recursive approach.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <algorithm>
+using namespace std;
+
+int minimizeTime(int curr, int n, vector<int> &arr, int k,
+                 vector<vector<int>> &memo) {
+
+    // If all boards are painted, return 0
+    if (curr >= n)
+        return 0;
+
+    // If no painters are left
+    if (k == 0)
+        return INT_MAX;
+
+    // If only one painter remains, assign all remaining boards
+    if (k == 1) {
+        int sum = 0;
+        for (int i = curr; i < n; i++)
+            sum += arr[i];
+        return sum;
+    }
+
+    // Check if the result is already computed and stored in memo table
+    // If so, return the stored result to avoid recomputation
+    if (memo[curr][k] != -1)
+        return memo[curr][k];
+
+    // Current workload for this painter
+    int currSum = 0;
+
+    // Result to store the minimum possible time
+    int res = INT_MAX;
+
+    // Divide the boards among painters starting from curr
+    for (int i = curr; i <= n - k; i++) {
+        currSum += arr[i];
+
+        // Find the maximum time if we assign arr[curr..i] to
+        // this painter
+        int remTime = minimizeTime(i + 1, n, arr, k - 1, memo);
+
+        if (remTime != INT_MAX) {
+            int remaining = max(currSum, remTime);
+
+            // Update the result
+            res = min(res, remaining);
+        }
+    }
+
+    // Store the computed result in the memo table
+    // This helps avoid redundant calculations in future calls
+    return memo[curr][k] = res;
+}
+
+int minTime(vector<int> &arr, int k) {
+    int n = arr.size();
+
+    // Initialize memoization table with -1
+  	// (indicating no result computed yet)
+    vector<vector<int>> memo(n, vector<int>(k + 1, -1));
+    return minimizeTime(0, n, arr, k, memo);
+}
+
+int main() {
+
+    vector<int> arr = {5, 10, 30, 20, 15};
+    int k = 3;
+    int res = minTime(arr, k);
+    cout << res << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+    static int minimizeTime(int curr, int n, int[] arr,
+                            int k, int[][] memo) {
+
+        // If all boards are painted, return 0
+        if (curr >= n) {
+            return 0;
+        }
+
+        // If no painters are left
+        if (k == 0) {
+            return Integer.MAX_VALUE;
+        }
+
+        // If only one painter remains, assign all remaining boards
+        if (k == 1) {
+            int sum = 0;
+            for (int i = curr; i < n; i++)
+                sum += arr[i];
+            return sum;
+        }
+
+        // Check if the result is already computed and stored in memo table
+        // If so, return the stored result to avoid recomputation
+        if (memo[curr][k] != -1) {
+            return memo[curr][k];
+        }
+
+        // Current workload for this painter
+        int currSum = 0;
+
+        // Result to store the minimum possible time
+        int res = Integer.MAX_VALUE;
+
+        // Divide the boards among painters starting from curr
+        for (int i = curr; i <= n - k; i++) {
+            currSum += arr[i];
+
+            // Find the maximum time if we assign arr[curr..i] to
+            // this painter
+            int remTime
+                = minimizeTime(i + 1, n, arr, k - 1, memo);
+
+            if (remTime != Integer.MAX_VALUE) {
+                int remaining = Math.max(currSum, remTime);
+
+                // Update the result
+                res = Math.min(res, remaining);
+            }
+        }
+
+        // Store the computed result in the memo table
+        // This helps avoid redundant calculations in future calls
+        memo[curr][k] = res;
+        return res;
+    }
+
+    static int minTime(int[] arr, int k) {
+        int n = arr.length;
+
+        // Initialize memoization table with -1
+      	// (indicating no result computed yet)
+        int[][] memo = new int[n][k + 1];
+        for (int[] row : memo) {
+            Arrays.fill(row, -1);
+        }
+
+        return minimizeTime(0, n, arr, k, memo);
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {5, 10, 30, 20, 15};
+        int k = 3;
+        int res = minTime(arr, k);
+        System.out.println(res);
+    }
+}
+
+Python
+
+def minimizeTime(curr, n, arr, k, memo):
+
+    # If all boards are painted, return 0
+    if curr >= n:
+        return 0
+
+    # If no painters are left
+    if k == 0:
+        return float('inf')
+
+    # If only one painter remains, assign all remaining boards
+    if k == 1:
+        sum = 0
+        for i in range(curr, n):
+            sum += arr[i]
+        return sum
+
+    # Check if the result is already computed and stored in memo table
+    # If so, return the stored result to avoid recomputation
+    if memo[curr][k] != -1:
+        return memo[curr][k]
+
+    # Current workload for this painter
+    currSum = 0
+
+    # Result to store the minimum possible time
+    res = float('inf')
+
+    # Divide the boards among painters starting from curr
+    for i in range(curr, n - k + 1):
+        currSum += arr[i]
+
+        # Find the maximum time if we assign arr[curr..i] to
+        # this painter
+        remTime = minimizeTime(i + 1, n, arr, k - 1, memo)
+
+        if remTime != float('inf'):
+            remaining = max(currSum, remTime)
+
+            # Update the result
+            res = min(res, remaining)
+
+    # Store the computed result in the memo table
+    # This helps avoid redundant calculations in future calls
+    memo[curr][k] = res
+    return res
+
+def minTime(arr, k):
+    n = len(arr)
+
+    # Initialize memoization table with -1
+    # (indicating no result computed yet)
+    memo = [[-1] * (k + 1) for _ in range(n)]
+    return minimizeTime(0, n, arr, k, memo)
+
+if __name__ == "__main__":
+    arr = [5, 10, 30, 20, 15]
+    k = 3
+    res = minTime(arr, k)
+    print(res)
+
+C#
+
+using System;
+
+class GfG {
+
+    static int minimizeTime(int curr, int n, int[] arr,
+                            int k, int[, ] memo) {
+
+        // If all boards are painted, return 0
+        if (curr >= n)
+            return 0;
+
+        // If no painters are left
+        if (k == 0)
+            return int.MaxValue;
+
+        // If only one painter remains, assign all remaining boards
+        if (k == 1) {
+            int sum = 0;
+            for (int i = curr; i < n; i++)
+                sum += arr[i];
+            return sum;
+        }
+
+        // Check if the result is already computed and stored in memo table
+        // If so, return the stored result to avoid recomputation
+        if (memo[curr, k] != -1)
+            return memo[curr, k];
+
+        // Current workload for this painter
+        int currSum = 0;
+
+        // Result to store the minimum possible time
+        int res = int.MaxValue;
+
+        // Divide the boards among painters starting from curr
+        for (int i = curr; i <= n - k; i++) {
+            currSum += arr[i];
+
+            // Find the maximum time if we assign arr[curr..i] to
+            // this painter
+            int remTime
+                = minimizeTime(i + 1, n, arr, k - 1, memo);
+
+            if (remTime != int.MaxValue) {
+                int remaining = Math.Max(currSum, remTime);
+
+                // Update the result
+                res = Math.Min(res, remaining);
+            }
+        }
+
+        // Store the computed result in the memo table
+        // This helps avoid redundant calculations in future calls
+        memo[curr, k] = res;
+        return res;
+    }
+
+    static int minTime(int[] arr, int k) {
+        int n = arr.Length;
+
+        // Initialize memoization table with -1
+        // (indicating no result computed yet)
+        int[, ] memo = new int[n, k + 1];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j <= k; j++) {
+                memo[i, j] = -1;
+            }
+        }
+
+        return minimizeTime(0, n, arr, k, memo);
+    }
+
+    static void Main(string[] args) {
+        int[] arr = {5, 10, 30, 20, 15};
+        int k = 3;
+        int result = minTime(arr, k);
+        Console.WriteLine(result);
+    }
+}
+
+JavaScript
+
+function minimizeTime(curr, n, arr, k, memo) {
+
+    // If all boards are painted, return 0
+    if (curr >= n)
+        return 0;
+
+    // If no painters are left
+    if (k === 0)
+        return Number.POSITIVE_INFINITY;
+
+    // If only one painter remains, assign all remaining boards
+    if (k === 1) {
+        let sum = 0;
+        for (let i = curr; i < n; i++)
+            sum += arr[i];
+        return sum;
+    }
+
+    // Check if the result is already computed and stored in memo table
+    // If so, return the stored result to avoid recomputation
+    if (memo[curr][k] !== -1)
+        return memo[curr][k];
+
+    // Current workload for this painter
+    let currSum = 0;
+
+    // Result to store the minimum possible time
+    let res = Number.POSITIVE_INFINITY;
+
+    // Divide the boards among painters starting from curr
+    for (let i = curr; i <= n - k; i++) {
+        currSum += arr[i];
+
+        // Find the maximum time if we assign arr[curr..i] to
+        // this painter
+        let remTime
+            = minimizeTime(i + 1, n, arr, k - 1, memo);
+
+        if (remTime !== Number.POSITIVE_INFINITY) {
+            let remaining = Math.max(currSum, remTime);
+
+            // Update the result
+            res = Math.min(res, remaining);
+        }
+    }
+
+    // Store the computed result in the memo table
+    // This helps avoid redundant calculations in future calls
+    memo[curr][k] = res;
+    return res;
+}
+
+function minTime(arr, k) {
+    const n = arr.length;
+
+    // Initialize memoization table with -1
+    // (indicating no result computed yet)
+    let memo = Array.from({length : n},
+                          () => Array(k + 1).fill(-1));
+
+    return minimizeTime(0, n, arr, k, memo);
+}
+
+const arr = [5, 10, 30, 20, 15];
+const k = 3;
+const res = minTime(arr, k);
+console.log(res);
+
+Output
+
+35
+
+### [Better Approach - 2] Using Tabulation - O(n*n*k) Time and O(n*k) Space
+
+> Build the solution iteratively by storing the answer for every state (curr, k) in a DP table. Each state is computed using previously solved smaller subproblems, eliminating recursion.
+
+- Create a 2D DP array dp[n + 1][k + 1], where dp[i][j] stores the minimum time to paint boards from index i using j painters.
+- Compute prefix sums to obtain the sum of any board segment in O(1) time.
+- Fill the DP table bottom-up.
+- For each state, try every possible partition for the current painter and compute: max(time taken by current painter, time for remaining painters).
+- Store the minimum value among all possible partitions in dp[i][j].
+- dp[n][j] = 0 for all j.
+- dp[i][1] = sum(i, n - 1) for all i.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int minTime(vector<int> &arr, int k) {
+
+    int n = arr.size();
+    vector<int> pre(n, 0);
+
+    // Calculate the prefix sum array
+    pre = vector<int>(n + 1, 0);
+    pre[0] = arr[0];
+    for (int i = 1; i < n; i++) {
+        pre[i] = pre[i - 1] + arr[i];
+    }
+
+    // DP table to store the minimum time for subproblems
+    vector<vector<int>> dp(n + 1, vector<int>(k + 1, 1e9));
+
+    // Base case: if there are no boards to paint, the time is 0
+    for (int i = 0; i <= k; i++) {
+        dp[n][i] = 0;
+    }
+
+    // Fill the DP table by iterating over the boards and painters
+    for (int i = n - 1; i >= 0; i--) {
+        for (int j = 1; j <= k; j++) {
+
+            // Base case: only one painter
+            if (j == 1) {
+                dp[i][j] = pre[n - 1] - (i > 0 ? pre[i - 1] : 0);
+                continue;
+            }
+
+            for (int i1 = i; i1 <= n - j; i1++) {
+
+                // Calculate the sum directly using the prefix sum array
+                int currSum = pre[i1] - (i > 0 ? pre[i - 1] : 0);
+
+                // Transition: take the maximum of the
+                // current sum and the result for
+                // remaining painters
+                dp[i][j] = min(dp[i][j], max(currSum, dp[i1 + 1][j - 1]));
+            }
+        }
+    }
+
+    // Return the minimum time for painting all boards
+    // starting from index 0 with k painters
+    return dp[0][k];
+}
+
+int main() {
+
+    vector<int> arr = {5, 10, 30, 20, 15};
+    int k = 3;
+    int res = minTime(arr, k);
+    cout << res;
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+    static int minTime(int[] arr, int k) {
+        int n = arr.length;
+
+        // Prefix sum array to store the cumulative sums of
+        // boards
+        int[] pre = new int[n];
+
+        // Calculate the prefix sum array
+        pre = new int[n + 1];
+        pre[0] = arr[0];
+        for (int i = 1; i < n; i++) {
+            pre[i] = pre[i - 1] + arr[i];
+        }
+
+        // DP table to store the minimum time for
+        // subproblems
+        int[][] dp = new int[n + 1][k + 1];
+
+        // Initialize DP table with a large value
+        for (int i = 0; i <= n; i++) {
+            Arrays.fill(dp[i], (int)1e9);
+        }
+
+        // Base case: if there are no boards to paint, the time is 0
+        for (int i = 0; i <= k; i++) {
+            dp[n][i] = 0;
+        }
+
+        // Fill the DP table by iterating over the boards and painters
+        for (int i = n - 1; i >= 0; i--) {
+            for (int j = 1; j <= k; j++) {
+
+                // Base case: only one painter
+                if (j == 1) {
+                    dp[i][j] = pre[n - 1] - (i > 0 ? pre[i - 1] : 0);
+                    continue;
+                }
+
+                for (int i1 = i; i1 <= n - j; i1++) {
+
+                    // Calculate the sum directly using the prefix sum array
+                    int currSum = pre[i1] - (i > 0 ? pre[i - 1] : 0);
+
+                    // Transition: take the maximum of the
+                    // current sum and the result for
+                    // remaining painters
+                    dp[i][j] = Math.min(
+                        dp[i][j],
+                        Math.max(currSum,
+                                 dp[i1 + 1][j - 1]));
+                }
+            }
+        }
+
+        // Return the minimum time for painting all boards
+        // starting from index 0 with k painters
+        return dp[0][k];
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {5, 10, 30, 20, 15};
+        int k = 3;
+        int res = minTime(arr, k);
+        System.out.println(res);
+    }
+}
+
+Python
+
+def minTime(arr, k):
+    n = len(arr)
+
+    # Calculate the prefix sum array
+    pre = [0] * n
+
+    pre = [0] * (n + 1)
+    pre[0] = arr[0]
+    for i in range(1, n):
+        pre[i] = pre[i - 1] + arr[i]
+
+    # DP table to store the minimum time for subproblems
+    dp = [[int(1e9)] * (k + 1) for _ in range(n + 1)]
+
+    # Base case: if there are no boards to paint, the time is 0
+    for i in range(k + 1):
+        dp[n][i] = 0
+
+    # Fill the DP table by iterating over the boards and painters
+    for i in range(n - 1, -1, -1):
+        for j in range(1, k + 1):
+
+            # Base case: only one painter
+            if j == 1:
+                dp[i][j] = pre[n - 1] - (pre[i - 1] if i > 0 else 0)
+                continue
+
+            for i1 in range(i, n - j + 1):
+
+                # Calculate the sum directly using the prefix sum array
+                currSum = pre[i1] - (pre[i - 1] if i > 0 else 0)
+
+                # Transition: take the maximum of the
+                # current sum and the result for
+                # remaining painters
+                dp[i][j] = min(dp[i][j], max(currSum, dp[i1 + 1][j - 1]))
+
+    # Return the minimum time for painting all boards
+    # starting from index 0 with k painters
+    return dp[0][k]
+
+arr = [5, 10, 30, 20, 15]
+k = 3
+res = minTime(arr, k)
+print(res)
+
+C#
+
+using System;
+
+class GfG {
+    static int minTime(int[] arr, int k) {
+        int n = arr.Length;
+
+        // Calculate the prefix sum array
+        int[] pre = new int[n];
+
+        pre = new int[n + 1];
+        pre[0] = arr[0];
+        for (int i = 1; i < n; i++) {
+            pre[i] = pre[i - 1] + arr[i];
+        }
+
+        // DP table to store the minimum time for subproblems
+        int[, ] dp = new int[n + 1, k + 1];
+
+        // Initialize the DP table with a large value
+        for (int i = 0; i <= n; i++) {
+            for (int j = 0; j <= k; j++) {
+                dp[i, j] = (int)1e9;
+            }
+        }
+
+        // Base case: if there are no boards to paint, the time is 0
+        for (int i = 0; i <= k; i++) {
+            dp[n, i] = 0;
+        }
+
+        // Fill the DP table by iterating over the boards and painters
+        for (int i = n - 1; i >= 0; i--) {
+            for (int j = 1; j <= k; j++) {
+
+                // Base case: only one painter
+                if (j == 1) {
+                    dp[i, j] = pre[n - 1] - (i > 0 ? pre[i - 1] : 0);
+                    continue;
+                }
+
+                for (int i1 = i; i1 <= n - j; i1++) {
+
+                    // Calculate the sum directly using the prefix sum array
+                    int currSum = pre[i1] - (i > 0 ? pre[i - 1] : 0);
+
+                    // Transition: take the maximum of the
+                    // current sum and the result for
+                    // remaining painters
+                    dp[i, j] = Math.Min(
+                        dp[i, j], Math.Max(currSum, dp[i1 + 1, j - 1]));
+                }
+            }
+        }
+
+        // Return the minimum time for painting all boards
+        // starting from index 0 with k painters
+        return dp[0, k];
+    }
+
+    static void Main() {
+        int[] arr = {5, 10, 30, 20, 15};
+        int k = 3;
+        int res = minTime(arr, k);
+        Console.WriteLine(res);
+    }
+}
+
+JavaScript
+
+function minTime(arr, k) {
+    let n = arr.length;
+
+    // Calculate the prefix sum array
+    let pre = new Array(n).fill(0);
+
+    pre = new Array(n + 1).fill(0);
+    pre[0] = arr[0];
+    for (let i = 1; i < n; i++) {
+        pre[i] = pre[i - 1] + arr[i];
+    }
+
+    // DP table to store the minimum time for subproblems
+    let dp = Array.from(
+        {length : n + 1},
+        () => new Array(k + 1).fill(1e9));
+
+    // Base case: if there are no boards to paint, the time is 0
+    for (let i = 0; i <= k; i++) {
+        dp[n][i] = 0;
+    }
+
+    // Fill the DP table by iterating over the boards and painters
+    for (let i = n - 1; i >= 0; i--) {
+        for (let j = 1; j <= k; j++) {
+
+            // Base case: only one painter
+            if (j === 1) {
+                dp[i][j] = pre[n - 1] - (i > 0 ? pre[i - 1] : 0);
+                continue;
+            }
+
+            for (let i1 = i; i1 <= n - j; i1++) {
+
+                // Calculate the sum directly using the prefix sum array
+                let currSum = pre[i1] - (i > 0 ? pre[i - 1] : 0);
+
+                // Transition: take the maximum of the
+                // current sum and the result for
+                // remaining painters
+                dp[i][j] = Math.min(
+                    dp[i][j],
+                    Math.max(currSum, dp[i1 + 1][j - 1]));
+            }
+        }
+    }
+
+    // Return the minimum time for painting all boards
+    // starting from index 0 with k painters
+    return dp[0][k];
+}
+
+// Driver Code
+let arr = [5, 10, 30, 20, 15];
+let k = 3;
+let res = minTime(arr, k);
+console.log(res);
+
+Output
+
+35
+
+### [Expected Approach] Using Binary Search
+
+> Apply binary search on the maximum time assigned to a painter. For each candidate time, greedily check whether all boards can be painted using at most k painters while maintaining continuous board assignments.
+
+- Set Low = maximum board length and High = sum of all board lengths.
+- Perform binary search on this range.
+- For each mid, greedily assign boards to the current painter.
+- If adding a board exceeds mid, assign it to a new painter.
+- If all boards can be painted using at most k painters, store mid as a possible answer and search for a smaller value.
+- Otherwise, search for a larger value.
+- Return the minimum feasible time found.
+
+Dry Run on  arr = [5, 10, 30, 20, 15], k = 3: Search space: low = 30, high = 80
+
+- mid = 55 Painters: [5,10,30] = 45, [20,15] = 35 , 2 painters Feasible, update high = 54
+- mid = 42 Painters: [5,10] = 15, [30] = 30, [20,15] = 35, 3 painters Feasible, update high = 41
+- mid = 35 Painters: [5,10,20] = 35, [30], [15], 3 painters Feasible, update high = 34
+- mid = 32 Needs 4 painters Not feasible, update low = 33
+- mid = 33, 34 Not feasible, update low = 35
+
+Minimum time to paint all boards = 35
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <numeric>
+using namespace std;
+
+// checks whether all boards can be painted within 'maxTime'
+// by dividing the work among at most k painters
+bool isPossible(int maxTime,  vector<int>& arr, int k) {
+    int painters = 1;
+    int currSum = 0;
+
+    for (int length : arr) {
+
+        // if a board is longer than maxTime,
+        // it's impossible to assign
+        if (length > maxTime)
+            return false;
+
+        // if assigning this board exceeds maxTime,
+        // give it to a new painter
+        if (currSum + length > maxTime) {
+            painters++;
+            currSum = length;
+        }
+
+        // otherwise, continue adding to the current
+        // painter's workload
+        else {
+            currSum += length;
+        }
+    }
+
+    // return true if total painters used is
+    // within the allowed k
+    return painters <= k;
+}
+
+int minTime(vector<int>& arr, int k) {
+
+    // lower limit is the largest board
+    // (can't split boards)
+    int low = *max_element(arr.begin(), arr.end());
+
+    // upper limit is the sum of all board lengths
+    // (one painter does all)
+    int high = accumulate(arr.begin(), arr.end(), 0);
+
+    int result = high;
+
+    while (low <= high) {
+        int mid = (low + high) / 2;
+
+        // if this time allows us to paint
+        // with k painters or fewer
+        if (isPossible(mid, arr, k)) {
+            result = mid;
+            high = mid - 1;
+        }
+
+        // if not possible, we need to allow
+        // more time
+        else {
+            low = mid + 1;
+        }
+    }
+
+    return result;
+}
+
+int main() {
+
+    vector<int> arr = {5, 10, 30, 20, 15};
+    int k = 3;
+    int result = minTime(arr, k);
+    cout << result << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+    // checks whether all boards can be painted within 'maxTime'
+    // by dividing the work among at most k painters
+    static boolean isPossible(int maxTime, int[] arr, int k) {
+        int painters = 1;
+        int currSum = 0;
+
+        for (int length : arr) {
+
+            // if a board is longer than maxTime,
+            // it's impossible to assign
+            if (length > maxTime)
+                return false;
+
+            // if assigning this board exceeds maxTime,
+            // give it to a new painter
+            if (currSum + length > maxTime) {
+                painters++;
+                currSum = length;
+            }
+
+            // otherwise, continue adding to the current
+            // painter's workload
+            else {
+                currSum += length;
+            }
+        }
+
+        // return true if total painters used is
+        // within the allowed k
+        return painters <= k;
+    }
+
+    static int minTime(int[] arr, int k) {
+        int low = Arrays.stream(arr).max().getAsInt();
+        int high = Arrays.stream(arr).sum();
+        int result = high;
+
+        while (low <= high) {
+            int mid = (low + high) / 2;
+
+            // if this time allows us to paint
+            // with k painters or fewer
+            if (isPossible(mid, arr, k)) {
+                result = mid;
+                high = mid - 1;
+            }
+
+            // if not possible, we need to allow
+            // more time
+            else {
+                low = mid + 1;
+            }
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {5, 10, 30, 20, 15};
+        int k = 3;
+        int result = minTime(arr, k);
+        System.out.println(result);
+    }
+}
+
+Python
+
+# checks whether all boards can be painted within 'maxTime'
+# by dividing the work among at most k painters
+def isPossible(maxTime, arr, k):
+    painters = 1
+    currSum = 0
+
+    for length in arr:
+
+        # if a board is longer than maxTime,
+        # it's impossible to assign
+        if length > maxTime:
+            return False
+
+        # if assigning this board exceeds maxTime,
+        # give it to a new painter
+        if currSum + length > maxTime:
+            painters += 1
+            currSum = length
+
+        # otherwise, continue adding to the current
+        # painter's workload
+        else:
+            currSum += length
+
+    # return true if total painters used is
+    # within the allowed k
+    return painters <= k
+
+def minTime(arr, k):
+    low = max(arr)
+    high = sum(arr)
+    result = high
+
+    while low <= high:
+        mid = (low + high) // 2
+
+        # if this time allows us to paint
+        # with k painters or fewer
+        if isPossible(mid, arr, k):
+            result = mid
+            high = mid - 1
+
+        # if not possible, we need to allow
+        # more time
+        else:
+            low = mid + 1
+
+    return result
+
+if __name__ == "__main__":
+    arr = [5, 10, 30, 20, 15]
+    k = 3
+    result = minTime(arr, k)
+    print(result)
+
+C#
+
+using System;
+using System.Linq;
+
+class GfG {
+
+    // checks whether all boards can be painted within 'maxTime'
+    // by dividing the work among at most k painters
+    static bool isPossible(int maxTime, int[] arr, int k) {
+        int painters = 1;
+        int currSum = 0;
+
+        foreach (int length in arr) {
+
+            // if a board is longer than maxTime,
+            // it's impossible to assign
+            if (length > maxTime)
+                return false;
+
+            // if assigning this board exceeds maxTime,
+            // give it to a new painter
+            if (currSum + length > maxTime) {
+                painters++;
+                currSum = length;
+            }
+
+            // otherwise, continue adding to the current
+            // painter's workload
+            else {
+                currSum += length;
+            }
+        }
+
+        // return true if total painters used is
+        // within the allowed k
+        return painters <= k;
+    }
+
+    static int minTime(int[] arr, int k) {
+        int low = arr.Max();
+        int high = arr.Sum();
+        int result = high;
+
+        while (low <= high) {
+            int mid = (low + high) / 2;
+
+            // if this time allows us to paint
+            // with k painters or fewer
+            if (isPossible(mid, arr, k)) {
+                result = mid;
+                high = mid - 1;
+            }
+
+            // if not possible, we need to allow
+            // more time
+            else {
+                low = mid + 1;
+            }
+        }
+
+        return result;
+    }
+
+    static void Main() {
+        int[] arr = {5, 10, 30, 20, 15};
+        int k = 3;
+        int result = minTime(arr, k);
+        Console.WriteLine(result);
+    }
+}
+
+JavaScript
+
+// checks whether all boards can be painted within 'maxTime'
+// by dividing the work among at most k painters
+function isPossible(maxTime, arr, k) {
+    let painters = 1;
+    let currSum = 0;
+
+    for (let length of arr) {
+
+        // if a board is longer than maxTime,
+        // it's impossible to assign
+        if (length > maxTime)
+            return false;
+
+        // if assigning this board exceeds maxTime,
+        // give it to a new painter
+        if (currSum + length > maxTime) {
+            painters++;
+            currSum = length;
+        }
+
+        // otherwise, continue adding to the current
+        // painter's workload
+        else {
+            currSum += length;
+        }
+    }
+
+    // return true if total painters used is
+    // within the allowed k
+    return painters <= k;
+}
+
+function minTime(arr, k) {
+    let low = Math.max(...arr);
+    let high = arr.reduce((a, b) => a + b, 0);
+    let result = high;
+
+    while (low <= high) {
+        let mid = Math.floor((low + high) / 2);
+
+        // if this time allows us to paint
+        // with k painters or fewer
+        if (isPossible(mid, arr, k)) {
+            result = mid;
+            high = mid - 1;
+        }
+
+        // if not possible, we need to allow
+        // more time
+        else {
+            low = mid + 1;
+        }
+    }
+
+    return result;
+}
+
+// Driver Code
+const arr = [5, 10, 30, 20, 15];
+const k = 3;
+const result = minTime(arr, k);
+console.log(result);
+
+Output
+
+35
+
+Time Complexity: O(n × log(sum(arr))), Binary search is applied over the range from max(arr) to sum(arr), resulting in O(log(sum(arr))) iterations. In each iteration, a greedy feasibility check scans the array once, taking O(n) time. Auxiliary Space: O(1)

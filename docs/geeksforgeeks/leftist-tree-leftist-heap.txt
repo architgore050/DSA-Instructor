@@ -1,0 +1,841 @@
+Source: https://www.geeksforgeeks.org/dsa/leftist-tree-leftist-heap/
+Title: Leftist Tree / Leftist Heap
+Extractor: 2
+
+### INTRODUCTION:
+
+A leftist tree, also known as a leftist heap, is a type of binary heap data structure used for implementing priority queues. Like other heap data structures, it is a complete binary tree, meaning that all levels are fully filled except possibly the last level, which is filled from left to right.
+
+1. In a leftist tree, the priority of the node is determined by its key value, and the node with the smallest key value is designated as the root node. The left subtree of a node in a leftist tree is always larger than the right subtree, based on the number of nodes in each subtree. This is known as the "leftist property."
+2. One of the key features of a leftist tree is the calculation and maintenance of the "null path length" of each node, which is defined as the distance from the node to the nearest null (empty) child. The root node of a leftist tree has the shortest null path length of any node in the tree.
+3. The main operations performed on a leftist tree include insert, extract-min and merge. The insert operation simply adds a new node to the tree, while the extract-min operation removes the root node and updates the tree structure to maintain the leftist property. The merge operation combines two leftist trees into a single leftist tree by linking the root nodes and maintaining the leftist property.
+
+In summary, a leftist tree is a type of binary heap data structure used for implementing priority queues. Its key features include the leftist property, which ensures that the left subtree of a node is always larger than the right subtree, and the calculation and maintenance of the null path length, which is used to maintain the efficiency of operations such as extract-min and merge.
+
+A leftist tree or leftist heap is a priority queue implemented with a variant of a binary heap. Every node has an s-value (or rank or distance) which is the distance to the nearest leaf. In contrast to a binary heap (Which is always a complete binary tree ), a leftist tree may be very unbalanced. Below are time complexities of Leftist Tree / Heap .
+
+Function       Complexity              Comparison1) Get Min:       O(1)      [same as both Binary and Binomial]2) Delete Min:    O(Log n)  [same as both Binary and Binomial]3) Insert:        O(Log n)  [O(Log n) in Binary and O(1) in                             Binomial and O(Log n) for worst case]                                                                  4) Merge:         O(Log n)  [O(Log n) in Binomial]
+
+A leftist tree is a binary tree with properties:
+
+1. Normal Min Heap Property : key(i) >= key(parent(i))
+2. Heavier on left side : dist(right(i)) <= dist(left(i)). Here, dist(i) is the number of edges on the shortest path from node i to a leaf node in extended binary tree representation (In this representation, a null child is considered as external or leaf node). The shortest path to a descendant external node is through the right child. Every subtree is also a leftist tree and dist( i ) = 1 + dist( right( i ) ).
+
+Example: The below leftist tree is presented with its distance calculated for each node with the procedure mentioned above. The rightmost node has a rank of 0 as the right subtree of this node is null and its parent has a distance of 1 by dist( i ) = 1 + dist( right( i )). The same is followed for each node and their s-value( or rank) is calculated.
+
+From above second property, we can draw two conclusions :
+
+1. The path from root to rightmost leaf is the shortest path from root to a leaf.
+2. If the path to rightmost leaf has x nodes, then leftist heap has atleast 2 x - 1 nodes. This means the length of path to rightmost leaf is O(log n) for a leftist heap with n nodes.
+
+Operations :
+
+1. The main operation is merge().
+2. deleteMin() (or extractMin() can be done by removing root and calling merge() for left and right subtrees.
+3. insert() can be done be create a leftist tree with single key (key to be inserted) and calling merge() for given tree and tree with single node.
+
+Idea behind Merging : Since right subtree is smaller, the idea is to merge right subtree of a tree with other tree. Below are abstract steps.
+
+1. Put the root with smaller value as the new root.
+2. Hang its left subtree on the left.
+3. Recursively merge its right subtree and the other tree.
+4. Before returning from recursion: – Update dist() of merged root. – Swap left and right subtrees just below root, if needed, to keep leftist property of merged result
+
+Detailed Steps for Merge:
+
+1. Compare the roots of two heaps.
+2. Push the smaller key into an empty stack, and move to the right child of smaller key.
+3. Recursively compare two keys and go on pushing the smaller key onto the stack and move to its right child.
+4. Repeat until a null node is reached.
+5. Take the last node processed and make it the right child of the node at top of the stack, and convert it to leftist heap if the properties of leftist heap are violated.
+6. Recursively go on popping the elements from the stack and making them the right child of new stack top.
+
+Example: Consider two leftist heaps given below:
+
+Merge them into a single leftist heap
+
+The subtree at node 7 violates the property of leftist heap so we swap it with the left child and retain the property of leftist heap.
+
+Convert to leftist heap. Repeat the process
+
+The worst case time complexity of this algorithm is O(log n) in the worst case, where n is the number of nodes in the leftist heap. Another example of merging two leftist heap:
+
+Implementation of leftist Tree / leftist Heap:
+
+CPP
+
+//C++ program for leftist heap / leftist tree
+#include <bits/stdc++.h>
+using namespace std;
+
+// Node Class Declaration
+class LeftistNode
+{
+public:
+    int element;
+    LeftistNode *left;
+    LeftistNode *right;
+    int dist;
+    LeftistNode(int & element, LeftistNode *lt = NULL,
+                LeftistNode *rt = NULL, int np = 0)
+    {
+        this->element = element;
+        right = rt;
+        left = lt,
+        dist = np;
+    }
+};
+
+//Class Declaration
+class LeftistHeap
+{
+public:
+    LeftistHeap();
+    LeftistHeap(LeftistHeap &rhs);
+    ~LeftistHeap();
+    bool isEmpty();
+    bool isFull();
+    int &findMin();
+    void Insert(int &x);
+    void deleteMin();
+    void deleteMin(int &minItem);
+    void makeEmpty();
+    void Merge(LeftistHeap &rhs);
+    LeftistHeap & operator =(LeftistHeap &rhs);
+private:
+    LeftistNode *root;
+    LeftistNode *Merge(LeftistNode *h1,
+                    LeftistNode *h2);
+    LeftistNode *Merge1(LeftistNode *h1,
+                        LeftistNode *h2);
+    void swapChildren(LeftistNode * t);
+    void reclaimMemory(LeftistNode * t);
+    LeftistNode *clone(LeftistNode *t);
+};
+
+// Construct the leftist heap
+LeftistHeap::LeftistHeap()
+{
+    root = NULL;
+}
+
+// Copy constructor.
+LeftistHeap::LeftistHeap(LeftistHeap &rhs)
+{
+    root = NULL;
+    *this = rhs;
+}
+
+// Destruct the leftist heap
+LeftistHeap::~LeftistHeap()
+{
+    makeEmpty( );
+}
+
+/* Merge rhs into the priority queue.
+rhs becomes empty. rhs must be different
+from this.*/
+void LeftistHeap::Merge(LeftistHeap &rhs)
+{
+    if (this == &rhs)
+        return;
+    root = Merge(root, rhs.root);
+    rhs.root = NULL;
+}
+
+/* Internal method to merge two roots.
+Deals with deviant cases and calls recursive Merge1.*/
+LeftistNode *LeftistHeap::Merge(LeftistNode * h1,
+                                LeftistNode * h2)
+{
+    if (h1 == NULL)
+        return h2;
+    if (h2 == NULL)
+        return h1;
+    if (h1->element < h2->element)
+        return Merge1(h1, h2);
+    else
+        return Merge1(h2, h1);
+}
+
+/* Internal method to merge two roots.
+Assumes trees are not empty, and h1's root contains
+smallest item.*/
+LeftistNode *LeftistHeap::Merge1(LeftistNode * h1,
+                                LeftistNode * h2)
+{
+    if (h1->left == NULL)
+        h1->left = h2;
+    else
+    {
+        h1->right = Merge(h1->right, h2);
+        if (h1->left->dist < h1->right->dist)
+            swapChildren(h1);
+        h1->dist = h1->right->dist + 1;
+    }
+    return h1;
+}
+
+// Swaps t's two children.
+void LeftistHeap::swapChildren(LeftistNode * t)
+{
+    LeftistNode *tmp = t->left;
+    t->left = t->right;
+    t->right = tmp;
+}
+
+/* Insert item x into the priority queue, maintaining
+heap order.*/
+void LeftistHeap::Insert(int &x)
+{
+    root = Merge(new LeftistNode(x), root);
+}
+
+/* Find the smallest item in the priority queue.
+Return the smallest item, or throw Underflow if empty.*/
+int &LeftistHeap::findMin()
+{
+    return root->element;
+}
+
+/* Remove the smallest item from the priority queue.
+Throws Underflow if empty.*/
+void LeftistHeap::deleteMin()
+{
+    LeftistNode *oldRoot = root;
+    root = Merge(root->left, root->right);
+    delete oldRoot;
+}
+
+/* Remove the smallest item from the priority queue.
+Pass back the smallest item, or throw Underflow if empty.*/
+void LeftistHeap::deleteMin(int &minItem)
+{
+    if (isEmpty())
+    {
+        cout<<"Heap is Empty"<<endl;
+        return;
+    }
+    minItem = findMin();
+    deleteMin();
+}
+
+/* Test if the priority queue is logically empty.
+Returns true if empty, false otherwise*/
+bool LeftistHeap::isEmpty()
+{
+    return root == NULL;
+}
+
+/* Test if the priority queue is logically full.
+Returns false in this implementation.*/
+bool LeftistHeap::isFull()
+{
+    return false;
+}
+
+// Make the priority queue logically empty
+void LeftistHeap::makeEmpty()
+{
+    reclaimMemory(root);
+    root = NULL;
+}
+
+// Deep copy
+LeftistHeap &LeftistHeap::operator =(LeftistHeap & rhs)
+{
+    if (this != &rhs)
+    {
+        makeEmpty();
+        root = clone(rhs.root);
+    }
+    return *this;
+}
+
+// Internal method to make the tree empty.
+void LeftistHeap::reclaimMemory(LeftistNode * t)
+{
+    if (t != NULL)
+    {
+        reclaimMemory(t->left);
+        reclaimMemory(t->right);
+        delete t;
+    }
+}
+
+// Internal method to clone subtree.
+LeftistNode *LeftistHeap::clone(LeftistNode * t)
+{
+    if (t == NULL)
+        return NULL;
+    else
+        return new LeftistNode(t->element, clone(t->left),
+                            clone(t->right), t->dist);
+}
+
+//Driver program
+int main()
+{
+    LeftistHeap h;
+    LeftistHeap h1;
+    LeftistHeap h2;
+    int x;
+    int arr[]= {1, 5, 7, 10, 15};
+    int arr1[]= {22, 75};
+
+    h.Insert(arr[0]);
+    h.Insert(arr[1]);
+    h.Insert(arr[2]);
+    h.Insert(arr[3]);
+    h.Insert(arr[4]);
+    h1.Insert(arr1[0]);
+    h1.Insert(arr1[1]);
+
+    h.deleteMin(x);
+    cout<< x <<endl;
+
+    h1.deleteMin(x);
+    cout<< x <<endl;
+
+    h.Merge(h1);
+    h2 = h;
+
+    h2.deleteMin(x);
+    cout<< x << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+// Node class for Leftist Heap
+class LeftistNode {
+    int element, dist; // Node elements and distance
+    LeftistNode left, right; // Left and right child of a node
+
+    // Constructor for LeftistNode
+    public LeftistNode(int element) {
+        this(element, null, null);
+    }
+
+    // Constructor for LeftistNode
+    public LeftistNode(int element, LeftistNode left, LeftistNode right) {
+        this.element = element;
+        this.left = left;
+        this.right = right;
+        this.dist = 0;
+    }
+}
+
+// Class for Leftist Heap
+class LeftistHeap {
+    private LeftistNode root; // Root of the Leftist Heap
+
+    // Constructor for LeftistHeap
+    public LeftistHeap() {
+        root = null;
+    }
+
+    // Check if heap is empty
+    public boolean isEmpty() {
+        return root == null;
+    }
+
+    // Make heap empty
+    public void makeEmpty() {
+        root = null;
+    }
+
+    // Insert an element into heap
+    public void insert(int x) {
+        root = merge(new LeftistNode(x), root);
+    }
+
+    // Delete and return the minimum element from heap
+    public int deleteMin() {
+        if (isEmpty())
+            throw new NoSuchElementException();
+        int minItem = root.element;
+        root = merge(root.left, root.right);
+        return minItem;
+    }
+
+    // Merge two heaps
+    private LeftistNode merge(LeftistNode x, LeftistNode y) {
+        if (x == null)
+            return y;
+        if (y == null)
+            return x;
+        if (x.element > y.element) {
+            LeftistNode temp = x;
+            x = y;
+            y = temp;
+        }
+
+        x.right = merge(x.right, y);
+
+        if (x.left == null) {
+            x.left = x.right;
+            x.right = null;
+        } else {
+            if (x.left.dist < x.right.dist) {
+                LeftistNode temp = x.left;
+                x.left = x.right;
+                x.right = temp;
+            }
+            x.dist = x.right.dist + 1;
+        }
+        return x;
+    }
+
+    // Merge current heap with another heap
+    public void merge(LeftistHeap rhs) {
+        if (this == rhs)
+            return;
+        root = merge(root, rhs.root);
+        rhs.root = null;
+    }
+}
+
+// Main class
+public class Main {
+    public static void main(String[] args) {
+        int[] arr = {1, 5, 7, 10, 15};
+        int[] arr1 = {22, 75};
+
+        LeftistHeap h = new LeftistHeap();
+        LeftistHeap h1 = new LeftistHeap();
+        LeftistHeap h2;
+
+        // Insert elements into heaps
+        for (int i : arr)
+            h.insert(i);
+        for (int i : arr1)
+            h1.insert(i);
+
+        // Delete minimum elements and print them
+        System.out.println(h.deleteMin());
+        System.out.println(h1.deleteMin());
+
+        // Merge two heaps
+        h.merge(h1);
+        h2 = h;
+
+        System.out.println(h2.deleteMin());
+    }
+}
+
+Python
+
+class LeftistNode:
+    def __init__(self, element, lt=None, rt=None, dist=0):
+        self.element = element
+        self.left = lt
+        self.right = rt
+        self.dist = dist
+
+class LeftistHeap:
+    def __init__(self):
+        self.root = None
+
+    # Merge two heaps preserving leftist property
+    def merge(self, h1, h2):
+        if not h1:
+            return h2
+        if not h2:
+            return h1
+        if h1.element < h2.element:
+            return self.merge1(h1, h2)
+        else:
+            return self.merge1(h2, h1)
+
+    # Merge h2 into h1, assumes h1's root element is smaller
+    def merge1(self, h1, h2):
+        if not h1.left:
+            h1.left = h2
+        else:
+            h1.right = self.merge(h1.right, h2)
+            if h1.left.dist < h1.right.dist:
+                self.swap_children(h1)
+            h1.dist = h1.right.dist + 1
+        return h1
+
+    # Swap children of a node
+    def swap_children(self, t):
+        t.left, t.right = t.right, t.left
+
+    # Insert an element into the heap
+    def insert(self, x):
+        self.root = self.merge(LeftistNode(x), self.root)
+
+    # Find the minimum element in the heap
+    def find_min(self):
+        if self.root:
+            return self.root.element
+        else:
+            raise Exception("Heap is empty")
+
+    # Delete the minimum element from the heap
+    def delete_min(self):
+        if self.root:
+            old_root = self.root
+            self.root = self.merge(self.root.left, self.root.right)
+            return old_root.element
+        else:
+            raise Exception("Heap is empty")
+
+    # Check if the heap is empty
+    def is_empty(self):
+        return self.root is None
+
+    # Make the heap logically empty
+    def make_empty(self):
+        self.root = None
+
+def main():
+    h = LeftistHeap()
+    h1 = LeftistHeap()
+    h2 = LeftistHeap()
+    arr = [1, 5, 7, 10, 15]
+    arr1 = [22, 75]
+
+    # Insert elements into h and h1
+    for item in arr:
+        h.insert(item)
+
+    for item in arr1:
+        h1.insert(item)
+
+    # Delete and print minimum elements from h and h1
+    x = h.delete_min()
+    print(x)
+
+    x = h1.delete_min()
+    print(x)
+
+    # Merge h and h1 into h2
+    h2.root = h.merge(h.root, h1.root)
+
+    # Delete and print minimum element from h2
+    x = h2.delete_min()
+    print(x)
+
+if __name__ == "__main__":
+    main()
+
+C#
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace LeftistHeap
+{
+    class LeftistNode
+    {
+        public int element;
+        public LeftistNode left;
+        public LeftistNode right;
+        public int dist;
+
+        public LeftistNode(int element, LeftistNode lt = null, LeftistNode rt = null, int dist = 0)
+        {
+            this.element = element;
+            this.left = lt;
+            this.right = rt;
+            this.dist = dist;
+        }
+    }
+
+    class LeftistHeap
+    {
+        public LeftistNode root;
+
+        public LeftistHeap()
+        {
+            this.root = null;
+        }
+
+        // Merge two heaps preserving leftist property
+        public LeftistNode merge(LeftistNode h1, LeftistNode h2)
+        {
+            if (h1 == null)
+            {
+                return h2;
+            }
+            if (h2 == null)
+            {
+                return h1;
+            }
+            if (h1.element < h2.element)
+            {
+                return merge1(h1, h2);
+            }
+            else
+            {
+                return merge1(h2, h1);
+            }
+        }
+
+        // Merge h2 into h1, assumes h1's root element is smaller
+        public LeftistNode merge1(LeftistNode h1, LeftistNode h2)
+        {
+            if (h1.left == null)
+            {
+                h1.left = h2;
+            }
+            else
+            {
+                h1.right = merge(h1.right, h2);
+                if (h1.left.dist < h1.right.dist)
+                {
+                    swap_children(h1);
+                }
+                h1.dist = h1.right.dist + 1;
+            }
+            return h1;
+        }
+
+        // Swap children of a node
+        public void swap_children(LeftistNode t)
+        {
+            LeftistNode temp = t.left;
+            t.left = t.right;
+            t.right = temp;
+        }
+
+        // Insert an element into the heap
+        public void insert(int x)
+        {
+            this.root = merge(new LeftistNode(x), this.root);
+        }
+
+        // Find the minimum element in the heap
+        public int find_min()
+        {
+            if (this.root != null)
+            {
+                return this.root.element;
+            }
+            else
+            {
+                throw new Exception("Heap is empty");
+            }
+        }
+
+        // Delete the minimum element from the heap
+        public int delete_min()
+        {
+            if (this.root != null)
+            {
+                int old_root = this.root.element;
+                this.root = merge(this.root.left, this.root.right);
+                return old_root;
+            }
+            else
+            {
+                throw new Exception("Heap is empty");
+            }
+        }
+
+        // Check if the heap is empty
+        public bool is_empty()
+        {
+            return this.root == null;
+        }
+
+        // Make the heap logically empty
+        public void make_empty()
+        {
+            this.root = null;
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            LeftistHeap h = new LeftistHeap();
+            LeftistHeap h1 = new LeftistHeap();
+            LeftistHeap h2 = new LeftistHeap();
+            int[] arr = { 1, 5, 7, 10, 15 };
+            int[] arr1 = { 22, 75 };
+
+            // Insert elements into h and h1
+            foreach (int item in arr)
+            {
+                h.insert(item);
+            }
+
+            foreach (int item in arr1)
+            {
+                h1.insert(item);
+            }
+
+            // Delete and print minimum elements from h and h1
+            int x = h.delete_min();
+            Console.WriteLine(x);
+
+            x = h1.delete_min();
+            Console.WriteLine(x);
+
+            // Merge h and h1 into h2
+            h2.root = h.merge(h.root, h1.root);
+
+            // Delete and print minimum element from h2
+            x = h2.delete_min();
+            Console.WriteLine(x);
+        }
+    }
+}
+
+JavaScript
+
+class LeftistNode {
+    constructor(element, lt = null, rt = null, np = 0) {
+        this.element = element; // The element stored in the node
+        this.left = lt; // Reference to the left child node
+        this.right = rt; // Reference to the right child node
+        this.dist = np; // Distance value used in leftist heap property
+    }
+}
+
+class LeftistHeap {
+    constructor() {
+        this.root = null; // Initialize the root of the leftist heap
+    }
+
+    // Merge two leftist heaps h1 and h2
+    merge(h1, h2) {
+        if (!h1) return h2; // If h1 is empty, return h2
+        if (!h2) return h1; // If h2 is empty, return h1
+        if (h1.element < h2.element) return this.merge1(h1, h2); // Call merge1 with h1 as root
+        else return this.merge1(h2, h1); // Call merge1 with h2 as root
+    }
+
+    // Merge h2 into h1
+    merge1(h1, h2) {
+        if (!h1.left) h1.left = h2; // If h1 doesn't have a left child, make h2 its left child
+        else {
+            // Otherwise, recursively merge the right subtree of h1 with h2
+            h1.right = this.merge(h1.right, h2);
+            // Ensure leftist heap property: if left child's distance is less than right child's distance, swap them
+            if (h1.left.dist < h1.right.dist) this.swapChildren(h1);
+            // Update the distance of h1
+            h1.dist = h1.right.dist + 1;
+        }
+        return h1; // Return the merged heap
+    }
+
+    // Swap the left and right children of a node
+    swapChildren(t) {
+        const tmp = t.left;
+        t.left = t.right;
+        t.right = tmp;
+    }
+
+    // Insert an element into the leftist heap
+    insert(x) {
+        this.root = this.merge(new LeftistNode(x), this.root);
+    }
+
+    // Find the minimum element in the leftist heap
+    findMin() {
+        if (!this.root) throw new Error('Heap is empty');
+        return this.root.element;
+    }
+
+    // Delete the minimum element from the leftist heap
+    deleteMin() {
+        if (!this.root) throw new Error('Heap is empty');
+        const oldRoot = this.root;
+        this.root = this.merge(this.root.left, this.root.right);
+        return oldRoot.element;
+    }
+
+    // Check if the leftist heap is empty
+    isEmpty() {
+        return !this.root;
+    }
+
+    // Make the leftist heap logically empty
+    makeEmpty(t = this.root) {
+        if (t) {
+            this.makeEmpty(t.left);
+            this.makeEmpty(t.right);
+            t = null;
+        }
+    }
+
+    // Clone a subtree
+    clone(t) {
+        if (!t) return null;
+        return new LeftistNode(t.element, this.clone(t.left), this.clone(t.right), t.dist);
+    }
+
+    // Clone a leftist heap
+    cloneHeap(rhs) {
+        if (this !== rhs) {
+            this.makeEmpty();
+            this.root = this.clone(rhs.root);
+        }
+    }
+}
+
+// Driver program
+const h = new LeftistHeap();
+const h1 = new LeftistHeap();
+const h2 = new LeftistHeap();
+const arr = [1, 5, 7, 10, 15];
+const arr1 = [22, 75];
+
+// Insert elements into h and h1
+arr.forEach(item => h.insert(item));
+arr1.forEach(item => h1.insert(item));
+
+// Delete minimum element from h and h1 and log them
+let x = h.deleteMin();
+console.log(x);
+
+x = h1.deleteMin();
+console.log(x);
+
+// Merge h1 into h and clone h into h2
+h.merge(h1);
+h2.cloneHeap(h);
+
+// Delete minimum element from h2 and log it
+x = h2.deleteMin();
+console.log(x);
+
+Output
+
+1
+22
+5
+
+Time Complexity: The time complexity of all operations like Insert(), deleteMin(), findMin() and Merge() on a Leftist Heap is O(log n) . This is because the height of a Leftist Heap is always O(log n).
+
+Auxiliary Space: The space complexity of a Leftist Heap is O(n) . This is because the Leftist Heap requires space for storing n number of elements.
+
+### Advantages of Leftist Tree:
+
+1. Efficient extract-min operation: The extract-min operation has a time complexity of O(log n), making it one of the most efficient data structures for this operation.
+2. Efficient merging: The merge operation has a time complexity of O(log n), making it one of the fastest data structures for merging two binary heaps.
+3. Simple implementation: The leftist tree has a relatively simple implementation compared to other binary heap data structures, such as Fibonacci heaps.
+
+### Disadvantages of Leftist Tree:
+
+1. Slower insert operation: The insert operation in a leftist tree has a time complexity of O(log n), making it slower than other binary heap data structures, such as binary heaps.
+2. Increased memory usage: The leftist tree uses more memory than other binary heap data structures, such as binary heaps, due to its requirement for the maintenance of null path length values for each node.
+
+### References and books:
+
+1. "Data Structures and Algorithm Analysis in Java" by Mark Allen Weiss.
+2. "Introduction to Algorithms" by Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein.
+3. "Purely functional data structures" by Chris Okasaki.
+4. "The Art of Computer Programming, Volume 1: Fundamental Algorithms" by Donald E. Knuth.

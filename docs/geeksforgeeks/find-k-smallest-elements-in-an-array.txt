@@ -1,0 +1,746 @@
+Source: https://www.geeksforgeeks.org/dsa/find-k-smallest-elements-in-an-array/
+Title: Find k smallest elements in an array
+Extractor: 2
+
+Given an array arr[] and an integer k , the task is to find k smallest elements in the given array. Elements in the output array can be in any order.
+
+Examples:
+
+> Input : arr[] = [1, 23, 12, 9, 30, 2, 50], k = 3 Output : [1, 2, 9] Input : arr[] = [11, 5, 12, 9, 44, 17, 2], k = 2 Output : [2, 5]
+
+Table of Content
+
+- [Approach - 1] Using Sorting
+- [Approach - 2] Using Quick Sort Partitioning Step (Quick Select Algorithm):
+- [Approach - 3] Using Priority Queue(Max-Heap)
+
+### [Approach - 1] Using Sorting
+
+The idea is to sort the input array in ascending order, so the first k elements in the array will be the k smallest elements.
+
+C++
+
+// C++ program to find k smallest elements in an
+// array using sorting
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+vector<int> kSmallest(vector<int> &arr, int k) {
+
+    // sort the given array in ascending order
+    sort(arr.begin(), arr.end());
+
+  	// store the first k element in result array
+    vector<int> res(arr.begin(), arr.begin() + k);
+  	return res;
+}
+
+int main() {
+    vector<int>arr = {1, 23, 12, 9, 30, 2, 50};
+    int k = 3;
+
+    vector<int> res = kSmallest(arr, k);
+  	for(int ele : res)
+      	cout << ele << " ";
+
+  	return 0;
+}
+
+Java
+
+// Java program to find k smallest elements in an
+// array using sorting
+
+import java.util.Arrays;
+import java.util.ArrayList;
+
+class GfG {
+    static ArrayList<Integer> kSmallest(int[] arr, int k) {
+
+        // Sort the given array in ascending order
+        Arrays.sort(arr);
+
+        // Store the first k elements in result ArrayList
+        ArrayList<Integer> res = new ArrayList<>();
+        for (int i = 0; i < k; i++)
+            res.add(arr[i]);
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 23, 12, 9, 30, 2, 50};
+        int k = 3;
+
+        ArrayList<Integer> res = kSmallest(arr, k);
+        for (int ele : res)
+            System.out.print(ele + " ");
+    }
+}
+
+Python
+
+# Python program to find k smallest elements in an
+# array using sorting
+
+def kSmallest(arr, k):
+
+    # Sort the given array in ascending order
+    arr.sort()
+
+    # Store the first k elements in result array
+    res = arr[:k]
+
+    return res
+
+if __name__ == "__main__":
+    arr = [1, 23, 12, 9, 30, 2, 50]
+    k = 3
+
+    res = kSmallest(arr, k)
+    for ele in res:
+        print(ele, end=" ")
+
+C#
+
+// C# program to find k smallest elements in an
+// array using sorting
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static List<int> kSmallest(int[] arr, int k) {
+
+        // Sort the given array in ascending order
+        Array.Sort(arr);
+
+        // Store the first k elements in result List
+        List<int> res = new List<int>();
+        for (int i = 0; i < k; i++)
+            res.Add(arr[i]);
+
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {1, 23, 12, 9, 30, 2, 50};
+        int k = 3;
+
+        List<int> res = kSmallest(arr, k);
+        foreach (int ele in res)
+            Console.Write(ele + " ");
+    }
+}
+
+JavaScript
+
+// JavaScript program to find k smallest elements in an
+// array using sorting
+
+function kSmallest(arr, k) {
+    // Sort the given array in ascending order
+    arr.sort((a, b) => a - b);
+
+    // Store the first k elements in result array
+    let res = arr.slice(0, k);
+
+    return res;
+}
+
+const arr = [1, 23, 12, 9, 30, 2, 50];
+const k = 3;
+const res = kSmallest(arr, k);
+console.log(res.join(' '));
+
+Output
+
+1 2 9
+
+Time complexity: O(n * logn) Auxiliary Space: O(1)
+
+### [Approach - 2] Using Quick Sort Partitioning Step (Quick Select Algorithm)
+
+> The idea is to use the partitioning step of QuickSort to find the k smallest elements in the array, without sorting the entire array. In the partitioning step, we rearrange the elements in a way that all elements smaller than or equal to a chosen pivot (usually the last element) are placed on its left, and all elements greater than the pivot are on its right. And pivot element in its correct sorted position. After each partition, we compare the number of elements in the left part of the array (which contains all elements smaller than or equal to the pivot) with k: Number of elements in the left = k , it means all elements in the left part (including pivot) are the k smallest elements. Number of elements in the left > k, it means that k smallest elements exist in the left subarray only, so we recursively search in the left subarray. Number of elements in the left < k, it means that the k smallest elements include the entire left part of the array along with some elements from the right part. Therefore we reduce k by the number of elements already covered on the left side and search in the right subarray.
+
+C++
+
+// C++ program to find the k smallest elements in the array
+// using partitioning step of quick sort
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to partition the array around a pivot
+int partition(vector<int> &arr, int left, int right) {
+
+    // Last element is chosen as a pivot.
+    int pivot = arr[right];
+    int i = left;
+
+    for (int j = left; j < right; j++) {
+        if (arr[j] <= pivot) {
+            swap(arr[i], arr[j]);
+            i++;
+        }
+    }
+
+    swap(arr[i], arr[right]);
+
+    // The correct sorted position of the pivot
+    return i;
+}
+
+void quickSelect(vector<int> &arr, int left, int right, int k) {
+    if (left <= right) {
+        int pivotIdx = partition(arr, left, right);
+
+        // Count of all elements in the left part
+        int leftCnt = pivotIdx - left + 1;
+
+      	// If leftCnt is equal to k, then we have
+      	// found the k smallest element
+        if (leftCnt == k)
+            return;
+
+        // Search in the left subarray
+        if (leftCnt > k)
+            quickSelect(arr, left, pivotIdx - 1, k);
+
+        // Reduce the k by number of elements already covered
+        // and search in the right subarray
+        else
+            quickSelect(arr, pivotIdx + 1, right, k - leftCnt);
+    }
+}
+
+vector<int> kSmallest(vector<int> &arr, int k) {
+    int n = arr.size();
+    quickSelect(arr, 0, n - 1, k);
+
+    // First k elements of the array, will be the smllest
+    vector<int> res(arr.begin(), arr.begin() + k);
+    return res;
+}
+
+int main() {
+    vector<int> arr = {1, 23, 12, 9, 30, 2, 50};
+    int k = 3;
+
+    vector<int> res = kSmallest(arr, k);
+    for (int ele : res)
+        cout << ele << " ";
+
+    return 0;
+}
+
+Java
+
+// Java program to find the k smallest elements in the array
+// using partitioning step of quick sort
+
+import java.util.ArrayList;
+
+class GfG {
+
+    // Function to partition the array around a pivot
+    static int partition(int[] arr, int left, int right) {
+
+        // Last element is chosen as a pivot.
+        int pivot = arr[right];
+        int i = left;
+
+        for (int j = left; j < right; j++) {
+            if (arr[j] <= pivot) {
+                int temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+                i++;
+            }
+        }
+
+        int temp = arr[i];
+        arr[i] = arr[right];
+        arr[right] = temp;
+
+        // The correct sorted position of the pivot
+        return i;
+    }
+
+    static void quickSelect(int[] arr, int left, int right, int k) {
+        if (left <= right) {
+            int pivotIdx = partition(arr, left, right);
+
+            // Count of all elements in the left part
+            int leftCnt = pivotIdx - left + 1;
+
+            // If leftCnt is equal to k, then we have
+      		// found the k smallest element
+            if (leftCnt == k)
+                return;
+
+            // Search in the left subarray
+            if (leftCnt > k)
+                quickSelect(arr, left, pivotIdx - 1, k);
+
+            // Reduce the k by number of elements already covered
+            // and search in the right subarray
+            else
+                quickSelect(arr, pivotIdx + 1, right, k - leftCnt);
+        }
+    }
+
+    static ArrayList<Integer> kSmallest(int[] arr, int k) {
+        quickSelect(arr, 0, arr.length - 1, k);
+        ArrayList<Integer> res = new ArrayList<>();
+
+        // First k elements of the array, will be the smallest
+      	for(int i = 0; i < k; i++)
+          	res.add(arr[i]);
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 23, 12, 9, 30, 2, 50};
+        int k = 3;
+
+        ArrayList<Integer> res = kSmallest(arr, k);
+        for (int ele : res)
+            System.out.print(ele + " ");
+    }
+}
+
+Python
+
+# Python program to find the k smallest elements in the array
+# using partitioning step of quick sort
+
+# Function to partition the array around a pivot
+def partition(arr, left, right):
+
+    # Last element is chosen as a pivot.
+    pivot = arr[right]
+    i = left
+
+    for j in range(left, right):
+        if arr[j] <= pivot:
+            arr[i], arr[j] = arr[j], arr[i]
+            i += 1
+
+    arr[i], arr[right] = arr[right], arr[i]
+
+    # The correct sorted position of the pivot
+    return i
+
+def quickSelect(arr, left, right, k):
+    if left <= right:
+        pivotIdx = partition(arr, left, right)
+
+        # Count of all elements in the left part
+        leftCnt = pivotIdx - left + 1
+
+        # If leftCnt is equal to k, then we have
+      	# found the k smallest element
+        if leftCnt == k:
+            return
+
+        # Search in the left subarray
+        if leftCnt > k:
+            quickSelect(arr, left, pivotIdx - 1, k)
+
+        # Reduce the k by number of elements already covered
+        # and search in the right subarray
+        else:
+            quickSelect(arr, pivotIdx + 1, right, k - leftCnt)
+
+def kSmallest(arr, k):
+    quickSelect(arr, 0, len(arr) - 1, k)
+
+    # First k elements of the array, will be the smallest
+    return arr[:k]
+
+if __name__ == "__main__":
+    arr = [1, 23, 12, 9, 30, 2, 50]
+    k = 3
+    res = kSmallest(arr, k)
+    print(" ".join(map(str, res)))
+
+C#
+
+// C# program to find the k smallest elements in the array
+// using partitioning step of quick sort
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to partition the array around a pivot
+    static int partition(int[] arr, int left, int right) {
+
+        // Last element is chosen as a pivot.
+        int pivot = arr[right];
+        int i = left;
+
+        for (int j = left; j < right; j++) {
+            if (arr[j] <= pivot) {
+                swap(arr, i, j);
+                i++;
+            }
+        }
+
+        swap(arr, i, right);
+
+        // The correct sorted position of the pivot
+        return i;
+    }
+
+    static void quickSelect(int[] arr, int left, int right, int k) {
+        if (left <= right) {
+            int pivotIdx = partition(arr, left, right);
+
+            // Count of all elements in the left part
+            int leftCnt = pivotIdx - left + 1;
+
+            // If leftCnt is equal to k, then we have
+      		// found the k smallest element
+            if (leftCnt == k)
+                return;
+
+            // Search in the left subarray
+            if (leftCnt > k)
+                quickSelect(arr, left, pivotIdx - 1, k);
+
+            // Reduce the k by number of elements already covered
+            // and search in the right subarray
+            else
+                quickSelect(arr, pivotIdx + 1, right, k - leftCnt);
+        }
+    }
+
+    static List<int> kSmallest(int[] arr, int k) {
+        quickSelect(arr, 0, arr.Length - 1, k);
+
+        // First k elements of the array, will be the smallest
+        List<int> res = new List<int>();
+        for (int i = 0; i < k; i++) {
+            res.Add(arr[i]);
+        }
+
+        return res;
+    }
+
+  	static void swap(int[] arr, int i, int j) {
+        int temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+
+    static void Main() {
+        int[] arr = {1, 23, 12, 9, 30, 2, 50};
+        int k = 3;
+
+        List<int> res = kSmallest(arr, k);
+        foreach (int ele in res)
+            Console.Write(ele + " ");
+    }
+}
+
+JavaScript
+
+// JavaScript program to find the k smallest elements in the array
+// using partitioning step of quick sort
+
+// Function to partition the array around a pivot
+function partition(arr, left, right) {
+
+    // Last element is chosen as a pivot.
+    let pivot = arr[right];
+    let i = left;
+
+    for (let j = left; j < right; j++) {
+        if (arr[j] <= pivot) {
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+            i++;
+        }
+    }
+
+    [arr[i], arr[right]] = [arr[right], arr[i]];
+
+    // The correct sorted position of the pivot
+    return i;
+}
+
+function quickSelect(arr, left, right, k) {
+    if (left <= right) {
+        let pivotIdx = partition(arr, left, right);
+
+        // Count of all elements in the left part
+        let leftCnt = pivotIdx - left + 1;
+
+        // If leftCnt is equal to k, then the first
+        // k element of the array will be smallest
+        if (leftCnt === k)
+            return;
+
+        // Search in the left subarray
+        if (leftCnt > k)
+            quickSelect(arr, left, pivotIdx - 1, k);
+
+        // Reduce the k by number of elements already covered
+        // and search in the right subarray
+        else
+            quickSelect(arr, pivotIdx + 1, right, k - leftCnt);
+    }
+}
+
+function kSmallest(arr, k) {
+    quickSelect(arr, 0, arr.length - 1, k);
+
+    // First k elements of the array, will be the smallest
+    return arr.slice(0, k);
+}
+
+const arr = [1, 23, 12, 9, 30, 2, 50];
+const k = 3;
+const res = kSmallest(arr, k);
+console.log(res.join(' '));
+
+Output
+
+1 2 9
+
+Time Complexity : O(n*n) in worst case(O(n) on average) Auxiliary Space : O(n)
+
+### [Approach - 3] Using Priority Queue(Max-Heap)
+
+> The idea is, as we iterate through the array, we keep track of the k smallest elements at each step. To achieve this, we use a max-heap . First, we insert the initial k elements into the max-heap. After that, for each next element, we compare it with the top of the heap. Since the top element of the max-heap is the largest among the k elements, if the current element is smaller than the top, it means the top element is no longer one of the k smallest elements. In this case, we remove the top and insert the smaller element. After completing the entire traversal, the heap will contain exactly the k smallest elements of the array.
+
+C++
+
+// C++ program to find the k smallest elements in the
+// array using max heap
+
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+vector<int> kSmallest(vector<int> &arr, int k) {
+
+    // Max Priority Queue (Max-Heap)
+    priority_queue<int> maxH;
+
+    for (int i = 0; i < arr.size(); i++) {
+
+        // Insert initial k elements in the max heap
+        if (maxH.size() < k)
+            maxH.push(arr[i]);
+
+      	// If the top of heap is greater than the arr[i]
+      	// then remove this and insert arr[i]
+      	else if(maxH.top() > arr[i]) {
+         	maxH.pop();
+          	maxH.push(arr[i]);
+        }
+    }
+
+    vector<int> res;
+
+  	// Max heap will contain only k
+  	// smallest element
+    while (!maxH.empty()) {
+        res.push_back(maxH.top());
+        maxH.pop();
+    }
+
+   	return res;
+}
+
+int main() {
+    vector<int> arr = {1, 23, 12, 9, 30, 2, 50};
+    int k = 3;
+
+  	vector<int> res = kSmallest(arr, k);
+  	for(int ele : res)
+      	cout << ele << " ";
+
+  	return 0;
+}
+
+Java
+
+// Java program to find the k smallest elements in the array
+// using max heap
+
+import java.util.PriorityQueue;
+import java.util.ArrayList;
+import java.util.Collections;
+
+class GfG {
+    static ArrayList<Integer> kSmallest(int[] arr, int k) {
+
+        // Max Priority Queue (Max-Heap)
+        PriorityQueue<Integer> maxH =
+          		new PriorityQueue<>(Collections.reverseOrder());
+
+        for (int i = 0; i < arr.length; i++) {
+
+            // Insert initial k elements in the max heap
+            if (maxH.size() < k)
+                maxH.add(arr[i]);
+
+            // If the top of heap is greater than arr[i]
+            // then remove this and insert arr[i]
+            else if (maxH.peek() > arr[i]) {
+                maxH.poll();
+                maxH.add(arr[i]);
+            }
+        }
+
+        // Max heap will contain all k smallest elements
+        ArrayList<Integer> res = new ArrayList<>();
+        while (!maxH.isEmpty()) {
+            res.add(maxH.poll());
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 23, 12, 9, 30, 2, 50};
+        int k = 3;
+
+        ArrayList<Integer> res = kSmallest(arr, k);
+        for (int ele : res) {
+            System.out.print(ele + " ");
+        }
+    }
+}
+
+Python
+
+# Python program to find the k smallest elements in the
+# array using max heap
+
+import heapq
+
+def kSmallest(arr, k):
+
+    # Max Priority Queue (Max-Heap)
+    maxH = []
+
+    for num in arr:
+
+        # Insert initial k elements in the max heap
+        if len(maxH) < k:
+            heapq.heappush(maxH, -num)
+
+        # If the top of heap is greater than
+        # arr[i], remove this and insert arr[i]
+        elif -maxH[0] > num:
+            heapq.heappop(maxH)
+            heapq.heappush(maxH, -num)
+
+    # Max heap will contain all k smallest elements
+    res = [-x for x in maxH]
+
+    return res
+
+if __name__ == "__main__":
+    arr = [1, 23, 12, 9, 30, 2, 50]
+    k = 3
+
+    res = kSmallest(arr, k)
+    for ele in res:
+        print(ele, end=" ")
+
+C#
+
+// C# program to find the k smallest elements in the
+// array using max heap
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static List<int> kSmallest(int[] arr, int k) {
+        // Max Priority Queue (Max-Heap)
+        SortedSet<int> maxH =
+          new SortedSet<int>(Comparer<int>.Create((a, b) => b.CompareTo(a)));
+
+        for (int i = 0; i < arr.Length; i++) {
+
+            // Insert initial k elements in the max heap
+            if (maxH.Count < k)
+                maxH.Add(arr[i]);
+
+            // If the top of heap is greater than arr[i]
+            // then remove this and insert arr[i]
+            else if (maxH.Min > arr[i]) {
+                maxH.Remove(maxH.Min);
+                maxH.Add(arr[i]);
+            }
+        }
+
+        // Max heap will contain all k smallest elements
+        List<int> res = new List<int>(maxH);
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {1, 23, 12, 9, 30, 2, 50};
+        int k = 3;
+
+        List<int> res = kSmallest(arr, k);
+        foreach (int ele in res)
+            Console.Write(ele + " ");
+    }
+}
+
+JavaScript
+
+// JavaScript program to find the k smallest elements in the
+// array using max heap
+
+function kSmallest(arr, k) {
+
+    // Max Priority Queue (Max-Heap)
+    let maxH = [];
+
+    for (let i = 0; i < arr.length; i++) {
+
+        // Insert initial k elements in the max heap
+        if (maxH.length < k) {
+            maxH.push(arr[i]);
+            maxH.sort((a, b) => b - a);
+        }
+
+        // If the top of heap is greater than arr[i]
+        // then remove this and insert arr[i]
+        else if (maxH[0] > arr[i]) {
+            maxH.shift();
+            maxH.push(arr[i]);
+            maxH.sort((a, b) => b - a);
+        }
+    }
+
+    // Max heap will contain only k smallest elements
+    return maxH;
+}
+
+const arr = [1, 23, 12, 9, 30, 2, 50];
+const k = 3;
+const res = kSmallest(arr, k);
+console.log(res.join(' '));
+
+Output
+
+9 2 1
+
+Time Complexity : O(n * log(k)) Auxiliary Space : O(k)

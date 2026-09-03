@@ -1,0 +1,1549 @@
+Source: https://www.geeksforgeeks.org/dsa/karatsuba-algorithm-for-fast-multiplication-using-divide-and-conquer-algorithm/
+Title: Karatsuba algorithm for fast multiplication using Divide and Conquer algorithm
+Extractor: 2
+
+Given two binary strings that represent value of two integers, find the product of two strings. For example, if the first bit string is "1100" and second bit string is "1010", output should be 120.
+
+For simplicity, let the length of two strings be same and be n.
+
+A Naive Approach is to follow the process we study in school. One by one take all bits of second number and multiply it with all bits of first number. Finally add all multiplications. This algorithm takes O(n^2) time.
+
+Using Divide and Conquer , we can multiply two integers in less time complexity. We divide the given numbers in two halves. Let the given numbers be X and Y.
+
+For simplicity let us assume that n is even
+
+X =  Xl*2n/2 + Xr    [Xl and Xr contain leftmost and rightmost n/2 bits of X]Y =  Yl*2n/2 + Yr    [Yl and Yr contain leftmost and rightmost n/2 bits of Y]
+
+The product XY can be written as follows.
+
+XY = (Xl*2n/2 + Xr)(Yl*2n/2 + Yr)   = 2n XlYl + 2n/2(XlYr + XrYl) + XrYr
+
+If we take a look at the above formula, there are four multiplications of size n/2, so we basically divided the problem of size n into four sub-problems of size n/2. But that doesn't help because the solution of recurrence T(n) = 4T(n/2) + O(n) is O(n^2). The tricky part of this algorithm is to change the middle two terms to some other form so that only one extra multiplication would be sufficient. The following is tricky expression for middle two terms.
+
+XlYr + XrYl = (Xl + Xr)(Yl + Yr) - XlYl- XrYr
+
+So the final value of XY becomes
+
+XY = 2n XlYl + 2n/2 * [(Xl + Xr)(Yl + Yr) - XlYl - XrYr] + XrYr
+
+With above trick, the recurrence becomes T(n) = 3T(n/2) + O(n) and solution of this recurrence is O(n 1.59 ).
+
+What if the lengths of input strings are different and are not even? To handle the different length case, we append 0's in the beginning. To handle odd length, we put floor(n/2) bits in left half and ceil(n/2) bits in right half. So the expression for XY changes to following.
+
+XY = 22ceil(n/2) XlYl + 2ceil(n/2) * [(Xl + Xr)(Yl + Yr) - XlYl - XrYr] + XrYr
+
+The above algorithm is called Karatsuba algorithm and it can be used for any base.
+
+Following is C++ implementation of above algorithm.
+
+C++
+
+// C++ implementation of Karatsuba algorithm for bit string multiplication.
+#include<iostream>
+#include<stdio.h>
+
+using namespace std;
+
+// FOLLOWING TWO FUNCTIONS ARE COPIED FROM https://www.geeksforgeeks.org/dsa/add-two-bit-strings/
+// Helper method: given two unequal sized bit strings, converts them to
+// same length by adding leading 0s in the smaller string. Returns the
+// the new length
+int makeEqualLength(string &str1, string &str2)
+{
+    int len1 = str1.size();
+    int len2 = str2.size();
+    if (len1 < len2)
+    {
+        for (int i = 0 ; i < len2 - len1 ; i++)
+            str1 = '0' + str1;
+        return len2;
+    }
+    else if (len1 > len2)
+    {
+        for (int i = 0 ; i < len1 - len2 ; i++)
+            str2 = '0' + str2;
+    }
+    return len1; // If len1 >= len2
+}
+
+// The main function that adds two bit sequences and returns the addition
+string addBitStrings( string first, string second )
+{
+    string result;  // To store the sum bits
+
+    // make the lengths same before adding
+    int length = makeEqualLength(first, second);
+    int carry = 0;  // Initialize carry
+
+    // Add all bits one by one
+    for (int i = length-1 ; i >= 0 ; i--)
+    {
+        int firstBit = first.at(i) - '0';
+        int secondBit = second.at(i) - '0';
+
+        // boolean expression for sum of 3 bits
+        int sum = (firstBit ^ secondBit ^ carry)+'0';
+
+        result = (char)sum + result;
+
+        // boolean expression for 3-bit addition
+        carry = (firstBit&secondBit) | (secondBit&carry) | (firstBit&carry);
+    }
+
+    // if overflow, then add a leading 1
+    if (carry)  result = '1' + result;
+
+    return result;
+}
+
+// A utility function to multiply single bits of strings a and b
+int multiplyiSingleBit(string a, string b)
+{  return (a[0] - '0')*(b[0] - '0');  }
+
+// The main function that multiplies two bit strings X and Y and returns
+// result as long integer
+long int multiply(string X, string Y)
+{
+    // Find the maximum of lengths of x and Y and make length
+    // of smaller string same as that of larger string
+    int n = makeEqualLength(X, Y);
+
+    // Base cases
+    if (n == 0) return 0;
+    if (n == 1) return multiplyiSingleBit(X, Y);
+
+    int fh = n/2;   // First half of string, floor(n/2)
+    int sh = (n-fh); // Second half of string, ceil(n/2)
+
+    // Find the first half and second half of first string.
+    // Refer https://cplusplus.com/reference/string/string/substr/ for substr method
+    string Xl = X.substr(0, fh);
+    string Xr = X.substr(fh, sh);
+
+    // Find the first half and second half of second string
+    string Yl = Y.substr(0, fh);
+    string Yr = Y.substr(fh, sh);
+
+    // Recursively calculate the three products of inputs of size n/2
+    long int P1 = multiply(Xl, Yl);
+    long int P2 = multiply(Xr, Yr);
+    long int P3 = multiply(addBitStrings(Xl, Xr), addBitStrings(Yl, Yr));
+
+    // Combine the three products to get the final result.
+    return P1*(1<<(2*sh)) + (P3 - P1 - P2)*(1<<sh) + P2;
+}
+
+// Driver program to test above functions
+int main()
+{
+    printf ("%ld\n", multiply("1100", "1010"));
+    printf ("%ld\n", multiply("110", "1010"));
+    printf ("%ld\n", multiply("11", "1010"));
+    printf ("%ld\n", multiply("1", "1010"));
+    printf ("%ld\n", multiply("0", "1010"));
+    printf ("%ld\n", multiply("111", "111"));
+    printf ("%ld\n", multiply("11", "11"));
+}
+
+Java
+
+// Java implementation of Karatsuba algorithm for bit string multiplication.
+
+public class GFG {
+      // Driver Code
+    public static void main(String[] args)
+    {
+        System.out.println(multiply("1100", "1010"));
+        System.out.println(multiply("110", "1010"));
+        System.out.println(multiply("11", "1010"));
+        System.out.println(multiply("1", "1010"));
+        System.out.println(multiply("0", "1010"));
+        System.out.println(multiply("111", "111"));
+        System.out.println(multiply("11", "11"));
+    }
+
+    // Helper method: given two unequal sized bit strings,
+    // converts them to same length by adding leading 0s in
+    // the smaller string. Returns the new length
+    private static int makeEqualLength(StringBuilder str1,
+                                       StringBuilder str2)
+    {
+        int len1 = str1.length();
+        int len2 = str2.length();
+        if (len1 < len2) {
+            for (int i = 0; i < len2 - len1; i++) {
+                str1.insert(0, '0');
+            }
+            return len2;
+        }
+        else if (len1 > len2) {
+            for (int i = 0; i < len1 - len2; i++) {
+                str2.insert(0, '0');
+            }
+        }
+        return len1; // If len1 >= len2
+    }
+
+    // The main function that adds two bit sequences and
+    // returns the addition
+    private static StringBuilder
+    addBitStrings(StringBuilder first, StringBuilder second)
+    {
+        StringBuilder result = new StringBuilder();
+        int length = makeEqualLength(first, second);
+        int carry = 0;
+
+        // Add all bits one by one
+        for (int i = length - 1; i >= 0; i--) {
+            int firstBit = first.charAt(i) - '0';
+            int secondBit = second.charAt(i) - '0';
+
+            // boolean expression for sum of 3 bits
+            int sum = (firstBit ^ secondBit ^ carry) + '0';
+            result.insert(0, (char)sum);
+
+            // boolean expression for 3-bit addition
+            carry = (firstBit & secondBit)
+                    | (secondBit & carry)
+                    | (firstBit & carry);
+        }
+
+        // if overflow, then add a leading 1
+        if (carry == 1) {
+            result.insert(0, '1');
+        }
+
+        return result;
+    }
+
+    // A utility function to multiply single bits of strings
+    // a and b
+    private static int multiplySingleBit(int a, int b)
+    {
+        return a * b;
+    }
+
+    // The main function that multiplies two bit strings X
+    // and Y and returns result as long integer
+    public static long multiply(String X, String Y)
+    {
+        // Find the maximum of lengths of X and Y and make
+        // length of smaller string same as that of larger
+        // string
+        int n = Math.max(X.length(), Y.length());
+        X = String.format("%" + n + "s", X)
+                .replace(' ', '0');
+        Y = String.format("%" + n + "s", Y)
+                .replace(' ', '0');
+
+        // Base cases
+        if (n == 0)
+            return 0;
+        if (n == 1)
+            return Integer.parseInt(X)
+                * Integer.parseInt(Y);
+
+        int fh = n / 2; // First half of string
+        int sh = n - fh; // Second half of string
+
+        // Find the first half and second half of first
+        // string.
+        String Xl = X.substring(0, fh);
+        String Xr = X.substring(fh);
+
+        // Find the first half and second half of second
+        // string
+        String Yl = Y.substring(0, fh);
+        String Yr = Y.substring(fh);
+
+        // Recursively calculate the three products of
+        // inputs of size n/2
+        long P1 = multiply(Xl, Yl);
+        long P2 = multiply(Xr, Yr);
+        long P3 = multiply(Integer.toBinaryString(
+                               Integer.parseInt(Xl, 2)
+                               + Integer.parseInt(Xr, 2)),
+                           Integer.toBinaryString(
+                               Integer.parseInt(Yl, 2)
+                               + Integer.parseInt(Yr, 2)));
+
+        // Combine the three products to get the final
+        // result.
+        return P1 * (1L << (2 * sh))
+            + (P3 - P1 - P2) * (1L << sh) + P2;
+    }
+}
+
+Python
+
+# Python implementation of Karatsuba algorithm for bit string multiplication.
+
+# Helper method: given two unequal sized bit strings, converts them to
+# same length by adding leading 0s in the smaller string. Returns the
+# the new length
+def make_equal_length(str1, str2):
+    len1 = len(str1)
+    len2 = len(str2)
+    if len1 < len2:
+        for i in range(len2 - len1):
+            str1 = '0' + str1
+        return len2
+    elif len1 > len2:
+        for i in range(len1 - len2):
+            str2 = '0' + str2
+    return len1 # If len1 >= len2
+
+# The main function that adds two bit sequences and returns the addition
+def add_bit_strings(first, second):
+    result = ""  # To store the sum bits
+
+    # make the lengths same before adding
+    length = make_equal_length(first, second)
+    carry = 0  # Initialize carry
+
+    # Add all bits one by one
+    for i in range(length-1, -1, -1):
+        first_bit = int(first[i])
+        second_bit = int(second[i])
+
+        # boolean expression for sum of 3 bits
+        sum = (first_bit ^ second_bit ^ carry) + ord('0')
+
+        result = chr(sum) + result
+
+        # boolean expression for 3-bit addition
+        carry = (first_bit & second_bit) | (second_bit & carry) | (first_bit & carry)
+
+    # if overflow, then add a leading 1
+    if carry:
+        result = '1' + result
+
+    return result
+
+# A utility function to multiply single bits of strings a and b
+def multiply_single_bit(a, b):
+    return int(a[0]) * int(b[0])
+
+# The main function that multiplies two bit strings X and Y and returns
+# result as long integer
+def multiply(X, Y):
+    # Find the maximum of lengths of x and Y and make length
+    # of smaller string same as that of larger string
+    n = max(len(X), len(Y))
+    X = X.zfill(n)
+    Y = Y.zfill(n)
+
+    # Base cases
+    if n == 0: return 0
+    if n == 1: return int(X[0])*int(Y[0])
+
+    fh = n//2  # First half of string
+    sh = n - fh  # Second half of string
+
+    # Find the first half and second half of first string.
+    Xl = X[:fh]
+    Xr = X[fh:]
+
+    # Find the first half and second half of second string
+    Yl = Y[:fh]
+    Yr = Y[fh:]
+
+    # Recursively calculate the three products of inputs of size n/2
+    P1 = multiply(Xl, Yl)
+    P2 = multiply(Xr, Yr)
+    P3 = multiply(str(int(Xl, 2) + int(Xr, 2)), str(int(Yl, 2) + int(Yr, 2)))
+
+    # Combine the three products to get the final result.
+    return P1*(1<<(2*sh)) + (P3 - P1 - P2)*(1<<sh) + P2
+
+if __name__ == '__main__':
+    print(multiply("1100", "1010"))
+    print(multiply("110", "1010"))
+    print(multiply("11", "1010"))
+    print(multiply("1", "1010"))
+    print(multiply("0", "1010"))
+    print(multiply("111", "111"))
+    print(multiply("11", "11"))
+
+C#
+
+// C# implementation of Karatsuba algorithm for bit string
+// multiplication.
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+  // Convert bit strings to same length by adding leading
+  // 0s in the smaller string.
+  // Returns the new length.
+  private static int MakeEqualLength(ref string str1,
+                                     ref string str2)
+  {
+    int len1 = str1.Length;
+    int len2 = str2.Length;
+    if (len1 < len2) {
+      str1 = str1.PadLeft(len2 - len1 + len1, '0');
+      return len2;
+    }
+    else if (len1 > len2) {
+      str2 = str2.PadLeft(len1 - len2 + len2, '0');
+    }
+    return len1; // If len1 >= len2
+  }
+
+  // Adds two bit sequences and returns the addition
+  private static string AddBitStrings(string first,
+                                      string second)
+  {
+    string result = ""; // To store the sum bits
+
+    // make the lengths same before adding
+    int length = MakeEqualLength(ref first, ref second);
+    int carry = 0; // Initialize carry
+
+    // Add all bits one by one
+    for (int i = length - 1; i >= 0; i--) {
+      int first_bit = int.Parse(first[i].ToString());
+      int second_bit
+        = int.Parse(second[i].ToString());
+
+      // boolean expression for sum of 3 bits
+      int sum
+        = (first_bit ^ second_bit ^ carry) + '0';
+
+      result = (char)sum + result;
+
+      // boolean expression for 3-bit addition
+      carry = (first_bit & second_bit)
+        | (second_bit & carry)
+        | (first_bit & carry);
+    }
+
+    // if overflow, then add a leading 1
+    if (carry != 0) {
+      result = '1' + result;
+    }
+
+    return result;
+  }
+
+  // Multiplies single bits of strings a and b
+  private static int MultiplySingleBit(char a, char b)
+  {
+    return int.Parse(a.ToString())
+      * int.Parse(b.ToString());
+  }
+
+  // Multiplies two bit strings X and Y and returns result
+  // as long integer
+  private static long Multiply(string X, string Y)
+  {
+    // Find the maximum of lengths of x and Y and make
+    // length of smaller string same as that of larger
+    // string
+    int n = Math.Max(X.Length, Y.Length);
+    X = X.PadLeft(n, '0');
+    Y = Y.PadLeft(n, '0');
+
+    // Base cases
+    if (n == 0)
+      return 0;
+    if (n == 1)
+      return MultiplySingleBit(X[0], Y[0]);
+
+    int fh = n / 2; // First half of string
+    int sh = n - fh; // Second half of string
+
+    // Find the first half and second half of first
+    // string.
+    string Xl = X.Substring(0, fh);
+    string Xr = X.Substring(fh);
+
+    // Find the first half and second half of second
+    // string
+    string Yl = Y.Substring(0, fh);
+    string Yr = Y.Substring(fh);
+
+    // Recursively calculate the three products of
+    // inputs of size n/2
+    long P1 = Multiply(Xl, Yl);
+    long P2 = Multiply(Xr, Yr);
+    long P3 = Multiply(AddBitStrings(Xl, Xr),
+                       AddBitStrings(Yl, Yr));
+
+    // Combine the three products to get the final
+    // result.
+    return P1 * (1L << (2 * sh))
+      + (P3 - P1 - P2) * (1L << sh) + P2;
+  }
+
+  // Test the implementation
+  public static void Main(string[] args)
+  {
+    Console.WriteLine(Multiply("1100", "1010"));
+    Console.WriteLine(Multiply("110", "1010"));
+    Console.WriteLine(Multiply("11", "1010"));
+    Console.WriteLine(Multiply("1", "1010"));
+    Console.WriteLine(Multiply("0", "1010"));
+    Console.WriteLine(Multiply("111", "111"));
+    Console.WriteLine(Multiply("11", "11"));
+  }
+}
+
+JavaScript
+
+// JavaScript implementation of Karatsuba algorithm for bit string multiplication.
+
+// Helper method: given two unequal sized bit strings, converts them to
+// same length by adding leading 0s in the smaller string. Returns the
+// the new length
+function make_equal_length(str1, str2) {
+    let len1 = str1.length;
+    let len2 = str2.length;
+    if (len1 < len2) {
+        for (let i = 0; i < len2 - len1; i++) {
+            str1 = '0' + str1;
+        }
+        return len2;
+    } else if (len1 > len2) {
+        for (let i = 0; i < len1 - len2; i++) {
+            str2 = '0' + str2;
+        }
+    }
+    return len1; // If len1 >= len2
+}
+
+// The main function that adds two bit sequences and returns the addition
+function add_bit_strings(first, second) {
+    let result = ""; // To store the sum bits
+
+    // make the lengths same before adding
+    let length = make_equal_length(first, second);
+    let carry = 0; // Initialize carry
+
+    // Add all bits one by one
+    for (let i = length - 1; i >= 0; i--) {
+        let first_bit = parseInt(first[i]);
+        let second_bit = parseInt(second[i]);
+
+        // boolean expression for sum of 3 bits
+        let sum = (first_bit ^ second_bit ^ carry) + '0'.charCodeAt(0);
+
+        result = String.fromCharCode(sum) + result;
+
+        // boolean expression for 3-bit addition
+        carry = (first_bit & second_bit) | (second_bit & carry) | (first_bit & carry);
+    }
+
+    // if overflow, then add a leading 1
+    if (carry) {
+        result = '1' + result;
+    }
+
+    return result;
+}
+
+// A utility function to multiply single bits of strings a and b
+function multiply_single_bit(a, b) {
+    return parseInt(a[0]) * parseInt(b[0]);
+}
+
+// The main function that multiplies two bit strings X and Y and returns
+// result as long integer
+function multiply(X, Y) {
+    // Find the maximum of lengths of x and Y and make length
+    // of smaller string same as that of larger string
+    let n = Math.max(X.length, Y.length);
+    X = X.padStart(n, '0');
+    Y = Y.padStart(n, '0');
+
+    // Base cases
+    if (n == 0) return 0;
+    if (n == 1) return parseInt(X[0]) * parseInt(Y[0]);
+
+    let fh = Math.floor(n / 2); // First half of string
+    let sh = n - fh; // Second half of string
+
+    // Find the first half and second half of first string.
+    let Xl = X.slice(0, fh);
+    let Xr = X.slice(fh);
+
+    // Find the first half and second half of second string
+    let Yl = Y.slice(0, fh);
+    let Yr = Y.slice(fh);
+
+    // Recursively calculate the three products of inputs of size n/2
+    let P1 = multiply(Xl, Yl);
+    let P2 = multiply(Xr, Yr);
+    let P3 = multiply((parseInt(Xl, 2) + parseInt(Xr, 2)).toString(2), (parseInt(Yl, 2) + parseInt(Yr, 2)).toString(2));
+
+    // Combine the three products to get the final result.
+    return P1 * (1 << (2 * sh)) + (P3 - P1 - P2) * (1 << sh) + P2
+}
+
+console.log(multiply("1100", "1010"))
+console.log(multiply("110", "1010"))
+console.log(multiply("11", "1010"))
+console.log(multiply("1", "1010"))
+console.log(multiply("0", "1010"))
+console.log(multiply("111", "111"))
+console.log(multiply("11", "11"))
+
+Output
+
+120
+60
+30
+10
+0
+49
+9
+
+Time Complexity: Time complexity of the above solution is O(n log 2 3 ) = O(n 1.59 ). Time complexity of multiplication can be further improved using another Divide and Conquer algorithm, fast Fourier transform. We will soon be discussing fast Fourier transform as a separate post.
+
+Auxiliary Space: O(n)
+
+Exercise: The above program returns a long int value and will not work for big strings. Extend the above program to return a string instead of a long int value.
+
+Solution: Multiplication process for large numbers is an important problem in Computer Science. Given approach uses Divide and Conquer methodology. Run the code to see the time complexity comparison for normal Binary Multiplication and Karatsuba Algorithm. You can see the full code in this repository
+
+Examples:
+
+First Binary Input : 101001010101010010101001010100101010010101010010101 Second Binary Input : 101001010101010010101001010100101010010101010010101Decimal Output : Not Representable Output : 2.1148846e+30
+
+First Binary Input : 1011 Second Binary Input : 1000Decimal Output : 88Output : 5e-05
+
+C++
+
+#include <iostream>
+#include <ctime>
+#include <fstream>
+#include <string.h>
+#include <cmath>
+#include <sstream>
+
+using namespace std;
+
+// classical method class
+class BinaryMultiplier
+{
+public:
+    string MakeMultiplication(string,string);
+    string MakeShifting(string,int);
+    string addBinary(string,string);
+    void BinaryStringToDecimal(string);
+};
+
+// karatsuba method class
+class Karatsuba
+{
+public:
+    int lengthController(string &,string &);
+    string addStrings(string,string);
+    string multiply(string,string);
+    string DecimalToBinary(long long int);
+    string Subtraction(string,string);
+    string MakeShifting(string,int);
+};
+
+// this function get strings and go over str2 bit
+// if it sees 1  it calculates the shifted version according to position bit
+// Makes add operation for binary strings
+// returns result string
+string BinaryMultiplier::MakeMultiplication(string str1, string str2)
+{
+    string allSum = "";
+    for (int j = 0 ; j<str2.length(); j++)
+    {
+        int secondDigit = str2[j] - '0';
+        if (secondDigit == 1)
+        {
+            string shifted = MakeShifting(str1,str2.size()-(j+1));
+            allSum = addBinary(shifted, allSum);
+        }
+        else
+        {
+            continue;
+        }
+
+    }
+    return allSum;
+}
+
+// this function adds binary strings with carry
+string BinaryMultiplier::addBinary(string a, string b)
+{
+    string result = "";
+    int s = 0;
+
+    int i = a.size() - 1;
+    int j = b.size() - 1;
+    while (i >= 0 || j >= 0 || s == 1)
+    {
+        s += ((i >= 0)? a[i] - '0': 0);
+        s += ((j >= 0)? b[j] - '0': 0);
+
+        result = char(s % 2 + '0') + result;
+
+        s /= 2;
+
+        i--;
+        j--;
+    }
+    return result;
+}
+
+// this function shifts the given string according to given number
+// returns shifted version
+string BinaryMultiplier::MakeShifting(string str, int stepnum)
+{
+    string shifted = str;
+    for (int i = 0 ; i < stepnum ; i++)
+        shifted = shifted + '0';
+    return shifted;
+}
+
+// this function converts Binary String Number to Decimal Number
+// After 32 bits it gives 0 because it overflows the size of int
+void BinaryMultiplier::BinaryStringToDecimal(string result)
+{
+    cout<<"Binary Result : "<<result<<endl;
+    unsigned long long int val = 0;
+    for (int i = result.length()-1; i >= 0; i--)
+    {
+        if (result[i] == '1')
+        {
+            val += pow(2,(result.length()-1)-i);
+        }
+    }
+    cout<<"Decimal Result (Not proper for Large Binary Numbers):" <<val<<endl;
+}
+
+// this function controls lengths of strings and make their lengths equal
+// returns the maximum length
+int Karatsuba::lengthController(string &str1, string &str2)
+{
+    int len1 = str1.size();
+    int len2 = str2.size();
+    if (len1 < len2)
+    {
+        for (int i = 0 ; i < len2 - len1 ; i++)
+            str1 = '0' + str1;
+        return len2;
+    }
+    else if (len1 > len2)
+    {
+        for (int i = 0 ; i < len1 - len2 ; i++)
+            str2 = '0' + str2;
+    }
+    return len1;
+}
+
+// this function add strings with carry
+// uses one by one bit addition methodology
+// returns result string
+string Karatsuba::addStrings(string first, string second)
+{
+    string result;  // To store the sum bits
+
+    // make the lengths same before adding
+    int length = lengthController(first, second);
+    int carry = 0;  // Initialize carry
+
+    // Add all bits one by one
+    for (int i = length-1 ; i >= 0 ; i--)
+    {
+        int firstBit = first.at(i) - '0';
+        int secondBit = second.at(i) - '0';
+
+        // boolean expression for sum of 3 bits
+        int sum = (firstBit ^ secondBit ^ carry)+'0';
+
+        result = (char)sum + result;
+
+        // Boolean expression for 3-bit addition
+        carry = (firstBit&secondBit) | (secondBit&carry) | (firstBit&carry);
+    }
+
+    // if overflow, then add a leading 1
+    if (carry)
+    {
+        result = '1' + result;
+    }
+
+    return result;
+}
+
+// this function converts decimal number to binary string
+string Karatsuba::DecimalToBinary(long long int number)
+{
+    string result = "";
+    if (number <= 0)
+    {
+        return "0";
+    }
+    else
+    {
+        int i = 0;
+        while (number > 0)
+        {
+
+            long long int num= number % 2;
+            stringstream ss;
+            ss<<num;
+            result = ss.str() + result;
+            number = number / 2;
+            i++;
+        }
+        return result;
+
+    }
+}
+
+// this function makes binary string subtraction with overflow
+string Karatsuba::Subtraction(string lhs, string rhs)
+{
+
+    int length = lengthController(lhs, rhs);
+    int diff;
+    string result;
+
+    for (int i = length-1; i >= 0; i--)
+    {
+        diff = (lhs[i]-'0') - (rhs[i]-'0');
+        if (diff >= 0)
+        {
+            result = DecimalToBinary(diff) + result;
+        }
+        else
+        {
+            for (int j = i-1; j>=0; j--)
+            {
+                lhs[j] = ((lhs[j]-'0') - 1) % 10 + '0';
+                if (lhs[j] != '1')
+                {
+                    break;
+                }
+            }
+            result = DecimalToBinary(diff+2) + result;
+        }
+    }
+    return result;
+}
+
+// this function makes shifting
+string Karatsuba::MakeShifting(string str, int stepnum)
+{
+    string shifted = str;
+    for (int i = 0 ; i < stepnum ; i++)
+        shifted = shifted + '0';
+    return shifted;
+}
+
+// this function is the core of the Karatsuba
+// divides problem into 4 subproblems
+// recursively multiplies them
+// returns the result string
+string Karatsuba::multiply(string X,  string Y)
+{
+    int n = lengthController(X, Y);
+
+    if (n == 1) return ((Y[0]-'0' == 1) && (X[0]-'0' == 1)) ? "1" : "0";
+
+    int fh = n/2;   // First half of string, floor(n/2)
+    int sh = (n-fh); // Second half of string, ceil(n/2)
+
+    // Find the first half and second half of first string.
+    string Xl = X.substr(0, fh);
+    string Xr = X.substr(fh, sh);
+
+    // Find the first half and second half of second string
+    string Yl = Y.substr(0, fh);
+    string Yr = Y.substr(fh, sh);
+
+    // Recursively calculate the three products of inputs of size n/2
+    string P1 = multiply(Xl, Yl);
+    string P2 = multiply(Xr, Yr);
+    string P3 = multiply(addStrings(Xl, Xr), addStrings(Yl, Yr));
+
+    // return added string version
+    return addStrings(addStrings(MakeShifting(P1, 2*(n-n/2)),P2),MakeShifting(Subtraction(P3,addStrings(P1,P2)), n-(n/2)));
+}
+
+int main(int argc, const char * argv[])
+{
+    // get the binary numbers as strings
+    string firstNumber,secondNumber;
+
+    cout<<"Please give the First Binary number : ";
+    cin>>firstNumber;
+    cout<<endl<<"Please give the Second Binary number : ";
+    cin>>secondNumber;
+    cout << endl;
+
+    // make the initial lengths equal by adding zeros
+    int len1 = firstNumber.size();
+    int len2 = secondNumber.size();
+    int general_len = firstNumber.size();
+
+    if (len1 < len2)
+    {
+        for (int i = 0 ; i < len2 - len1 ; i++)
+            firstNumber = '0' + firstNumber;
+        general_len = firstNumber.size();
+    }
+    else if (len1 > len2)
+    {
+        for (int i = 0 ; i < len1 - len2 ; i++)
+            secondNumber = '0' + secondNumber;
+        general_len = secondNumber.size();
+    }
+
+    // In classical methodology Binary String Multiplication
+    cout<<"Classical Algorithm : "<<endl;
+    BinaryMultiplier newobj;
+    const clock_t classical_time = clock();
+    string classic = newobj.MakeMultiplication(firstNumber, secondNumber);
+    cout << float( clock () - classical_time ) /  CLOCKS_PER_SEC<<endl<<endl;
+    float c_time = float( clock () - classical_time ) /  CLOCKS_PER_SEC;
+    newobj.BinaryStringToDecimal(classic);
+
+    // Using Karatsuba Multiplication Algorithm Binary String Multiplication
+    cout<<endl<<"Karatsuba Algorithm : "<<endl;
+    Karatsuba obj;
+    const clock_t karatsuba_time = clock();
+    string karatsuba = obj.multiply(firstNumber, secondNumber);
+    cout << float( clock () - karatsuba_time ) /  CLOCKS_PER_SEC<<endl<<endl;
+    float k_time = float( clock () - classical_time ) /  CLOCKS_PER_SEC;
+    newobj.BinaryStringToDecimal(karatsuba);
+
+    return 0;
+}
+
+Java
+
+import java.math.BigInteger;
+
+public class BinaryMultiplication {
+
+    // Method to add binary strings
+    public static String addBinary(String a, String b) {
+        BigInteger aBigInt = new BigInteger(a, 2);
+        BigInteger bBigInt = new BigInteger(b, 2);
+        BigInteger sum = aBigInt.add(bBigInt);
+        return sum.toString(2);
+    }
+
+    // Method to shift binary string
+    public static String shiftLeft(String str, int n) {
+        return str + "0".repeat(n);
+    }
+
+    // Classical binary multiplication
+    public static String classicalMultiply(String str1, String str2) {
+        String result = "0";
+        int n = str2.length();
+        for (int i = 0; i < n; i++) {
+            if (str2.charAt(n - 1 - i) == '1') {
+                result = addBinary(result, shiftLeft(str1, i));
+            }
+        }
+        return result;
+    }
+
+    // Karatsuba multiplication
+    public static String karatsubaMultiply(String X, String Y) {
+        int n = Math.max(X.length(), Y.length());
+
+        // Make the lengths equal
+        X = String.format("%" + n + "s", X).replace(' ', '0');
+        Y = String.format("%" + n + "s", Y).replace(' ', '0');
+
+        if (n == 1) {
+            return Integer.toString(Integer.parseInt(X) * Integer.parseInt(Y));
+        }
+
+        int m = n / 2;
+
+        String Xl = X.substring(0, m);
+        String Xr = X.substring(m);
+        String Yl = Y.substring(0, m);
+        String Yr = Y.substring(m);
+
+        String P1 = karatsubaMultiply(Xl, Yl);
+        String P2 = karatsubaMultiply(Xr, Yr);
+        String P3 = karatsubaMultiply(addBinary(Xl, Xr), addBinary(Yl, Yr));
+
+        String C1 = shiftLeft(P1, 2 * (n - m));
+        String C2 = shiftLeft(addBinary(subtractBinary(P3, addBinary(P1, P2)), P2), n - m);
+
+        return addBinary(addBinary(C1, C2), P2);
+    }
+
+    // Subtract binary strings
+    public static String subtractBinary(String a, String b) {
+        BigInteger aBigInt = new BigInteger(a, 2);
+        BigInteger bBigInt = new BigInteger(b, 2);
+        BigInteger difference = aBigInt.subtract(bBigInt);
+        return difference.toString(2);
+    }
+
+    public static void main(String[] args) {
+        String firstNumber = "011011010100";
+        String secondNumber = "10111010111";
+
+        System.out.println("Classical Algorithm:");
+        String classicResult = classicalMultiply(firstNumber, secondNumber);
+        System.out.println("Binary Result: " + classicResult);
+        System.out.println("Decimal Result: " + new BigInteger(classicResult, 2).toString(10));
+
+        System.out.println("Karatsuba Algorithm:");
+        String karatsubaResult = karatsubaMultiply(firstNumber, secondNumber);
+        System.out.println("Binary Result: " + karatsubaResult);
+        System.out.println("Decimal Result: " + new BigInteger(karatsubaResult, 2).toString(10));
+    }
+}
+
+Python
+
+# Importing required module
+import math
+
+def addBinary(a, b):
+    a_bigint = int(a, 2)
+    b_bigint = int(b, 2)
+    result = bin(a_bigint + b_bigint)[2:]
+    return result
+
+def shiftLeft(string, n):
+    return string + '0' * n
+
+def classicalMultiply(str1, str2):
+    result = '0'
+    n = len(str2)
+    for i in range(n):
+        if str2[n - 1 - i] == '1':
+            result = addBinary(result, shiftLeft(str1, i))
+    return result
+
+def karatsubaMultiply(X, Y):
+    n = max(len(X), len(Y))
+
+    # Make the lengths equal
+    X = X.rjust(n, '0')
+    Y = Y.rjust(n, '0')
+
+    if n == 1:
+        return bin(int(X, 2) * int(Y, 2))[2:]
+
+    m = n // 2
+
+    Xl = X[:m]
+    Xr = X[m:]
+    Yl = Y[:m]
+    Yr = Y[m:]
+
+    P1 = karatsubaMultiply(Xl, Yl)
+    P2 = karatsubaMultiply(Xr, Yr)
+    P3 = karatsubaMultiply(addBinary(Xl, Xr), addBinary(Yl, Yr))
+
+    C1 = shiftLeft(P1, 2 * (n - m))
+    C2 = shiftLeft(addBinary(subtractBinary(P3, addBinary(P1, P2)), P2), n - m)
+
+    return addBinary(addBinary(C1, C2), P2)
+
+def subtractBinary(a, b):
+    a_bigint = int(a, 2)
+    b_bigint = int(b, 2)
+    result = bin(a_bigint - b_bigint & (2 ** (max(len(a), len(b))) - 1))[2:]
+    return result
+
+if __name__ == "__main__":
+    # Given binary numbers
+    first_number = "011011010100"
+    second_number = "10111010111"
+
+    # Classical Algorithm
+    print("Classical Algorithm:")
+    classic_result = classicalMultiply(first_number, second_number)
+    print("Binary Result:", classic_result)
+    print("Decimal Result:", int(classic_result, 2))
+
+    # Karatsuba Algorithm
+    print("\nKaratsuba Algorithm:")
+    karatsuba_result = karatsubaMultiply(first_number, second_number)
+    print("Binary Result:", karatsuba_result)
+    print("Decimal Result:", int(karatsuba_result, 2))
+
+C#
+
+using System;
+using System.Text;
+
+// Class for classical binary multiplication
+class BinaryMultiplier
+{
+    public string MakeMultiplication(string str1, string str2)
+    {
+        string allSum = "";
+        // Iterate through each bit of the second binary string
+        for (int j = 0; j < str2.Length; j++)
+        {
+            int secondDigit = int.Parse(str2[j].ToString());
+            if (secondDigit == 1)
+            {
+                // Shift the first binary string and add it to the result
+                string shifted = MakeShifting(str1, str2.Length - (j + 1));
+                allSum = AddBinary(shifted, allSum);
+            }
+        }
+        return allSum;
+    }
+
+    // Function to add binary strings with carry
+    public string AddBinary(string a, string b)
+    {
+        string result = "";
+        int s = 0;
+
+        int i = a.Length - 1;
+        int j = b.Length - 1;
+        while (i >= 0 || j >= 0 || s == 1)
+        {
+            s += (i >= 0) ? int.Parse(a[i].ToString()) : 0;
+            s += (j >= 0) ? int.Parse(b[j].ToString()) : 0;
+
+            result = (s % 2).ToString() + result;
+
+            s /= 2;
+
+            i--;
+            j--;
+        }
+        return result;
+    }
+
+    // Function to shift a binary string to the left by a given number of steps
+    public string MakeShifting(string str, int stepnum)
+    {
+        string shifted = str;
+        for (int i = 0; i < stepnum; i++)
+        {
+            shifted += '0';
+        }
+        return shifted;
+    }
+
+    // Function to convert binary string to decimal number
+    public void BinaryStringToDecimal(string result)
+    {
+        Console.WriteLine("Binary Result: " + result);
+        int val = 0;
+        for (int i = result.Length - 1; i >= 0; i--)
+        {
+            if (result[i] == '1')
+            {
+                val += (int)Math.Pow(2, (result.Length - 1) - i);
+            }
+        }
+        Console.WriteLine("Decimal Result (Not proper for Large Binary Numbers):" + val);
+    }
+}
+
+// Class for Karatsuba binary multiplication
+class Karatsuba
+{
+    // Function to control the lengths of binary strings and make their lengths equal
+    public int LengthController(ref string str1, ref string str2)
+    {
+        int len1 = str1.Length;
+        int len2 = str2.Length;
+        if (len1 < len2)
+        {
+            str1 = new string('0', len2 - len1) + str1;
+            return len2;
+        }
+        else if (len1 > len2)
+        {
+            str2 = new string('0', len1 - len2) + str2;
+        }
+        return len1;
+    }
+
+    // Function to add binary strings with carry
+    public string AddStrings(string first, string second)
+    {
+        string result = "";
+        int length = LengthController(ref first, ref second);
+        int carry = 0;
+        for (int i = length - 1; i >= 0; i--)
+        {
+            int firstBit = int.Parse(first[i].ToString());
+            int secondBit = int.Parse(second[i].ToString());
+
+            int sum = (firstBit ^ secondBit ^ carry);
+            result = sum.ToString() + result;
+
+            carry = (firstBit & secondBit) | (secondBit & carry) | (firstBit & carry);
+        }
+
+        if (carry != 0)
+        {
+            result = '1' + result;
+        }
+
+        return result;
+    }
+
+    // Function to convert decimal number to binary string
+    public string DecimalToBinary(int number)
+    {
+        string result = "";
+        if (number <= 0)
+        {
+            return "0";
+        }
+        else
+        {
+            while (number > 0)
+            {
+                int num = number % 2;
+                result = num.ToString() + result;
+                number /= 2;
+            }
+            return result;
+        }
+    }
+
+    // Function to perform binary string subtraction with overflow
+    public string Subtraction(string lhs, string rhs)
+    {
+        int length = LengthController(ref lhs, ref rhs);
+        int diff;
+        StringBuilder resultBuilder = new StringBuilder();
+
+        for (int i = length - 1; i >= 0; i--)
+        {
+            int lhsDigit, rhsDigit;
+            if (!int.TryParse(lhs[i].ToString(), out lhsDigit) || !int.TryParse(rhs[i].ToString(), out rhsDigit))
+            {
+                // Handle parsing error, e.g., throw an exception or set a default value
+                throw new FormatException("Error parsing integer from string.");
+            }
+
+            diff = lhsDigit - rhsDigit;
+            if (diff >= 0)
+            {
+                resultBuilder.Insert(0, DecimalToBinary(diff));
+            }
+            else
+            {
+                for (int j = i - 1; j >= 0; j--)
+                {
+                    int currentValue = lhs[j] - '0';
+                    if (currentValue > 0)
+                    {
+                        lhs = lhs.Remove(j, 1).Insert(j, (currentValue - 1).ToString());
+                        break;
+                    }
+                }
+                resultBuilder.Insert(0, DecimalToBinary(diff + 2));
+            }
+        }
+        return resultBuilder.ToString();
+    }
+
+    // Function to shift a binary string to the left by a given number of steps
+    public string MakeShifting(string str, int stepnum)
+    {
+        string shifted = str;
+        for (int i = 0; i < stepnum; i++)
+        {
+            shifted += '0';
+        }
+        return shifted;
+    }
+
+    // Function that is the core of the Karatsuba algorithm
+    public string Multiply(string X, string Y)
+    {
+        int n = LengthController(ref X, ref Y);
+
+        if (n == 1)
+            return ((int.Parse(Y[0].ToString()) == 1) && (int.Parse(X[0].ToString()) == 1)) ? "1" : "0";
+
+        int fh = n / 2;
+        int sh = n - fh;
+
+        string Xl = X.Substring(0, fh);
+        string Xr = X.Substring(fh, sh);
+
+        string Yl = Y.Substring(0, fh);
+        string Yr = Y.Substring(fh, sh);
+
+        Karatsuba karatsuba = new Karatsuba();
+        string P1 = karatsuba.Multiply(Xl, Yl);
+        string P2 = karatsuba.Multiply(Xr, Yr);
+        string P3 = karatsuba.Multiply(karatsuba.AddStrings(Xl, Xr), karatsuba.AddStrings(Yl, Yr));
+
+        return karatsuba.AddStrings(
+            karatsuba.AddStrings(karatsuba.MakeShifting(P1, 2 * (n - n / 2)), P2),
+            karatsuba.MakeShifting(karatsuba.Subtraction(P3, karatsuba.AddStrings(P1, P2)), n - (n / 2))
+        );
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        /*Console.WriteLine("Please give the First Binary number : ");
+        string firstNumber = Console.ReadLine();
+        Console.WriteLine("Please give the Second Binary number : ");
+        string secondNumber = Console.ReadLine();
+        */
+        string firstNumber = "011011010100";
+        string secondNumber = "10111010111";
+
+        int len1 = firstNumber.Length;
+        int len2 = secondNumber.Length;
+
+        Karatsuba karatsubaObj = new Karatsuba();
+
+        if (len1 < len2)
+        {
+            firstNumber = new string('0', len2 - len1) + firstNumber;
+        }
+        else if (len1 > len2)
+        {
+            secondNumber = new string('0', len1 - len2) + secondNumber;
+        }
+
+        Console.WriteLine("\nClassical Algorithm:");
+        BinaryMultiplier binaryMultiplier = new BinaryMultiplier();
+        string classic = binaryMultiplier.MakeMultiplication(firstNumber, secondNumber);
+        binaryMultiplier.BinaryStringToDecimal(classic);
+
+        Console.WriteLine("\nKaratsuba Algorithm:");
+        string karatsuba = karatsubaObj.Multiply(firstNumber, secondNumber);
+        binaryMultiplier.BinaryStringToDecimal(karatsuba);
+    }
+}
+
+JavaScript
+
+class BinaryMultiplier {
+    makeMultiplication(str1, str2) {
+        let allSum = "";
+        for (let j = 0; j < str2.length; j++) {
+            const secondDigit = parseInt(str2[j]);
+            if (secondDigit === 1) {
+                const shifted = this.makeShifting(str1, str2.length - (j + 1));
+                allSum = this.addBinary(shifted, allSum);
+            }
+        }
+        return allSum;
+    }
+
+    addBinary(a, b) {
+        let result = "";
+        let s = 0;
+
+        let i = a.length - 1;
+        let j = b.length - 1;
+        while (i >= 0 || j >= 0 || s === 1) {
+            s += (i >= 0) ? parseInt(a[i]) : 0;
+            s += (j >= 0) ? parseInt(b[j]) : 0;
+
+            result = String(s % 2) + result;
+
+            s = Math.floor(s / 2);
+
+            i--;
+            j--;
+        }
+        return result;
+    }
+
+    makeShifting(str, stepnum) {
+        let shifted = str;
+        for (let i = 0; i < stepnum; i++) {
+            shifted += '0';
+        }
+        return shifted;
+    }
+
+    binaryStringToDecimal(result) {
+        console.log("Binary Result : " + result);
+        let val = 0;
+        for (let i = result.length - 1; i >= 0; i--) {
+            if (result[i] === '1') {
+                val += Math.pow(2, (result.length - 1) - i);
+            }
+        }
+        console.log("Decimal Result (Not proper for Large Binary Numbers):" + val);
+    }
+}
+
+class Karatsuba {
+    lengthController(str1, str2) {
+        const len1 = str1.length;
+        const len2 = str2.length;
+        if (len1 < len2) {
+            for (let i = 0; i < len2 - len1; i++) {
+                str1 = '0' + str1;
+            }
+            return len2;
+        } else if (len1 > len2) {
+            for (let i = 0; i < len1 - len2; i++) {
+                str2 = '0' + str2;
+            }
+        }
+        return len1;
+    }
+
+    addStrings(first, second) {
+        let result = "";
+        const length = this.lengthController(first, second);
+        let carry = 0;
+        for (let i = length - 1; i >= 0; i--) {
+            const firstBit = parseInt(first[i]);
+            const secondBit = parseInt(second[i]);
+
+            const sum = (firstBit ^ secondBit ^ carry).toString();
+            result = sum + result;
+
+            carry = (firstBit & secondBit) | (secondBit & carry) | (firstBit & carry);
+        }
+
+        if (carry) {
+            result = '1' + result;
+        }
+
+        return result;
+    }
+
+    decimalToBinary(number) {
+        let result = "";
+        if (number <= 0) {
+            return "0";
+        } else {
+            let i = 0;
+            while (number > 0) {
+                const num = number % 2;
+                result = num + result;
+                number = Math.floor(number / 2);
+                i++;
+            }
+            return result;
+        }
+    }
+
+    subtraction(lhs, rhs) {
+        const length = this.lengthController(lhs, rhs);
+        let diff;
+        let result = "";
+
+        for (let i = length - 1; i >= 0; i--) {
+            diff = parseInt(lhs[i]) - parseInt(rhs[i]);
+            if (diff >= 0) {
+                result = this.decimalToBinary(diff) + result;
+            } else {
+                for (let j = i - 1; j >= 0; j--) {
+                    lhs[j] = (parseInt(lhs[j]) - 1) % 10 + '0';
+                    if (lhs[j] !== '1') {
+                        break;
+                    }
+                }
+                result = this.decimalToBinary(diff + 2) + result;
+            }
+        }
+        return result;
+    }
+
+    makeShifting(str, stepnum) {
+        let shifted = str;
+        for (let i = 0; i < stepnum; i++) {
+            shifted += '0';
+        }
+        return shifted;
+    }
+
+    multiply(X, Y) {
+        const n = this.lengthController(X, Y);
+
+        if (n === 1) return ((parseInt(Y[0]) === 1) && (parseInt(X[0]) === 1)) ? "1" : "0";
+
+        const fh = Math.floor(n / 2);
+        const sh = n - fh;
+
+        const Xl = X.substr(0, fh);
+        const Xr = X.substr(fh, sh);
+
+        const Yl = Y.substr(0, fh);
+        const Yr = Y.substr(fh, sh);
+
+        const P1 = this.multiply(Xl, Yl);
+        const P2 = this.multiply(Xr, Yr);
+        const P3 = this.multiply(this.addStrings(Xl, Xr), this.addStrings(Yl, Yr));
+
+        return this.addStrings(this.addStrings(this.makeShifting(P1, 2 * (n - n / 2)), P2),
+            this.makeShifting(this.subtraction(P3, this.addStrings(P1, P2)), n - (n / 2)));
+    }
+}
+
+// main function
+function main() {
+    const readline = require('readline');
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    rl.question("Please give the First Binary number : ", function (firstNumber) {
+        rl.question("\nPlease give the Second Binary number : ", function (secondNumber) {
+            rl.close();
+
+            let len1 = firstNumber.length;
+            let len2 = secondNumber.length;
+
+            if (len1 < len2) {
+                firstNumber = '0'.repeat(len2 - len1) + firstNumber;
+            } else if (len1 > len2) {
+                secondNumber = '0'.repeat(len1 - len2) + secondNumber;
+            }
+
+            console.log("\nClassical Algorithm : ");
+            const classicalTime = new Date().getTime();
+            const binaryMultiplier = new BinaryMultiplier();
+            const classic = binaryMultiplier.makeMultiplication(firstNumber, secondNumber);
+            console.log((new Date().getTime() - classicalTime) / 1000.0 + "\n");
+            binaryMultiplier.binaryStringToDecimal(classic);
+
+            console.log("\nKaratsuba Algorithm : ");
+            const karatsubaTime = new Date().getTime();
+            const karatsubaObj = new Karatsuba();
+            const karatsuba = karatsubaObj.multiply(firstNumber, secondNumber);
+            console.log((new Date().getTime() - karatsubaTime) / 1000.0 + "\n");
+            binaryMultiplier.binaryStringToDecimal(karatsuba);
+        });
+    });
+}
+
+// call main function
+main();
+
+Time Complexity: The time complexity of both Classical and Karatsuba methods of binary string multiplication is O(n^2).
+
+In the classical method, the time complexity is O(n^2) because the loop is iterated n times. The time complexity of the addBinary() method is constant because the loop runs with a maximum of two iterations.
+
+In the Karatsuba method, the time complexity is O(n^2) because the 'multiply' method of the Karatsuba class is called recursively for each of the three products. The time complexity of the addStrings() method is constant because the loop runs with a maximum of two iterations.
+
+Auxiliary Space : The Auxiliary Space of both Classical and Karatsuba methods of binary string multiplication is O(n).
+
+In the classical method, the Auxiliary Space is O(n) because the loop is iterated n times and a single string is used to store the result. The space complexity of the addBinary() method is constant because the loop runs with a maximum of two iterations.
+
+In the Karatsuba method, the auxiliary Space is O(n) because the 'multiply' method of the Karatsuba class is called recursively for each of the three products.
+
+Related Article : Multiply Large Numbers Represented as Strings

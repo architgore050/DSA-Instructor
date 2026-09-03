@@ -1,0 +1,844 @@
+Source: https://www.geeksforgeeks.org/dsa/find-the-longest-substring-with-k-unique-characters-in-a-given-string/
+Title: Longest substring with k unique characters
+Extractor: 2
+
+Given a string s and a non negative integer k , find the length of the longest substring that contains exactly k distinct characters. If no such substring exists, return -1.
+
+Examples:
+
+> Input: s = "aabacbebebe", k = 3 Output: 7 Explanation: The longest substring with exactly 3 distinct characters is "cbebebe", which includes 'c', 'b', and 'e'. Input: s = "aaaa", k = 2 Output: -1 Explanation: The string contains only one unique character, so there's no substring with 2 distinct characters. Input: s = "aabaaab", k = 2 Output: 7 Explanation: The entire string "aabaaab" has exactly 2 unique characters 'a' and 'b', making it the longest valid substring.
+
+Table of Content
+
+- [Naive Approach] Using nested loops with a hash set - O(n^2) Time and O(1) Space
+- [Better Approach] Using  Prefix Sum and Binary Search - O(n*log n) Time and O(n) Space
+- [Expected Approach] Sliding Window with Frequency Count - O(n) Time and O(1) Space
+
+### [Naive Approach] Using nested loops with a hash set - O(n^2) Time and O(1) Space
+
+> This brute-force approach checks all substrings starting from each index. It uses a set to track unique characters, and whenever a substring has exactly k distinct characters, it updates the maximum length.
+
+C++
+
+#include <iostream>
+#include <unordered_set>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+int longestKSubstr(const string& s, int k) {
+    int ans = -1;
+
+    // set to track unique characters in current substring
+    unordered_set<char> st;
+
+    for (int i = 0; i < s.size(); i++) {
+
+        // reset the set for a new starting index - 'i'
+        st.clear();
+
+        // expand the substring from index i to j
+        for (int j = i; j < s.size(); j++) {
+            st.insert(s[j]);
+
+            // number of unique characters becomes exactly k,
+            if (st.size() == k) {
+                ans = max(ans, j - i + 1);
+            }
+
+            if(st.size() > k) break;
+        }
+    }
+
+    return ans;
+}
+
+int main() {
+    string s = "aabacbebebe";
+    int k = 3;
+
+    cout << longestKSubstr(s, k) << '\n';
+    return 0;
+}
+
+Java
+
+import java.util.Set;
+import java.util.HashSet;
+
+class GfG {
+    public static int longestKSubstr(String s, int k) {
+
+        int ans = -1;
+
+        // set to track unique characters in current substring
+        Set<Character> st = new HashSet<>();
+
+        for (int i = 0; i < s.length(); i++) {
+
+            // reset the set for a new starting index - 'i'
+            st.clear();
+
+            // expand the substring from index i to j
+            for (int j = i; j < s.length(); j++) {
+                st.add(s.charAt(j));
+
+                // number of unique characters becomes exactly k,
+                if (st.size() == k) {
+                    ans = Math.max(ans, j - i + 1);
+                }
+
+                if(st.size() > k) break;
+            }
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        String s = "aabacbebebe";
+        int k = 3;
+
+        System.out.println(longestKSubstr(s, k));
+    }
+}
+
+Python
+
+def longestKSubstr(s, k):
+
+    ans = -1
+
+    # set to track unique characters in current substring
+    st = set()
+
+    for i in range(len(s)):
+
+        # reset the set for a new starting index - 'i'
+        st.clear()
+
+        # expand the substring from index i to j
+        for j in range(i, len(s)):
+            st.add(s[j])
+
+            # number of unique characters becomes exactly k,
+            if len(st) == k:
+                ans = max(ans, j - i + 1)
+
+            if(len(st) > k):
+                break
+
+    return ans
+
+if __name__ == "__main__":
+    s = "aabacbebebe"
+    k = 3
+
+    print(longestKSubstr(s, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    public static int longestKSubstr(string s, int k) {
+
+        int ans = -1;
+
+        // set to track unique characters in current substring
+        HashSet<char> st = new HashSet<char>();
+
+        for (int i = 0; i < s.Length; i++) {
+
+            // reset the set for a new starting index
+            st.Clear();
+
+            // expand the substring from index i to j
+            for (int j = i; j < s.Length; j++) {
+                st.Add(s[j]);
+
+                // number of unique characters becomes exactly k,
+                if (st.Count == k) {
+                    ans = Math.Max(ans, j - i + 1);
+                }
+
+                if(st.Count > k){
+                    break;
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    public static void Main(string[] args) {
+        string s = "aabacbebebe";
+        int k = 3;
+
+        Console.WriteLine(longestKSubstr(s, k));
+    }
+}
+
+JavaScript
+
+function longestKSubstr(s, k) {
+
+    let ans = -1;
+
+    // set to track unique characters in current substring
+    let st = new Set();
+
+    for (let i = 0; i < s.length; i++) {
+
+        // reset the set for a new starting index
+        st.clear();
+
+        // expand the substring from index i to j
+        for (let j = i; j < s.length; j++) {
+            st.add(s[j]);
+
+            // number of unique characters becomes exactly k,
+            if (st.size === k) {
+                ans = Math.max(ans, j - i + 1);
+            }
+
+            if(st.size > k){
+                break;
+            }
+        }
+    }
+
+    return ans;
+}
+
+// Driver Code
+let s = "aabacbebebe";
+let k = 3;
+
+console.log(longestKSubstr(s, k));
+
+Output
+
+7
+
+### [Better Approach] Using  Prefix Sum and Binary Search - O(n*log n) Time and O(n) Space
+
+- Build a prefix frequency table to store how many times each character appears up to every position.
+- For each starting index, use binary search to find the farthest end index where the substring has exactly k unique characters.
+- Use the prefix table differences to quickly count distinct characters in the substring.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+int longestKSubstr(const string& s, int k) {
+    int n = s.size();
+
+    // prefix frequency array: vec[i][ch] =
+    // frequency of char 'a'+ch in s[0..i]
+    vector<vector<int>> vec(n, vector<int>(26, 0));
+
+    for (int i = 0; i < n; i++) {
+        vec[i][s[i] - 'a']++;
+        if (i > 0) {
+            for (int j = 0; j < 26; j++) {
+                vec[i][j] += vec[i - 1][j];
+            }
+        }
+    }
+
+    int ans = -1;
+
+    // try for each starting index
+    for (int i = 0; i < n; i++) {
+
+        // search space is from [i to n-1]
+        int low = i, high = n - 1, currAns = -1;
+
+        while (low <= high) {
+            int mid = (low + high) / 2;
+            int count = 0;
+            vector<int> freq = vec[mid];
+
+            // remove prefix before i if needed
+            if (i > 0) {
+                for (int j = 0; j < 26; j++) {
+                    freq[j] -= vec[i - 1][j];
+                }
+            }
+
+            // freq[j] -> represents the count of char('a' + j) in
+            // the subtring starting from i and ending at mid
+
+            for (int j = 0; j < 26; j++) {
+
+                // if char(j+'a') has a frequency
+                if (freq[j] > 0) count++;
+            }
+
+            if (count == k) {
+                currAns = mid - i + 1;
+                low = mid + 1;
+            } else if (count < k) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        if (currAns != -1) {
+            ans = max(ans, currAns);
+        }
+    }
+
+    return ans;
+}
+
+int main() {
+    string s = "aabacbebebe";
+    int k = 3;
+    cout << longestKSubstr(s, k) << '\n';
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+class GfG {
+    public static int longestKSubstr(String s, int k) {
+        int n = s.length();
+
+        // prefix frequency array: vec[i][ch] =
+        // frequency of char 'a'+ch in s[0..i]
+        int[][] vec = new int[n][26];
+
+        for (int i = 0; i < n; i++) {
+            vec[i][s.charAt(i) - 'a']++;
+            if (i > 0) {
+                for (int j = 0; j < 26; j++) {
+                    vec[i][j] += vec[i - 1][j];
+                }
+            }
+        }
+
+        int ans = -1;
+
+        // try for each starting index
+        for (int i = 0; i < n; i++) {
+
+            // search space is from [i to n-1]
+            int low = i, high = n - 1, currAns = -1;
+
+            while (low <= high) {
+                int mid = (low + high) / 2;
+                int count = 0;
+                int[] freq = Arrays.copyOf(vec[mid], 26);
+
+                // Remove prefix before i if needed
+                if (i > 0) {
+                    for (int j = 0; j < 26; j++) {
+                        freq[j] -= vec[i - 1][j];
+                    }
+                }
+
+                // freq[j] -> represents the count of char('a' + j) in
+                // the substring starting from i and ending at mid
+                for (int j = 0; j < 26; j++) {
+                    if (freq[j] > 0) count++;
+                }
+
+                if (count == k) {
+                    currAns = mid - i + 1;
+                    low = mid + 1;
+                } else if (count < k) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+
+            if (currAns != -1) {
+                ans = Math.max(ans, currAns);
+            }
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        String s = "aabacbebebe";
+        int k = 3;
+        System.out.println(longestKSubstr(s, k));
+    }
+}
+
+Python
+
+def longestKSubstr(s, k):
+    n = len(s)
+
+    # prefix frequency array: vec[i][ch] =
+    # frequency of char 'a'+ch in s[0..i]
+    vec = [[0] * 26 for _ in range(n)]
+
+    for i in range(n):
+        vec[i][ord(s[i]) - ord('a')] += 1
+        if i > 0:
+            for j in range(26):
+                vec[i][j] += vec[i - 1][j]
+
+    ans = -1
+
+    # try for each starting index
+    for i in range(n):
+
+        # search space is from [i to n-1]
+        low, high = i, n - 1
+        currAns = -1
+
+        while low <= high:
+            mid = (low + high) // 2
+            freq = vec[mid][:]
+
+            # remove prefix before i if needed
+            if i > 0:
+                for j in range(26):
+                    freq[j] -= vec[i - 1][j]
+
+            # freq[j] -> represents the count of char('a' + j) in
+            # the subtring starting from i and ending at mid
+            count = sum(1 for f in freq if f > 0)
+
+            if count == k:
+                currAns = mid - i + 1
+                low = mid + 1
+            elif count < k:
+                low = mid + 1
+            else:
+                high = mid - 1
+
+        if currAns != -1:
+            ans = max(ans, currAns)
+
+    return ans
+
+if __name__ == "__main__":
+    s = "aabacbebebe"
+    k = 3
+    print(longestKSubstr(s, k))
+
+C#
+
+using System;
+
+class GfG {
+    public static int longestKSubstr(string s, int k) {
+        int n = s.Length;
+
+        // prefix frequency array: vec[i][ch] =
+        // frequency of char 'a'+ch in s[0..i]
+        int[][] vec = new int[n][];
+        for (int i = 0; i < n; i++) {
+            vec[i] = new int[26];
+        }
+
+        for (int i = 0; i < n; i++) {
+            vec[i][s[i] - 'a']++;
+            if (i > 0) {
+                for (int j = 0; j < 26; j++) {
+                    vec[i][j] += vec[i - 1][j];
+                }
+            }
+        }
+
+        int ans = -1;
+
+        // try for each starting index
+        for (int i = 0; i < n; i++) {
+            // search space is from [i to n-1]
+            int low = i, high = n - 1, currAns = -1;
+
+            while (low <= high) {
+                int mid = (low + high) / 2;
+                int count = 0;
+                int[] freq = new int[26];
+                Array.Copy(vec[mid], freq, 26);
+
+                // remove prefix before i if needed
+                if (i > 0) {
+                    for (int j = 0; j < 26; j++) {
+                        freq[j] -= vec[i - 1][j];
+                    }
+                }
+
+                // freq[j] -> represents the count of char('a' + j) in
+                // the subtring starting from i and ending at mid
+                for (int j = 0; j < 26; j++) {
+                    if (freq[j] > 0) count++;
+                }
+
+                if (count == k) {
+                    currAns = mid - i + 1;
+                    low = mid + 1;
+                } else if (count < k) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+
+            if (currAns != -1) {
+                ans = Math.Max(ans, currAns);
+            }
+        }
+
+        return ans;
+    }
+
+    public static void Main(string[] args) {
+        string s = "aabacbebebe";
+        int k = 3;
+        Console.WriteLine(longestKSubstr(s, k));
+    }
+}
+
+JavaScript
+
+function longestKSubstr(s, k) {
+    let n = s.length;
+
+    // prefix frequency array: vec[i][ch] =
+    // frequency of char 'a'+ch in s[0..i]
+    let vec = Array.from({ length: n }, () => Array(26).fill(0));
+
+    for (let i = 0; i < n; i++) {
+        vec[i][s.charCodeAt(i) - 97]++;
+        if (i > 0) {
+            for (let j = 0; j < 26; j++) {
+                vec[i][j] += vec[i - 1][j];
+            }
+        }
+    }
+
+    let ans = -1;
+
+    // try for each starting index
+    for (let i = 0; i < n; i++) {
+
+        // search space is from [i to n-1]
+        let low = i, high = n - 1, currAns = -1;
+
+        while (low <= high) {
+            let mid = Math.floor((low + high) / 2);
+            let freq = vec[mid].slice();
+            let count = 0;
+
+            // remove prefix before i if needed
+            if (i > 0) {
+                for (let j = 0; j < 26; j++) {
+                    freq[j] -= vec[i - 1][j];
+                }
+            }
+
+            // freq[j] -> represents the count of char('a' + j) in
+            // the subtring starting from i and ending at mid
+            for (let j = 0; j < 26; j++) {
+                if (freq[j] > 0) count++;
+            }
+
+            if (count === k) {
+                currAns = mid - i + 1;
+                low = mid + 1;
+            } else if (count < k) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        if (currAns !== -1) {
+            ans = Math.max(ans, currAns);
+        }
+    }
+
+    return ans;
+}
+
+// Driver Code
+let s = "aabacbebebe";
+let k = 3;
+console.log(longestKSubstr(s, k));
+
+Output
+
+7
+
+### [Expected Approach] Sliding Window with Frequency Count - O(n) Time and O(1) Space
+
+- Use a sliding window with two pointers (i and j) to represent the start and end of the current substring.
+- Maintain a frequency array and a counter to track the number of unique characters in the window.
+- Expand the window by moving j, and if unique characters exceed k, shrink the window from the left by moving i.
+- Whenever the window contains exactly k unique characters, update the maximum substring length.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int longestKSubstr(string &s, int k) {
+
+    int n = s.size();
+    int i = 0, j = 0;
+    int cnt = 0;
+    int maxi = -1;
+    vector<int> fre(26, 0);
+
+    // cnt represents the number of
+    // unique characters in the current window
+
+    while (j < n) {
+
+        // include s[j] into the window
+        fre[s[j] - 'a']++;
+
+        // it is the first occurrence of
+        // this character in the window
+        if (fre[s[j] - 'a'] == 1) cnt++;
+
+        // shrink the window if the number of
+        // unique character is more than k
+        while (cnt > k) {
+            fre[s[i] - 'a']--;
+
+            // one unique character removed
+            if (fre[s[i] - 'a'] == 0) cnt--;
+            i++;
+        }
+
+        // we have exactly k unique characters
+        if (cnt == k) {
+            maxi = max(maxi, j - i + 1);
+        }
+
+        j++;
+    }
+
+    return maxi;
+}
+
+int main() {
+    string s = "aabacbebebe";
+    int k = 3;
+    cout << longestKSubstr(s, k) << "\n";
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+class GfG {
+    public static int longestKSubstr(String s, int k) {
+
+        int n = s.length();
+        int i = 0, j = 0;
+        int cnt = 0;
+        int maxi = -1;
+        int[] fre = new int[26];
+
+        // cnt represents the number of
+        // unique characters in the current window
+
+        while (j < n) {
+
+            // include s[j] into the window
+            fre[s.charAt(j) - 'a']++;
+
+            // it is the first occurrence of
+            // this character in the window
+            if (fre[s.charAt(j) - 'a'] == 1) cnt++;
+
+            // shrink the window if the number of
+            // unique character is more than k
+            while (cnt > k) {
+                fre[s.charAt(i) - 'a']--;
+
+                // one unique character removed
+                if (fre[s.charAt(i) - 'a'] == 0) cnt--;
+                i++;
+            }
+
+            // we have exactly k unique characters
+            if (cnt == k) {
+                maxi = Math.max(maxi, j - i + 1);
+            }
+
+            j++;
+        }
+
+        return maxi;
+    }
+
+    public static void main(String[] args) {
+        String s = "aabacbebebe";
+        int k = 3;
+        System.out.println(longestKSubstr(s, k));
+    }
+}
+
+Python
+
+def longestKSubstr(s, k):
+    n = len(s)
+    i = 0
+    j = 0
+    cnt = 0
+    maxi = -1
+    fre = [0] * 26
+
+    # cnt represents the number of
+    # unique characters in the current window
+
+    while j < n:
+
+        # include s[j] into the window
+        fre[ord(s[j]) - ord('a')] += 1
+
+        # it is the first occurrence of
+        # this character in the window
+        if fre[ord(s[j]) - ord('a')] == 1:
+            cnt += 1
+
+        # shrink the window if the number of
+        # unique character is more than k
+        while cnt > k:
+            fre[ord(s[i]) - ord('a')] -= 1
+
+            # one unique character removed
+            if fre[ord(s[i]) - ord('a')] == 0:
+                cnt -= 1
+            i += 1
+
+        # we have exactly k unique characters
+        if cnt == k:
+            maxi = max(maxi, j - i + 1)
+
+        j += 1
+
+    return maxi
+
+if __name__ == "__main__":
+    s = "aabacbebebe"
+    k = 3
+    print(longestKSubstr(s, k))
+
+C#
+
+using System;
+
+class GfG {
+    public static int longestKSubstr(string s, int k) {
+
+        int n = s.Length;
+        int i = 0, j = 0;
+        int cnt = 0;
+        int maxi = -1;
+        int[] fre = new int[26];
+
+        // cnt represents the number of unique
+        // characters in the current window
+
+        while (j < n) {
+
+            // include s[j] into the window
+            fre[s[j] - 'a']++;
+
+            // it is the first occurrence of
+            // this character in the window
+            if (fre[s[j] - 'a'] == 1) cnt++;
+
+            // shrink the window if the number of
+            // unique character is more than k
+            while (cnt > k) {
+                fre[s[i] - 'a']--;
+
+                // one unique character removed
+                if (fre[s[i] - 'a'] == 0) cnt--;
+                i++;
+            }
+
+            // we have exactly k unique characters
+            if (cnt == k) {
+                maxi = Math.Max(maxi, j - i + 1);
+            }
+
+            j++;
+        }
+
+        return maxi;
+    }
+
+    public static void Main(string[] args) {
+        string s = "aabacbebebe";
+        int k = 3;
+        Console.WriteLine(longestKSubstr(s, k));
+    }
+}
+
+JavaScript
+
+function longestKSubstr(s, k) {
+    let n = s.length;
+    let i = 0, j = 0;
+    let cnt = 0;
+    let maxi = -1;
+    let fre = new Array(26).fill(0);
+
+    // cnt represents the number of unique
+    // characters in the current window
+
+    while (j < n) {
+
+        // include s[j] into the window
+        fre[s.charCodeAt(j) - 97]++;
+
+        // it is the first occurrence of
+        // this character in the window
+        if (fre[s.charCodeAt(j) - 97] === 1) cnt++;
+
+        // shrink the window if the number
+        // of unique character is more than k
+        while (cnt > k) {
+            fre[s.charCodeAt(i) - 97]--;
+
+            // one unique character removed
+            if (fre[s.charCodeAt(i) - 97] === 0) cnt--;
+            i++;
+        }
+
+        // we have exactly k unique characters
+        if (cnt === k) {
+            maxi = Math.max(maxi, j - i + 1);
+        }
+
+        j++;
+    }
+
+    return maxi;
+}
+
+// Driver Code
+let s = "aabacbebebe";
+let k = 3;
+console.log(longestKSubstr(s, k));
+
+Output
+
+7

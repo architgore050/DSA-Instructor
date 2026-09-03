@@ -1,0 +1,1035 @@
+Source: https://www.geeksforgeeks.org/dsa/word-wrap-problem-dp-19/
+Title: Word Wrap Problem
+Extractor: 2
+
+Given an array arr[] , where arr[i] denotes the number of characters in one word.
+
+- Given a number k which is limit on the number of characters that can be put in one line (line width).
+- Put line breaks in the given sequence  such that the lines are printed neatly. Assume that the length of each  word is smaller than the line width.
+- When line breaks are inserted there  is a possibility that extra spaces are present in each line. The extra  spaces include spaces put at the end of every line except the last one.
+
+You need to minimize the total cost where
+
+Total Cost = Sum of cost of all lines
+
+Cost of line is = (Number of extra spaces in the line) 2 .
+
+Examples:
+
+> Input: arr[] = [3,2,2,5], k = 6 Output: 10 Explanation: Given a line can have 6 characters, Line number 1: From word no. 1 to 1 Line number 2: From word no. 2 to 3 Line number 3: From word no. 4 to 4 So total cost = (6-3) 2 + (6-2-2-1) 2 = 3 2 +1 2 = 10. As in the first line word length = 3 thus extra spaces = 6 - 3 = 3 and in the second line there are two words of length 2 and there is already 1 space between two words thus extra spaces = 6 - 2 -2 -1 = 1. As mentioned in the problem description there will be no extra spaces in the last line. Placing first and second word in the first line and third word on the second line would take a cost of 0 2 + 4 2 = 16 (zero spaces on first line and 6-2 = 4 spaces on second), which isn't the minimum possible cost. Input: arr[] = [3,2,2], k = 4 Output: 5 Explanation: Given a line can have 4 characters, Line number 1: From word no. 1 to 1 Line number 2: From word no. 2 to 2 Line number 3: From word no. 3 to 3 Same explanation as above total cost = (4 - 3) 2 + (4 - 2) 2 = 5.
+
+Table of Content
+
+- Why Greedy fails?
+- Using Recursion - O(2n) Time O(n) Space
+- Using Top-Down DP (Memoization) - O(n^2) Time and O(n) Space
+- Using Bottom-Up DP (Tabulation) - O(n*n) Time and O(n) Space
+
+### Why Greedy fails?
+
+Greedy approach fails because it fills the current line as much as possible without considering future cost and the fact that the last line has no cost. For example, arr[] = [3, 2, 2, 5], k = 6 : Greedy places first two words together, leading to higher cost later (total = 16/17). But optimal arrangement gives cost = 10. Hence, greedy is not optimal and DP is required.
+
+### Using Recursion - O(2 n ) Time O(n) Space
+
+> This approach is based on recursively trying to place words on each line. The recurrence relation for the word wrapping problem can be stated as follows: calculateCost(curr) represents the minimum cost for wrapping words starting from index curr to the end of the array. The recurrence is: c alculateCost(curr) = min { [(k - tot)^2 + calculateCost(i + 1)] } for all values of i from curr to n-1, where the total number of characters in the line (including spaces between words) does not exceed the width limit k. Where: tot is the total number of characters in the current line, including the sum of word lengths and the spaces between them. (k - tot)^2 is the cost, calculated as the square of the extra spaces on the current line (if it fits within the width limit). Base Case: calculateCost(curr) = 0 if curr >= n, meaning when all words have been placed, no further cost is incurred.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// User function Template for C++
+
+int calculateCost(int curr, int n, vector<int> &arr, int k)
+{
+
+    // Base case: If current index is beyond or at the
+    // last word, no cost
+    if (curr >= n)
+        return 0;
+
+    // Keeps track of the current line's total character count
+    int sum = 0;
+
+    // Initialize with a large value to find the minimum cost
+    int ans = INT_MAX;
+
+    // Try placing words from the current position to the next
+    for (int i = curr; i < n; i++)
+    {
+
+        // Add the length of the current word
+        sum += arr[i];
+
+        // Including spaces between words
+        int tot = sum + (i - curr);
+
+        // If the total exceeds the line width,
+        // break out of the loop
+        if (tot > k)
+            break;
+
+        // If this is not the last word in the array, compute the
+        // cost for the next line
+        if (i != n - 1)
+        {
+            int temp = (k - tot) * (k - tot) + calculateCost(i + 1, n, arr, k);
+            ans = min(ans, temp);
+        }
+        else
+        {
+
+            // If it's the last word, there's no cost added
+            ans = 0;
+        }
+    }
+
+    return ans;
+}
+
+int solveWordWrap(vector<int> arr, int k)
+{
+    int n = arr.size();
+    return calculateCost(0, n, arr, k);
+}
+
+int main()
+{
+    int k = 6;
+
+    vector<int> arr = {3, 2, 2, 5};
+    int res = solveWordWrap(arr, k);
+    cout << res << endl;
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+public class GfG {
+
+    // User function Template for Java
+
+    static int calculateCost(int curr, int n, int[] arr, int k) {
+
+        // Base case: If current index is beyond or at the
+        // last word, no cost
+        if (curr >= n)
+            return 0;
+
+        // Keeps track of the current line's total character count
+        int sum = 0;
+
+        // Initialize with a large value to find the minimum cost
+        int ans = Integer.MAX_VALUE;
+
+        // Try placing words from the current position to the next
+        for (int i = curr; i < n; i++) {
+
+            // Add the length of the current word
+            sum += arr[i];
+
+            // Including spaces between words
+            int tot = sum + (i - curr);
+
+            // If the total exceeds the line width,
+            // break out of the loop
+            if (tot > k)
+                break;
+
+            // If this is not the last word in the array, compute the
+            // cost for the next line
+            if (i!= n - 1) {
+                int temp = (k - tot) * (k - tot) + calculateCost(i + 1, n, arr, k);
+                ans = Math.min(ans, temp);
+            } else {
+
+                // If it's the last word, there's no cost added
+                ans = 0;
+            }
+        }
+
+        return ans;
+    }
+
+    static int solveWordWrap(int[] arr, int k) {
+        int n = arr.length;
+        return calculateCost(0, n, arr, k);
+    }
+
+    public static void main(String[] args) {
+        int k = 6;
+
+        int[] arr = {3, 2, 2, 5};
+        int res = solveWordWrap(arr, k);
+        System.out.println(res);
+    }
+}
+
+Python
+
+def calculateCost(curr, n, arr, k):
+
+    # Base case: If current index is beyond or at the
+    # last word, no cost
+    if curr >= n:
+        return 0
+
+    # Keeps track of the current line's total character count
+    sum = 0
+
+    # Initialize with a large value to find the minimum cost
+    ans = float('inf')
+
+    # Try placing words from the current position to the next
+    for i in range(curr, n):
+
+        # Add the length of the current word
+        sum += arr[i]
+
+        # Including spaces between words
+        tot = sum + (i - curr)
+
+        # If the total exceeds the line width,
+        # break out of the loop
+        if tot > k:
+            break
+
+        # If this is not the last word in the array, compute the
+        # cost for the next line
+        if i!= n - 1:
+            temp = (k - tot) * (k - tot) + calculateCost(i + 1, n, arr, k)
+            ans = min(ans, temp)
+        else:
+
+            # If it's the last word, there's no cost added
+            ans = 0
+
+    return ans
+
+def solveWordWrap(arr, k):
+    n = len(arr)
+    return calculateCost(0, n, arr, k)
+
+if __name__ == '__main__':
+    k = 6
+
+    arr = [3, 2, 2, 5]
+    res = solveWordWrap(arr, k)
+    print(res)
+
+C#
+
+using System;
+
+public class GfG {
+
+    // User function Template for C#
+
+    static int calculateCost(int curr, int n, int[] arr, int k) {
+
+        // Base case: If current index is beyond or at the
+        // last word, no cost
+        if (curr >= n)
+            return 0;
+
+        // Keeps track of the current line's total character count
+        int sum = 0;
+
+        // Initialize with a large value to find the minimum cost
+        int ans = int.MaxValue;
+
+        // Try placing words from the current position to the next
+        for (int i = curr; i < n; i++) {
+
+            // Add the length of the current word
+            sum += arr[i];
+
+            // Including spaces between words
+            int tot = sum + (i - curr);
+
+            // If the total exceeds the line width,
+            // break out of the loop
+            if (tot > k)
+                break;
+
+            // If this is not the last word in the array, compute the
+            // cost for the next line
+            if (i!= n - 1) {
+                int temp = (k - tot) * (k - tot) + calculateCost(i + 1, n, arr, k);
+                ans = Math.Min(ans, temp);
+            } else {
+
+                // If it's the last word, there's no cost added
+                ans = 0;
+            }
+        }
+
+        return ans;
+    }
+
+    static int solveWordWrap(int[] arr, int k) {
+        int n = arr.Length;
+        return calculateCost(0, n, arr, k);
+    }
+
+    public static void Main() {
+        int k = 6;
+
+        int[] arr = {3, 2, 2, 5};
+        int res = solveWordWrap(arr, k);
+        Console.WriteLine(res);
+    }
+}
+
+JavaScript
+
+function calculateCost(curr, n, arr, k) {
+
+    // Base case: If current index is beyond or at the
+    // last word, no cost
+    if (curr >= n)
+        return 0;
+
+    // Keeps track of the current line's total character count
+    let sum = 0;
+
+    // Initialize with a large value to find the minimum cost
+    let ans = Number.MAX_VALUE;
+
+    // Try placing words from the current position to the next
+    for (let i = curr; i < n; i++) {
+
+        // Add the length of the current word
+        sum += arr[i];
+
+        // Including spaces between words
+        let tot = sum + (i - curr);
+
+        // If the total exceeds the line width,
+        // break out of the loop
+        if (tot > k)
+            break;
+
+        // If this is not the last word in the array, compute the
+        // cost for the next line
+        if (i!= n - 1) {
+            let temp = (k - tot) * (k - tot) + calculateCost(i + 1, n, arr, k);
+            ans = Math.min(ans, temp);
+        } else {
+
+            // If it's the last word, there's no cost added
+            ans = 0;
+        }
+    }
+
+    return ans;
+}
+
+function solveWordWrap(arr, k) {
+    let n = arr.length;
+    return calculateCost(0, n, arr, k);
+}
+
+(function() {
+    let k = 6;
+
+    let arr = [3, 2, 2, 5];
+    let res = solveWordWrap(arr, k);
+    console.log(res);
+})();
+
+Output
+
+10
+
+Time Complexity: O(2ⁿ) Space Complexity: O(n)
+
+### Using Top-Down DP (Memoization) - O(n^2) Time and O(n) Space
+
+> If we observe closely, the recursive function calculateCost() in the word wrap problem also follows the overlapping subproblems property. We  optimize this using memoization. Since the only changing parameter in the recursive calls is curr, which ranges from 0 to n-1 (where n is the number of words), we use a 1D array of size n to store the results of previously computed subproblems. By initializing this array with -1 to indicate that a subproblem hasn't been computed yet.
+
+C++
+
+// C++ program to minimize the cost to
+// wrap the words.
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int calculateCost(int curr, int n, vector<int> &arr,
+                  int k, vector<int> &memo) {
+
+	// Base case: If current index is beyond or at
+	// the last word, no cost
+	if (curr >= n)
+		return 0;
+
+	if (memo[curr] != -1)
+		return memo[curr];
+
+	// Keeps track of the current line's total character
+	// count
+	int sum = 0;
+
+	// Initialize with a large value to find the minimum cost
+	int ans = INT_MAX;
+
+	// Try placing words from the current position to the next
+	for (int i = curr; i < n; i++) {
+
+		// Add the length of the current word
+		sum += arr[i];
+
+		// Including spaces between words
+		int tot = sum + (i - curr);
+
+		// If the total exceeds the line width,
+		// break out of the loop
+		if (tot > k)
+			break;
+
+		// If this is not the last word in the array, compute
+		// the cost for the next line
+		if (i != n - 1) {
+			int temp = (k - tot) * (k - tot) +
+			           calculateCost(i + 1, n, arr, k, memo);
+			ans = min(ans, temp);
+		}
+		else {
+
+			// If it's the last word, there's no cost added
+			ans = 0;
+		}
+	}
+
+	return memo[curr] = ans;
+}
+
+int solveWordWrap(vector<int> &arr, int k) {
+	int n = arr.size();
+	vector<int> memo(n, -1);
+	return calculateCost(0, n, arr, k, memo);
+}
+
+int main() {
+	int k = 6;
+	vector<int> arr = {3, 2, 2, 5};
+	int res =  solveWordWrap(arr, k);
+	cout << res << endl;
+	return 0;
+}
+
+Java
+
+// Java program to minimize the cost to
+// wrap the words.
+
+import java.util.*;
+
+class GfG {
+
+	static int calculateCost(int curr, int n, int[] arr,
+	                         int k, int[] memo) {
+
+		// Base case: If current index is beyond or at the
+		// last word, no cost
+		if (curr >= n) {
+			return 0;
+		}
+
+		// If the value is already computed, return the
+		// memoized result
+		if (memo[curr] != -1) {
+			return memo[curr];
+		}
+
+		// Keeps track of the current line's total character
+		// count
+		int sum = 0;
+
+		// Initialize with a large value to find the minimum
+		// cost
+		int ans = Integer.MAX_VALUE;
+
+		// Try placing words from the current position to
+		// the next
+		for (int i = curr; i < n; i++) {
+
+			// Add the length of the current word
+			sum += arr[i];
+
+			// Including spaces between words
+			int tot = sum + (i - curr);
+
+			// If the total exceeds the line width, break
+			// out of the loop
+			if (tot > k) {
+				break;
+			}
+
+			// If this is not the last word in the array,
+			// compute the cost for the next line
+			if (i != n - 1) {
+				int temp = (k - tot) * (k - tot)
+				           + calculateCost(i + 1, n, arr, k,
+				                           memo);
+				ans = Math.min(ans, temp);
+			}
+			else {
+
+				// If it's the last word, there's no cost added
+				ans = 0;
+			}
+		}
+		memo[curr] = ans;
+		return ans;
+	}
+
+	static int solveWordWrap(int[] arr, int k) {
+		int n = arr.length;
+		int[] memo = new int[n];
+		Arrays.fill(memo,
+		            -1);
+		return calculateCost(0, n, arr, k, memo);
+	}
+
+	public static void main(String[] args) {
+		int k = 6;
+		int[] arr = { 3, 2, 2, 5 };
+		int res = solveWordWrap(arr, k);
+		System.out.println(res);
+	}
+}
+
+Python
+
+# Python program to minimize the cost to wrap the words.
+
+def calculateCost(curr, n, arr, k, memo):
+
+    # Base case: If current index is beyond or at the
+    # last word, no cost
+    if curr >= n:
+        return 0
+
+    # If the value is already computed, return the
+    # memoized result
+    if memo[curr] != -1:
+        return memo[curr]
+
+    # Keeps track of the current line's total
+    # character count
+    sumChars = 0
+
+    # Initialize with a large value to find the minimum cost
+    ans = float('inf')
+
+    # Try placing words from the current position to the next
+    for i in range(curr, n):
+
+        # Add the length of the current word
+        sumChars += arr[i]
+
+        # Including spaces between words
+        total = sumChars + (i - curr)
+
+        # If the total exceeds the line width,
+        # break out of the loop
+        if total > k:
+            break
+
+        # If this is not the last word in the array, compute
+        # the cost for the next line
+        if i != n - 1:
+            temp = (k - total) * (k - total) + \
+                calculateCost(i + 1, n, arr, k, memo)
+            ans = min(ans, temp)
+
+        # If it's the last word, there's no cost added
+        else:
+            ans = 0
+
+    # Memoize the result before returning
+    memo[curr] = ans
+    return ans
+
+def solveWordWrap(arr, k):
+    n = len(arr)
+    memo = [-1] * n
+    return calculateCost(0, n, arr, k, memo)
+
+if __name__ == "__main__":
+    k = 6
+    arr = [3, 2, 2, 5]
+    print(solveWordWrap(arr, k))
+
+C#
+
+// C# program to minimize the cost to wrap the words.
+
+using System;
+using System.Collections.Generic;
+
+class  GfG {
+
+	static int calculateCost(int curr, int n, List<int> arr,
+	                         int k, int[] memo) {
+
+		// Base case: If current index is beyond or at the
+		// last word, no cost
+		if (curr >= n)
+			return 0;
+
+		// If the value is already computed, return the
+		// memoized result
+		if (memo[curr] != -1)
+			return memo[curr];
+
+		// Keeps track of the current line's total character
+		// count
+		int sumChars = 0;
+
+		// Initialize with a large value to find the minimum
+		// cost
+		int ans = int.MaxValue;
+
+		// Try placing words from the current position to
+		// the next
+		for (int i = curr; i < n; i++) {
+
+			// Add the length of the current word
+			sumChars += arr[i];
+
+			// Including spaces between words
+			int total = sumChars + (i - curr);
+
+			// If the total exceeds the line width, break
+			// out of the loop
+			if (total > k)
+				break;
+
+			// If this is not the last word in the array,
+			// compute the cost for the next line
+			if (i != n - 1) {
+				int temp = (k - total) * (k - total)
+				           + calculateCost(i + 1, n, arr, k,
+				                           memo);
+				ans = Math.Min(ans, temp);
+			}
+			else {
+
+				// If it's the last word, there's no cost added
+				ans = 0;
+			}
+		}
+
+		// Memoize the result before returning
+		memo[curr] = ans;
+		return ans;
+	}
+
+	static int solveWordWrap(List<int> arr, int k) {
+		int n = arr.Count;
+		int[] memo = new int[n];
+		for (int i = 0; i < n; i++)
+			memo[i] = -1;
+
+		return calculateCost(0, n, arr, k, memo);
+	}
+
+	static void Main()  {
+		int k = 6;
+		List<int> arr = new List<int> { 3, 2, 2, 5 };
+		int res = solveWordWrap(arr, k);
+		Console.WriteLine(res);
+	}
+}
+
+JavaScript
+
+// JavaScript program to minimize the cost to wrap the words.
+
+function calculateCost(curr, n, arr, k, memo) {
+
+	// Base case: If current index is beyond or at the last
+	// word, no cost
+	if (curr >= n) {
+		return 0;
+	}
+
+	// If the value is already computed, return the memoized
+	// result
+	if (memo[curr] !== -1) {
+		return memo[curr];
+	}
+
+	// Keeps track of the current line's total character
+	// count
+	let sumChars = 0;
+
+	// Initialize with a large value to find the minimum
+	// cost
+	let ans = Number.MAX_VALUE;
+
+	// Try placing words from the current position to the
+	// next
+	for (let i = curr; i < n; i++) {
+
+		// Add the length of the current word
+		sumChars += arr[i];
+
+		// Including spaces between words
+		let total = sumChars + (i - curr);
+
+		// If the total exceeds the line width, break out of
+		// the loop
+		if (total > k) {
+			break;
+		}
+
+		// If this is not the last word in the array,
+		// compute the cost for the next line
+		if (i !== n - 1) {
+			let temp
+			    = (k - total) * (k - total)
+			      + calculateCost(i + 1, n, arr, k, memo);
+			ans = Math.min(ans, temp);
+		}
+
+		// If it's the last word, there's no cost added
+		else {
+			ans = 0;
+		}
+	}
+
+	// Memoize the result before returning
+	memo[curr] = ans;
+	return ans;
+}
+
+function solveWordWrap(arr, k) {
+
+	const n = arr.length;
+	const memo = new Array(n).fill(
+	    -1);
+	return calculateCost(0, n, arr, k, memo);
+}
+
+const k = 6;
+const arr = [ 3, 2, 2, 5 ];
+const res = solveWordWrap(arr, k);
+console.log(res);
+
+Output
+
+10
+
+### Using Bottom-Up DP (Tabulation) - O(n*n) Time and O(n) Space
+
+> Let dp[i] represent the minimum cost to wrap words starting from the i-th word until the end. The goal is to calculate dp[0], which will give us the minimum cost to wrap the entire set of words. For each index i, dp[i] = min(cost(i, j) + dp[j+1])  for all j from i+1 to n-1 such that number of characters (including spaces) from i to j does not exceed k. where, cost(i, j) is the cost for wrapping words from index i to j in a single line. dp[j+1] is the minimum cost for wrapping words from index j + 1 to the end. Base Case: When no words remain, the cost
+
+Let us understand with an example: Input: arr = {3, 2, 2, 5}, k = 6 Start: dp = [∞, ∞, ∞, ∞, 0]
+
+- curr = 3 -> i = 3 -> current word length = 5, total = 5 -> this is the last word, so cost = 0 -> dp becomes [∞, ∞, ∞, 0, 0]
+- curr = 2 -> i = 2 -> sum = 2, total = 2 -> extra spaces = 4 -> cost = 16 + dp[3] = 16 i = 3 -> total exceeds k -> stop -> dp becomes [∞, ∞, 16, 0, 0]
+- curr = 1 -> i = 1 -> sum = 2, total = 2 ->extra spaces = 4 -> cost = 16 + dp[2] = 32 i = 2 -> sum = 4, total = 5 -> extra spaces = 1 -> cost = 1 + dp[3] = 1 i = 3 -> total exceeds k -> stop -> dp becomes [∞, 1, 16, 0, 0]
+- curr = 0 -> i = 0 -> sum = 3, total = 3 -> extra spaces = 3 -> cost = 9 + dp[1] = 10 i = 1 -> sum = 5, total = 6 -> extra spaces = 0 -> cost = 0 + dp[2] = 16 i = 2 -> total exceeds k -> stop -> dp becomes [10, 1, 16, 0, 0]
+
+Stop and return dp[0], Output: 10
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int solveWordWrap(vector<int> arr, int k)
+{
+    int n = arr.size();
+
+    // Create a DP table to store the minimum
+    // cost of word wrapping from index i
+    // Initialize dp array with a large value
+    vector<int> dp(n + 1, INT_MAX);
+
+    // Base case: if no words remain, cost is 0
+    dp[n] = 0;
+
+    // Iterate over the array from right to left
+    // to fill the dp table
+    for (int curr = n - 1; curr >= 0; curr--)
+    {
+        int sum = 0;
+
+        // Try placing words from the current position to the next
+        for (int i = curr; i < n; i++)
+        {
+
+            // Add the length of the current word
+            sum += arr[i];
+
+            // Total length including spaces between words
+            int tot = sum + (i - curr);
+
+            // If the total exceeds the line width, break
+            if (tot > k)
+                break;
+
+            // If it's the last word, there's no cost
+            if (i == n - 1)
+            {
+                dp[curr] = min(dp[curr], 0);
+            }
+            else
+            {
+                // Calculate cost and add next state
+                int cost = (k - tot) * (k - tot);
+                dp[curr] = min(dp[curr], cost + dp[i + 1]);
+            }
+        }
+    }
+
+    // Return minimum cost from index 0
+    return dp[0];
+}
+
+// Driver Code
+int main()
+{
+    int k = 6;
+    vector<int> arr = {3, 2, 2, 5};
+    cout << solveWordWrap(arr, k) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+public class GfG {
+    public static int solveWordWrap(int[] arr, int k) {
+        int n = arr.length;
+
+        // Create a DP table to store the minimum
+        // cost of word wrapping from index i
+        // Initialize dp array with a large value
+        int[] dp = new int[n + 1];
+        Arrays.fill(dp, Integer.MAX_VALUE);
+
+        // Base case: if no words remain, cost is 0
+        dp[n] = 0;
+
+        // Iterate over the array from right to left
+        // to fill the dp table
+        for (int curr = n - 1; curr >= 0; curr--) {
+            int sum = 0;
+
+            // Try placing words from the current position to the next
+            for (int i = curr; i < n; i++) {
+
+                // Add the length of the current word
+                sum += arr[i];
+
+                // Total length including spaces between words
+                int tot = sum + (i - curr);
+
+                // If the total exceeds the line width, break
+                if (tot > k)
+                    break;
+
+                // If it's the last word, there's no cost
+                if (i == n - 1) {
+                    dp[curr] = Math.min(dp[curr], 0);
+                } else {
+                    // Calculate cost and add next state
+                    int cost = (k - tot) * (k - tot);
+                    dp[curr] = Math.min(dp[curr], cost + dp[i + 1]);
+                }
+            }
+        }
+
+        // Return minimum cost from index 0
+        return dp[0];
+    }
+
+    // Driver Code
+    public static void main(String[] args) {
+        int k = 6;
+        int[] arr = {3, 2, 2, 5};
+        System.out.println(solveWordWrap(arr, k));
+    }
+}
+
+Python
+
+def solveWordWrap(arr, k):
+    n = len(arr)
+
+    # Create a DP table to store the minimum
+    # cost of word wrapping from index i
+    # Initialize dp array with a large value
+    dp = [float('inf')] * (n + 1)
+
+    # Base case: if no words remain, cost is 0
+    dp[n] = 0
+
+    # Iterate over the array from right to left
+    # to fill the dp table
+    for curr in range(n - 1, -1, -1):
+        sum = 0
+
+        # Try placing words from the current position to the next
+        for i in range(curr, n):
+
+            # Add the length of the current word
+            sum += arr[i]
+
+            # Total length including spaces between words
+            tot = sum + (i - curr)
+
+            # If the total exceeds the line width, break
+            if tot > k:
+                break
+
+            # If it's the last word, there's no cost
+            if i == n - 1:
+                dp[curr] = min(dp[curr], 0)
+            else:
+                # Calculate cost and add next state
+                cost = (k - tot) * (k - tot)
+                dp[curr] = min(dp[curr], cost + dp[i + 1])
+
+    # Return minimum cost from index 0
+    return dp[0]
+
+# Driver Code
+if __name__ == '__main__':
+    k = 6
+    arr = [3, 2, 2, 5]
+    print(solveWordWrap(arr, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG
+{
+    static int solveWordWrap(List<int> arr, int k)
+    {
+        int n = arr.Count;
+
+        // Create a DP table to store the minimum
+        // cost of word wrapping from index i
+        // Initialize dp array with a large value
+        int[] dp = new int[n + 1];
+        for (int i = 0; i <= n; i++)
+            dp[i] = int.MaxValue;
+
+        // Base case: if no words remain, cost is 0
+        dp[n] = 0;
+
+        // Iterate over the array from right to left
+        // to fill the dp table
+        for (int curr = n - 1; curr >= 0; curr--)
+        {
+            int sum = 0;
+
+            // Try placing words from the current position to the next
+            for (int i = curr; i < n; i++)
+            {
+                // Add the length of the current word
+                sum += arr[i];
+
+                // Total length including spaces between words
+                int tot = sum + (i - curr);
+
+                // If the total exceeds the line width, break
+                if (tot > k)
+                    break;
+
+                // If it's the last word, there's no cost
+                if (i == n - 1)
+                {
+                    dp[curr] = Math.Min(dp[curr], 0);
+                }
+                else
+                {
+                    // Calculate cost and add next state
+                    int cost = (k - tot) * (k - tot);
+                    dp[curr] = Math.Min(dp[curr], cost + dp[i + 1]);
+                }
+            }
+        }
+
+        // Return minimum cost from index 0
+        return dp[0];
+    }
+
+    // Driver Code
+    static void Main(string[] args)
+    {
+        int k = 6;
+        List<int> arr = new List<int> { 3, 2, 2, 5 };
+        Console.WriteLine(solveWordWrap(arr, k));
+    }
+}
+
+JavaScript
+
+function solveWordWrap(arr, k) {
+    let n = arr.length;
+
+    // Create a DP table to store the minimum
+    // cost of word wrapping from index i
+    // Initialize dp array with a large value
+    let dp = Array(n + 1).fill(Number.MAX_SAFE_INTEGER);
+
+    // Base case: if no words remain, cost is 0
+    dp[n] = 0;
+
+    // Iterate over the array from right to left
+    // to fill the dp table
+    for (let curr = n - 1; curr >= 0; curr--) {
+        let sum = 0;
+
+        // Try placing words from the current position to the next
+        for (let i = curr; i < n; i++) {
+
+            // Add the length of the current word
+            sum += arr[i];
+
+            // Total length including spaces between words
+            let tot = sum + (i - curr);
+
+            // If the total exceeds the line width, break
+            if (tot > k)
+                break;
+
+            // If it's the last word, there's no cost
+            if (i == n - 1) {
+                dp[curr] = Math.min(dp[curr], 0);
+            } else {
+                // Calculate cost and add next state
+                let cost = (k - tot) * (k - tot);
+                dp[curr] = Math.min(dp[curr], cost + dp[i + 1]);
+            }
+        }
+    }
+
+    // Return minimum cost from index 0
+    return dp[0];
+}
+
+// Driver Code
+let k = 6;
+let arr = [3, 2, 2, 5];
+console.log(solveWordWrap(arr, k));
+
+Output
+
+10
+
+Time Complexity: O(n^2) Auxiliary Space: O(n), since n extra space has been taken.

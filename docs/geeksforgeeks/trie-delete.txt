@@ -1,0 +1,627 @@
+Source: https://www.geeksforgeeks.org/dsa/trie-delete/
+Title: Trie | (Delete)
+Extractor: 2
+
+In Trie delete operation, we delete the key in bottom up manner using recursion. The following are possible conditions when deleting key,
+
+1. Key may not be there in trie. Delete operation should not modify trie.
+2. Key present as unique key (no part of key contains another key (prefix), nor the key itself is prefix of another key in trie). Delete all the nodes.
+3. Key is prefix key of another long key in trie. Unmark the leaf node.
+4. Key present in trie, having atleast one other key as prefix key. Delete nodes from end of key until first leaf node of longest prefix key.
+
+The below code presents algorithm to implement above conditions.
+
+C++
+
+// C++ implementation of delete
+// operations on Trie
+#include <bits/stdc++.h>
+using namespace std;
+
+const int ALPHABET_SIZE = 26;
+
+// trie node
+struct TrieNode {
+    struct TrieNode* children[ALPHABET_SIZE];
+
+    // isEndOfWord is true if the node represents
+    // end of a word
+    bool isEndOfWord;
+};
+
+// Returns new trie node (initialized to NULLs)
+struct TrieNode* getNode(void)
+{
+    struct TrieNode* pNode = new TrieNode;
+
+    pNode->isEndOfWord = false;
+
+    for (int i = 0; i < ALPHABET_SIZE; i++)
+        pNode->children[i] = NULL;
+
+    return pNode;
+}
+
+// If not present, inserts key into trie
+// If the key is prefix of trie node, just
+// marks leaf node
+void insert(struct TrieNode* root, string key)
+{
+    struct TrieNode* pCrawl = root;
+
+    for (int i = 0; i < key.length(); i++) {
+        int index = key[i] - 'a';
+        if (!pCrawl->children[index])
+            pCrawl->children[index] = getNode();
+
+        pCrawl = pCrawl->children[index];
+    }
+
+    // mark last node as leaf
+    pCrawl->isEndOfWord = true;
+}
+
+// Returns true if key presents in trie, else
+// false
+bool search(struct TrieNode* root, string key)
+{
+    struct TrieNode* pCrawl = root;
+
+    for (int i = 0; i < key.length(); i++) {
+        int index = key[i] - 'a';
+        if (!pCrawl->children[index])
+            return false;
+
+        pCrawl = pCrawl->children[index];
+    }
+
+    return (pCrawl != NULL && pCrawl->isEndOfWord);
+}
+
+// Returns true if root has no children, else false
+bool isEmpty(TrieNode* root)
+{
+    for (int i = 0; i < ALPHABET_SIZE; i++)
+        if (root->children[i])
+            return false;
+    return true;
+}
+
+// Recursive function to delete a key from given Trie
+TrieNode* remove(TrieNode* root, string key, int depth = 0)
+{
+    // If tree is empty
+    if (!root)
+        return NULL;
+
+    // If last character of key is being processed
+    if (depth == key.size()) {
+
+        // This node is no more end of word after
+        // removal of given key
+        if (root->isEndOfWord)
+            root->isEndOfWord = false;
+
+        // If given is not prefix of any other word
+        if (isEmpty(root)) {
+            delete (root);
+            root = NULL;
+        }
+
+        return root;
+    }
+
+    // If not last character, recur for the child
+    // obtained using ASCII value
+    int index = key[depth] - 'a';
+    root->children[index] =
+          remove(root->children[index], key, depth + 1);
+
+    // If root does not have any child (its only child got
+    // deleted), and it is not end of another word.
+    if (isEmpty(root) && root->isEndOfWord == false) {
+        delete (root);
+        root = NULL;
+    }
+
+    return root;
+}
+
+// Driver
+int main()
+{
+    // Input keys (use only 'a' through 'z'
+    // and lower case)
+    string keys[] = { "the", "a", "there",
+                      "answer", "any", "by",
+                      "bye", "their", "hero", "heroplane" };
+    int n = sizeof(keys) / sizeof(keys[0]);
+
+    struct TrieNode* root = getNode();
+
+    // Construct trie
+    for (int i = 0; i < n; i++)
+        insert(root, keys[i]);
+
+    // Search for different keys
+    search(root, "the") ? cout << "Yes\n" : cout << "No\n";
+    search(root, "these") ? cout << "Yes\n" : cout << "No\n";
+
+    remove(root, "heroplane");
+    search(root, "hero") ? cout << "Yes\n" : cout << "No\n";
+    return 0;
+}
+
+Java
+
+// Java implementation of delete
+// operations on Trie
+import java.util.*;
+
+public class GFG{
+
+    static int ALPHABET_SIZE = 26;
+
+    // trie node
+    static class TrieNode {
+        TrieNode children[] = new TrieNode[ALPHABET_SIZE];
+
+        // isEndOfWord is true if the node represents
+        // end of a word
+        boolean isEndOfWord;
+    }
+
+    // If not present, inserts key into trie
+    // If the key is prefix of trie node, just
+    // marks leaf node
+    static void insert(TrieNode root, String key)
+    {
+        TrieNode pCrawl = root;
+
+        for (int i = 0; i < key.length(); i++) {
+            int index = key.charAt(i) - 'a';
+            if (pCrawl.children[index] == null)
+                pCrawl.children[index] = new TrieNode();
+
+            pCrawl = pCrawl.children[index];
+        }
+
+        // mark last node as leaf
+        pCrawl.isEndOfWord = true;
+    }
+
+    // Returns true if key presents in trie, else
+    // false
+    static boolean search(TrieNode root, String key)
+    {
+        TrieNode pCrawl = root;
+
+        for (int i = 0; i < key.length(); i++) {
+            int index = key.charAt(i) - 'a';
+            if (pCrawl.children[index] == null)
+                return false;
+
+            pCrawl = pCrawl.children[index];
+        }
+
+        return (pCrawl != null && pCrawl.isEndOfWord);
+    }
+
+    // Returns true if root has no children, else false
+    static boolean isEmpty(TrieNode root)
+    {
+        for (int i = 0; i < ALPHABET_SIZE; i++)
+            if (root.children[i] != null)
+                return false;
+        return true;
+    }
+
+    // Recursive function to delete a key from given Trie
+    static TrieNode remove(TrieNode root, String key, int depth)
+    {
+        // If tree is empty
+        if (root == null)
+            return null;
+
+        // If last character of key is being processed
+        if (depth == key.length()) {
+
+            // This node is no more end of word after
+            // removal of given key
+            if (root.isEndOfWord)
+                root.isEndOfWord = false;
+
+            // If given is not prefix of any other word
+            if (isEmpty(root)) {
+                root = null;
+            }
+
+            return root;
+        }
+
+        // If not last character, recur for the child
+        // obtained using ASCII value
+        int index = key.charAt(depth) - 'a';
+        root.children[index] =
+            remove(root.children[index], key, depth + 1);
+
+        // If root does not have any child (its only child got
+        // deleted), and it is not end of another word.
+        if (isEmpty(root) && root.isEndOfWord == false){
+            root = null;
+        }
+
+        return root;
+    }
+
+    // Driver
+    public static void main(String args[])
+    {
+        // Input keys (use only 'a' through 'z'
+        // and lower case)
+        String keys[] = { "the", "a", "there",
+                        "answer", "any", "by",
+                        "bye", "their", "hero", "heroplane" };
+        int n = keys.length;
+
+        TrieNode root = new TrieNode();
+
+        // Construct trie
+        for (int i = 0; i < n; i++)
+            insert(root, keys[i]);
+
+        // Search for different keys
+        if(search(root, "the"))
+            System.out.println("Yes");
+        else
+            System.out.println("No");
+
+        if(search(root, "these"))
+            System.out.println("Yes");
+        else
+            System.out.println("No");
+
+        remove(root, "heroplane", 0);
+
+        if(search(root, "hero"))
+            System.out.println("Yes");
+        else
+            System.out.println("No");
+
+    }
+}
+
+// This code is contributed by aditypande88.
+
+Python
+
+class TrieNode:
+    def __init__(self):
+        self.children = [None] * 26
+        self.isEndOfWord = False
+
+def getNode():
+    pNode = TrieNode()
+    pNode.isEndOfWord = False
+    return pNode
+
+def insert(root, key):
+    pCrawl = root
+    for i in range(len(key)):
+        index = ord(key[i]) - ord('a')
+        if not pCrawl.children[index]:
+            pCrawl.children[index] = getNode()
+        pCrawl = pCrawl.children[index]
+    pCrawl.isEndOfWord = True
+
+def search(root, key):
+    pCrawl = root
+    for i in range(len(key)):
+        index = ord(key[i]) - ord('a')
+        if not pCrawl.children[index]:
+            return False
+        pCrawl = pCrawl.children[index]
+    return pCrawl and pCrawl.isEndOfWord
+
+def isEmpty(root):
+    for i in range(26):
+        if root.children[i]:
+            return False
+    return True
+
+def remove(root, key, depth = 0):
+    if not root:
+        return None
+
+    if depth == len(key):
+        if root.isEndOfWord:
+            root.isEndOfWord = False
+        if isEmpty(root):
+            del root
+            root = None
+        return root
+
+    index = ord(key[depth]) - ord('a')
+    root.children[index] = remove(root.children[index], key, depth + 1)
+
+    if isEmpty(root) and not root.isEndOfWord:
+        del root
+        root = None
+    return root
+
+if __name__ == '__main__':
+    keys = ["the", "a", "there", "answer", "any", "by", "bye", "their", "hero", "heroplane"]
+    root = getNode()
+    for i in range(len(keys)):
+        insert(root, keys[i])
+    if search(root, "the"):
+        print("Yes")
+    else:
+        print("No")
+    if search(root, "these"):
+        print("Yes")
+    else:
+        print("No")
+    root = remove(root, "heroplane")
+    if search(root, "hero"):
+        print("Yes")
+    else:
+        print("No")
+
+C#
+
+// C# implementation of delete
+// operations on Trie
+using System;
+
+namespace GFG
+{
+    class TrieNode
+    {
+        // An array of children nodes.
+        public TrieNode[] children = new TrieNode[26];
+
+        // A flag to represent end of a word.
+        public bool isEndOfWord;
+    }
+
+    class Program
+    {
+        static int ALPHABET_SIZE = 26;
+
+        static void Insert(TrieNode root, string key)
+        {
+            // Start from root node.
+            TrieNode pCrawl = root;
+
+            for (int i = 0; i < key.Length; i++)
+            {
+                int index = key[i] - 'a';
+
+                // Create a new node if the path doesn't exist.
+                if (pCrawl.children[index] == null)
+                    pCrawl.children[index] = new TrieNode();
+
+                // Move to the next node.
+                pCrawl = pCrawl.children[index];
+            }
+
+            // Mark the last node as the end of a word.
+            pCrawl.isEndOfWord = true;
+        }
+
+        static bool Search(TrieNode root, string key)
+        {
+            // Start from the root node.
+            TrieNode pCrawl = root;
+
+            for (int i = 0; i < key.Length; i++)
+            {
+                int index = key[i] - 'a';
+
+                // If the path doesn't exist, return false.
+                if (pCrawl.children[index] == null)
+                    return false;
+
+                // Move to the next node.
+                pCrawl = pCrawl.children[index];
+            }
+
+            // Return true if the last node represents the end of a word.
+            return (pCrawl != null && pCrawl.isEndOfWord);
+        }
+
+        static bool IsEmpty(TrieNode root)
+        {
+            for (int i = 0; i < ALPHABET_SIZE; i++)
+                if (root.children[i] != null)
+                    return false;
+
+            return true;
+        }
+
+        static TrieNode Remove(TrieNode root, string key, int depth)
+        {
+            // If tree is empty.
+            if (root == null)
+                return null;
+
+            // If last character of key is being processed.
+            if (depth == key.Length)
+            {
+                // This node is no more end of word after
+                // removal of given key.
+                if (root.isEndOfWord)
+                    root.isEndOfWord = false;
+
+                // If given key is not a prefix of any other word.
+                if (IsEmpty(root))
+                    root = null;
+
+                return root;
+            }
+
+            // If not last character, recur for the child obtained by
+            // indexing into the children array using the current character.
+            int index = key[depth] - 'a';
+            root.children[index] = Remove(root.children[index], key, depth + 1);
+
+            // If root does not have any children (its only child got
+            // deleted), and it is not the end of a word.
+            if (IsEmpty(root) && !root.isEndOfWord)
+                root = null;
+
+            return root;
+        }
+
+        static void Main(string[] args)
+        {
+            // Test cases.
+            string[] keys = { "the", "a", "there", "answer", "any",
+                               "by", "bye", "their", "hero", "heroplane" };
+            int n = keys.Length;
+
+            // Construct the Trie.
+            TrieNode root = new TrieNode();
+            for (int i = 0; i < n; i++)
+                Insert(root, keys[i]);
+
+            // Test search function.
+
+            if (Search(root, "the"))
+                Console.WriteLine("Yes");
+            else
+                Console.WriteLine("No");
+
+            if (Search(root, "these"))
+                Console.WriteLine("Yes");
+            else
+                Console.WriteLine("No");
+
+            Remove(root, "heroplane", 0);
+
+            if (Search(root, "hero"))
+                Console.WriteLine("Yes");
+            else
+                Console.WriteLine("No");
+
+            Console.ReadLine();
+        }
+    }
+}
+
+JavaScript
+
+const ALPHABET_SIZE = 26;
+
+// trie node
+class TrieNode {
+    constructor() {
+        this.children = new Array(ALPHABET_SIZE);
+        this.isEndOfWord = false;
+        for (let i = 0; i < ALPHABET_SIZE; i++)
+            this.children[i] = null;
+    }
+}
+
+// Returns new trie node (initialized to NULLs)
+function getNode() {
+    return new TrieNode();
+}
+
+// If not present, inserts key into trie
+// If the key is prefix of trie node, just marks leaf node
+function insert(root, key) {
+    let pCrawl = root;
+
+    for (let i = 0; i < key.length; i++) {
+        let index = key[i].charCodeAt(0) - 'a'.charCodeAt(0);
+        if (!pCrawl.children[index])
+            pCrawl.children[index] = getNode();
+
+        pCrawl = pCrawl.children[index];
+    }
+
+    // mark last node as leaf
+    pCrawl.isEndOfWord = true;
+}
+
+// Returns true if key presents in trie, else false
+function search(root, key) {
+    let pCrawl = root;
+
+    for (let i = 0; i < key.length; i++) {
+        let index = key[i].charCodeAt(0) - 'a'.charCodeAt(0);
+        if (!pCrawl.children[index])
+            return false;
+
+        pCrawl = pCrawl.children[index];
+    }
+
+    return (pCrawl !== null && pCrawl.isEndOfWord);
+}
+
+// Returns true if root has no children, else false
+function isEmpty(root) {
+    for (let i = 0; i < ALPHABET_SIZE; i++)
+        if (root.children[i])
+            return false;
+    return true;
+}
+
+// Recursive function to delete a key from given Trie
+function remove(root, key, depth = 0) {
+    // If tree is empty
+    if (!root)
+        return null;
+
+    // If last character of key is being processed
+    if (depth === key.length) {
+        // This node is no more end of word after removal of given key
+        if (root.isEndOfWord)
+            root.isEndOfWord = false;
+
+        // If given is not prefix of any other word
+        if (isEmpty(root)) {
+            root = null;
+        }
+
+        return root;
+    }
+
+    // If not last character, recur for the child obtained using ASCII value
+    let index = key[depth].charCodeAt(0) - 'a'.charCodeAt(0);
+    root.children[index] = remove(root.children[index], key, depth + 1);
+
+    // If root does not have any child (its only child got deleted), and it is not end of another word.
+    if (isEmpty(root) && root.isEndOfWord === false) {
+        root = null;
+    }
+
+    return root;
+}
+
+// Driver
+const keys = ["the", "a", "there", "answer", "any", "by", "bye", "their", "hero", "heroplane"];
+const n = keys.length;
+
+let root = getNode();
+
+// Construct trie
+for (let i = 0; i < n; i++)
+    insert(root, keys[i]);
+
+// Search for different keys
+console.log(search(root, "the") ? "Yes" : "No");
+console.log(search(root, "these") ? "Yes" : "No");
+
+remove(root, "heroplane");
+console.log(search(root, "hero") ? "Yes" : "No");
+
+Output
+
+Yes
+No
+Yes
+
+Time Complexity: The time complexity of the deletion operation is O(n) where n is the key length. Auxiliary Space: O(n) due to recursive call stack, where n is the key length.

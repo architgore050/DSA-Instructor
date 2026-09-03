@@ -1,0 +1,979 @@
+Source: https://www.geeksforgeeks.org/dsa/introduction-to-red-black-tree/
+Title: Introduction to Red-Black Tree
+Extractor: 2
+
+A Red-Black Tree is a self-balancing binary search tree with a height limit of O(logN), enabling efficient search, insertion, and deletion operations in O(logN) time, unlike standard binary search trees which can take O(N) time.
+
+- Each node has an additional attribute: a color, which can be either red or black.
+- These colors are used to maintain balance during insertions and deletions, ensuring efficient data retrieval and manipulation.
+
+### Properties of Red-Black Trees
+
+A Red-Black Tree has the following properties:
+
+1. Node Color : Each node is either red or black.
+2. Root Property : The root of the tree is always black.
+3. Red Node Property : Red nodes cannot have red children (Red nodes cannot be adjacent).
+4. Black Node Property : Every path from a node to its descendant leaves must have the same number of black nodes.
+5. Leaf Property : All leaves (NIL nodes) are black.
+
+These properties (no two consecutive reds and same black height) ensure that the longest path from the root to any leaf is no more than twice as long as the shortest path, maintaining the tree's balance and efficient performance.
+
+### Balancing
+
+A simple example to understand balancing is that a chain of 3 nodes is not possible in a Red-Black tree. You can try any color combination to see how they violate the Red-Black tree property.
+
+### Inferred properties
+
+- The number of black nodes from root to leaf (including NIL); blackHeight >= h/2.
+- Height of a red-black tree with N nodes is h <= 2log(N+1)
+- The black depth of a node is the number of black nodes from the root to that node.
+
+### Basic Operations on Red-Black Tree:
+
+1. Insertion : Inserting a new node involves a two-step process: BST insertion, followed by fixing Red-Black property violations. Consider:
+
+- If the parent of the new node is black, no properties are violated.
+- If the parent is red, the tree might violate the Red Property, requiring fixes.
+
+After inserting the new node as red, several cases may occur:
+
+- Case 1 (Uncle is Red): Recolor parent and uncle to black, grandparent to red. Then, move up the tree.
+- Case 2 (Uncle is Black): If node is a right child, perform a left rotation on the parent. If the node is a left child, perform a right rotation on the grandparent and recolor.
+
+2. Searching : Searching in Red-Black Trees mirrors BST searching. Begin traversal from the root:
+
+1. If the target value equals the current node's value, the node is found.
+2. If less, move left; if greater, move right.
+3. Repeat until the target is found or a NIL node is reached.
+
+3. Deletion : Deleting a node involves BST deletion, followed by fixing violations.
+
+1. Remove the node using standard BST rules.
+2. If a black node is deleted, a "double black" condition might arise, which requires specific fixes.
+
+When deleting a black node, resolve "double-black" based on the sibling's color:
+
+1. If the sibling is red, rotate the parent, and recolor.
+2. If the sibling is black: If all of the sibling's children are black, recolor the sibling and propagate the issue. If at least one of the sibling's child is red: a.  If the far child is red, rotate the parent and sibling, and recolor. b.  If the near child is red, rotate the sibling and its child, then handle as above.
+
+4. Rotation : Rotations are fundamental for maintaining the balanced structure of a Red-Black Tree (RBT). They preserve tree properties, ensuring the longest path from the root to any leaf is no more than twice the shortest path. These are two types:
+
+i. Left Rotation : A left rotation at node x pivots the tree to the left, promoting its right child y to x's former position. The Transformation Steps are as follows:
+
+1. Detach Subtree: Move y's left subtree to become x's new right subtree.
+2. Shift Parent Link: Update y’s parent to be x’s current parent.
+3. Relink Parent: Update x’s parent to point to y instead of x.
+4. Promote Child: Set y’s left child to x.
+5. Finalize Parent: Set x’s parent to y.
+
+Pseudo-Code Implementation for Left Rotation
+
+C++
+
+void leftRotate(Node* x) {
+    // Identify the node to be promoted
+    Node* y = x.right;
+
+    // 1. HANDOVER: y's left subtree becomes x's right child
+    x.right = y.left;
+    if (y.left != NIL) {
+        y.left.parent = x;
+    }
+
+    // 2. PARENT LINK: Connect y to the rest of the tree
+    y.parent = x.parent;
+
+    if (x.parent == NIL) {
+        root = y;               // x was the root
+    }
+    else if (x == x.parent.left) {
+        x.parent.left = y;      // x was a left child
+    }
+    else {
+        x.parent.right = y;     // x was a right child
+    }
+
+    // 3. PIVOT: Finalize the new parent-child bond
+    y.left = x;
+    x.parent = y;
+}
+
+ii. Right Rotation: A right rotation at node x pivots the tree to the right, promoting its left child y to x’s former position.
+
+1. Detach Subtree: Move y’s right subtree to become x’s new left subtree.
+2. Shift Parent Link: Update y’s parent to be x’s current parent.
+3. Relink Parent: Update x’s parent to point to y instead of x.
+4. Promote Child: Set y’s right child to x.
+5. Finalize Parent: Set x’s parent to y.
+
+Pseudo-Code Implementation for Right Rotation
+
+C++
+
+void rightRotate(Node* x) {
+    // Identify the node to be promoted (the left child)
+    Node* y = x.left;
+
+    // 1. HANDOVER: y's right subtree becomes x's left child
+    x.left = y.right;
+    if (y.right != NIL) {
+        y.right.parent = x;
+    }
+
+    // 2. PARENT LINK: Connect y to the rest of the tree
+    y.parent = x.parent;
+
+    if (x.parent == nullptr) {
+        root = y;                // x was the root
+    }
+    else if (x == x.parent.right) {
+        x.parent.right = y;      // x was a right child
+    }
+    else {
+        x.parent.left = y;       // x was a left child
+    }
+
+    // 3. PIVOT: Finalize the new parent-child bond
+    y.right = x;
+    x.parent = y;
+}
+
+Here's a detailed implementation of a Red-Black Tree, including all of the operations mentioned above:
+
+C++
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+// Node structure with explicit pointers for tree navigation
+struct Node {
+    int data;
+    string color; // "RED" or "BLACK"
+    Node *left, *right, *parent;
+
+    Node(int data) : data(data), color("RED"),
+                     left(nullptr), right(nullptr), parent(nullptr) {}
+};
+
+class RedBlackTree {
+private:
+    Node* root;
+    Node* NIL; // Sentinel node used to represent leaves (always BLACK)
+
+    // --- Rotations: Essential for maintaining tree balance ---
+
+    void leftRotate(Node* x) {
+        Node* y = x->right;
+        x->right = y->left;
+
+        if (y->left != NIL) y->left->parent = x;
+        y->parent = x->parent;
+
+        if (x->parent == nullptr)      root = y;
+        else if (x == x->parent->left) x->parent->left = y;
+        else                          x->parent->right = y;
+
+        y->left = x;
+        x->parent = y;
+    }
+
+    void rightRotate(Node* x) {
+        Node* y = x->left;
+        x->left = y->right;
+
+        if (y->right != NIL) y->right->parent = x;
+        y->parent = x->parent;
+
+        if (x->parent == nullptr)       root = y;
+        else if (x == x->parent->right) x->parent->right = y;
+        else                           x->parent->left = y;
+
+        y->right = x;
+        x->parent = y;
+    }
+
+    // --- RB Fix-up: Resolves Double-Red violations ---
+
+    void fixInsert(Node* k) {
+        // Continue while the parent is Red (violates RB property)
+        while (k != root && k->parent->color == "RED") {
+            if (k->parent == k->parent->parent->left) {
+                Node* uncle = k->parent->parent->right;
+
+                if (uncle->color == "RED") {
+                    // Case 1: Uncle is Red -> Recolor parent, uncle, and grandparent
+                    k->parent->color = "BLACK";
+                    uncle->color = "BLACK";
+                    k->parent->parent->color = "RED";
+                    k = k->parent->parent;
+                } else {
+                    if (k == k->parent->right) {
+                        // Case 2: Triangle shape -> Left rotate parent to form a line
+                        k = k->parent;
+                        leftRotate(k);
+                    }
+                    // Case 3: Line shape -> Recolor and right rotate grandparent
+                    k->parent->color = "BLACK";
+                    k->parent->parent->color = "RED";
+                    rightRotate(k->parent->parent);
+                }
+            } else {
+                // Mirror Case: Parent is the right child
+                Node* uncle = k->parent->parent->left;
+
+                if (uncle->color == "RED") {
+                    k->parent->color = "BLACK";
+                    uncle->color = "BLACK";
+                    k->parent->parent->color = "RED";
+                    k = k->parent->parent;
+                } else {
+                    if (k == k->parent->left) {
+                        k = k->parent;
+                        rightRotate(k);
+                    }
+                    k->parent->color = "BLACK";
+                    k->parent->parent->color = "RED";
+                    leftRotate(k->parent->parent);
+                }
+            }
+        }
+        root->color = "BLACK"; // Root must always be Black
+    }
+
+public:
+    RedBlackTree() {
+        NIL = new Node(0);
+        NIL->color = "BLACK";
+        NIL->left = NIL->right = NIL;
+        root = NIL;
+    }
+
+    void insert(int data) {
+        Node* node = new Node(data);
+        node->left = node->right = NIL;
+
+        Node* parent = nullptr;
+        Node* current = root;
+
+        // Step 1: Standard Binary Search Tree insertion
+        while (current != NIL) {
+            parent = current;
+            if (node->data < current->data) current = current->left;
+            else current = current->right;
+        }
+
+        node->parent = parent;
+
+        if (parent == nullptr)      root = node;
+        else if (node->data < parent->data) parent->left = node;
+        else                               parent->right = node;
+
+        // Step 2: Handle edge cases and fix RB properties
+        if (node->parent == nullptr) {
+            node->color = "BLACK";
+            return;
+        }
+        if (node->parent->parent == nullptr) return;
+
+        fixInsert(node);
+    }
+
+    void inorder(Node* node) {
+        if (node != NIL) {
+            inorder(node->left);
+            cout << node->data << "(" << node->color << ") ";
+            inorder(node->right);
+        }
+    }
+
+    Node* getRoot() { return root; }
+};
+
+int main() {
+    RedBlackTree rbt;
+    rbt.insert(10);
+    rbt.insert(20);
+    rbt.insert(30);
+    rbt.insert(15);
+
+    cout << "Inorder Traversal -> ";
+    rbt.inorder(rbt.getRoot());
+    cout << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class Node {
+    int data;
+    String color; // "RED" or "BLACK"
+    Node left, right, parent;
+
+    Node(int data) {
+        this.data = data;
+        this.color = "RED";
+        this.left = null;
+        this.right = null;
+        this.parent = null;
+    }
+}
+
+class RedBlackTree {
+    private Node root;
+    private Node NIL; // Sentinel node used to represent leaves (always BLACK)
+
+    // --- Rotations: Essential for maintaining tree balance ---
+
+    private void leftRotate(Node x) {
+        Node y = x.right;
+        x.right = y.left;
+
+        if (y.left!= NIL) y.left.parent = x;
+        y.parent = x.parent;
+
+        if (x.parent == null) root = y;
+        else if (x == x.parent.left) x.parent.left = y;
+        else x.parent.right = y;
+
+        y.left = x;
+        x.parent = y;
+    }
+
+    private void rightRotate(Node x) {
+        Node y = x.left;
+        x.left = y.right;
+
+        if (y.right!= NIL) y.right.parent = x;
+        y.parent = x.parent;
+
+        if (x.parent == null) root = y;
+        else if (x == x.parent.right) x.parent.right = y;
+        else x.parent.left = y;
+
+        y.right = x;
+        x.parent = y;
+    }
+
+    // --- RB Fix-up: Resolves Double-Red violations ---
+
+    private void fixInsert(Node k) {
+        // Continue while the parent is Red (violates RB property)
+        while (k!= root && k.parent.color.equals("RED")) {
+            if (k.parent == k.parent.parent.left) {
+                Node uncle = k.parent.parent.right;
+
+                if (uncle.color.equals("RED")) {
+                    // Case 1: Uncle is Red -> Recolor parent, uncle, and grandparent
+                    k.parent.color = "BLACK";
+                    uncle.color = "BLACK";
+                    k.parent.parent.color = "RED";
+                    k = k.parent.parent;
+                } else {
+                    if (k == k.parent.right) {
+                        // Case 2: Triangle shape -> Left rotate parent to form a line
+                        k = k.parent;
+                        leftRotate(k);
+                    }
+                    // Case 3: Line shape -> Recolor and right rotate grandparent
+                    k.parent.color = "BLACK";
+                    k.parent.parent.color = "RED";
+                    rightRotate(k.parent.parent);
+                }
+            } else {
+                // Mirror Case: Parent is the right child
+                Node uncle = k.parent.parent.left;
+
+                if (uncle.color.equals("RED")) {
+                    k.parent.color = "BLACK";
+                    uncle.color = "BLACK";
+                    k.parent.parent.color = "RED";
+                    k = k.parent.parent;
+                } else {
+                    if (k == k.parent.left) {
+                        k = k.parent;
+                        rightRotate(k);
+                    }
+                    k.parent.color = "BLACK";
+                    k.parent.parent.color = "RED";
+                    leftRotate(k.parent.parent);
+                }
+            }
+        }
+        root.color = "BLACK"; // Root must always be Black
+    }
+
+    public RedBlackTree() {
+        NIL = new Node(0);
+        NIL.color = "BLACK";
+        NIL.left = NIL.right = NIL;
+        root = NIL;
+    }
+
+    public void insert(int data) {
+        Node node = new Node(data);
+        node.left = node.right = NIL;
+
+        Node parent = null;
+        Node current = root;
+
+        // Step 1: Standard Binary Search Tree insertion
+        while (current!= NIL) {
+            parent = current;
+            if (node.data < current.data) current = current.left;
+            else current = current.right;
+        }
+
+        node.parent = parent;
+
+        if (parent == null) root = node;
+        else if (node.data < parent.data) parent.left = node;
+        else parent.right = node;
+
+        // Step 2: Handle edge cases and fix RB properties
+        if (node.parent == null) {
+            node.color = "BLACK";
+            return;
+        }
+        if (node.parent.parent == null) return;
+
+        fixInsert(node);
+    }
+
+    public void inorder(Node node) {
+        if (node!= NIL) {
+            inorder(node.left);
+            System.out.print(node.data + "(" + node.color + ") ");
+            inorder(node.right);
+        }
+    }
+
+    public Node getRoot() { return root; }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        RedBlackTree rbt = new RedBlackTree();
+        rbt.insert(10);
+        rbt.insert(20);
+        rbt.insert(30);
+        rbt.insert(15);
+
+        System.out.print("Inorder Traversal -> ");
+        rbt.inorder(rbt.getRoot());
+        System.out.println();
+    }
+}
+
+Python
+
+from typing import Optional
+
+# Node structure with explicit pointers for tree navigation
+class Node:
+    def __init__(self, data: int):
+        self.data = data
+        self.color = "RED"  # "RED" or "BLACK"
+        self.left = None
+        self.right = None
+        self.parent = None
+
+class RedBlackTree:
+    def __init__(self):
+        self.NIL = Node(0)
+        self.NIL.color = "BLACK"
+        self.root = self.NIL
+
+    # --- Rotations: Essential for maintaining tree balance ---
+
+    def left_rotate(self, x: Node):
+        y = x.right
+        x.right = y.left
+
+        if y.left is not self.NIL:
+            y.left.parent = x
+        y.parent = x.parent
+
+        if x.parent is None:
+            self.root = y
+        elif x == x.parent.left:
+            x.parent.left = y
+        else:
+            x.parent.right = y
+
+        y.left = x
+        x.parent = y
+
+    def right_rotate(self, x: Node):
+        y = x.left
+        x.left = y.right
+
+        if y.right is not self.NIL:
+            y.right.parent = x
+        y.parent = x.parent
+
+        if x.parent is None:
+            self.root = y
+        elif x == x.parent.right:
+            x.parent.right = y
+        else:
+            x.parent.left = y
+
+        y.right = x
+        x.parent = y
+
+    # --- RB Fix-up: Resolves Double-Red violations ---
+
+    def fix_insert(self, k: Node):
+        while k!= self.root and k.parent.color == "RED":
+            if k.parent == k.parent.parent.left:
+                uncle = k.parent.parent.right
+
+                if uncle.color == "RED":
+                    k.parent.color = "BLACK"
+                    uncle.color = "BLACK"
+                    k.parent.parent.color = "RED"
+                    k = k.parent.parent
+                else:
+                    if k == k.parent.right:
+                        k = k.parent
+                        self.left_rotate(k)
+                    k.parent.color = "BLACK"
+                    k.parent.parent.color = "RED"
+                    self.right_rotate(k.parent.parent)
+            else:
+                uncle = k.parent.parent.left
+
+                if uncle.color == "RED":
+                    k.parent.color = "BLACK"
+                    uncle.color = "BLACK"
+                    k.parent.parent.color = "RED"
+                    k = k.parent.parent
+                else:
+                    if k == k.parent.left:
+                        k = k.parent
+                        self.right_rotate(k)
+                    k.parent.color = "BLACK"
+                    k.parent.parent.color = "RED"
+                    self.left_rotate(k.parent.parent)
+        self.root.color = "BLACK"  # Root must always be Black
+
+    def insert(self, data: int):
+        node = Node(data)
+        node.left = self.NIL
+        node.right = self.NIL
+
+        parent = None
+        current = self.root
+
+        # Step 1: Standard Binary Search Tree insertion
+        while current!= self.NIL:
+            parent = current
+            if node.data < current.data:
+                current = current.left
+            else:
+                current = current.right
+
+        node.parent = parent
+
+        if parent is None:
+            self.root = node
+        elif node.data < parent.data:
+            parent.left = node
+        else:
+            parent.right = node
+
+        # Step 2: Handle edge cases and fix RB properties
+        if node.parent is None:
+            node.color = "BLACK"
+            return
+        if node.parent.parent is None:
+            return
+
+        self.fix_insert(node)
+
+    def inorder(self, node: Node):
+        if node!= self.NIL:
+            self.inorder(node.left)
+            print(f"{node.data}({node.color})", end=" ")
+            self.inorder(node.right)
+
+if __name__ == "__main__":
+    rbt = RedBlackTree()
+    rbt.insert(10)
+    rbt.insert(20)
+    rbt.insert(30)
+    rbt.insert(15)
+
+    print("Inorder Traversal ->", end=" ")
+    rbt.inorder(rbt.root)
+    print()
+
+C#
+
+using System;
+
+// Node structure with explicit pointers for tree navigation
+public class Node {
+    public int Data;
+    public string Color; // "RED" or "BLACK"
+    public Node Left, Right, Parent;
+
+    public Node(int data) {
+        Data = data;
+        Color = "RED";
+        Left = null;
+        Right = null;
+        Parent = null;
+    }
+}
+
+public class RedBlackTree {
+    private Node root;
+    private Node NIL; // Sentinel node used to represent leaves (always BLACK)
+
+    // --- Rotations: Essential for maintaining tree balance ---
+
+    private void LeftRotate(Node x) {
+        Node y = x.Right;
+        x.Right = y.Left;
+
+        if (y.Left!= NIL) y.Left.Parent = x;
+        y.Parent = x.Parent;
+
+        if (x.Parent == null)      root = y;
+        else if (x == x.Parent.Left) x.Parent.Left = y;
+        else                          x.Parent.Right = y;
+
+        y.Left = x;
+        x.Parent = y;
+    }
+
+    private void RightRotate(Node x) {
+        Node y = x.Left;
+        x.Left = y.Right;
+
+        if (y.Right!= NIL) y.Right.Parent = x;
+        y.Parent = x.Parent;
+
+        if (x.Parent == null)       root = y;
+        else if (x == x.Parent.Right) x.Parent.Right = y;
+        else                           x.Parent.Left = y;
+
+        y.Right = x;
+        x.Parent = y;
+    }
+
+    // --- RB Fix-up: Resolves Double-Red violations ---
+
+    private void FixInsert(Node k) {
+        // Continue while the parent is Red (violates RB property)
+        while (k!= root && k.Parent.Color == "RED") {
+            if (k.Parent == k.Parent.Parent.Left) {
+                Node uncle = k.Parent.Parent.Right;
+
+                if (uncle.Color == "RED") {
+                    // Case 1: Uncle is Red -> Recolor parent, uncle, and grandparent
+                    k.Parent.Color = "BLACK";
+                    uncle.Color = "BLACK";
+                    k.Parent.Parent.Color = "RED";
+                    k = k.Parent.Parent;
+                } else {
+                    if (k == k.Parent.Right) {
+                        // Case 2: Triangle shape -> Left rotate parent to form a line
+                        k = k.Parent;
+                        LeftRotate(k);
+                    }
+                    // Case 3: Line shape -> Recolor and right rotate grandparent
+                    k.Parent.Color = "BLACK";
+                    k.Parent.Parent.Color = "RED";
+                    RightRotate(k.Parent.Parent);
+                }
+            } else {
+                // Mirror Case: Parent is the right child
+                Node uncle = k.Parent.Parent.Left;
+
+                if (uncle.Color == "RED") {
+                    k.Parent.Color = "BLACK";
+                    uncle.Color = "BLACK";
+                    k.Parent.Parent.Color = "RED";
+                    k = k.Parent.Parent;
+                } else {
+                    if (k == k.Parent.Left) {
+                        k = k.Parent;
+                        RightRotate(k);
+                    }
+                    k.Parent.Color = "BLACK";
+                    k.Parent.Parent.Color = "RED";
+                    LeftRotate(k.Parent.Parent);
+                }
+            }
+        }
+        root.Color = "BLACK"; // Root must always be Black
+    }
+
+    public RedBlackTree() {
+        NIL = new Node(0);
+        NIL.Color = "BLACK";
+        NIL.Left = NIL.Right = NIL;
+        root = NIL;
+    }
+
+    public void Insert(int data) {
+        Node node = new Node(data);
+        node.Left = node.Right = NIL;
+
+        Node parent = null;
+        Node current = root;
+
+        // Step 1: Standard Binary Search Tree insertion
+        while (current!= NIL) {
+            parent = current;
+            if (node.Data < current.Data) current = current.Left;
+            else current = current.Right;
+        }
+
+        node.Parent = parent;
+
+        if (parent == null)      root = node;
+        else if (node.Data < parent.Data) parent.Left = node;
+        else                               parent.Right = node;
+
+        // Step 2: Handle edge cases and fix RB properties
+        if (node.Parent == null) {
+            node.Color = "BLACK";
+            return;
+        }
+        if (node.Parent.Parent == null) return;
+
+        FixInsert(node);
+    }
+
+    public void Inorder(Node node) {
+        if (node!= NIL) {
+            Inorder(node.Left);
+            Console.Write(node.Data + "(" + node.Color + ") ");
+            Inorder(node.Right);
+        }
+    }
+
+    public Node GetRoot() { return root; }
+}
+
+public class GFG {
+    public static void Main() {
+        RedBlackTree rbt = new RedBlackTree();
+        rbt.Insert(10);
+        rbt.Insert(20);
+        rbt.Insert(30);
+        rbt.Insert(15);
+
+        Console.Write("Inorder Traversal -> ");
+        rbt.Inorder(rbt.GetRoot());
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+// Node structure with explicit pointers for tree navigation
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.color = "RED";  // "RED" or "BLACK"
+        this.left = null;
+        this.right = null;
+        this.parent = null;
+    }
+}
+
+class RedBlackTree {
+    constructor() {
+        this.NIL = new Node(0);
+        this.NIL.color = "BLACK";
+        this.root = this.NIL;
+    }
+
+    // --- Rotations: Essential for maintaining tree balance ---
+
+    leftRotate(x) {
+        let y = x.right;
+        x.right = y.left;
+
+        if (y.left !== this.NIL) {
+            y.left.parent = x;
+        }
+        y.parent = x.parent;
+
+        if (x.parent === null) {
+            this.root = y;
+        } else if (x === x.parent.left) {
+            x.parent.left = y;
+        } else {
+            x.parent.right = y;
+        }
+
+        y.left = x;
+        x.parent = y;
+    }
+
+    rightRotate(x) {
+        let y = x.left;
+        x.left = y.right;
+
+        if (y.right !== this.NIL) {
+            y.right.parent = x;
+        }
+        y.parent = x.parent;
+
+        if (x.parent === null) {
+            this.root = y;
+        } else if (x === x.parent.right) {
+            x.parent.right = y;
+        } else {
+            x.parent.left = y;
+        }
+
+        y.right = x;
+        x.parent = y;
+    }
+
+    // --- RB Fix-up: Resolves Double-Red violations ---
+
+    fixInsert(k) {
+        while (k !== this.root && k.parent.color === "RED") {
+            if (k.parent === k.parent.parent.left) {
+                let uncle = k.parent.parent.right;
+
+                if (uncle.color === "RED") {
+                    k.parent.color = "BLACK";
+                    uncle.color = "BLACK";
+                    k.parent.parent.color = "RED";
+                    k = k.parent.parent;
+                } else {
+                    if (k === k.parent.right) {
+                        k = k.parent;
+                        this.leftRotate(k);
+                    }
+                    k.parent.color = "BLACK";
+                    k.parent.parent.color = "RED";
+                    this.rightRotate(k.parent.parent);
+                }
+            } else {
+                let uncle = k.parent.parent.left;
+
+                if (uncle.color === "RED") {
+                    k.parent.color = "BLACK";
+                    uncle.color = "BLACK";
+                    k.parent.parent.color = "RED";
+                    k = k.parent.parent;
+                } else {
+                    if (k === k.parent.left) {
+                        k = k.parent;
+                        this.rightRotate(k);
+                    }
+                    k.parent.color = "BLACK";
+                    k.parent.parent.color = "RED";
+                    this.leftRotate(k.parent.parent);
+                }
+            }
+        }
+        // Root must always be Black
+        this.root.color = "BLACK";
+    }
+
+    insert(data) {
+        let node = new Node(data);
+        node.left = this.NIL;
+        node.right = this.NIL;
+
+        let parent = null;
+        let current = this.root;
+
+        // Step 1: Standard Binary Search Tree insertion
+        while (current !== this.NIL) {
+            parent = current;
+            if (node.data < current.data) {
+                current = current.left;
+            } else {
+                current = current.right;
+            }
+        }
+
+        node.parent = parent;
+
+        if (parent === null) {
+            this.root = node;
+        } else if (node.data < parent.data) {
+            parent.left = node;
+        } else {
+            parent.right = node;
+        }
+
+        // Step 2: Handle edge cases and fix RB properties
+        if (node.parent === null) {
+            node.color = "BLACK";
+            return;
+        }
+        if (node.parent.parent === null) {
+            return;
+        }
+
+        this.fixInsert(node);
+    }
+
+    inorder(node, result = []) {
+        if (node !== this.NIL) {
+            this.inorder(node.left, result);
+            result.push(`${node.data}(${node.color})`);
+            this.inorder(node.right, result);
+        }
+        return result;
+    }
+}
+
+// ---------------- MAIN ----------------
+
+const rbt = new RedBlackTree();
+rbt.insert(10);
+rbt.insert(20);
+rbt.insert(30);
+rbt.insert(15);
+
+const traversal = rbt.inorder(rbt.root);
+console.log("Inorder Traversal ->", traversal.join(" "));
+
+Output
+
+Inorder Traversal -> 10(BLACK) 15(RED) 20(BLACK) 30(BLACK)
+
+### Advantages
+
+- Because of their self-balancing property, they offer high efficiency in searching, insertion, and deletion, with a worst-case time complexity of O(log n).
+- Red-Black Trees have straightforward rules for insertion, deletion, and balance, making them relatively easy to implement.
+- Suitable for use in maps, sets, and priority queues.
+
+### Disadvantages
+
+- Red-Black Trees have more intricate insertion and deletion rules compared to simpler balanced trees like AVL trees.
+- Maintaining the Red-Black Tree properties introduces a minor overhead during insertion and deletion operations.
+
+### Applications of Red-Black Trees:
+
+- Powers high-performance containers such as map and set in C++ and TreeMap in Java.
+- In operating systems, it enables efficient process scheduling (e.g., Linux CFS) and virtual memory mapping.
+- It organizes directory structures and tracks disk blocks in file systems like XFS and Ext4.
+- It also handles high-speed packet filtering and routing table lookups in network routing.
+- Optimizing in-memory storage and data retrieval speed in key-value stores using database indexing.
+
+### Also Check:
+
+- Self-Balancing Binary Search Trees
+- Red Black Tree Vs AVL Tree
+- Difference between Heap and Red-Black Tree
+- Red-Black Trees | Top-Down Insertion

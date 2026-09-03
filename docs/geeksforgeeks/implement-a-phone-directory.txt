@@ -1,0 +1,856 @@
+Source: https://www.geeksforgeeks.org/dsa/implement-a-phone-directory/
+Title: Implement a Phone Directory
+Extractor: 2
+
+Given a list of contacts that exist in a phone directory. The task is to implement a search query for the phone directory. The search query on a string ‘ str ’ displays all the contacts which prefixes as ‘ str ’. One special property of the search function is that when a user searches for a contact from the contact list then suggestions (Contacts with prefix as the string entered so for) are shown after user enters each character. Note: Contacts in the list consist of only lowercase alphabets. Example:
+
+Input : contacts [] = {“gforgeeks” , “geeksquiz” }
+        Query String = “gekk”
+
+Output : Suggestions based on "g" are
+         geeksquiz
+         gforgeeks
+
+         Suggestions based on "ge" are
+         geeksquiz
+
+         No Results Found for "gek"
+
+         No Results Found for "gekk"
+
+## Recommended: Please solve it on “ PRACTICE ” first, before moving on to the solution.
+
+Phone Directory can be efficiently implemented using Trie Data Structure. We insert all the contacts into Trie. Generally search query on a Trie is to determine whether the string is present or not in the trie, but in this case we are asked to find all the strings with each prefix of ‘str’. This is equivalent to doing a DFS traversal on a graph . From a Trie node, visit adjacent Trie nodes and do this recursively until there are no more adjacent. This recursive function will take 2 arguments one as Trie Node which points to the current Trie Node being visited and other as the string which stores the string found so far with prefix as ‘str’. Each Trie Node stores a boolean variable ‘isLast’ which is true if the node represents end of a contact(word).
+
+// This function displays all words with given
+// prefix.  "node" represents last node when
+// path from root follows characters of "prefix".
+displayContacts (TreiNode node, string prefix)
+    If (node.isLast is true)
+        display prefix
+
+        // finding adjacent nodes
+    for each character ‘i’ in lower case Alphabets
+        if (node.child[i] != NULL)
+            displayContacts(node.child[i], prefix+i)
+
+User will enter the string character by character and we need to display suggestions with the prefix formed after every entered character. So one approach to find the prefix starting with the string formed is to check if the prefix exists in the Trie, if yes then call the displayContacts() function. In this approach after every entered character we check if the string exists in the Trie. Instead of checking again and again, we can maintain a pointer prevNode ' that points to the TrieNode which corresponds to the last entered character by the user, now we need to check the child node for the 'prevNode' when user enters another character to check if it exists in the Trie. If the new prefix is not in the Trie, then all the string which are formed by entering characters after 'prefix' can't be found in Trie too. So we break the loop that is being used to generate prefixes one by one and print "No Result Found" for all remaining characters.
+
+C++
+
+// C++ Program to Implement a Phone
+// Directory Using Trie Data Structure
+#include <bits/stdc++.h>
+using namespace std;
+
+struct TrieNode {
+    // Each Trie Node contains a Map 'child'
+    // where each alphabet points to a Trie
+    // Node.
+    // We can also use a fixed size array of
+    // size 256.
+    unordered_map<char, TrieNode*> child;
+
+    // 'isLast' is true if the node represents
+    // end of a contact
+    bool isLast;
+
+    // Default Constructor
+    TrieNode()
+    {
+        // Initialize all the Trie nodes with NULL
+        for (char i = 'a'; i <= 'z'; i++)
+            child[i] = NULL;
+
+        isLast = false;
+    }
+};
+
+// Making root NULL for ease so that it doesn't
+// have to be passed to all functions.
+TrieNode* root = NULL;
+
+// Insert a Contact into the Trie
+void insert(string s)
+{
+    int len = s.length();
+
+    // 'itr' is used to iterate the Trie Nodes
+    TrieNode* itr = root;
+    for (int i = 0; i < len; i++) {
+        // Check if the s[i] is already present in
+        // Trie
+        TrieNode* nextNode = itr->child[s[i]];
+        if (nextNode == NULL) {
+            // If not found then create a new TrieNode
+            nextNode = new TrieNode();
+
+            // Insert into the Map
+            itr->child[s[i]] = nextNode;
+        }
+
+        // Move the iterator('itr') ,to point to next
+        // Trie Node
+        itr = nextNode;
+
+        // If its the last character of the string 's'
+        // then mark 'isLast' as true
+        if (i == len - 1)
+            itr->isLast = true;
+    }
+}
+
+// This function simply displays all dictionary words
+// going through current node. String 'prefix'
+// represents string corresponding to the path from
+// root to curNode.
+void displayContactsUtil(TrieNode* curNode, string prefix)
+{
+    // Check if the string 'prefix' ends at this Node
+    // If yes then display the string found so far
+    if (curNode->isLast)
+        cout << prefix << endl;
+
+    // Find all the adjacent Nodes to the current
+    // Node and then call the function recursively
+    // This is similar to performing DFS on a graph
+    for (char i = 'a'; i <= 'z'; i++) {
+        TrieNode* nextNode = curNode->child[i];
+        if (nextNode != NULL)
+            displayContactsUtil(nextNode, prefix + (char)i);
+    }
+}
+
+// Display suggestions after every character enter by
+// the user for a given query string 'str'
+void displayContacts(string str)
+{
+    TrieNode* prevNode = root;
+
+    string prefix = "";
+    int len = str.length();
+
+    // Display the contact List for string formed
+    // after entering every character
+    int i;
+    for (i = 0; i < len; i++) {
+        // 'prefix' stores the string formed so far
+        prefix += (char)str[i];
+
+        // Get the last character entered
+        char lastChar = prefix[i];
+
+        // Find the Node corresponding to the last
+        // character of 'prefix' which is pointed by
+        // prevNode of the Trie
+        TrieNode* curNode = prevNode->child[lastChar];
+
+        // If nothing found, then break the loop as
+        // no more prefixes are going to be present.
+        if (curNode == NULL) {
+            cout << "\nNo Results Found for " << prefix
+                 << "\n";
+            i++;
+            break;
+        }
+
+        // If present in trie then display all
+        // the contacts with given prefix.
+        cout << "\nSuggestions based on " << prefix
+             << "are ";
+        displayContactsUtil(curNode, prefix);
+
+        // Change prevNode for next prefix
+        prevNode = curNode;
+    }
+
+    // Once search fails for a prefix, we print
+    // "Not Results Found" for all remaining
+    // characters of current query string "str".
+    for (; i < len; i++) {
+        prefix += (char)str[i];
+        cout << "\nNo Results Found for " << prefix << "\n";
+    }
+}
+
+// Insert all the Contacts into the Trie
+void insertIntoTrie(string contacts[], int n)
+{
+    // Initialize root Node
+    root = new TrieNode();
+
+    // Insert each contact into the trie
+    for (int i = 0; i < n; i++)
+        insert(contacts[i]);
+}
+
+// Driver program to test above functions
+int main()
+{
+    // Contact list of the User
+    string contacts[] = { "gforgeeks", "geeksquiz" };
+
+    // Size of the Contact List
+    int n = sizeof(contacts) / sizeof(string);
+
+    // Insert all the Contacts into Trie
+    insertIntoTrie(contacts, n);
+
+    string query = "gekk";
+
+    // Note that the user will enter 'g' then 'e', so
+    // first display all the strings with prefix as 'g'
+    // and then all the strings with prefix as 'ge'
+    displayContacts(query);
+
+    return 0;
+}
+
+Java
+
+// Java Program to Implement a Phone
+// Directory Using Trie Data Structure
+import java.util.*;
+
+class TrieNode
+{
+    // Each Trie Node contains a Map 'child'
+    // where each alphabet points to a Trie
+    // Node.
+    HashMap<Character,TrieNode> child;
+
+    // 'isLast' is true if the node represents
+    // end of a contact
+    boolean isLast;
+
+    // Default Constructor
+    public TrieNode()
+    {
+        child = new HashMap<Character,TrieNode>();
+
+        // Initialize all the Trie nodes with NULL
+        for (char i = 'a'; i <= 'z'; i++)
+             child.put(i,null);
+
+        isLast = false;
+    }
+}
+
+class Trie
+{
+    TrieNode root;
+
+    // Insert all the Contacts into the Trie
+    public void insertIntoTrie(String contacts[])
+    {
+        root = new TrieNode();
+        int n = contacts.length;
+        for (int i = 0; i < n; i++)
+        {
+            insert(contacts[i]);
+        }
+    }
+
+    // Insert a Contact into the Trie
+    public void insert(String s)
+    {
+        int len = s.length();
+
+        // 'itr' is used to iterate the Trie Nodes
+        TrieNode itr = root;
+        for (int i = 0; i < len; i++)
+        {
+            // Check if the s[i] is already present in
+            // Trie
+            TrieNode nextNode = itr.child.get(s.charAt(i));
+            if (nextNode == null)
+            {
+                // If not found then create a new TrieNode
+                nextNode = new TrieNode();
+
+                // Insert into the HashMap
+                itr.child.put(s.charAt(i),nextNode);
+            }
+
+            // Move the iterator('itr') ,to point to next
+            // Trie Node
+            itr = nextNode;
+
+            // If its the last character of the string 's'
+            // then mark 'isLast' as true
+            if (i == len - 1)
+                itr.isLast = true;
+        }
+    }
+
+    // This function simply displays all dictionary words
+    // going through current node.  String 'prefix'
+    // represents string corresponding to the path from
+    // root to curNode.
+    public void displayContactsUtil(TrieNode curNode,
+                                   String prefix)
+    {
+
+        // Check if the string 'prefix' ends at this Node
+        // If yes then display the string found so far
+        if (curNode.isLast)
+            System.out.println(prefix);
+
+        // Find all the adjacent Nodes to the current
+        // Node and then call the function recursively
+        // This is similar to performing DFS on a graph
+        for (char i = 'a'; i <= 'z'; i++)
+        {
+            TrieNode nextNode = curNode.child.get(i);
+            if (nextNode != null)
+            {
+                displayContactsUtil(nextNode, prefix + i);
+            }
+        }
+    }
+
+    // Display suggestions after every character enter by
+    // the user for a given string 'str'
+    void displayContacts(String str)
+    {
+        TrieNode prevNode = root;
+
+        // 'flag' denotes whether the string entered
+        // so far is present in the Contact List
+
+        String prefix = "";
+        int len = str.length();
+
+        // Display the contact List for string formed
+        // after entering every character
+        int i;
+        for (i = 0; i < len; i++)
+        {
+            // 'str' stores the string entered so far
+            prefix += str.charAt(i);
+
+            // Get the last character entered
+            char lastChar = prefix.charAt(i);
+
+            // Find the Node corresponding to the last
+            // character of 'str' which is pointed by
+            // prevNode of the Trie
+            TrieNode curNode = prevNode.child.get(lastChar);
+
+            // If nothing found, then break the loop as
+            // no more prefixes are going to be present.
+            if (curNode == null)
+            {
+                System.out.println("\nNo Results Found for "
+                                          + prefix);
+                i++;
+                break;
+            }
+
+            // If present in trie then display all
+            // the contacts with given prefix.
+            System.out.println("\nSuggestions based on "
+                                    + prefix + " are ");
+            displayContactsUtil(curNode, prefix);
+
+            // Change prevNode for next prefix
+            prevNode = curNode;
+        }
+
+        for ( ; i < len; i++)
+        {
+            prefix += str.charAt(i);
+            System.out.println("\nNo Results Found for "
+                                          + prefix);
+        }
+    }
+}
+
+// Driver code
+class Main
+{
+    public static void main(String args[])
+    {
+        Trie trie = new Trie();
+
+        String contacts [] = {"gforgeeks", "geeksquiz"};
+
+        trie.insertIntoTrie(contacts);
+
+        String query = "gekk";
+
+        // Note that the user will enter 'g' then 'e' so
+        // first display all the strings with prefix as 'g'
+        // and then all the strings with prefix as 'ge'
+        trie.displayContacts(query);
+    }
+}
+
+Python3
+
+# Python Program to Implement a Phone
+# Directory Using Trie Data Structure
+
+class TrieNode:
+    def __init__(self):
+
+        # Each Trie Node contains a Map 'child'
+        # where each alphabet points to a Trie
+        # Node.
+        self.child = {}
+        self.is_last = False
+
+# Making root NULL for ease so that it doesn't
+# have to be passed to all functions.
+root = TrieNode()
+
+# Insert a Contact into the Trie
+def insert(string):
+
+    # 'itr' is used to iterate the Trie Nodes
+    itr = root
+    for char in string:
+
+        # Check if the s[i] is already present in
+        # Trie
+        if char not in itr.child:
+
+            #  If not found then create a new TrieNode
+            itr.child[char] = TrieNode()
+
+        # Move the iterator('itr') ,to point to next
+        # Trie Node
+        itr = itr.child[char]
+
+    # If its the last character of the string 's'
+    # then mark 'isLast' as true
+    itr.is_last = True
+
+# This function simply displays all dictionary words
+# going through current node. String 'prefix'
+# represents string corresponding to the path from
+# root to curNode.
+def display_contacts_util(cur_node, prefix):
+
+    # Check if the string 'prefix' ends at this Node
+    # If yes then display the string found so far
+    if cur_node.is_last:
+        print(prefix)
+
+    # Find all the adjacent Nodes to the current
+    # Node and then call the function recursively
+    # This is similar to performing DFS on a graph
+    for i in range(ord('a'), ord('z') + 1):
+        char = chr(i)
+        next_node = cur_node.child.get(char)
+        if next_node:
+            display_contacts_util(next_node, prefix + char)
+
+# Display suggestions after every character enter by
+# the user for a given query string 'str'
+def displayContacts(string):
+    prev_node = root
+    prefix = ""
+
+    # Display the contact List for string formed
+    # after entering every character
+    for i, char in enumerate(string):
+
+        # 'prefix' stores the string formed so far
+        prefix += char
+
+        # Find the Node corresponding to the last
+        # character of 'prefix' which is pointed by
+        # prevNode of the Trie
+        cur_node = prev_node.child.get(char)
+
+        # If nothing found, then break the loop as
+        # no more prefixes are going to be present.
+        if not cur_node:
+            print(f"No Results Found for {prefix}\n")
+            break
+        # If present in trie then display all
+        # the contacts with given prefix.
+        print(f"Suggestions based on {prefix} are ",end=" ")
+        display_contacts_util(cur_node, prefix)
+        print()
+        # Change prevNode for next prefix
+        prev_node = cur_node
+
+    # Once search fails for a prefix, we print
+    # "Not Results Found" for all remaining
+    # characters of current query string "str".
+    for char in string[i+1:]:
+        prefix += char
+        print(f"No Results Found for {prefix}\n")
+
+# Insert all the Contacts into the Trie
+def insertIntoTrie(contacts):
+    # Insert each contact into the trie
+    for contact in contacts:
+        insert(contact)
+
+# Driver program to test above functions
+
+# Contact list of the User
+contacts=["gforgeeks","geeksquiz"]
+
+# Size of the Contact List
+n=len(contacts)
+
+# Insert all the Contacts into Trie
+insertIntoTrie(contacts)
+query = "gekk"
+
+# Note that the user will enter 'g' then 'e', so
+# first display all the strings with prefix as 'g'
+# and then all the strings with prefix as 'ge'
+displayContacts(query)
+
+# This code is contributed by Aman Kumar
+
+C#
+
+// C# Program to Implement a Phone
+// Directory Using Trie Data Structure
+using System;
+using System.Collections.Generic;
+
+class TrieNode
+{
+    // Each Trie Node contains a Map 'child'
+    // where each alphabet points to a Trie
+    // Node.
+    public Dictionary<char, TrieNode> child;
+
+    // 'isLast' is true if the node represents
+    // end of a contact
+    public bool isLast;
+
+    // Default Constructor
+    public TrieNode()
+    {
+        child = new Dictionary<char, TrieNode>();
+
+        // Initialize all the Trie nodes with NULL
+        for (char i = 'a'; i <= 'z'; i++)
+            child.Add(i, null);
+
+        isLast = false;
+    }
+}
+
+class Trie
+{
+    public TrieNode root;
+
+    // Insert all the Contacts into the Trie
+    public void insertIntoTrie(String []contacts)
+    {
+        root = new TrieNode();
+        int n = contacts.Length;
+        for (int i = 0; i < n; i++)
+        {
+            insert(contacts[i]);
+        }
+    }
+
+    // Insert a Contact into the Trie
+    public void insert(String s)
+    {
+        int len = s.Length;
+
+        // 'itr' is used to iterate the Trie Nodes
+        TrieNode itr = root;
+        for (int i = 0; i < len; i++)
+        {
+            // Check if the s[i] is already present in
+            // Trie
+            TrieNode nextNode = itr.child[s[i]];
+            if (nextNode == null)
+            {
+                // If not found then create a new TrieNode
+                nextNode = new TrieNode();
+
+                // Insert into the Dictionary
+                if(itr.child.ContainsKey(s[i]))
+                    itr.child[s[i]] = nextNode;
+                else
+                    itr.child.Add(s[i], nextNode);
+            }
+
+            // Move the iterator('itr') ,to point to next
+            // Trie Node
+            itr = nextNode;
+
+            // If its the last character of the string 's'
+            // then mark 'isLast' as true
+            if (i == len - 1)
+                itr.isLast = true;
+        }
+    }
+
+    // This function simply displays all dictionary words
+    // going through current node. String 'prefix'
+    // represents string corresponding to the path from
+    // root to curNode.
+    public void displayContactsUtil(TrieNode curNode,
+                                    String prefix)
+    {
+
+        // Check if the string 'prefix' ends at this Node
+        // If yes then display the string found so far
+        if (curNode.isLast)
+            Console.WriteLine(prefix);
+
+        // Find all the adjacent Nodes to the current
+        // Node and then call the function recursively
+        // This is similar to performing DFS on a graph
+        for (char i = 'a'; i <= 'z'; i++)
+        {
+            TrieNode nextNode = curNode.child[i];
+            if (nextNode != null)
+            {
+                displayContactsUtil(nextNode, prefix + i);
+            }
+        }
+    }
+
+    // Display suggestions after every character enter by
+    // the user for a given string 'str'
+    public void displayContacts(String str)
+    {
+        TrieNode prevNode = root;
+
+        // 'flag' denotes whether the string entered
+        // so far is present in the Contact List
+
+        String prefix = "";
+        int len = str.Length;
+
+        // Display the contact List for string formed
+        // after entering every character
+        int i;
+        for (i = 0; i < len; i++)
+        {
+            // 'str' stores the string entered so far
+            prefix += str[i];
+
+            // Get the last character entered
+            char lastChar = prefix[i];
+
+            // Find the Node corresponding to the last
+            // character of 'str' which is pointed by
+            // prevNode of the Trie
+            TrieNode curNode = prevNode.child[lastChar];
+
+            // If nothing found, then break the loop as
+            // no more prefixes are going to be present.
+            if (curNode == null)
+            {
+                Console.WriteLine("\nNo Results Found for "
+                                           + prefix);
+                i++;
+                break;
+            }
+
+            // If present in trie then display all
+            // the contacts with given prefix.
+            Console.WriteLine("\nSuggestions based on "
+                                  + prefix + " are ");
+            displayContactsUtil(curNode, prefix);
+
+            // Change prevNode for next prefix
+            prevNode = curNode;
+        }
+
+        for ( ; i < len; i++)
+        {
+            prefix += str[i];
+            Console.WriteLine("\nNo Results Found for "
+                                        + prefix);
+        }
+    }
+}
+
+// Driver code
+public class GFG
+{
+    public static void Main(String []args)
+    {
+        Trie trie = new Trie();
+
+        String []contacts = {"gforgeeks", "geeksquiz"};
+
+        trie.insertIntoTrie(contacts);
+
+        String query = "gekk";
+
+        // Note that the user will enter 'g' then 'e' so
+        // first display all the strings with prefix as 'g'
+        // and then all the strings with prefix as 'ge'
+        trie.displayContacts(query);
+    }
+}
+
+// This code is contributed by PrinciRaj1992
+
+JavaScript
+
+<script>
+    // Javascript Program to Implement a Phone
+    // Directory Using Trie Data Structure
+    class TrieNode {
+      constructor() {
+    // Each Trie Node contains a Map 'child'
+    // where each alphabet points to a Trie
+    // Node.
+    // We can also use a fixed size array of
+    // size 256.
+    this.child = {};
+    // 'isLast' is true if the node represents
+    // end of a contact
+    this.isLast = false;
+      }
+    }
+    // Making root NULL for ease so that it doesn't
+    // have to be passed to all functions.
+    let root = null;
+
+    // Insert a Contact into the Trie
+    function insert(s) {
+      const len = s.length;
+      // 'itr' is used to iterate the Trie Nodes
+      let itr = root;
+      for (let i = 0; i < len; i++) {
+    // Check if the s[i] is already present in
+        // Trie
+    const char = s[i];
+    let nextNode = itr.child[char];
+    if (nextNode === undefined) {
+        // If not found then create a new TrieNode
+      nextNode = new TrieNode();
+      // Insert into the Map
+      itr.child[char] = nextNode;
+    }
+    // Move the iterator('itr') ,to point to next
+        // Trie Node
+    itr = nextNode;
+    // If its the last character of the string 's'
+        // then mark 'isLast' as true
+    if (i === len - 1) {
+      itr.isLast = true;
+    }
+      }
+    }
+
+    // This function simply displays all dictionary words
+    // going through current node. String 'prefix'
+    // represents string corresponding to the path from
+    // root to curNode.
+    function displayContactsUtil(curNode, prefix) {
+    // Check if the string 'prefix' ends at this Node
+    // If yes then display the string found so far
+      if (curNode.isLast) {
+    document.write(prefix+"<br>");
+      }
+      // Find all the adjacent Nodes to the current
+    // Node and then call the function recursively
+    // This is similar to performing DFS on a graph
+      for (let i = 97; i <= 122; i++) {
+    const char = String.fromCharCode(i);
+    const nextNode = curNode.child[char];
+    if (nextNode !== undefined) {
+      displayContactsUtil(nextNode, prefix + char);
+    }
+      }
+    }
+
+    // Display suggestions after every character enter by
+    // the user for a given query string 'str'
+    function displayContacts(str) {
+      let prevNode = root;
+      let prefix = "";
+      const len = str.length;
+      // Display the contact List for string formed
+    // after entering every character
+      let i;
+      for (i = 0; i < len; i++) {
+    // 'prefix' stores the string formed so far
+    prefix += str[i];
+
+    // Get the last character entered
+    const lastChar = prefix[i];
+
+    // Find the Node corresponding to the last
+    // character of 'prefix' which is pointed by
+    // prevNode of the Trie
+    const curNode = prevNode.child[lastChar];
+
+     // If nothing found, then break the loop as
+     // no more prefixes are going to be present.
+    if (curNode === undefined) {
+      document.write(`No Results Found for ${prefix}`+"<br>");
+      i++;
+      break;
+    }
+    // If present in trie then display all
+    // the contacts with given prefix.
+    document.write(`Suggestions based on ${prefix} are `);
+
+    displayContactsUtil(curNode, prefix);
+    document.write("<br>");
+    // Change prevNode for next prefix
+    prevNode = curNode;
+      }
+      document.write("<br>");
+      // Once search fails for a prefix, we print
+    // "Not Results Found" for all remaining
+    // characters of current query string "str".
+      for (; i < len; i++) {
+    prefix += str[i];
+    document.write("No Results Found for " + prefix + "<br>");
+      }
+    }
+
+    // Insert all the Contacts into the Trie
+    function insertIntoTrie(contacts) {
+      // Initialize root Node
+      root = new TrieNode();
+      const n = contacts.length;
+      // Insert each contact into the trie
+      for (let i = 0; i < n; i++) {
+    insert(contacts[i]);
+      }
+    }
+
+    // Driver program to test above functions
+
+    // Contact list of the User
+    const contacts = ["gforgeeks", "geeksquiz"];
+
+    //Insert all the Contacts into Trie
+    insertIntoTrie(contacts);
+
+    const query = "gekk";
+
+    // Note that the user will enter 'g' then 'e', so
+    // first display all the strings with prefix as 'g'
+    // and then all the strings with prefix as 'ge'
+    displayContacts(query);
+
+    // This code is contributed by Utkarsh Kumar.
+</script>
+
+Output
+
+Suggestions based on gare geeksquiz
+gforgeeks
+
+Suggestions based on geare geeksquiz
+
+No Results Found for gek
+
+No Results Found for gekk
+
+Time Complexity: O(n*m) where n is the number of contacts and m is the maximum length of a contact string. Auxiliary Space: O(n*m)

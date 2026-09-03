@@ -1,0 +1,2311 @@
+Source: https://www.geeksforgeeks.org/dsa/a-data-structure-question/
+Title: Design an efficient data structure for given operations
+Extractor: 2
+
+To design an efficient data structure for a specific set of operations, it's important to consider the time and space complexity of different data structures and choose the one that is best suited for the specific requirements.
+
+For example, if you need to perform operations such as inserting elements, finding the minimum element, and deleting the minimum element, you might consider using a binary heap, such as a min-heap or a Fibonacci heap. These data structures are efficient for these operations, with time complexities of O(log n) for inserting and finding the minimum element and O(1) for deleting the minimum element.
+
+1. If you need to perform operations such as searching for an element, inserting an element, and deleting an element, you might consider using a hash table or a balanced search tree, such as an AVL tree or a red-black tree. These data structures are efficient for these operations, with average time complexities of O(1) for searching and inserting elements and O(log n) for deleting elements.
+2. The specific requirements and constraints of your use case will determine which data structure is best suited for your needs. It's important to carefully consider the trade-offs between time and space complexity, as well as the ease of implementation and maintenance, when choosing a data structure.
+
+Design a Data Structure for the following operations. The data structure should be efficient enough to accommodate the operations according to their frequency.
+
+1) findMin() : Returns the minimum item.   Frequency: Most frequent2) findMax() : Returns the maximum item.    Frequency: Most frequent3) deleteMin() : Delete the minimum item.    Frequency: Moderate frequent 4) deleteMax() : Delete the maximum item.    Frequency: Moderate frequent 5) Insert() : Inserts an item.    Frequency: Least frequent6) Delete() : Deletes an item.    Frequency: Least frequent.
+
+A simple solution is to maintain a sorted array where smallest element is at first position and largest element is at last. The time complexity of findMin(), findMAx() and deleteMax() is O(1). But time complexities of deleteMin(), insert() and delete() will be O(n).
+
+Can we do the most frequent two operations in O(1) and other operations in O(Logn) time? .
+
+The idea is to use two binary heaps (one max and one min heap). The main challenge is, while deleting an item, we need to delete from both min-heap and max-heap. So, we need some kind of mutual data structure. In the following design, we have used doubly linked list as a mutual data structure. The doubly linked list contains all input items and indexes of corresponding min and max heap nodes. The nodes of min and max heaps store addresses of nodes of doubly linked list. The root node of min heap stores the address of minimum item in doubly linked list.
+
+Similarly, root of max heap stores address of maximum item in doubly linked list.
+
+Following are the details of operations.
+
+1) findMax(): We get the address of maximum value node from root of Max Heap. So this is a O(1) operation.
+
+2) findMin(): We get the address of minimum value node from root of Min Heap. So this is a O(1) operation.
+
+3) deleteMin() : We get the address of minimum value node from root of Min Heap. We use this address to find the node in doubly linked list. From the doubly linked list, we get node of Max Heap. We delete node from all three. We can delete a node from doubly linked list in O(1) time. delete() operations for max and min heaps take O(Logn) time.
+
+4) deleteMax() : is similar to deleteMin()
+
+5) Insert(): We always insert at the beginning of linked list in O(1) time. Inserting the address in Max and Min Heaps take O(Logn) time. So overall complexity is O(Logn)
+
+6) Delete(): We first search the item in Linked List. Once the item is found in O(n) time, we delete it from linked list. Then using the indexes stored in linked list, we delete it from Min Heap and Max Heaps in O(Logn) time. So overall complexity of this operation is O(n). The Delete operation can be optimized to O(Logn) by using a balanced binary search tree instead of doubly linked list as a mutual data structure. Use of balanced binary search will not effect time complexity of other operations as it will act as a mutual data structure like doubly Linked List. Following is C implementation of the above data structure.
+
+C++
+
+#include <iostream>
+#include <climits>
+
+// Node structure for doubly linked list
+struct LNode
+{
+    int data;            // Data of the node
+    int minHeapIndex;    // Index in the MinHeap
+    int maxHeapIndex;    // Index in the MaxHeap
+    struct LNode *next, *prev;  // Pointers to the next and previous nodes
+};
+
+// Doubly linked list structure
+struct List
+{
+    struct LNode *head;   // Pointer to the head of the list
+};
+
+// MinHeap structure
+struct MinHeap
+{
+    int size;                 // Current size of the heap
+    int capacity;             // Maximum capacity of the heap
+    struct LNode **array;     // Array of pointers to nodes in the heap
+};
+
+// MaxHeap structure
+struct MaxHeap
+{
+    int size;                 // Current size of the heap
+    int capacity;             // Maximum capacity of the heap
+    struct LNode **array;     // Array of pointers to nodes in the heap
+};
+
+// Data structure combining MinHeap, MaxHeap, and List
+struct MyDS
+{
+    struct MinHeap *minHeap;
+    struct MaxHeap *maxHeap;
+    struct List *list;
+};
+
+// Function to swap integer values
+void swapData(int *a, int *b)
+{
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
+
+// Function to swap LNode pointers
+void swapLNode(struct LNode **a, struct LNode **b)
+{
+    struct LNode *t = *a;
+    *a = *b;
+    *b = t;
+}
+
+// Function to create a new LNode with given data
+struct LNode *newLNode(int data)
+{
+    struct LNode *node = new struct LNode;
+    node->minHeapIndex = node->maxHeapIndex = -1;
+    node->data = data;
+    node->prev = node->next = NULL;
+    return node;
+}
+
+// Function to create a new MaxHeap with given capacity
+struct MaxHeap *createMaxHeap(int capacity)
+{
+    struct MaxHeap *maxHeap = new struct MaxHeap;
+    maxHeap->size = 0;
+    maxHeap->capacity = capacity;
+    maxHeap->array = new struct LNode *[maxHeap->capacity];
+    return maxHeap;
+}
+
+// Function to create a new MinHeap with given capacity
+struct MinHeap *createMinHeap(int capacity)
+{
+    struct MinHeap *minHeap = new struct MinHeap;
+    minHeap->size = 0;
+    minHeap->capacity = capacity;
+    minHeap->array = new struct LNode *[minHeap->capacity];
+    return minHeap;
+}
+
+// Function to create a new List
+struct List *createList()
+{
+    struct List *list = new struct List;
+    list->head = NULL;
+    return list;
+}
+
+// Function to create a new MyDS with given capacity
+struct MyDS *createMyDS(int capacity)
+{
+    struct MyDS *myDS = new struct MyDS;
+    myDS->minHeap = createMinHeap(capacity);
+    myDS->maxHeap = createMaxHeap(capacity);
+    myDS->list = createList();
+    return myDS;
+}
+
+// Function to check if MaxHeap is empty
+int isMaxHeapEmpty(struct MaxHeap *heap)
+{
+    return (heap->size == 0);
+}
+
+// Function to check if MinHeap is empty
+int isMinHeapEmpty(struct MinHeap *heap)
+{
+    return heap->size == 0;
+}
+
+// Function to check if MaxHeap is full
+int isMaxHeapFull(struct MaxHeap *heap)
+{
+    return heap->size == heap->capacity;
+}
+
+// Function to check if MinHeap is full
+int isMinHeapFull(struct MinHeap *heap)
+{
+    return heap->size == heap->capacity;
+}
+
+// Function to check if the list is empty
+int isListEmpty(struct List *list)
+{
+    return !list->head;
+}
+
+// Function to check if the list has only one node
+int hasOnlyOneLNode(struct List *list)
+{
+    return !list->head->next && !list->head->prev;
+}
+
+// Function to perform MinHeapify operation
+void minHeapify(struct MinHeap *minHeap, int index)
+{
+    int smallest, left, right;
+    smallest = index;
+    left = 2 * index + 1;
+    right = 2 * index + 2;
+
+    if (minHeap->array[left] &&
+        left < minHeap->size &&
+        minHeap->array[left]->data < minHeap->array[smallest]->data)
+        smallest = left;
+
+    if (minHeap->array[right] &&
+        right < minHeap->size &&
+        minHeap->array[right]->data < minHeap->array[smallest]->data)
+        smallest = right;
+
+    if (smallest != index)
+    {
+        swapData(&(minHeap->array[smallest]->minHeapIndex),
+                 &(minHeap->array[index]->minHeapIndex));
+
+        swapLNode(&minHeap->array[smallest],
+                  &minHeap->array[index]);
+
+        minHeapify(minHeap, smallest);
+    }
+}
+
+// Function to perform MaxHeapify operation
+void maxHeapify(struct MaxHeap *maxHeap, int index)
+{
+    int largest, left, right;
+    largest = index;
+    left = 2 * index + 1;
+    right = 2 * index + 2;
+
+    if (maxHeap->array[left] &&
+        left < maxHeap->size &&
+        maxHeap->array[left]->data > maxHeap->array[largest]->data)
+        largest = left;
+
+    if (maxHeap->array[right] &&
+        right < maxHeap->size &&
+        maxHeap->array[right]->data > maxHeap->array[largest]->data)
+        largest = right;
+
+    if (largest != index)
+    {
+        swapData(&maxHeap->array[largest]->maxHeapIndex,
+                 &maxHeap->array[index]->maxHeapIndex);
+
+        swapLNode(&maxHeap->array[largest],
+                  &maxHeap->array[index]);
+
+        maxHeapify(maxHeap, largest);
+    }
+}
+
+// Function to insert a node into MinHeap
+void insertMinHeap(struct MinHeap *minHeap, struct LNode *temp)
+{
+    if (isMinHeapFull(minHeap))
+        return;
+
+    ++minHeap->size;
+    int i = minHeap->size - 1;
+    while (i && temp->data < minHeap->array[(i - 1) / 2]->data)
+    {
+        minHeap->array[i] = minHeap->array[(i - 1) / 2];
+        minHeap->array[i]->minHeapIndex = i;
+        i = (i - 1) / 2;
+    }
+
+    minHeap->array[i] = temp;
+    minHeap->array[i]->minHeapIndex = i;
+}
+
+// Function to insert a node into MaxHeap
+void insertMaxHeap(struct MaxHeap *maxHeap, struct LNode *temp)
+{
+    if (isMaxHeapFull(maxHeap))
+        return;
+
+    ++maxHeap->size;
+    int i = maxHeap->size - 1;
+    while (i && temp->data > maxHeap->array[(i - 1) / 2]->data)
+    {
+        maxHeap->array[i] = maxHeap->array[(i - 1) / 2];
+        maxHeap->array[i]->maxHeapIndex = i;
+        i = (i - 1) / 2;
+    }
+
+    maxHeap->array[i] = temp;
+    maxHeap->array[i]->maxHeapIndex = i;
+}
+
+// Function to find the minimum element in MyDS
+int findMin(struct MyDS *myDS)
+{
+    if (isMinHeapEmpty(myDS->minHeap))
+        return INT_MAX;
+
+    return myDS->minHeap->array[0]->data;
+}
+
+// Function to find the maximum element in MyDS
+int findMax(struct MyDS *myDS)
+{
+    if (isMaxHeapEmpty(myDS->maxHeap))
+        return INT_MIN;
+
+    return myDS->maxHeap->array[0]->data;
+}
+
+// Function to remove a node from the list
+void removeLNode(struct List *list, struct LNode **temp)
+{
+    if (hasOnlyOneLNode(list))
+        list->head = NULL;
+    else if (!(*temp)->prev)
+    {
+        list->head = (*temp)->next;
+        (*temp)->next->prev = NULL;
+    }
+    else
+    {
+        (*temp)->prev->next = (*temp)->next;
+        if ((*temp)->next)
+            (*temp)->next->prev = (*temp)->prev;
+    }
+    delete *temp;
+    *temp = NULL;
+}
+
+// Function to delete the maximum element from MyDS
+void deleteMax(struct MyDS *myDS)
+{
+    MinHeap *minHeap = myDS->minHeap;
+    MaxHeap *maxHeap = myDS->maxHeap;
+
+    if (isMaxHeapEmpty(maxHeap))
+        return;
+    struct LNode *temp = maxHeap->array[0];
+
+    maxHeap->array[0] =
+        maxHeap->array[maxHeap->size - 1];
+    --maxHeap->size;
+    maxHeap->array[0]->maxHeapIndex = 0;
+    maxHeapify(maxHeap, 0);
+
+    minHeap->array[temp->minHeapIndex] = minHeap->array[minHeap->size - 1];
+    --minHeap->size;
+    minHeap->array[temp->minHeapIndex]->minHeapIndex = temp->minHeapIndex;
+    minHeapify(minHeap, temp->minHeapIndex);
+
+    removeLNode(myDS->list, &temp);
+}
+
+// Function to delete the minimum element from MyDS
+void deleteMin(struct MyDS *myDS)
+{
+    MinHeap *minHeap = myDS->minHeap;
+    MaxHeap *maxHeap = myDS->maxHeap;
+
+    if (isMinHeapEmpty(minHeap))
+        return;
+    struct LNode *temp = minHeap->array[0];
+
+    minHeap->array[0] = minHeap->array[minHeap->size - 1];
+    --minHeap->size;
+    minHeap->array[0]->minHeapIndex = 0;
+    minHeapify(minHeap, 0);
+
+    maxHeap->array[temp->maxHeapIndex] = maxHeap->array[maxHeap->size - 1];
+    --maxHeap->size;
+    maxHeap->array[temp->maxHeapIndex]->maxHeapIndex = temp->maxHeapIndex;
+    maxHeapify(maxHeap, temp->maxHeapIndex);
+
+    removeLNode(myDS->list, &temp);
+}
+
+// Function to insert a node at the head of the list
+void insertAtHead(struct List *list, struct LNode *temp)
+{
+    if (isListEmpty(list))
+        list->head = temp;
+    else
+    {
+        temp->next = list->head;
+        list->head->prev = temp;
+        list->head = temp;
+    }
+}
+
+// Function to delete a node with a given item from MyDS
+void Delete(struct MyDS *myDS, int item)
+{
+    MinHeap *minHeap = myDS->minHeap;
+    MaxHeap *maxHeap = myDS->maxHeap;
+
+    if (isListEmpty(myDS->list))
+        return;
+
+    struct LNode *temp = myDS->list->head;
+    while (temp && temp->data != item)
+        temp = temp->next;
+
+    if (!temp || (temp && temp->data != item))
+        return;
+
+    minHeap->array[temp->minHeapIndex] = minHeap->array[minHeap->size - 1];
+    --minHeap->size;
+    minHeap->array[temp->minHeapIndex]->minHeapIndex = temp->minHeapIndex;
+    minHeapify(minHeap, temp->minHeapIndex);
+
+    maxHeap->array[temp->maxHeapIndex] = maxHeap->array[maxHeap->size - 1];
+    --maxHeap->size;
+    maxHeap->array[temp->maxHeapIndex]->maxHeapIndex = temp->maxHeapIndex;
+    maxHeapify(maxHeap, temp->maxHeapIndex);
+
+    removeLNode(myDS->list, &temp);
+}
+
+// Function to insert a node with a given data into MyDS
+void Insert(struct MyDS *myDS, int data)
+{
+    struct LNode *temp = newLNode(data);
+
+    insertAtHead(myDS->list, temp);
+    insertMinHeap(myDS->minHeap, temp);
+    insertMaxHeap(myDS->maxHeap, temp);
+}
+
+// Main function
+int main()
+{
+    // Create a MyDS with capacity 10
+    struct MyDS *myDS = createMyDS(10);
+
+    // Insert elements into MyDS
+    Insert(myDS, 10);
+    Insert(myDS, 20);
+    Insert(myDS, 30);
+    Insert(myDS, 40);
+    Insert(myDS, 50);
+
+    // Print maximum and minimum elements in MyDS
+    std::cout << "Maximum = " << findMax(myDS) << "\n";
+    std::cout << "Minimum = " << findMin(myDS) << "\n\n";
+
+    // Delete the maximum element in MyDS
+    deleteMax(myDS);
+    std::cout << "After deleteMax()\n";
+    std::cout << "Maximum = " << findMax(myDS) << "\n";
+    std::cout << "Minimum = " << findMin(myDS) << "\n\n";
+
+    // Delete the minimum element in MyDS
+    deleteMin(myDS);
+    std::cout << "After deleteMin()\n";
+    std::cout << "Maximum = " << findMax(myDS) << "\n";
+    std::cout << "Minimum = " << findMin(myDS) << "\n\n";
+
+    // Delete a specific element (40) from MyDS
+    Delete(myDS, 40);
+    std::cout << "After Delete()\n";
+    std::cout << "Maximum = " << findMax(myDS) << "\n";
+    std::cout << "Minimum = " << findMin(myDS) << "\n";
+
+    return 0;
+}
+
+C
+
+// C program for efficient data structure
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+
+// A node of doubly linked list
+struct LNode
+{
+    int data;
+    int minHeapIndex;
+    int maxHeapIndex;
+    struct LNode *next, *prev;
+};
+
+// Structure for a doubly linked list
+struct List
+{
+    struct LNode *head;
+};
+
+// Structure for min heap
+struct MinHeap
+{
+    int size;
+    int capacity;
+    struct LNode* *array;
+};
+
+// Structure for max heap
+struct MaxHeap
+{
+    int size;
+    int capacity;
+    struct LNode* *array;
+};
+
+// The required data structure
+struct MyDS
+{
+    struct MinHeap* minHeap;
+    struct MaxHeap* maxHeap;
+    struct List* list;
+};
+
+// Function to swap two integers
+void swapData(int* a, int* b)
+{ int t = *a;   *a = *b;   *b = t; }
+
+// Function to swap two List nodes
+void swapLNode(struct LNode** a, struct LNode** b)
+{ struct LNode* t = *a; *a = *b; *b = t; }
+
+// A utility function to create a new List node
+struct LNode* newLNode(int data)
+{
+    struct LNode* node =
+        (struct LNode*) malloc(sizeof(struct LNode));
+    node->minHeapIndex = node->maxHeapIndex = -1;
+    node->data = data;
+    node->prev = node->next = NULL;
+    return node;
+}
+
+// Utility function to create a max heap of given capacity
+struct MaxHeap* createMaxHeap(int capacity)
+{
+    struct MaxHeap* maxHeap =
+     (struct MaxHeap*) malloc(sizeof(struct MaxHeap));
+    maxHeap->size = 0;
+    maxHeap->capacity = capacity;
+    maxHeap->array =
+     (struct LNode**) malloc(maxHeap->capacity * sizeof(struct LNode*));
+    return maxHeap;
+}
+
+// Utility function to create a min heap of given capacity
+struct MinHeap* createMinHeap(int capacity)
+{
+    struct MinHeap* minHeap =
+       (struct MinHeap*) malloc(sizeof(struct MinHeap));
+    minHeap->size = 0;
+    minHeap->capacity = capacity;
+    minHeap->array =
+       (struct LNode**) malloc(minHeap->capacity * sizeof(struct LNode*));
+    return minHeap;
+}
+
+// Utility function to create a List
+struct List* createList()
+{
+    struct List* list =
+      (struct List*) malloc(sizeof(struct List));
+    list->head = NULL;
+    return list;
+}
+
+// Utility function to create the main data structure
+// with given capacity
+struct MyDS* createMyDS(int capacity)
+{
+    struct MyDS* myDS =
+        (struct MyDS*) malloc(sizeof(struct MyDS));
+    myDS->minHeap = createMinHeap(capacity);
+    myDS->maxHeap = createMaxHeap(capacity);
+    myDS->list = createList();
+    return myDS;
+}
+
+// Some basic operations for heaps and List
+int isMaxHeapEmpty(struct MaxHeap* heap)
+{  return (heap->size == 0); }
+
+int isMinHeapEmpty(struct MinHeap* heap)
+{  return heap->size == 0; }
+
+int isMaxHeapFull(struct MaxHeap* heap)
+{  return heap->size == heap->capacity; }
+
+int isMinHeapFull(struct MinHeap* heap)
+{  return heap->size == heap->capacity; }
+
+int isListEmpty(struct List* list)
+{  return !list->head;   }
+
+int hasOnlyOneLNode(struct List* list)
+{    return !list->head->next && !list->head->prev; }
+
+// The standard minheapify function.  The only thing it does extra
+// is swapping indexes of heaps inside the List
+void minHeapify(struct MinHeap* minHeap, int index)
+{
+    int smallest, left, right;
+    smallest = index;
+    left = 2 * index + 1;
+    right = 2 * index + 2;
+
+    if ( minHeap->array[left] &&
+         left < minHeap->size &&
+         minHeap->array[left]->data < minHeap->array[smallest]->data
+       )
+        smallest = left;
+
+    if ( minHeap->array[right] &&
+         right < minHeap->size &&
+         minHeap->array[right]->data < minHeap->array[smallest]->data
+       )
+        smallest = right;
+
+    if (smallest != index)
+    {
+        // First swap indexes inside the List using address
+        // of List nodes
+        swapData(&(minHeap->array[smallest]->minHeapIndex),
+                 &(minHeap->array[index]->minHeapIndex));
+
+        // Now swap pointers to List nodes
+        swapLNode(&minHeap->array[smallest],
+                  &minHeap->array[index]);
+
+        // Fix the heap downward
+        minHeapify(minHeap, smallest);
+    }
+}
+
+// The standard maxHeapify function.  The only thing it does extra
+// is swapping indexes of heaps inside the List
+void maxHeapify(struct MaxHeap* maxHeap, int index)
+{
+    int largest, left, right;
+    largest = index;
+    left = 2 * index + 1;
+    right = 2 * index + 2;
+
+    if ( maxHeap->array[left] &&
+         left < maxHeap->size &&
+         maxHeap->array[left]->data > maxHeap->array[largest]->data
+       )
+        largest = left;
+
+    if ( maxHeap->array[right] &&
+         right < maxHeap->size &&
+         maxHeap->array[right]->data > maxHeap->array[largest]->data
+       )
+        largest = right;
+
+    if (largest != index)
+    {
+        // First swap indexes inside the List using address
+        // of List nodes
+        swapData(&maxHeap->array[largest]->maxHeapIndex,
+                 &maxHeap->array[index]->maxHeapIndex);
+
+        // Now swap pointers to List nodes
+        swapLNode(&maxHeap->array[largest],
+                  &maxHeap->array[index]);
+
+        // Fix the heap downward
+        maxHeapify(maxHeap, largest);
+    }
+}
+
+// Standard function to insert an item in Min Heap
+void insertMinHeap(struct MinHeap* minHeap, struct LNode* temp)
+{
+    if (isMinHeapFull(minHeap))
+        return;
+
+    ++minHeap->size;
+    int i = minHeap->size - 1;
+    while (i && temp->data < minHeap->array[(i - 1) / 2]->data )
+    {
+        minHeap->array[i] = minHeap->array[(i - 1) / 2];
+        minHeap->array[i]->minHeapIndex = i;
+        i = (i - 1) / 2;
+    }
+
+    minHeap->array[i] = temp;
+    minHeap->array[i]->minHeapIndex = i;
+}
+
+// Standard function to insert an item in Max Heap
+void insertMaxHeap(struct MaxHeap* maxHeap, struct LNode* temp)
+{
+    if (isMaxHeapFull(maxHeap))
+        return;
+
+    ++maxHeap->size;
+    int i = maxHeap->size - 1;
+    while (i && temp->data > maxHeap->array[(i - 1) / 2]->data )
+    {
+        maxHeap->array[i] = maxHeap->array[(i - 1) / 2];
+        maxHeap->array[i]->maxHeapIndex = i;
+        i = (i - 1) / 2;
+    }
+
+    maxHeap->array[i] = temp;
+    maxHeap->array[i]->maxHeapIndex = i;
+}
+
+// Function to find minimum value stored in the main data structure
+int findMin(struct MyDS* myDS)
+{
+    if (isMinHeapEmpty(myDS->minHeap))
+        return INT_MAX;
+
+    return myDS->minHeap->array[0]->data;
+}
+
+// Function to find maximum value stored in the main data structure
+int findMax(struct MyDS* myDS)
+{
+    if (isMaxHeapEmpty(myDS->maxHeap))
+        return INT_MIN;
+
+    return myDS->maxHeap->array[0]->data;
+}
+
+// A utility function to remove an item from linked list
+void removeLNode(struct List* list, struct LNode** temp)
+{
+    if (hasOnlyOneLNode(list))
+        list->head = NULL;
+
+    else if (!(*temp)->prev) // first node
+    {
+        list->head = (*temp)->next;
+        (*temp)->next->prev = NULL;
+    }
+    // any other node including last
+    else
+    {
+        (*temp)->prev->next = (*temp)->next;
+        // last node
+        if ((*temp)->next)
+            (*temp)->next->prev = (*temp)->prev;
+    }
+    free(*temp);
+    *temp = NULL;
+}
+
+// Function to delete maximum value stored in the main data structure
+void deleteMax(struct MyDS* myDS)
+{
+    MinHeap *minHeap = myDS->minHeap;
+    MaxHeap *maxHeap = myDS->maxHeap;
+
+    if (isMaxHeapEmpty(maxHeap))
+        return;
+    struct LNode* temp = maxHeap->array[0];
+
+    // delete the maximum item from maxHeap
+    maxHeap->array[0] =
+        maxHeap->array[maxHeap->size - 1];
+    --maxHeap->size;
+    maxHeap->array[0]->maxHeapIndex = 0;
+    maxHeapify(maxHeap, 0);
+
+    // remove the item from minHeap
+    minHeap->array[temp->minHeapIndex] = minHeap->array[minHeap->size - 1];
+    --minHeap->size;
+    minHeap->array[temp->minHeapIndex]->minHeapIndex = temp->minHeapIndex;
+    minHeapify(minHeap, temp->minHeapIndex);
+
+    // remove the node from List
+    removeLNode(myDS->list, &temp);
+}
+
+// Function to delete minimum value stored in the main data structure
+void deleteMin(struct MyDS* myDS)
+{
+    MinHeap *minHeap = myDS->minHeap;
+    MaxHeap *maxHeap = myDS->maxHeap;
+
+    if (isMinHeapEmpty(minHeap))
+        return;
+    struct LNode* temp = minHeap->array[0];
+
+    // delete the minimum item from minHeap
+    minHeap->array[0] = minHeap->array[minHeap->size - 1];
+    --minHeap->size;
+    minHeap->array[0]->minHeapIndex = 0;
+    minHeapify(minHeap, 0);
+
+    // remove the item from maxHeap
+    maxHeap->array[temp->maxHeapIndex] = maxHeap->array[maxHeap->size - 1];
+    --maxHeap->size;
+    maxHeap->array[temp->maxHeapIndex]->maxHeapIndex = temp->maxHeapIndex;
+    maxHeapify(maxHeap, temp->maxHeapIndex);
+
+    // remove the node from List
+    removeLNode(myDS->list, &temp);
+}
+
+// Function to enList an item to List
+void insertAtHead(struct List* list, struct LNode* temp)
+{
+    if (isListEmpty(list))
+        list->head = temp;
+
+    else
+    {
+        temp->next = list->head;
+        list->head->prev = temp;
+        list->head = temp;
+    }
+}
+
+// Function to delete an item from List. The function also
+// removes item from min and max heaps
+void Delete(struct MyDS* myDS, int item)
+{
+    MinHeap *minHeap = myDS->minHeap;
+    MaxHeap *maxHeap = myDS->maxHeap;
+
+    if (isListEmpty(myDS->list))
+        return;
+
+    // search the node in List
+    struct LNode* temp = myDS->list->head;
+    while (temp && temp->data != item)
+        temp = temp->next;
+
+    // if item not found
+    if (!temp || temp && temp->data != item)
+        return;
+
+    // remove item from min heap
+    minHeap->array[temp->minHeapIndex] = minHeap->array[minHeap->size - 1];
+    --minHeap->size;
+    minHeap->array[temp->minHeapIndex]->minHeapIndex = temp->minHeapIndex;
+    minHeapify(minHeap, temp->minHeapIndex);
+
+    // remove item from max heap
+    maxHeap->array[temp->maxHeapIndex] = maxHeap->array[maxHeap->size - 1];
+    --maxHeap->size;
+    maxHeap->array[temp->maxHeapIndex]->maxHeapIndex = temp->maxHeapIndex;
+    maxHeapify(maxHeap, temp->maxHeapIndex);
+
+    // remove node from List
+    removeLNode(myDS->list, &temp);
+}
+
+// insert operation for main data structure
+void Insert(struct MyDS* myDS, int data)
+{
+    struct LNode* temp = newLNode(data);
+
+    // insert the item in List
+    insertAtHead(myDS->list, temp);
+
+    // insert the item in min heap
+    insertMinHeap(myDS->minHeap, temp);
+
+    // insert the item in max heap
+    insertMaxHeap(myDS->maxHeap, temp);
+}
+
+// Driver program to test above functions
+int main()
+{
+    struct MyDS *myDS = createMyDS(10);
+    // Test Case #1
+    /*Insert(myDS, 10);
+    Insert(myDS, 2);
+    Insert(myDS, 32);
+    Insert(myDS, 40);
+    Insert(myDS, 5);*/
+
+    // Test Case #2
+    Insert(myDS, 10);
+    Insert(myDS, 20);
+    Insert(myDS, 30);
+    Insert(myDS, 40);
+    Insert(myDS, 50);
+
+    printf("Maximum = %d \n", findMax(myDS));
+    printf("Minimum = %d \n\n", findMin(myDS));
+
+    deleteMax(myDS);  // 50 is deleted
+    printf("After deleteMax()\n");
+    printf("Maximum = %d \n", findMax(myDS));
+    printf("Minimum = %d \n\n", findMin(myDS));
+
+    deleteMin(myDS); // 10 is deleted
+    printf("After deleteMin()\n");
+    printf("Maximum = %d \n", findMax(myDS));
+    printf("Minimum = %d \n\n", findMin(myDS));
+
+    Delete(myDS, 40); // 40 is deleted
+    printf("After Delete()\n");
+    printf("Maximum = %d \n", findMax(myDS));
+    printf("Minimum = %d \n", findMin(myDS));
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+// Definition of a Node in a Linked List
+class LNode {
+    int data;
+    int minHeapIndex = -1;
+    int maxHeapIndex = -1;
+    LNode next = null;
+    LNode prev = null;
+
+    LNode(int data) {
+        this.data = data;
+    }
+}
+
+// Definition of a Linked List
+class List {
+    LNode head = null;
+}
+
+// Definition of a MinHeap
+class MinHeap {
+    int size = 0;
+    int capacity;
+    LNode[] array;
+
+    MinHeap(int capacity) {
+        this.capacity = capacity;
+        this.array = new LNode[capacity];
+    }
+}
+
+// Definition of a MaxHeap
+class MaxHeap {
+    int size = 0;
+    int capacity;
+    LNode[] array;
+
+    MaxHeap(int capacity) {
+        this.capacity = capacity;
+        this.array = new LNode[capacity];
+    }
+}
+
+// Main Data Structure
+class MyDS {
+    MinHeap minHeap;
+    MaxHeap maxHeap;
+    List list;
+
+    MyDS(int capacity) {
+        this.minHeap = new MinHeap(capacity);
+        this.maxHeap = new MaxHeap(capacity);
+        this.list = new List();
+    }
+
+    // Creates a new LNode
+    LNode newLNode(int data) {
+        LNode node = new LNode(data);
+        node.minHeapIndex = node.maxHeapIndex = -1;
+        return node;
+    }
+
+    // Swaps data between two LNodes
+    void swapData(LNode a, LNode b) {
+        int temp = a.data;
+        a.data = b.data;
+        b.data = temp;
+    }
+
+    // Swaps two LNodes
+    void swapLNode(LNode a, LNode b) {
+        LNode temp = a;
+        a = b;
+        b = temp;
+    }
+
+    // Checks if the MaxHeap is empty
+    boolean isMaxHeapEmpty(MaxHeap heap) {
+        return heap.size == 0;
+    }
+
+    // Checks if the MinHeap is empty
+    boolean isMinHeapEmpty(MinHeap heap) {
+        return heap.size == 0;
+    }
+
+    // Checks if the MaxHeap is full
+    boolean isMaxHeapFull(MaxHeap heap) {
+        return heap.size == heap.capacity;
+    }
+
+    // Checks if the MinHeap is full
+    boolean isMinHeapFull(MinHeap heap) {
+        return heap.size == heap.capacity;
+    }
+
+    // Checks if the List is empty
+    boolean isListEmpty(List lst) {
+        return lst.head == null;
+    }
+
+    // Checks if the List has only one LNode
+    boolean hasOnlyOneLNode(List lst) {
+        return lst.head.next == null && lst.head.prev == null;
+    }
+
+    // Heapify the MinHeap
+    void minHeapify(MinHeap minHeap, int index) {
+        int smallest = index;
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+
+        if (left < minHeap.size && minHeap.array[left] != null && minHeap.array[left].data < minHeap.array[smallest].data) {
+            smallest = left;
+        }
+
+        if (right < minHeap.size && minHeap.array[right] != null && minHeap.array[right].data < minHeap.array[smallest].data) {
+            smallest = right;
+        }
+
+        if (smallest != index) {
+            swapData(minHeap.array[smallest], minHeap.array[index]);
+            minHeapify(minHeap, smallest);
+        }
+    }
+
+    // Heapify the MaxHeap
+    void maxHeapify(MaxHeap maxHeap, int index) {
+        int largest = index;
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+
+        if (left < maxHeap.size && maxHeap.array[left] != null && maxHeap.array[left].data > maxHeap.array[largest].data) {
+            largest = left;
+        }
+
+        if (right < maxHeap.size && maxHeap.array[right] != null && maxHeap.array[right].data > maxHeap.array[largest].data) {
+            largest = right;
+        }
+
+        if (largest != index) {
+            swapData(maxHeap.array[largest], maxHeap.array[index]);
+            maxHeapify(maxHeap, largest);
+        }
+    }
+
+    // Insert into MinHeap
+    void insertMinHeap(MinHeap minHeap, LNode temp) {
+        if (isMinHeapFull(minHeap)) {
+            return;
+        }
+
+        minHeap.size += 1;
+        int i = minHeap.size - 1;
+
+        while (i != 0 && temp.data < minHeap.array[(i - 1) / 2].data) {
+            minHeap.array[i] = minHeap.array[(i - 1) / 2];
+            minHeap.array[i].minHeapIndex = i;
+            i = (i - 1) / 2;
+        }
+
+        minHeap.array[i] = temp;
+        minHeap.array[i].minHeapIndex = i;
+    }
+
+    // Insert into MaxHeap
+    void insertMaxHeap(MaxHeap maxHeap, LNode temp) {
+        if (isMaxHeapFull(maxHeap)) {
+            return;
+        }
+
+        maxHeap.size += 1;
+        int i = maxHeap.size - 1;
+
+        while (i != 0 && temp.data > maxHeap.array[(i - 1) / 2].data) {
+            maxHeap.array[i] = maxHeap.array[(i - 1) / 2];
+            maxHeap.array[i].maxHeapIndex = i;
+            i = (i - 1) / 2;
+        }
+
+        maxHeap.array[i] = temp;
+        maxHeap.array[i].maxHeapIndex = i;
+    }
+
+    // Find the minimum element
+    int findMin() {
+        if (isMinHeapEmpty(minHeap)) {
+            return Integer.MAX_VALUE;
+        }
+
+        return minHeap.array[0].data;
+    }
+
+    // Find the maximum element
+    int findMax() {
+        if (isMaxHeapEmpty(maxHeap)) {
+            return Integer.MIN_VALUE;
+        }
+
+        return maxHeap.array[0].data;
+    }
+
+    // Remove an LNode from the List
+    void removeLNode(List lst, LNode temp) {
+        if (hasOnlyOneLNode(lst)) {
+            lst.head = null;
+        } else if (temp.prev == null) {
+            lst.head = temp.next;
+            temp.next.prev = null;
+        } else {
+            temp.prev.next = temp.next;
+            if (temp.next != null) {
+                temp.next.prev = temp.prev;
+            }
+        }
+        temp = null;
+    }
+
+    // Delete the maximum element
+    void deleteMax() {
+        if (isMaxHeapEmpty(maxHeap)) {
+            return;
+        }
+
+        LNode temp = maxHeap.array[0];
+
+        maxHeap.array[0] = maxHeap.array[maxHeap.size - 1];
+        maxHeap.size -= 1;
+        maxHeap.array[0].maxHeapIndex = 0;
+        maxHeapify(maxHeap, 0);
+
+        minHeap.array[temp.minHeapIndex] = minHeap.array[minHeap.size - 1];
+        minHeap.size -= 1;
+        minHeap.array[temp.minHeapIndex].minHeapIndex = temp.minHeapIndex;
+        minHeapify(minHeap, temp.minHeapIndex);
+
+        removeLNode(list, temp);
+    }
+
+    // Delete the minimum element
+    void deleteMin() {
+        if (isMinHeapEmpty(minHeap)) {
+            return;
+        }
+
+        LNode temp = minHeap.array[0];
+
+        minHeap.array[0] = minHeap.array[minHeap.size - 1];
+        minHeap.size -= 1;
+        minHeap.array[0].minHeapIndex = 0;
+        minHeapify(minHeap, 0);
+
+        maxHeap.array[temp.maxHeapIndex] = maxHeap.array[maxHeap.size - 1];
+        maxHeap.size -= 1;
+        maxHeap.array[temp.maxHeapIndex].maxHeapIndex = temp.maxHeapIndex;
+        maxHeapify(maxHeap, temp.maxHeapIndex);
+
+        removeLNode(list, temp);
+    }
+
+    // Insert an LNode at the head of the List
+    void insertAtHead(List lst, LNode temp) {
+        if (isListEmpty(lst)) {
+            lst.head = temp;
+        } else {
+            temp.next = lst.head;
+            lst.head.prev = temp;
+            lst.head = temp;
+        }
+    }
+
+    // Delete an element from the List
+    void deleteFromList(int item) {
+        if (isListEmpty(list)) {
+            return;
+        }
+
+        LNode temp = list.head;
+        while (temp != null && temp.data != item) {
+            temp = temp.next;
+        }
+
+        if (temp == null || (temp != null && temp.data != item)) {
+            return;
+        }
+
+        minHeap.array[temp.minHeapIndex] = minHeap.array[minHeap.size - 1];
+        minHeap.size -= 1;
+        minHeap.array[temp.minHeapIndex].minHeapIndex = temp.minHeapIndex;
+        minHeapify(minHeap, temp.minHeapIndex);
+
+        maxHeap.array[temp.maxHeapIndex] = maxHeap.array[maxHeap.size - 1];
+        maxHeap.size -= 1;
+        maxHeap.array[temp.maxHeapIndex].maxHeapIndex = temp.maxHeapIndex;
+        maxHeapify(maxHeap, temp.maxHeapIndex);
+
+        removeLNode(list, temp);
+    }
+
+    // Insert an element into the data structure
+    void insert(int data) {
+        LNode temp = newLNode(data);
+        insertAtHead(list, temp);
+        insertMinHeap(minHeap, temp);
+        insertMaxHeap(maxHeap, temp);
+    }
+
+    // Driver Code
+    public static void main(String[] args) {
+        MyDS myDS = new MyDS(10);
+
+        myDS.insert(10);
+        myDS.insert(20);
+        myDS.insert(30);
+        myDS.insert(40);
+        myDS.insert(50);
+
+        System.out.println("Maximum = " + myDS.findMax());
+        System.out.println("Minimum = " + myDS.findMin());
+
+        myDS.deleteMax();
+        System.out.println("After deleteMax()");
+        System.out.println("Maximum = " + myDS.findMax());
+        System.out.println("Minimum = " + myDS.findMin());
+
+        myDS.deleteMin();
+        System.out.println("After deleteMin()");
+        System.out.println("Maximum = " + myDS.findMax());
+        System.out.println("Minimum = " + myDS.findMin());
+
+        myDS.deleteFromList(40);
+        System.out.println("After Delete()");
+        System.out.println("Maximum = " + myDS.findMax());
+        System.out.println("Minimum = " + myDS.findMin());
+    }
+}
+
+Python3
+
+import sys
+
+# A node of doubly linked list
+class LNode:
+    def __init__(self, data):
+        self.data = data
+        self.minHeapIndex = -1
+        self.maxHeapIndex = -1
+        self.next = None
+        self.prev = None
+
+# Structure for a doubly linked list
+class List:
+    def __init__(self):
+        self.head = None
+
+# Structure for min heap
+class MinHeap:
+    def __init__(self, capacity):
+        self.size = 0
+        self.capacity = capacity
+        self.array = [None] * capacity
+
+# Structure for max heap
+class MaxHeap:
+    def __init__(self, capacity):
+        self.size = 0
+        self.capacity = capacity
+        self.array = [None] * capacity
+
+# The required data structure
+class MyDS:
+    def __init__(self, capacity):
+        self.minHeap = self.createMinHeap(capacity)
+        self.maxHeap = self.createMaxHeap(capacity)
+        self.list = self.createList()
+
+    # Function to swap two integers
+    def swap_data(self, a, b):
+        a, b = b, a
+
+    # Function to swap two List nodes
+    def swap_lnode(self, a, b):
+        a, b = b, a
+
+    # A utility function to create a new List node
+    def new_lnode(self, data):
+        node = LNode(data)
+        node.minHeapIndex = node.maxHeapIndex = -1
+        node.prev = node.next = None
+        return node
+
+    # Utility function to create a max heap of given capacity
+    def createMaxHeap(self, capacity):
+        maxHeap = MaxHeap(capacity)
+        maxHeap.size = 0
+        maxHeap.array = [None] * capacity
+        return maxHeap
+
+    # Utility function to create a min heap of given capacity
+    def createMinHeap(self, capacity):
+        minHeap = MinHeap(capacity)
+        minHeap.size = 0
+        minHeap.array = [None] * capacity
+        return minHeap
+
+    # Utility function to create a List
+    def createList(self):
+        return List()
+
+# Some basic operations for heaps and List
+def is_max_heap_empty(heap):
+    return heap.size == 0
+
+def is_min_heap_empty(heap):
+    return heap.size == 0
+
+def is_max_heap_full(heap):
+    return heap.size == heap.capacity
+
+def is_min_heap_full(heap):
+    return heap.size == heap.capacity
+
+def is_list_empty(lst):
+    return not lst.head
+
+def has_only_one_lnode(lst):
+    return not lst.head.next and not lst.head.prev
+
+# The standard minheapify function.
+def min_heapify(minHeap, index):
+    smallest = index
+    left = 2 * index + 1
+    right = 2 * index + 2
+
+    if left < minHeap.size and minHeap.array[left] and minHeap.array[left].data < minHeap.array[smallest].data:
+        smallest = left
+
+    if right < minHeap.size and minHeap.array[right] and minHeap.array[right].data < minHeap.array[smallest].data:
+        smallest = right
+
+    if smallest != index:
+        minHeap.array[smallest].minHeapIndex, minHeap.array[index].minHeapIndex = minHeap.array[index].minHeapIndex, minHeap.array[smallest].minHeapIndex
+        minHeap.array[smallest], minHeap.array[index] = minHeap.array[index], minHeap.array[smallest]
+        min_heapify(minHeap, smallest)
+
+# The standard maxHeapify function.
+def max_heapify(maxHeap, index):
+    largest = index
+    left = 2 * index + 1
+    right = 2 * index + 2
+
+    if left < maxHeap.size and maxHeap.array[left] and maxHeap.array[left].data > maxHeap.array[largest].data:
+        largest = left
+
+    if right < maxHeap.size and maxHeap.array[right] and maxHeap.array[right].data > maxHeap.array[largest].data:
+        largest = right
+
+    if largest != index:
+        maxHeap.array[largest].maxHeapIndex, maxHeap.array[index].maxHeapIndex = maxHeap.array[index].maxHeapIndex, maxHeap.array[largest].maxHeapIndex
+        maxHeap.array[largest], maxHeap.array[index] = maxHeap.array[index], maxHeap.array[largest]
+        max_heapify(maxHeap, largest)
+
+# Standard function to insert an item in Min Heap
+def insert_min_heap(minHeap, temp):
+    if is_min_heap_full(minHeap):
+        return
+
+    minHeap.size += 1
+    i = minHeap.size - 1
+    while i and temp.data < minHeap.array[(i - 1) // 2].data:
+        minHeap.array[i] = minHeap.array[(i - 1) // 2]
+        minHeap.array[i].minHeapIndex = i
+        i = (i - 1) // 2
+
+    minHeap.array[i] = temp
+    minHeap.array[i].minHeapIndex = i
+
+# Standard function to insert an item in Max Heap
+def insert_max_heap(maxHeap, temp):
+    if is_max_heap_full(maxHeap):
+        return
+
+    maxHeap.size += 1
+    i = maxHeap.size - 1
+    while i and temp.data > maxHeap.array[(i - 1) // 2].data:
+        maxHeap.array[i] = maxHeap.array[(i - 1) // 2]
+        maxHeap.array[i].maxHeapIndex = i
+        i = (i - 1) // 2
+
+    maxHeap.array[i] = temp
+    maxHeap.array[i].maxHeapIndex = i
+
+# Function to find minimum value stored in the main data structure
+def find_min(myDS):
+    if is_min_heap_empty(myDS.minHeap):
+        return sys.maxsize
+
+    return myDS.minHeap.array[0].data
+
+# Function to find maximum value stored in the main data structure
+def find_max(myDS):
+    if is_max_heap_empty(myDS.maxHeap):
+        return -sys.maxsize - 1
+
+    return myDS.maxHeap.array[0].data
+
+# A utility function to remove an item from linked list
+def remove_lnode(lst, temp):
+    if has_only_one_lnode(lst):
+        lst.head = None
+    elif not temp.prev:
+        lst.head = temp.next
+        temp.next.prev = None
+    else:
+        temp.prev.next = temp.next
+        if temp.next:
+            temp.next.prev = temp.prev
+    temp = None
+
+# Function to delete maximum value stored in the main data structure
+def delete_max(myDS):
+    minHeap, maxHeap = myDS.minHeap, myDS.maxHeap
+
+    if is_max_heap_empty(maxHeap):
+        return
+
+    temp = maxHeap.array[0]
+
+    maxHeap.array[0] = maxHeap.array[maxHeap.size - 1]
+    maxHeap.size -= 1
+    maxHeap.array[0].maxHeapIndex = 0
+    max_heapify(maxHeap, 0)
+
+    minHeap.array[temp.minHeapIndex] = minHeap.array[minHeap.size - 1]
+    minHeap.size -= 1
+    minHeap.array[temp.minHeapIndex].minHeapIndex = temp.minHeapIndex
+    min_heapify(minHeap, temp.minHeapIndex)
+
+    remove_lnode(myDS.list, temp)
+
+# Function to delete minimum value stored in the main data structure
+def delete_min(myDS):
+    minHeap, maxHeap = myDS.minHeap, myDS.maxHeap
+
+    if is_min_heap_empty(minHeap):
+        return
+
+    temp = minHeap.array[0]
+
+    minHeap.array[0] = minHeap.array[minHeap.size - 1]
+    minHeap.size -= 1
+    minHeap.array[0].minHeapIndex = 0
+    min_heapify(minHeap, 0)
+
+    maxHeap.array[temp.maxHeapIndex] = maxHeap.array[maxHeap.size - 1]
+    maxHeap.size -= 1
+    maxHeap.array[temp.maxHeapIndex].maxHeapIndex = temp.maxHeapIndex
+    max_heapify(maxHeap, temp.maxHeapIndex)
+
+    remove_lnode(myDS.list, temp)
+
+# Function to enList an item to List
+def insert_at_head(lst, temp):
+    if is_list_empty(lst):
+        lst.head = temp
+    else:
+        temp.next = lst.head
+        lst.head.prev = temp
+        lst.head = temp
+
+# Function to delete an item from List. The function also
+# removes item from min and max heaps
+def delete(myDS, item):
+    minHeap, maxHeap = myDS.minHeap, myDS.maxHeap
+
+    if is_list_empty(myDS.list):
+        return
+
+    temp = myDS.list.head
+    while temp and temp.data != item:
+        temp = temp.next
+
+    if not temp or (temp and temp.data != item):
+        return
+
+    minHeap.array[temp.minHeapIndex] = minHeap.array[minHeap.size - 1]
+    minHeap.size -= 1
+    minHeap.array[temp.minHeapIndex].minHeapIndex = temp.minHeapIndex
+    min_heapify(minHeap, temp.minHeapIndex)
+
+    maxHeap.array[temp.maxHeapIndex] = maxHeap.array[maxHeap.size - 1]
+    maxHeap.size -= 1
+    maxHeap.array[temp.maxHeapIndex].maxHeapIndex = temp.maxHeapIndex
+    max_heapify(maxHeap, temp.maxHeapIndex)
+
+    remove_lnode(myDS.list, temp)
+
+# insert operation for main data structure
+def insert(myDS, data):
+    temp = myDS.new_lnode(data)
+    insert_at_head(myDS.list, temp)
+    insert_min_heap(myDS.minHeap, temp)
+    insert_max_heap(myDS.maxHeap, temp)
+
+# Driver Code
+def main():
+    myDS = MyDS(10)
+
+    # Test Case #2
+    insert(myDS, 10)
+    insert(myDS, 20)
+    insert(myDS, 30)
+    insert(myDS, 40)
+    insert(myDS, 50)
+
+    print("Maximum =", find_max(myDS))
+    print("Minimum =", find_min(myDS))
+
+    delete_max(myDS)  # 50 is deleted
+    print("After delete_max()")
+    print("Maximum =", find_max(myDS))
+    print("Minimum =", find_min(myDS))
+
+    delete_min(myDS)  # 10 is deleted
+    print("After delete_min()")
+    print("Maximum =", find_max(myDS))
+    print("Minimum =", find_min(myDS))
+
+    delete(myDS, 40)  # 40 is deleted
+    print("After Delete()")
+    print("Maximum =", find_max(myDS))
+    print("Minimum =", find_min(myDS))
+
+if __name__ == "__main__":
+    main()
+
+C#
+
+using System;
+
+// A node of doubly linked list
+public class LNode {
+    public int data;
+    public int minHeapIndex = -1;
+    public int maxHeapIndex = -1;
+    public LNode next = null;
+    public LNode prev = null;
+
+    public LNode(int data) { this.data = data; }
+}
+
+// Structure for a doubly linked list
+public class List {
+    public LNode head = null;
+}
+
+// Structure for min heap
+public class MinHeap {
+    public int size = 0;
+    public int capacity;
+    public LNode[] array;
+
+    public MinHeap(int capacity)
+    {
+        this.capacity = capacity;
+        array = new LNode[capacity];
+    }
+}
+
+// Structure for max heap
+public class MaxHeap {
+    public int size = 0;
+    public int capacity;
+    public LNode[] array;
+
+    public MaxHeap(int capacity)
+    {
+        this.capacity = capacity;
+        array = new LNode[capacity];
+    }
+}
+
+// The required data structure
+public class MyDS {
+    public MinHeap minHeap;
+    public MaxHeap maxHeap;
+    public List list;
+
+    public MyDS(int capacity)
+    {
+        minHeap = new MinHeap(capacity);
+        maxHeap = new MaxHeap(capacity);
+        list = new List();
+    }
+
+    // Function to swap two integers
+    public void SwapData(ref int a, ref int b)
+    {
+        int temp = a;
+        a = b;
+        b = temp;
+    }
+
+    // Function to swap two List nodes
+    public void SwapLNode(ref LNode a, ref LNode b)
+    {
+        LNode temp = a;
+        a = b;
+        b = temp;
+    }
+
+    // A utility function to create a new List node
+    public LNode NewLNode(int data)
+    {
+        return new LNode(data);
+    }
+
+    // Utility function to create a max heap of given
+    // capacity
+    public MinHeap CreateMinHeap(int capacity)
+    {
+        return new MinHeap(capacity);
+    }
+
+    // Utility function to create a min heap of given
+    // capacity
+    public MaxHeap CreateMaxHeap(int capacity)
+    {
+        return new MaxHeap(capacity);
+    }
+
+    // Utility function to create a List
+    public List CreateList() { return new List(); }
+}
+
+public class Program {
+    // Some basic operations for heaps and List
+    public static bool IsMaxHeapEmpty(MaxHeap heap)
+    {
+        return heap.size == 0;
+    }
+
+    public static bool IsMinHeapEmpty(MinHeap heap)
+    {
+        return heap.size == 0;
+    }
+
+    public static bool IsMaxHeapFull(MaxHeap heap)
+    {
+        return heap.size == heap.capacity;
+    }
+
+    public static bool IsMinHeapFull(MinHeap heap)
+    {
+        return heap.size == heap.capacity;
+    }
+
+    public static bool IsListEmpty(List list)
+    {
+        return list.head == null;
+    }
+
+    public static bool HasOnlyOneLNode(List list)
+    {
+        return list.head.next == null
+            && list.head.prev == null;
+    }
+
+    // The standard minheapify function.
+    public static void MinHeapify(MinHeap minHeap,
+                                  int index)
+    {
+        int smallest = index;
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+
+        if (left < minHeap.size
+            && minHeap.array[left] != null
+            && minHeap.array[left].data
+                   < minHeap.array[smallest].data)
+            smallest = left;
+
+        if (right < minHeap.size
+            && minHeap.array[right] != null
+            && minHeap.array[right].data
+                   < minHeap.array[smallest].data)
+            smallest = right;
+
+        if (smallest != index) {
+            MyDS myDS
+                = new MyDS(0); // create an instance of MyDS
+                               // to access SwapLNode method
+            myDS.SwapData(
+                ref minHeap.array[smallest].minHeapIndex,
+                ref minHeap.array[index].minHeapIndex);
+            myDS.SwapLNode(ref minHeap.array[smallest],
+                           ref minHeap.array[index]);
+            MinHeapify(minHeap, smallest);
+        }
+    }
+
+    // The standard maxHeapify function.
+    public static void MaxHeapify(MaxHeap maxHeap,
+                                  int index)
+    {
+        int largest = index;
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+
+        if (left < maxHeap.size
+            && maxHeap.array[left] != null
+            && maxHeap.array[left].data
+                   > maxHeap.array[largest].data)
+            largest = left;
+
+        if (right < maxHeap.size
+            && maxHeap.array[right] != null
+            && maxHeap.array[right].data
+                   > maxHeap.array[largest].data)
+            largest = right;
+
+        if (largest != index) {
+            MyDS myDS
+                = new MyDS(0); // create an instance of MyDS
+                               // to access SwapLNode method
+            myDS.SwapData(
+                ref maxHeap.array[largest].maxHeapIndex,
+                ref maxHeap.array[index].maxHeapIndex);
+            myDS.SwapLNode(ref maxHeap.array[largest],
+                           ref maxHeap.array[index]);
+            MaxHeapify(maxHeap, largest);
+        }
+    }
+
+    // Standard function to insert an item in Min Heap
+    public static void InsertMinHeap(MinHeap minHeap,
+                                     LNode temp)
+    {
+        if (IsMinHeapFull(minHeap))
+            return;
+
+        minHeap.size++;
+        int i = minHeap.size - 1;
+        while (i > 0
+               && temp.data
+                      < minHeap.array[(i - 1) / 2].data) {
+            minHeap.array[i] = minHeap.array[(i - 1) / 2];
+            minHeap.array[i].minHeapIndex = i;
+            i = (i - 1) / 2;
+        }
+
+        minHeap.array[i] = temp;
+        minHeap.array[i].minHeapIndex = i;
+    }
+
+    // Standard function to insert an item in Max Heap
+    public static void InsertMaxHeap(MaxHeap maxHeap,
+                                     LNode temp)
+    {
+        if (IsMaxHeapFull(maxHeap))
+            return;
+
+        maxHeap.size++;
+        int i = maxHeap.size - 1;
+        while (i > 0
+               && temp.data
+                      > maxHeap.array[(i - 1) / 2].data) {
+            maxHeap.array[i] = maxHeap.array[(i - 1) / 2];
+            maxHeap.array[i].maxHeapIndex = i;
+            i = (i - 1) / 2;
+        }
+
+        maxHeap.array[i] = temp;
+        maxHeap.array[i].maxHeapIndex = i;
+    }
+
+    // Function to find minimum value stored in the main
+    // data structure
+    public static int FindMin(MyDS myDS)
+    {
+        if (IsMinHeapEmpty(myDS.minHeap))
+            return int.MaxValue;
+
+        return myDS.minHeap.array[0].data;
+    }
+
+    // Function to find maximum value stored in the main
+    // data structure
+    public static int FindMax(MyDS myDS)
+    {
+        if (IsMaxHeapEmpty(myDS.maxHeap))
+            return int.MinValue;
+
+        return myDS.maxHeap.array[0].data;
+    }
+
+    // A utility function to remove an item from linked list
+    public static void RemoveLNode(List lst, LNode temp)
+    {
+        if (HasOnlyOneLNode(lst))
+            lst.head = null;
+        else if (temp.prev == null) {
+            lst.head = temp.next;
+            temp.next.prev = null;
+        }
+        else {
+            temp.prev.next = temp.next;
+            if (temp.next != null)
+                temp.next.prev = temp.prev;
+        }
+        temp = null;
+    }
+
+    // Function to delete maximum value stored in the main
+    // data structure
+    public static void DeleteMax(MyDS myDS)
+    {
+        MinHeap minHeap = myDS.minHeap;
+        MaxHeap maxHeap = myDS.maxHeap;
+
+        if (IsMaxHeapEmpty(maxHeap))
+            return;
+
+        LNode temp = maxHeap.array[0];
+
+        maxHeap.array[0] = maxHeap.array[maxHeap.size - 1];
+        maxHeap.size--;
+        maxHeap.array[0].maxHeapIndex = 0;
+        MaxHeapify(maxHeap, 0);
+
+        minHeap.array[temp.minHeapIndex]
+            = minHeap.array[minHeap.size - 1];
+        minHeap.size--;
+        minHeap.array[temp.minHeapIndex].minHeapIndex
+            = temp.minHeapIndex;
+        MinHeapify(minHeap, temp.minHeapIndex);
+
+        RemoveLNode(myDS.list, temp);
+    }
+
+    // Function to delete minimum value stored in the main
+    // data structure
+    public static void DeleteMin(MyDS myDS)
+    {
+        MinHeap minHeap = myDS.minHeap;
+        MaxHeap maxHeap = myDS.maxHeap;
+
+        if (IsMinHeapEmpty(minHeap))
+            return;
+
+        LNode temp = minHeap.array[0];
+
+        minHeap.array[0] = minHeap.array[minHeap.size - 1];
+        minHeap.size--;
+        minHeap.array[0].minHeapIndex = 0;
+        MinHeapify(minHeap, 0);
+
+        maxHeap.array[temp.maxHeapIndex]
+            = maxHeap.array[maxHeap.size - 1];
+        maxHeap.size--;
+        maxHeap.array[temp.maxHeapIndex].maxHeapIndex
+            = temp.maxHeapIndex;
+        MaxHeapify(maxHeap, temp.maxHeapIndex);
+
+        RemoveLNode(myDS.list, temp);
+    }
+
+    // Function to delete an item from the main data
+    // structure
+    public static void Delete(MyDS myDS, int item)
+    {
+        MinHeap minHeap = myDS.minHeap;
+        MaxHeap maxHeap = myDS.maxHeap;
+
+        if (IsListEmpty(myDS.list))
+            return;
+
+        LNode temp = myDS.list.head;
+        while (temp != null && temp.data != item)
+            temp = temp.next;
+
+        if (temp == null
+            || (temp != null && temp.data != item))
+            return;
+
+        minHeap.array[temp.minHeapIndex]
+            = minHeap.array[minHeap.size - 1];
+        minHeap.size--;
+        minHeap.array[temp.minHeapIndex].minHeapIndex
+            = temp.minHeapIndex;
+        MinHeapify(minHeap, temp.minHeapIndex);
+
+        maxHeap.array[temp.maxHeapIndex]
+            = maxHeap.array[maxHeap.size - 1];
+        maxHeap.size--;
+        maxHeap.array[temp.maxHeapIndex].maxHeapIndex
+            = temp.maxHeapIndex;
+        MaxHeapify(maxHeap, temp.maxHeapIndex);
+
+        RemoveLNode(myDS.list, temp);
+    }
+
+    // Insert operation for main data structure
+    public static void Insert(MyDS myDS, int data)
+    {
+        LNode temp = myDS.NewLNode(data);
+        InsertAtHead(myDS.list, temp);
+        InsertMinHeap(myDS.minHeap, temp);
+        InsertMaxHeap(myDS.maxHeap, temp);
+    }
+
+    // Function to insert an item at the head of the list
+    public static void InsertAtHead(List lst, LNode temp)
+    {
+        if (IsListEmpty(lst))
+            lst.head = temp;
+        else {
+            temp.next = lst.head;
+            lst.head.prev = temp;
+            lst.head = temp;
+        }
+    }
+
+    // Driver code
+    public static void Main(string[] args)
+    {
+        MyDS myDS = new MyDS(10);
+
+        // Test Case
+        Insert(myDS, 10);
+        Insert(myDS, 20);
+        Insert(myDS, 30);
+        Insert(myDS, 40);
+        Insert(myDS, 50);
+
+        Console.WriteLine("Maximum = " + FindMax(myDS));
+        Console.WriteLine("Minimum = " + FindMin(myDS));
+
+        DeleteMax(myDS); // 50 is deleted
+        Console.WriteLine("After delete_max()");
+        Console.WriteLine("Maximum = " + FindMax(myDS));
+        Console.WriteLine("Minimum = " + FindMin(myDS));
+
+        DeleteMin(myDS); // 10 is deleted
+        Console.WriteLine("After delete_min()");
+        Console.WriteLine("Maximum = " + FindMax(myDS));
+        Console.WriteLine("Minimum = " + FindMin(myDS));
+
+        Delete(myDS, 40); // 40 is deleted
+        Console.WriteLine("After Delete()");
+        Console.WriteLine("Maximum = " + FindMax(myDS));
+        Console.WriteLine("Minimum = " + FindMin(myDS));
+    }
+}
+
+JavaScript
+
+// A Node of doubly linked list
+class LNode {
+    constructor(data) {
+        this.data = data;
+        this.minHeapIndex = -1;
+        this.maxHeapIndex = -1;
+        this.next = null;
+        this.prev = null;
+    }
+}
+
+// Structure for a doubly linked list
+class List {
+    constructor() {
+        this.head = null;
+    }
+}
+
+// Structure of min heap
+class MinHeap {
+    constructor(capacity) {
+        this.size = 0;
+        this.capacity = capacity;
+        this.array = new Array(capacity).fill(null);
+    }
+}
+
+// Structure ffor max heap
+class MaxHeap {
+    constructor(capacity) {
+        this.size = 0;
+        this.capacity = capacity;
+        this.array = new Array(capacity).fill(null);
+    }
+}
+
+// The required data structure
+class MyDS {
+    constructor(capacity) {
+        this.minHeap = this.createMinHeap(capacity);
+        this.maxHeap = this.createMaxHeap(capacity);
+        this.list = this.createList();
+    }
+
+    // function to swap two integers
+    swap_data(a, b) {
+        [a.data, b.data] = [b.data, a.data];
+    }
+
+    // function to swap two list nodes
+    swap_lnode(a, b) {
+        [a, b] = [b, a];
+    }
+
+    // A utility function to create a new list node
+    new_lnode(data) {
+        const node = new LNode(data);
+        node.minHeapIndex = node.maxHeapIndex = -1;
+        node.prev = node.next = null;
+        return node;
+    }
+
+    // Utility function to create a max head of given capacity
+    createMaxHeap(capacity) {
+        const maxHeap = new MaxHeap(capacity);
+        maxHeap.size = 0;
+        maxHeap.array = new Array(capacity).fill(null);
+        return maxHeap;
+    }
+
+    // Utility function to create a min heap of given capacity
+    createMinHeap(capacity) {
+        const minHeap = new MinHeap(capacity);
+        minHeap.size = 0;
+        minHeap.array = new Array(capacity).fill(null);
+        return minHeap;
+    }
+
+    // Utility function to create a list
+    createList() {
+        return new List();
+    }
+}
+
+// Some basic operations for heaps and list
+function is_max_heap_empty(heap) {
+    return heap.size === 0;
+}
+
+function is_min_heap_empty(heap) {
+    return heap.size === 0;
+}
+
+function is_max_heap_full(heap) {
+    return heap.size === heap.capacity;
+}
+
+function is_min_heap_full(heap) {
+    return heap.size === heap.capacity;
+}
+
+function is_list_empty(lst) {
+    return !lst.head;
+}
+
+function has_only_one_lnode(lst) {
+    return !lst.head.next && !lst.head.prev;
+}
+
+// The standard minheapify function
+function min_heapify(minHeap, index) {
+    let smallest = index;
+    const left = 2 * index + 1;
+    const right = 2 * index + 2;
+
+    if (left < minHeap.size && minHeap.array[left] && minHeap.array[left].data < minHeap.array[smallest].data) {
+        smallest = left;
+    }
+
+    if (right < minHeap.size && minHeap.array[right] && minHeap.array[right].data < minHeap.array[smallest].data) {
+        smallest = right;
+    }
+
+    if (smallest !== index) {
+        [minHeap.array[smallest].minHeapIndex, minHeap.array[index].minHeapIndex] = [minHeap.array[index].minHeapIndex, minHeap.array[smallest].minHeapIndex];
+        [minHeap.array[smallest], minHeap.array[index]] = [minHeap.array[index], minHeap.array[smallest]];
+        min_heapify(minHeap, smallest);
+    }
+}
+
+// The standard maxHeapify function
+function max_heapify(maxHeap, index) {
+    let largest = index;
+    const left = 2 * index + 1;
+    const right = 2 * index + 2;
+
+    if (left < maxHeap.size && maxHeap.array[left] && maxHeap.array[left].data > maxHeap.array[largest].data) {
+        largest = left;
+    }
+
+    if (right < maxHeap.size && maxHeap.array[right] && maxHeap.array[right].data > maxHeap.array[largest].data) {
+        largest = right;
+    }
+
+    if (largest !== index) {
+        [maxHeap.array[largest].maxHeapIndex, maxHeap.array[index].maxHeapIndex] = [maxHeap.array[index].maxHeapIndex, maxHeap.array[largest].maxHeapIndex];
+        [maxHeap.array[largest], maxHeap.array[index]] = [maxHeap.array[index], maxHeap.array[largest]];
+        max_heapify(maxHeap, largest);
+    }
+}
+
+// Standard function to insert an item in min heap
+function insert_min_heap(minHeap, temp) {
+    if (is_min_heap_full(minHeap)) {
+        return;
+    }
+
+    minHeap.size += 1;
+    let i = minHeap.size - 1;
+
+    while (i && temp.data < minHeap.array[Math.floor((i - 1) / 2)].data) {
+        minHeap.array[i] = minHeap.array[Math.floor((i - 1) / 2)];
+        minHeap.array[i].minHeapIndex = i;
+        i = Math.floor((i - 1) / 2);
+    }
+
+    minHeap.array[i] = temp;
+    minHeap.array[i].minHeapIndex = i;
+}
+
+// Standard function to insert an item in Max Heap
+function insert_max_heap(maxHeap, temp) {
+    if (is_max_heap_full(maxHeap)) {
+        return;
+    }
+
+    maxHeap.size += 1;
+    let i = maxHeap.size - 1;
+
+    while (i && temp.data > maxHeap.array[Math.floor((i - 1) / 2)].data) {
+        maxHeap.array[i] = maxHeap.array[Math.floor((i - 1) / 2)];
+        maxHeap.array[i].maxHeapIndex = i;
+        i = Math.floor((i - 1) / 2);
+    }
+
+    maxHeap.array[i] = temp;
+    maxHeap.array[i].maxHeapIndex = i;
+}
+
+// Function to find minimum value stored in the main data structure
+function find_min(myDS) {
+    if (is_min_heap_empty(myDS.minHeap)) {
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    return myDS.minHeap.array[0].data;
+}
+
+// Function to find maximum value stored in the main data structure
+function find_max(myDS) {
+    if (is_max_heap_empty(myDS.maxHeap)) {
+        return -Number.MAX_SAFE_INTEGER;
+    }
+
+    return myDS.maxHeap.array[0].data;
+}
+
+// A utility function to remove an item from linked list
+function remove_lnode(lst, temp) {
+    if (has_only_one_lnode(lst)) {
+        lst.head = null;
+    } else if (!temp.prev) {
+        lst.head = temp.next;
+        temp.next.prev = null;
+    } else {
+        temp.prev.next = temp.next;
+        if (temp.next) {
+            temp.next.prev = temp.prev;
+        }
+    }
+    temp = null;
+}
+
+// Function to delete maximum value stored in the main data structure
+function delete_max(myDS) {
+    const minHeap = myDS.minHeap;
+    const maxHeap = myDS.maxHeap;
+
+    if (is_max_heap_empty(maxHeap)) {
+        return;
+    }
+
+    const temp = maxHeap.array[0];
+
+    maxHeap.array[0] = maxHeap.array[maxHeap.size - 1];
+    maxHeap.size -= 1;
+    maxHeap.array[0].maxHeapIndex = 0;
+    max_heapify(maxHeap, 0);
+
+    minHeap.array[temp.minHeapIndex] = minHeap.array[minHeap.size - 1];
+    minHeap.size -= 1;
+    minHeap.array[temp.minHeapIndex].minHeapIndex = temp.minHeapIndex;
+    min_heapify(minHeap, temp.minHeapIndex);
+
+    remove_lnode(myDS.list, temp);
+}
+
+// Function to delete minimum value stored in the main data structure
+function delete_min(myDS) {
+    const minHeap = myDS.minHeap;
+    const maxHeap = myDS.maxHeap;
+
+    if (is_min_heap_empty(minHeap)) {
+        return;
+    }
+
+    const temp = minHeap.array[0];
+
+    minHeap.array[0] = minHeap.array[minHeap.size - 1];
+    minHeap.size -= 1;
+    minHeap.array[0].minHeapIndex = 0;
+    min_heapify(minHeap, 0);
+
+    maxHeap.array[temp.maxHeapIndex] = maxHeap.array[maxHeap.size - 1];
+    maxHeap.size -= 1;
+    maxHeap.array[temp.maxHeapIndex].maxHeapIndex = temp.maxHeapIndex;
+    max_heapify(maxHeap, temp.maxHeapIndex);
+
+    remove_lnode(myDS.list, temp);
+}
+
+// Function ot enList an item to list
+function insert_at_head(lst, temp) {
+    if (is_list_empty(lst)) {
+        lst.head = temp;
+    } else {
+        temp.next = lst.head;
+        lst.head.prev = temp;
+        lst.head = temp;
+    }
+}
+
+// Function to delete an item from list. The function also
+// removes item from min and max heaps
+function deleteFromList(myDS, item) {
+    const minHeap = myDS.minHeap;
+    const maxHeap = myDS.maxHeap;
+
+    if (is_list_empty(myDS.list)) {
+        return;
+    }
+
+    let temp = myDS.list.head;
+
+    while (temp && temp.data !== item) {
+        temp = temp.next;
+    }
+
+    if (!temp || (temp && temp.data !== item)) {
+        return;
+    }
+
+    minHeap.array[temp.minHeapIndex] = minHeap.array[minHeap.size - 1];
+    minHeap.size -= 1;
+    minHeap.array[temp.minHeapIndex].minHeapIndex = temp.minHeapIndex;
+    min_heapify(minHeap, temp.minHeapIndex);
+
+    maxHeap.array[temp.maxHeapIndex] = maxHeap.array[maxHeap.size - 1];
+    maxHeap.size -= 1;
+    maxHeap.array[temp.maxHeapIndex].maxHeapIndex = temp.maxHeapIndex;
+    max_heapify(maxHeap, temp.maxHeapIndex);
+
+    remove_lnode(myDS.list, temp);
+}
+
+// insert operation for main data structure
+function insert(myDS, data) {
+    const temp = myDS.new_lnode(data);
+    insert_at_head(myDS.list, temp);
+    insert_min_heap(myDS.minHeap, temp);
+    insert_max_heap(myDS.maxHeap, temp);
+}
+
+function main() {
+    const myDS = new MyDS(10);
+
+    // Test Case #2
+    insert(myDS, 10);
+    insert(myDS, 20);
+    insert(myDS, 30);
+    insert(myDS, 40);
+    insert(myDS, 50);
+
+    console.log("Maximum =", find_max(myDS));
+    console.log("Minimum =", find_min(myDS));
+
+    delete_max(myDS);  // 50 is deleted
+    console.log("After deleteMax()");
+    console.log("Maximum =", find_max(myDS));
+    console.log("Minimum =", find_min(myDS));
+
+    delete_min(myDS);  // 10 is deleted
+    console.log("After deleteMin()");
+    console.log("Maximum =", find_max(myDS));
+    console.log("Minimum =", find_min(myDS));
+
+    deleteFromList(myDS, 40);  // 40 is deleted
+    console.log("After Delete()");
+    console.log("Maximum =", find_max(myDS));
+    console.log("Minimum =", find_min(myDS));
+}
+
+main();
+
+Output:
+
+Maximum = 50Minimum = 10After deleteMax()Maximum = 40Minimum = 10After deleteMin()Maximum = 40Minimum = 20After Delete()Maximum = 30Minimum = 20
+
+This article is compiled by Aashish Barnwal and reviewed by GeeksforGeeks team. Please write comments if you find anything incorrect, or you want to share more information about the topic discussed above

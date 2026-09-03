@@ -1,0 +1,778 @@
+Source: https://www.geeksforgeeks.org/dsa/persistent-segment-tree-set-1-introduction/
+Title: Persistent Segment Tree | Set 1 (Introduction)
+Extractor: 2
+
+Prerequisite : Segment Tree
+               Persistency in Data Structure
+
+Segment Tree is itself a great data structure that comes into play in many cases. In this post we will introduce the concept of Persistency in this data structure. Persistency, simply means to retain the changes. But obviously, retaining the changes cause extra memory consumption and hence affect the Time Complexity.
+
+Our aim is to apply persistency in segment tree and also to ensure that it does not take more than O(log n) time and space for each change.
+
+Let's think in terms of versions i.e. for each change in our segment tree we create a new version of it. We will consider our initial version to be Version-0. Now, as we do any update in the segment tree we will create a new version for it and in similar fashion track the record for all versions.
+
+But creating the whole tree for every version will take O(n log n) extra space and O(n log n) time. So, this idea runs out of time and memory for large number of versions.
+
+Let's exploit the fact that for each new update(say point update for simplicity) in segment tree, At max logn nodes will be modified. So, our new version will only contain these log n new nodes and rest nodes will be the same as previous version. Therefore, it is quite clear that for each new version we only need to create these log n new nodes whereas the rest of nodes can be shared from the previous version.
+
+Consider the below figure for better visualization(click on the image for better view) :-
+
+Consider the segment tree with green nodes . Lets call this segment tree as version-0 . The left child for each node is connected with solid red edge where as the right child for each node is connected with solid purple edge. Clearly, this segment tree consists of 15 nodes.
+
+Now consider we need to make change in the leaf node 13 of version-0. So, the affected nodes will be - node 13 , node 6 , node 3 , node 1 . Therefore, for the new version (Version-1) we need to create only these 4 new nodes .
+
+Now, lets construct version-1 for this change in segment tree. We need a new node 1 as it is affected by change done in node 13. So , we will first create a new node 1' (yellow color) . The left child for node 1' will be the same for left child for node 1 in version-0. So, we connect the left child of node 1' with node 2 of version-0(red dashed line in figure). Let's now examine the right child for node 1' in version-1. We need to create a new node as it is affected . So we create a new node called node 3' and make it the right child for node 1'(solid purple edge connection).
+
+In the similar fashion we will now examine for node 3' . The left child is affected , So we create a new node called node 6' and connect it with solid red edge with node 3' , where as the right child for node 3' will be the same as right child of node 3 in version-0. So, we will make the right child of node 3 in version-0 as the right child of node 3' in version-1(see the purple dash edge.)
+
+Same procedure is done for node 6' and we see that the left child of node 6' will be the left child of node 6 in version-0(red dashed connection) and right child is newly created node called node 13' (solid purple dashed edge). Each yellow color node is a newly created node and dashed edges are the inter-connection between the different versions of the segment tree.
+
+Now, the Question arises : How to keep track of all the versions? - We only need to keep track the first root node for all the versions and this will serve the purpose to track all the newly created nodes in the different versions. For this purpose we can maintain an array of pointers to the first node of segment trees for all versions.
+
+Let's consider a very basic problem to see how to implement persistence in segment tree
+
+Problem : Given an array A[] and different point update operations.Considering
+each point operation to create a new version of the array. We need to answer
+the queries of type
+Q v l r : output the sum of elements in range l to r just after the v-th update.
+
+We will create all the versions of the segment tree and keep track of their root node.Then for each range sum query we will pass the required version's root node in our query function and output the required sum.
+
+Below is the implementation for the above problem:-
+
+Implementation:
+
+C++
+
+// C++ program to implement persistent segment
+// tree.
+#include "bits/stdc++.h"
+using namespace std;
+
+#define MAXN 100
+
+/* data type for individual
+ * node in the segment tree */
+struct node
+{
+    // stores sum of the elements in node
+    int val;
+
+    // pointer to left and right children
+    node* left, *right;
+
+    // required constructors........
+    node() {}
+    node(node* l, node* r, int v)
+    {
+        left = l;
+        right = r;
+        val = v;
+    }
+};
+
+// input array
+int arr[MAXN];
+
+// root pointers for all versions
+node* version[MAXN];
+
+// Constructs Version-0
+// Time Complexity : O(nlogn)
+void build(node* n,int low,int high)
+{
+    if (low==high)
+    {
+        n->val = arr[low];
+        return;
+    }
+    int mid = (low+high) / 2;
+    n->left = new node(NULL, NULL, 0);
+    n->right = new node(NULL, NULL, 0);
+    build(n->left, low, mid);
+    build(n->right, mid+1, high);
+    n->val = n->left->val + n->right->val;
+}
+
+/**
+ * Upgrades to new Version
+ * @param prev : points to node of previous version
+ * @param cur  : points to node of current version
+ * Time Complexity : O(logn)
+ * Space Complexity : O(logn)  */
+void upgrade(node* prev, node* cur, int low, int high,
+                                   int idx, int value)
+{
+    if (idx > high or idx < low or low > high)
+        return;
+
+    if (low == high)
+    {
+        // modification in new version
+        cur->val = value;
+        return;
+    }
+    int mid = (low+high) / 2;
+    if (idx <= mid)
+    {
+        // link to right child of previous version
+        cur->right = prev->right;
+
+        // create new node in current version
+        cur->left = new node(NULL, NULL, 0);
+
+        upgrade(prev->left,cur->left, low, mid, idx, value);
+    }
+    else
+    {
+        // link to left child of previous version
+        cur->left = prev->left;
+
+        // create new node for current version
+        cur->right = new node(NULL, NULL, 0);
+
+        upgrade(prev->right, cur->right, mid+1, high, idx, value);
+    }
+
+    // calculating data for current version
+    // by combining previous version and current
+    // modification
+    cur->val = cur->left->val + cur->right->val;
+}
+
+int query(node* n, int low, int high, int l, int r)
+{
+    if (l > high or r < low or low > high)
+       return 0;
+    if (l <= low and high <= r)
+       return n->val;
+    int mid = (low+high) / 2;
+    int p1 = query(n->left,low,mid,l,r);
+    int p2 = query(n->right,mid+1,high,l,r);
+    return p1+p2;
+}
+
+int main(int argc, char const *argv[])
+{
+    int A[] = {1,2,3,4,5};
+    int n = sizeof(A)/sizeof(int);
+
+    for (int i=0; i<n; i++)
+       arr[i] = A[i];
+
+    // creating Version-0
+    node* root = new node(NULL, NULL, 0);
+    build(root, 0, n-1);
+
+    // storing root node for version-0
+    version[0] = root;
+
+    // upgrading to version-1
+    version[1] = new node(NULL, NULL, 0);
+    upgrade(version[0], version[1], 0, n-1, 4, 1);
+
+    // upgrading to version-2
+    version[2] = new node(NULL, NULL, 0);
+    upgrade(version[1],version[2], 0, n-1, 2, 10);
+
+    cout << "In version 1 , query(0,4) : ";
+    cout << query(version[1], 0, n-1, 0, 4) << endl;
+
+    cout << "In version 2 , query(3,4) : ";
+    cout << query(version[2], 0, n-1, 3, 4) << endl;
+
+    cout << "In version 0 , query(0,3) : ";
+    cout << query(version[0], 0, n-1, 0, 3) << endl;
+    return 0;
+}
+
+Java
+
+// Java program to implement persistent
+// segment tree.
+class GFG{
+
+// Declaring maximum number
+static Integer MAXN = 100;
+
+// Making Node for tree
+static class node
+{
+
+    // Stores sum of the elements in node
+    int val;
+
+    // Reference to left and right children
+    node left, right;
+
+    // Required constructors..
+    node() {}
+
+    // Node constructor for l,r,v
+    node(node l, node r, int v)
+    {
+        left = l;
+        right = r;
+        val = v;
+    }
+}
+
+// Input array
+static int[] arr = new int[MAXN];
+
+// Root pointers for all versions
+static node version[] = new node[MAXN];
+
+// Constructs Version-0
+// Time Complexity : O(nlogn)
+static void build(node n, int low, int high)
+{
+    if (low == high)
+    {
+        n.val = arr[low];
+        return;
+    }
+
+    int mid = (low + high) / 2;
+    n.left = new node(null, null, 0);
+    n.right = new node(null, null, 0);
+    build(n.left, low, mid);
+    build(n.right, mid + 1, high);
+    n.val = n.left.val + n.right.val;
+}
+
+/*  Upgrades to new Version
+ * @param prev : points to node of previous version
+ * @param cur  : points to node of current version
+ * Time Complexity : O(logn)
+ * Space Complexity : O(logn)  */
+static void upgrade(node prev, node cur, int low,
+                      int high, int idx, int value)
+{
+    if (idx > high || idx < low || low > high)
+        return;
+
+    if (low == high)
+    {
+
+        // Modification in new version
+        cur.val = value;
+        return;
+    }
+    int mid = (low + high) / 2;
+
+    if (idx <= mid)
+    {
+
+        // Link to right child of previous version
+        cur.right = prev.right;
+
+        // Create new node in current version
+        cur.left = new node(null, null, 0);
+
+        upgrade(prev.left, cur.left, low,
+                mid, idx, value);
+    }
+    else
+    {
+
+        // Link to left child of previous version
+        cur.left = prev.left;
+
+        // Create new node for current version
+        cur.right = new node(null, null, 0);
+
+        upgrade(prev.right, cur.right, mid + 1,
+                high, idx, value);
+    }
+
+    // Calculating data for current version
+    // by combining previous version and current
+    // modification
+    cur.val = cur.left.val + cur.right.val;
+}
+
+static int query(node n, int low, int high,
+                         int l, int r)
+{
+    if (l > high || r < low || low > high)
+        return 0;
+    if (l <= low && high <= r)
+        return n.val;
+
+    int mid = (low + high) / 2;
+    int p1 = query(n.left, low, mid, l, r);
+    int p2 = query(n.right, mid + 1, high, l, r);
+    return p1 + p2;
+}
+
+// Driver code
+public static void main(String[] args)
+{
+    int A[] = { 1, 2, 3, 4, 5 };
+    int n = A.length;
+
+    for(int i = 0; i < n; i++)
+        arr[i] = A[i];
+
+    // Creating Version-0
+    node root = new node(null, null, 0);
+    build(root, 0, n - 1);
+
+    // Storing root node for version-0
+    version[0] = root;
+
+    // Upgrading to version-1
+    version[1] = new node(null, null, 0);
+    upgrade(version[0], version[1], 0, n - 1, 4, 1);
+
+    // Upgrading to version-2
+    version[2] = new node(null, null, 0);
+    upgrade(version[1], version[2], 0, n - 1, 2, 10);
+
+    // For print
+    System.out.print("In version 1 , query(0,4) : ");
+    System.out.print(query(version[1], 0, n - 1, 0, 4));
+
+    System.out.print("\nIn version 2 , query(3,4) : ");
+    System.out.print(query(version[2], 0, n - 1, 3, 4));
+
+    System.out.print("\nIn version 0 , query(0,3) : ");
+    System.out.print(query(version[0], 0, n - 1, 0, 3));
+}
+}
+
+// This code is contributed by mark_85
+
+Python3
+
+# Python program to implement persistent segment tree.
+
+MAXN = 100
+
+# data type for individual node in the segment tree
+class Node:
+    def __init__(self, left=None, right=None, val=0):
+        # stores sum of the elements in node
+        self.val = val
+        # pointer to left and right children
+        self.left = left
+        self.right = right
+
+# input array
+arr = [0] * MAXN
+
+# root pointers for all versions
+version = [None] * MAXN
+
+# Constructs Version-0
+# Time Complexity : O(nlogn)
+def build(n, low, high):
+    if low == high:
+        n.val = arr[low]
+        return
+    mid = (low+high) // 2
+    n.left = Node()
+    n.right = Node()
+    build(n.left, low, mid)
+    build(n.right, mid+1, high)
+    n.val = n.left.val + n.right.val
+
+# Upgrades to new Version
+# @param prev : points to node of previous version
+# @param cur  : points to node of current version
+# Time Complexity : O(logn)
+# Space Complexity : O(logn)
+def upgrade(prev, cur, low, high, idx, value):
+    if idx > high or idx < low or low > high:
+        return
+
+    if low == high:
+        # modification in new version
+        cur.val = value
+        return
+
+    mid = (low+high) // 2
+    if idx <= mid:
+        # link to right child of previous version
+        cur.right = prev.right
+
+        # create new node in current version
+        cur.left = Node()
+
+        upgrade(prev.left,cur.left, low, mid, idx, value)
+    else:
+        # link to left child of previous version
+        cur.left = prev.left
+
+        # create new node for current version
+        cur.right = Node()
+
+        upgrade(prev.right, cur.right, mid+1, high, idx, value)
+
+    # calculating data for current version
+    # by combining previous version and current
+    # modification
+    cur.val = cur.left.val + cur.right.val
+
+def query(n, low, high, l, r):
+    if l > high or r < low or low > high:
+        return 0
+    if l <= low and high <= r:
+        return n.val
+    mid = (low+high) // 2
+    p1 = query(n.left,low,mid,l,r)
+    p2 = query(n.right,mid+1,high,l,r)
+    return p1+p2
+
+if __name__ == '__main__':
+    A = [1,2,3,4,5]
+    n = len(A)
+
+    for i in range(n):
+        arr[i] = A[i]
+
+    # creating Version-0
+    root = Node()
+    build(root, 0, n-1)
+
+    # storing root node for version-0
+    version[0] = root
+
+    # upgrading to version-1
+    version[1] = Node()
+    upgrade(version[0], version[1], 0, n-1, 4, 1)
+
+    # upgrading to version-2
+    version[2] = Node()
+    upgrade(version[1], version[2], 0, n-1, 2, 5)
+
+    # querying in version-0
+    print("In version 0 , query(0,3) :",query(version[0], 0, n-1, 0, 3))
+
+    # querying in version-1
+    print("In version 1 , query(0,4) :",query(version[1], 0, n-1, 0, 4))
+
+    # querying in version-2
+    print("In version 2 , query(3,4) :",query(version[2], 0, n-1, 3, 4))
+
+C#
+
+// C# program to implement persistent
+// segment tree.
+using System;
+
+class node
+{
+
+    // Stores sum of the elements in node
+    public int val;
+
+    // Reference to left and right children
+    public node left, right;
+
+    // Required constructors..
+    public node()
+    {}
+
+    // Node constructor for l,r,v
+    public node(node l, node r, int v)
+    {
+        left = l;
+        right = r;
+        val = v;
+    }
+}
+
+class GFG{
+
+// Declaring maximum number
+static int MAXN = 100;
+
+// Making Node for tree
+// Input array
+static int[] arr = new int[MAXN];
+
+// Root pointers for all versions
+static node[] version = new node[MAXN];
+
+// Constructs Version-0
+// Time Complexity : O(nlogn)
+static void build(node n, int low, int high)
+{
+    if (low == high)
+    {
+        n.val = arr[low];
+        return;
+    }
+
+    int mid = (low + high) / 2;
+    n.left = new node(null, null, 0);
+    n.right = new node(null, null, 0);
+    build(n.left, low, mid);
+    build(n.right, mid + 1, high);
+    n.val = n.left.val + n.right.val;
+}
+
+/* Upgrades to new Version
+ * @param prev : points to node of previous version
+ * @param cur  : points to node of current version
+ * Time Complexity : O(logn)
+ * Space Complexity : O(logn)  */
+static void upgrade(node prev, node cur, int low,
+                      int high, int idx, int value)
+{
+    if (idx > high || idx < low || low > high)
+        return;
+
+    if (low == high)
+    {
+
+        // Modification in new version
+        cur.val = value;
+        return;
+    }
+
+    int mid = (low + high) / 2;
+
+    if (idx <= mid)
+    {
+
+        // Link to right child of previous version
+        cur.right = prev.right;
+
+        // Create new node in current version
+        cur.left = new node(null, null, 0);
+        upgrade(prev.left, cur.left, low,
+                mid, idx, value);
+    }
+    else
+    {
+
+        // Link to left child of previous version
+        cur.left = prev.left;
+
+        // Create new node for current version
+        cur.right = new node(null, null, 0);
+        upgrade(prev.right, cur.right,
+                mid + 1, high, idx, value);
+    }
+
+    // Calculating data for current version
+    // by combining previous version and current
+    // modification
+    cur.val = cur.left.val + cur.right.val;
+}
+
+static int query(node n, int low, int high,
+                         int l, int r)
+{
+    if (l > high || r < low || low > high)
+        return 0;
+
+    if (l <= low && high <= r)
+        return n.val;
+
+    int mid = (low + high) / 2;
+    int p1 = query(n.left, low, mid, l, r);
+    int p2 = query(n.right, mid + 1, high, l, r);
+    return p1 + p2;
+}
+
+// Driver code
+public static void Main(String[] args)
+{
+    int[] A = { 1, 2, 3, 4, 5 };
+    int n = A.Length;
+
+    for(int i = 0; i < n; i++)
+        arr[i] = A[i];
+
+    // Creating Version-0
+    node root = new node(null, null, 0);
+    build(root, 0, n - 1);
+
+    // Storing root node for version-0
+    version[0] = root;
+
+    // Upgrading to version-1
+    version[1] = new node(null, null, 0);
+    upgrade(version[0], version[1], 0,
+            n - 1, 4, 1);
+
+    // Upgrading to version-2
+    version[2] = new node(null, null, 0);
+    upgrade(version[1], version[2], 0,
+            n - 1, 2, 10);
+
+    // For print
+    Console.Write("In version 1 , query(0,4) : ");
+    Console.Write(query(version[1], 0, n - 1, 0, 4));
+
+    Console.Write("\nIn version 2 , query(3,4) : ");
+    Console.Write(query(version[2], 0, n - 1, 3, 4));
+
+    Console.Write("\nIn version 0 , query(0,3) : ");
+    Console.Write(query(version[0], 0, n - 1, 0, 3));
+}
+}
+
+// This code is contributed by sanjeev2552
+
+JavaScript
+
+<script>
+
+// JavaScript program to implement persistent
+// segment tree.
+class node
+{
+    // Node constructor for l,r,v
+    constructor(l, r, v)
+    {
+        this.left = l;
+        this.right = r;
+        this.val = v;
+    }
+}
+
+// Declaring maximum number
+var MAXN = 100;
+
+// Making Node for tree
+// Input array
+var arr = Array(MAXN);
+
+// Root pointers for all versions
+var version = Array(MAXN);
+
+// Constructs Version-0
+// Time Complexity : O(nlogn)
+function build(n, low, high)
+{
+    if (low == high)
+    {
+        n.val = arr[low];
+        return;
+    }
+
+    var mid = parseInt((low + high) / 2);
+    n.left = new node(null, null, 0);
+    n.right = new node(null, null, 0);
+    build(n.left, low, mid);
+    build(n.right, mid + 1, high);
+    n.val = n.left.val + n.right.val;
+}
+
+/* Upgrades to new Version
+ * @param prev : points to node of previous version
+ * @param cur  : points to node of current version
+ * Time Complexity : O(logn)
+ * Space Complexity : O(logn)  */
+function upgrade(prev, cur, low, high, idx, value)
+{
+    if (idx > high || idx < low || low > high)
+        return;
+
+    if (low == high)
+    {
+
+        // Modification in new version
+        cur.val = value;
+        return;
+    }
+
+    var mid = parseInt((low + high) / 2);
+
+    if (idx <= mid)
+    {
+
+        // Link to right child of previous version
+        cur.right = prev.right;
+
+        // Create new node in current version
+        cur.left = new node(null, null, 0);
+        upgrade(prev.left, cur.left, low,
+                mid, idx, value);
+    }
+    else
+    {
+
+        // Link to left child of previous version
+        cur.left = prev.left;
+
+        // Create new node for current version
+        cur.right = new node(null, null, 0);
+        upgrade(prev.right, cur.right,
+                mid + 1, high, idx, value);
+    }
+
+    // Calculating data for current version
+    // by combining previous version and current
+    // modification
+    cur.val = cur.left.val + cur.right.val;
+}
+
+function query(n, low, high, l, r)
+{
+    if (l > high || r < low || low > high)
+        return 0;
+
+    if (l <= low && high <= r)
+        return n.val;
+
+    var mid = parseInt((low + high) / 2);
+    var p1 = query(n.left, low, mid, l, r);
+    var p2 = query(n.right, mid + 1, high, l, r);
+    return p1 + p2;
+}
+
+// Driver code
+var A = [1, 2, 3, 4, 5];
+var n = A.length;
+
+for(var i = 0; i < n; i++)
+    arr[i] = A[i];
+
+// Creating Version-0
+var root = new node(null, null, 0);
+build(root, 0, n - 1);
+
+// Storing root node for version-0
+version[0] = root;
+
+// Upgrading to version-1
+version[1] = new node(null, null, 0);
+upgrade(version[0], version[1], 0,
+        n - 1, 4, 1);
+
+// Upgrading to version-2
+version[2] = new node(null, null, 0);
+upgrade(version[1], version[2], 0,
+        n - 1, 2, 10);
+
+// For print
+document.write("In version 1 , query(0,4) : ");
+document.write(query(version[1], 0, n - 1, 0, 4));
+
+document.write("<br>In version 2 , query(3,4) : ");
+document.write(query(version[2], 0, n - 1, 3, 4));
+
+document.write("<br>In version 0 , query(0,3) : ");
+document.write(query(version[0], 0, n - 1, 0, 3));
+
+</script>
+
+Output
+
+In version 1 , query(0,4) : 11
+In version 2 , query(3,4) : 5
+In version 0 , query(0,3) : 10
+
+Note: The above problem can also be solved by processing the queries offline by sorting it with respect to the version and answering the queries just after the corresponding update.
+
+Time Complexity: The time complexity will be the same as the query and point update operation in the segment tree as we can consider the extra node creation step to be done in O(1). Hence, the overall Time Complexity per query for new version creation and range sum query will be O(log n) .
+
+Auxiliary Space: O(log n)
+
+Related Topic: Segment Tree

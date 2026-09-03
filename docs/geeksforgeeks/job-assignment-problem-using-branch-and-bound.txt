@@ -1,0 +1,774 @@
+Source: https://www.geeksforgeeks.org/dsa/job-assignment-problem-using-branch-and-bound/
+Title: Job Assignment Problem using Branch And Bound
+Extractor: 2
+
+You are the head of a company with n employees and n distinct jobs to be completed. Every employee takes a different amount of time to complete different jobs, given in the form of a cost[][] matrix, where cost[i][j] represents the time taken by the i th person to complete the j th job. Your task is to assign the jobs in such a way that the total time taken by all employees is minimized.
+
+Note: Each employee must be assigned exactly one job, and each job must be assigned to exactly one employee.
+
+Examples:
+
+> Input: n = 4 cost[][] = [ [9, 2, 7, 8], [6, 4, 3, 7], [5, 8, 1, 8], [7, 6, 9, 4] ] Output: 13 Explanation: Following image depicts the cost associated with each job-worker combinations. Numbers marked in green should be opted to get minimum possible cost.
+
+Table of Content
+
+- [Naive Approach] - Generate All Combinations - O(n!) Time and O(1) Space
+- [Better Approach] - Using Hungarian Algorithm - O(n ^ 3) Time and O(n ^ 2) Space
+- [Better Approach] - Using DFS/BFS on State Space Tree
+- [Expected Approach] - Using Branch Bound - O(n ^ 2) Time and O(n) Space
+
+### [Naive Approach] - Generate All Combinations - O(n!) Time and O(1) Space
+
+> The idea is to generate n! possible job assignments and for each such assignment, we compute its total cost and return the less expensive assignment. Since the solution is a permutation of the n jobs, its complexity is O(n!).
+
+### [Better Approach] - Using Hungarian Algorithm - O(n ^ 3) Time and O(n ^ 2) Space
+
+> The optimal assignment can be found using the Hungarian algorithm. The Hungarian algorithm has worst case run-time complexity of O(n^3). We've already discussed the approach in article Hungarian Algorithm for Assignment Problem
+
+### [Better Approach] - Using DFS/BFS on State Space Tree
+
+> A state space tree is an N-ary tree where each path from the root to a leaf node represents a potential solution to the given problem. One way to explore this tree is through Depth-First Search (DFS), which follows the leftmost path from the root. However, DFS doesn't consider whether each move brings us closer to the goal—successive steps might actually lead us further away. As a result, it’s possible that a valid solution may never be found. Alternatively, we can use Breadth-First Search (BFS), which explores the tree level by level. Like DFS, BFS also follows a fixed order of exploring nodes regardless of the initial state. Both strategies are blind to the actual direction of the goal unless guided by additional heuristics.
+
+### [Expected Approach] - Using Branch Bound - O(n ^ 2) Time and O(n) Space
+
+> In both Breadth-First Search (BFS) and Depth-First Search (DFS) , the selection of the next node to explore is blind —that is, it does not prioritize nodes that are more likely to lead to an optimal solution. These uninformed strategies treat all nodes equally, without considering their potential to reach the goal efficiently. To overcome this limitation, we can use an informed search strategy that leverages an intelligent ranking function , often referred to as an approximate cost function . This function helps guide the search process by assigning a cost to each live node, enabling the algorithm to avoid exploring subtrees unlikely to contain optimal solutions . This approach is similar to BFS, but instead of following the strict FIFO order, it selects the live node with the lowest estimated cost . Although this method does not guarantee the optimal solution, it significantly increases the chances of finding a near-optimal solution faster by focusing the search on more promising paths.
+
+There are two common approaches to estimate the cost function:
+
+- Row-based Minimization : For each worker (row), select the minimum cost job from the list of unassigned jobs (i.e., take the minimum entry from each row).
+- Column-based Minimization : For each job (column), choose the worker with the lowest cost from the list of unassigned workers (i.e., take the minimum entry from each column).
+
+In this article, the first approach is followed.
+
+Let’s take below example and try to calculate promising cost when Job 2 is assigned to worker A.
+
+- Since Job 2 is assigned to worker A (marked in green), cost becomes 2 and Job 2 and worker A becomes unavailable (marked in red).
+
+- Now we assign job 3 to worker B as it has minimum cost from list of unassigned jobs. Cost becomes 2 + 3 = 5 and Job 3 and worker B also becomes unavailable.
+
+- Finally, job 1 gets assigned to worker C as it has minimum cost among unassigned jobs and job 4 gets assigned to worker D as it is only Job left. Total cost becomes 2 + 3 + 5 + 4 = 14.
+
+Below diagram shows complete search space diagram showing optimal solution path in green:
+
+Below given is the step-by-step approach:
+
+- Create a dummy root node using new Node(-1, -1, assigned, NULL) with assigned set to false for all jobs, and set root->pathCost and root->cost to 0.
+- Insert the root node into a min-heap priority queue (live nodes) ordered by node->cost.
+- While the priority queue is not empty: Extract node E using Least() (i.e. pq.top() then pq.pop()). Let worker = E->workerID + 1. If worker equals N (all workers assigned), use printAssignments(E) to print the job assignment and return E->cost. For each job j from 0 to N-1: If E->assigned[j] is false: Create child node x = new Node(worker, j, E->assigned, E). Set x->pathCost = E->pathCost + costMatrix[worker][j]. Calculate lower bound using calculateCost(costMatrix, worker, j, x->assigned) and set x->cost = x->pathCost + lower bound. Insert x into the priority queue using Add(x).
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// state space tree node
+class Node {
+public:
+    // stores parent node of current node
+    // helps in tracing path when answer is found
+    Node *parent;
+
+    // contains cost for ancestors nodes
+    // including current node
+    int pathCost;
+
+    // contains least promising cost
+    int cost;
+
+    // contain worker number
+    int workerID;
+
+    // contains Job ID
+    int jobID;
+
+    // Boolean array assigned will contains
+    // info about available jobs
+    vector<bool> assigned;
+
+    Node(int x, int y, vector<bool> assigned, Node *parent) {
+        this->workerID = x;
+        this->jobID = y;
+        this->assigned = assigned;
+        this->parent = parent;
+        this->pathCost = 0;
+        this->cost = 0;
+    }
+};
+
+// Function to calculate the least promising cost
+// of node after worker x is assigned to job y.
+int calculateCost(vector<vector<int>> &costMat, int x, int y, vector<bool> &assigned) {
+    int n = costMat.size();
+    int cost = 0;
+
+    // to store unavailable jobs
+    vector<bool> available(n, true);
+
+    // start from next worker
+    for (int i = x + 1; i < n; i++) {
+        int min = INT_MAX, minIndex = -1;
+
+        // do for each job
+        for (int j = 0; j < n; j++) {
+
+            // if job is unassigned
+            if (!assigned[j] && available[j] && costMat[i][j] < min) {
+
+                // store job number
+                minIndex = j;
+
+                // store cost
+                min = costMat[i][j];
+            }
+        }
+
+        // add cost of next worker
+        cost += min;
+
+        // job becomes unavailable
+        available[minIndex] = false;
+    }
+
+    return cost;
+}
+
+// Comparison object to be used to order the heap
+struct comp {
+    bool operator()(const Node *lhs, const Node *rhs) const {
+        return lhs->cost > rhs->cost;
+    }
+};
+
+// Finds minimum cost using Branch and Bound.
+int findMinCost(vector<vector<int>> &costMat) {
+    int n = costMat.size();
+
+    // Create a priority queue to store
+    // live nodes of search tree;
+    priority_queue<Node *, vector<Node *>, comp> pq;
+
+    // initialize heap to dummy node with cost 0
+    vector<bool> assigned(n, false);
+    Node *root = new Node(-1, -1, assigned, nullptr);
+    root->pathCost = root->cost = 0;
+    root->workerID = -1;
+
+    // Add dummy node to list of live nodes;
+    pq.push(root);
+
+    while (!pq.empty()) {
+
+        // Find a live node with least estimated cost
+        Node *min = pq.top();
+
+        // The found node is deleted from the list
+        pq.pop();
+
+        // i stores next worker
+        int i = min->workerID + 1;
+
+        // if all workers are assigned a job
+        if (i == n) {
+            return min->cost;
+        }
+
+        // do for each job
+        for (int j = 0; j < n; j++) {
+
+            // If unassigned
+            if (!min->assigned[j]) {
+
+                // create a new tree node
+                Node *child = new Node(i, j, min->assigned, min);
+                child->assigned[j] = true;
+
+                // cost for ancestors nodes including current node
+                child->pathCost = min->pathCost + costMat[i][j];
+
+                // calculate its lower bound
+                child->cost = child->pathCost + calculateCost(costMat, i, j, child->assigned);
+
+                // Add child to list of live nodes;
+                pq.push(child);
+            }
+        }
+    }
+
+    // will not be used
+    return -1;
+}
+
+int main() {
+    vector<vector<int>> costMat = {
+        {9, 2, 7, 8},
+        {6, 4, 3, 7},
+        {5, 8, 1, 8},
+        {7, 6, 9, 4}
+    };
+    cout << findMinCost(costMat);
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class GfG {
+
+    // state space tree node
+    static class Node {
+
+        // stores parent node of current node
+        // helps in tracing path when answer is found
+        Node parent;
+
+        // contains cost for ancestors nodes
+        // including current node
+        int pathCost;
+
+        // contains least promising cost
+        int cost;
+
+        // contain worker number
+        int workerID;
+
+        // contains Job ID
+        int jobID;
+
+        // Boolean array assigned will contains
+        // info about available jobs
+        boolean[] assigned;
+
+        Node(int x, int y, boolean[] assigned, Node parent) {
+            this.workerID = x;
+            this.jobID = y;
+            this.assigned = assigned.clone();
+            this.parent = parent;
+            this.pathCost = 0;
+            this.cost = 0;
+        }
+    }
+
+    // Function to calculate the least promising cost
+    // of node after worker x is assigned to job y.
+    static int calculateCost(int[][] costMat,
+    int x, int y, boolean[] assigned) {
+        int n = costMat.length;
+        int cost = 0;
+
+        // to store unavailable jobs
+        boolean[] available = new boolean[n];
+        Arrays.fill(available, true);
+
+        // start from next worker
+        for (int i = x + 1; i < n; i++) {
+            int min = Integer.MAX_VALUE, minIndex = -1;
+
+            // do for each job
+            for (int j = 0; j < n; j++) {
+
+                // if job is unassigned
+                if (!assigned[j] && available[j] && costMat[i][j] < min) {
+
+                    // store job number
+                    minIndex = j;
+
+                    // store cost
+                    min = costMat[i][j];
+                }
+            }
+
+            // add cost of next worker
+            cost += min;
+
+            // job becomes unavailable
+            available[minIndex] = false;
+        }
+
+        return cost;
+    }
+
+    // Comparison object to be used to order the heap
+    static class Comp implements Comparator<Node> {
+        public int compare(Node lhs, Node rhs) {
+            return lhs.cost - rhs.cost;
+        }
+    }
+
+    // Finds minimum cost using Branch and Bound.
+    static int findMinCost(int[][] costMat) {
+        int n = costMat.length;
+
+        // Create a priority queue to store
+        // live nodes of search tree;
+        PriorityQueue<Node> pq = new PriorityQueue<>(new Comp());
+
+        // initialize heap to dummy node with cost 0
+        boolean[] assigned = new boolean[n];
+        Node root = new Node(-1, -1, assigned, null);
+        root.pathCost = root.cost = 0;
+        root.workerID = -1;
+
+        // Add dummy node to list of live nodes;
+        pq.add(root);
+
+        while (!pq.isEmpty()) {
+
+            // Find a live node with least estimated cost
+            Node min = pq.poll();
+
+            // The found node is deleted from the list
+
+            // i stores next worker
+            int i = min.workerID + 1;
+
+            // if all workers are assigned a job
+            if (i == n) {
+                return min.cost;
+            }
+
+            // do for each job
+            for (int j = 0; j < n; j++) {
+
+                // If unassigned
+                if (!min.assigned[j]) {
+
+                    // create a new tree node
+                    Node child = new Node(i, j, min.assigned, min);
+                    child.assigned[j] = true;
+
+                    // cost for ancestors nodes including current node
+                    child.pathCost = min.pathCost + costMat[i][j];
+
+                    // calculate its lower bound
+                    child.cost = child.pathCost +
+                        calculateCost(costMat, i, j, child.assigned);
+
+                    // Add child to list of live nodes;
+                    pq.add(child);
+                }
+            }
+        }
+
+        // will not be used
+        return -1;
+    }
+
+    public static void main(String[] args) {
+        int[][] costMat = {
+            {9, 2, 7, 8},
+            {6, 4, 3, 7},
+            {5, 8, 1, 8},
+            {7, 6, 9, 4}
+        };
+        System.out.println(findMinCost(costMat));
+    }
+}
+
+Python
+
+import heapq
+import math
+
+# state space tree node
+class Node:
+
+    # stores parent node of current node
+    # helps in tracing path when answer is found
+    def __init__(self, x, y, assigned, parent):
+        self.workerID = x
+        self.jobID = y
+        self.assigned = assigned[:]  # copy list
+        self.parent = parent
+        self.pathCost = 0
+        self.cost = 0
+
+    def __lt__(self, other):
+        return self.cost < other.cost
+
+# Function to calculate the least promising cost
+# of node after worker x is assigned to job y.
+def calculateCost(costMat, x, y, assigned):
+    n = len(costMat)
+    cost = 0
+
+    # to store unavailable jobs
+    available = [True] * n
+
+    # start from next worker
+    for i in range(x + 1, n):
+        minVal = float('inf')
+        minIndex = -1
+
+        # do for each job
+        for j in range(n):
+
+            # if job is unassigned
+            if (not assigned[j]) and available[j] and costMat[i][j] < minVal:
+
+                # store job number
+                minIndex = j
+
+                # store cost
+                minVal = costMat[i][j]
+
+        # add cost of next worker
+        cost += minVal
+
+        # job becomes unavailable
+        available[minIndex] = False
+
+    return cost
+
+# Finds minimum cost using Branch and Bound.
+def findMinCost(costMat):
+    n = len(costMat)
+
+    # Create a priority queue to store
+    # live nodes of search tree;
+    pq = []
+
+    # initialize heap to dummy node with cost 0
+    assigned = [False] * n
+    root = Node(-1, -1, assigned, None)
+    root.pathCost = root.cost = 0
+    root.workerID = -1
+
+    # Add dummy node to list of live nodes;
+    heapq.heappush(pq, root)
+
+    while pq:
+
+        # Find a live node with least estimated cost
+        minNode = heapq.heappop(pq)
+
+        # The found node is deleted from the list
+
+        # i stores next worker
+        i = minNode.workerID + 1
+
+        # if all workers are assigned a job
+        if i == n:
+            return minNode.cost
+
+        # do for each job
+        for j in range(n):
+
+            # If unassigned
+            if not minNode.assigned[j]:
+
+                # create a new tree node
+                child = Node(i, j, minNode.assigned, minNode)
+                child.assigned[j] = True
+
+                # cost for ancestors nodes including current node
+                child.pathCost = minNode.pathCost + costMat[i][j]
+
+                # calculate its lower bound
+                child.cost = child.pathCost + calculateCost(costMat, i, j, child.assigned)
+
+                # Add child to list of live nodes;
+                heapq.heappush(pq, child)
+    return -1
+
+if __name__ == "__main__":
+    costMat = [
+        [9, 2, 7, 8],
+        [6, 4, 3, 7],
+        [5, 8, 1, 8],
+        [7, 6, 9, 4]
+    ]
+    print(findMinCost(costMat))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public class GfG {
+
+    // state space tree node
+    public class Node {
+
+        // stores parent node of current node
+        // helps in tracing path when answer is found
+        public Node parent;
+
+        // contains cost for ancestors nodes
+        // including current node
+        public int pathCost;
+
+        // contains least promising cost
+        public int cost;
+
+        // contain worker number
+        public int workerID;
+
+        // contains Job ID
+        public int jobID;
+
+        // Boolean array assigned will contains
+        // info about available jobs
+        public bool[] assigned;
+
+        public Node(int x, int y, bool[] assigned, Node parent) {
+            this.workerID = x;
+            this.jobID = y;
+            this.assigned = (bool[])assigned.Clone();
+            this.parent = parent;
+            this.pathCost = 0;
+            this.cost = 0;
+
+        }
+    }
+
+    // Function to calculate the least promising cost
+    // of node after worker x is assigned to job y.
+    public static int calculateCost(
+        int[][] costMat, int x, int y, bool[] assigned) {
+        int n = costMat.Length;
+        int cost = 0;
+
+        // to store unavailable jobs
+        bool[] available = new bool[n];
+        for (int i = 0; i < n; i++) {
+            available[i] = true;
+        }
+
+        // start from next worker
+        for (int i = x + 1; i < n; i++) {
+            int min = int.MaxValue, minIndex = -1;
+
+            // do for each job
+            for (int j = 0; j < n; j++) {
+
+                // if job is unassigned
+                if (!assigned[j] && available[j] && costMat[i][j] < min) {
+
+                    // store job number
+                    minIndex = j;
+
+                    // store cost
+                    min = costMat[i][j];
+                }
+            }
+
+            // add cost of next worker
+            cost += min;
+
+            // job becomes unavailable
+            available[minIndex] = false;
+        }
+
+        return cost;
+    }
+
+    // Comparison object to be used to order the heap
+    public class NodeComparer : IComparer<Node> {
+        public int Compare(Node lhs, Node rhs) {
+            return lhs.cost.CompareTo(rhs.cost);
+        }
+    }
+
+    // Finds minimum cost using Branch and Bound.
+    public static int findMinCost(int[][] costMat) {
+        int n = costMat.Length;
+
+        // Create a priority queue to store
+        // live nodes of search tree;
+        SortedSet<Node> pq =
+        new SortedSet<Node>(new NodeComparer());
+
+        // initialize heap to dummy node with cost 0
+        bool[] assigned = new bool[n];
+        Node root = new Node(-1, -1, assigned, null);
+        root.pathCost = root.cost = 0;
+        root.workerID = -1;
+
+        // Add dummy node to list of live nodes;
+        pq.Add(root);
+
+        while (pq.Count > 0) {
+
+            // Find a live node with least estimated cost
+            Node min = pq.Min;
+            pq.Remove(min);
+
+            // The found node is deleted from the list
+
+            // i stores next worker
+            int i = min.workerID + 1;
+
+            // if all workers are assigned a job
+            if (i == n) {
+                return min.cost;
+            }
+
+            // do for each job
+            for (int j = 0; j < n; j++) {
+
+                // If unassigned
+                if (!min.assigned[j]) {
+
+                    // create a new tree node
+                    Node child = new Node(i, j, min.assigned, min);
+                    child.assigned[j] = true;
+
+                    // cost for ancestors nodes including current node
+                    child.pathCost = min.pathCost + costMat[i][j];
+
+                    // calculate its lower bound
+                    child.cost = child.pathCost +
+                    calculateCost(costMat, i, j, child.assigned);
+
+                    // Add child to list of live nodes;
+                    pq.Add(child);
+                }
+            }
+        }
+
+        // will not be used
+        return -1;
+    }
+
+    public static void Main(string[] args) {
+        int[][] costMat = new int[][] {
+            new int[] {9, 2, 7, 8},
+            new int[] {6, 4, 3, 7},
+            new int[] {5, 8, 1, 8},
+            new int[] {7, 6, 9, 4}
+        };
+        Console.WriteLine(findMinCost(costMat));
+    }
+}
+
+JavaScript
+
+// state space tree node
+class Node {
+
+    // stores parent node of current node
+    // helps in tracing path when answer is found
+    constructor(x, y, assigned, parent) {
+        this.workerID = x;
+        this.jobID = y;
+        this.assigned = assigned.slice();
+        this.parent = parent;
+        this.pathCost = 0;
+        this.cost = 0;
+    }
+}
+
+// Function to calculate the least promising cost
+// of node after worker x is assigned to job y.
+function calculateCost(costMat, x, y, assigned) {
+    let n = costMat.length;
+    let cost = 0;
+
+    // to store unavailable jobs
+    let available = new Array(n).fill(true);
+
+    // start from next worker
+    for (let i = x + 1; i < n; i++) {
+        let min = Infinity, minIndex = -1;
+
+        // do for each job
+        for (let j = 0; j < n; j++) {
+
+            // if job is unassigned
+            if (!assigned[j] && available[j] && costMat[i][j] < min) {
+
+                // store job number
+                minIndex = j;
+
+                // store cost
+                min = costMat[i][j];
+            }
+        }
+
+        // add cost of next worker
+        cost += min;
+
+        // job becomes unavailable
+        available[minIndex] = false;
+    }
+
+    return cost;
+}
+
+// Comparison function to be used to order the heap
+function compareNodes(lhs, rhs) {
+    return lhs.cost - rhs.cost;
+}
+
+// Finds minimum cost using Branch and Bound.
+function findMinCost(costMat) {
+    let n = costMat.length;
+
+    // Create a priority queue to store
+    // live nodes of search tree;
+    let pq = [];
+
+    // initialize heap to dummy node with cost 0
+    let assigned = new Array(n).fill(false);
+    let root = new Node(-1, -1, assigned, null);
+    root.pathCost = root.cost = 0;
+    root.workerID = -1;
+
+    // Add dummy node to list of live nodes;
+    pq.push(root);
+
+    while (pq.length > 0) {
+
+        // Find a live node with least estimated cost
+        pq.sort(compareNodes);
+        let min = pq.shift();
+
+        // The found node is deleted from the list
+
+        // i stores next worker
+        let i = min.workerID + 1;
+
+        // if all workers are assigned a job
+        if (i === n) {
+            return min.cost;
+        }
+
+        // do for each job
+        for (let j = 0; j < n; j++) {
+
+            // If unassigned
+            if (!min.assigned[j]) {
+
+                // create a new tree node
+                let child = new Node(i, j, min.assigned, min);
+                child.assigned[j] = true;
+
+                // cost for ancestors nodes including current node
+                child.pathCost = min.pathCost + costMat[i][j];
+
+                // calculate its lower bound
+                child.cost = child.pathCost +
+                calculateCost(costMat, i, j, child.assigned);
+
+                // Add child to list of live nodes;
+                pq.push(child);
+            }
+        }
+    }
+
+    // will not be used
+    return -1;
+}
+
+let costMat = [
+    [9, 2, 7, 8],
+    [6, 4, 3, 7],
+    [5, 8, 1, 8],
+    [7, 6, 9, 4]
+];
+console.log(findMinCost(costMat));
+
+Output
+
+13

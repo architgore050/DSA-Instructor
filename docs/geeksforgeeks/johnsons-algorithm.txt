@@ -1,0 +1,645 @@
+Source: https://www.geeksforgeeks.org/dsa/johnsons-algorithm/
+Title: Johnson's algorithm for All-pairs shortest paths
+Extractor: 2
+
+The problem is to find the shortest paths between every pair of vertices in a given weighted directed Graph and weights may be negative. We have discussed Floyd Warshall Algorithm for this problem.  The time complexity of the Floyd Warshall Algorithm is Θ(V 3 ).
+
+Using Johnson's algorithm, we can find all pair shortest paths in O(V 2 log V + VE) time. Johnson’s algorithm uses both Dijkstra and Bellman-Ford as subroutines. If we apply Dijkstra's Single Source shortest path algorithm for every vertex, considering every vertex as the source, we can find all pair shortest paths in O(V*(V + E) * Log V) time.
+
+So using Dijkstra's single-source shortest path seems to be a better option than Floyd Warshall's Algorithm , but the problem with Dijkstra's algorithm is, that it doesn't work for negative weight edge. The idea of Johnson's algorithm is to re-weight all edges and make them all positive, then apply Dijkstra's algorithm for every vertex.
+
+How to transform a given graph into a graph with all non-negative weight edges?
+
+One may think of a simple approach of finding the minimum weight edge and adding this weight to all edges. Unfortunately, this doesn't work as there may be a different number of edges in different paths (See this for an example). If there are multiple paths from a vertex u to v, then all paths must be increased by the same amount, so that the shortest path remains the shortest in the transformed graph. The idea of Johnson's algorithm is to assign a weight to every vertex. Let the weight assigned to vertex u be h[u].
+
+We reweight edges using vertex weights. For example, for an edge (u, v) of weight w(u, v), the new weight becomes w(u, v) + h[u] - h[v]. The great thing about this reweighting is, that all set of paths between any two vertices is increased by the same amount and all negative weights become non-negative. Consider any path between two vertices s and t, the weight of every path is increased by h[s] - h[t], and all h[] values of vertices on the path from s to t cancel each other.
+
+How do we calculate h[] values?
+
+Bellman-Ford algorithm is used for this purpose. Following is the complete algorithm. A new vertex is added to the graph and connected to all existing vertices. The shortest distance values from the new vertex to all existing vertices are h[] values.
+
+> Algorithm: Let the given graph be G. Add a new vertex s to the graph, add edges from the new vertex to all vertices of G. Let the modified graph be G'. Run the Bellman-Ford algorithm on G' with s as the source. Let the distances calculated by Bellman-Ford be h[0], h[1], .. h[V-1]. If we find a negative weight cycle, then return. Note that the negative weight cycle cannot be created by new vertex s as there is no edge to s. All edges are from s. Reweight the edges of the original graph. For each edge (u, v), assign the new weight as "original weight + h[u] - h[v]". Remove the added vertex s and run Dijkstra's algorithm for every vertex.
+
+How does the transformation ensure nonnegative weight edges?
+
+The following property is always true about h[] values as they are the shortest distances.
+
+h[v] <= h[u] + w(u, v)
+
+The property simply means that the shortest distance from s to v must be smaller than or equal to the shortest distance from s to u plus the weight of the edge (u, v). The new weights are w(u, v) + h[u] - h[v]. The value of the new weights must be greater than or equal to zero because of the inequality "h[v] <= h[u] + w(u, v)".
+
+Example: Let us consider the following graph.
+
+We add a source s and add edges from s to all vertices of the original graph. In the following diagram s is 4.
+
+We calculate the shortest distances from 4 to all other vertices using Bellman-Ford algorithm. The shortest distances from 4 to 0, 1, 2 and 3 are 0, -5, -1 and 0 respectively, i.e., h[] = {0, -5, -1, 0}. Once we get these distances, we remove the source vertex 4 and reweight the edges using following formula. w(u, v) = w(u, v) + h[u] - h[v].
+
+Since all weights are positive now, we can run Dijkstra's shortest path algorithm for every vertex as the source.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <limits>
+#include <algorithm>
+#include <queue>
+#include <iomanip> // For matrix formatting
+
+using namespace std;
+
+const long long INF = 1e15;
+
+struct Edge {
+    int to;
+    int weight;
+};
+
+typedef pair<long long, int> pii;
+
+// Dijkstra's algorithm for non-negative edge weights
+vector<long long> Dijkstra(int V, const vector<vector<Edge>>& adj, int src) {
+    vector<long long> dist(V, INF);
+    priority_queue<pii, vector<pii>, greater<pii>> pq;
+
+    dist[src] = 0;
+    pq.push({0, src});
+
+    while (!pq.empty()) {
+        long long d = pq.top().first;
+        int u = pq.top().second; // Fixed: added .top()
+        pq.pop();
+
+        if (d > dist[u]) continue;
+
+        for (auto& edge : adj[u]) {
+            if (dist[u] + edge.weight < dist[edge.to]) {
+                dist[edge.to] = dist[u] + edge.weight;
+                pq.push({dist[edge.to], edge.to});
+            }
+        }
+    }
+    return dist;
+}
+
+// Bellman-Ford to find h[] and detect negative cycles
+vector<long long> BellmanFord(int V, const vector<vector<int>>& edges, bool& hasCycle) {
+    vector<long long> h(V + 1, INF);
+    h[V] = 0;
+
+    vector<vector<int>> all_edges = edges;
+    for (int i = 0; i < V; i++) all_edges.push_back({V, i, 0});
+
+    for (int i = 0; i < V; i++) {
+        for (auto& e : all_edges) {
+            if (h[e[0]] != INF && h[e[0]] + e[2] < h[e[1]]) {
+                h[e[1]] = h[e[0]] + e[2];
+            }
+        }
+    }
+
+    hasCycle = false;
+    for (auto& e : all_edges) {
+        if (h[e[0]] != INF && h[e[0]] + e[2] < h[e[1]]) {
+            hasCycle = true;
+            return {};
+        }
+    }
+
+    h.pop_back();
+    return h;
+}
+
+void JohnsonAlgorithm(int V, const vector<vector<int>>& edgeList) {
+    bool hasCycle;
+    vector<long long> h = BellmanFord(V, edgeList, hasCycle);
+
+    if (hasCycle) {
+        cout << "The graph contains a negative weight cycle. Algorithm cannot proceed." << endl;
+        return;
+    }
+
+    // Reweight edges to be non-negative
+    vector<vector<Edge>> adj(V);
+    for (auto& e : edgeList) {
+        int u = e[0], v = e[1], w = e[2];
+        adj[u].push_back({v, (int)(w + h[u] - h[v])});
+    }
+
+    vector<vector<long long>> resultMatrix(V, vector<long long>(V));
+
+    // Run Dijkstra for every vertex
+    for (int s = 0; s < V; s++) {
+        vector<long long> d_prime = Dijkstra(V, adj, s);
+        for (int v = 0; v < V; v++) {
+            if (d_prime[v] == INF) resultMatrix[s][v] = INF;
+            else resultMatrix[s][v] = d_prime[v] + h[v] - h[s];
+        }
+    }
+
+    // Display the Matrix
+    cout << "Shortest Distance Matrix:\n";
+    for (int i = 0; i < V; i++) {
+        for (int j = 0; j < V; j++) {
+            if (resultMatrix[i][j] >= INF/2) cout << setw(7) << "INF";
+            else cout << setw(7) << resultMatrix[i][j];
+        }
+        cout << endl;
+    }
+}
+
+int main() {
+    int V = 4;
+    vector<vector<int>> edgeList = {
+        {0, 1, -5}, {0, 2, 2}, {0, 3, 3},
+        {1, 2, 4},
+        {2, 3, 1}
+    };
+
+    JohnsonAlgorithm(V, edgeList);
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class Edge {
+    int to;
+    int weight;
+
+    Edge(int to, int weight) {
+        this.to = to;
+        this.weight = weight;
+    }
+}
+
+class Pair implements Comparable<Pair> {
+    long dist;
+    int vertex;
+
+    Pair(long dist, int vertex) {
+        this.dist = dist;
+        this.vertex = vertex;
+    }
+
+    public int compareTo(Pair other) {
+        return Long.compare(this.dist, other.dist);
+    }
+}
+
+public class GFG {
+    private static final long INF = 1000000000000000L;
+
+    private static List<Long> dijkstra(int V, List<List<Edge>> adj, int src) {
+        List<Long> dist = new ArrayList<>(Collections.nCopies(V, INF));
+        PriorityQueue<Pair> pq = new PriorityQueue<>();
+
+        dist.set(src, 0L);
+        pq.add(new Pair(0, src));
+
+        while (!pq.isEmpty()) {
+            Pair p = pq.poll();
+            long d = p.dist;
+            int u = p.vertex;
+
+            if (d > dist.get(u)) continue;
+
+            for (Edge edge : adj.get(u)) {
+                if (dist.get(u) + edge.weight < dist.get(edge.to)) {
+                    dist.set(edge.to, dist.get(u) + edge.weight);
+                    pq.add(new Pair(dist.get(edge.to), edge.to));
+                }
+            }
+        }
+        return dist;
+    }
+
+    private static List<Long> bellmanFord(int V, List<int[]> edges, boolean[] hasCycle) {
+        List<Long> h = new ArrayList<>(Collections.nCopies(V + 1, INF));
+        h.set(V, 0L);
+
+        List<int[]> all_edges = new ArrayList<>(edges);
+        for (int i = 0; i < V; i++) all_edges.add(new int[] {V, i, 0});
+
+        for (int i = 0; i < V; i++) {
+            for (int[] e : all_edges) {
+                if (h.get(e[0])!= INF && h.get(e[0]) + e[2] < h.get(e[1])) {
+                    h.set(e[1], h.get(e[0]) + e[2]);
+                }
+            }
+        }
+
+        hasCycle[0] = false;
+        for (int[] e : all_edges) {
+            if (h.get(e[0])!= INF && h.get(e[0]) + e[2] < h.get(e[1])) {
+                hasCycle[0] = true;
+                return new ArrayList<>();
+            }
+        }
+
+        h.remove(h.size() - 1);
+        return h;
+    }
+
+    public static void johnsonAlgorithm(int V, List<int[]> edgeList) {
+        boolean[] hasCycle = {false};
+        List<Long> h = bellmanFord(V, edgeList, hasCycle);
+
+        if (hasCycle[0]) {
+            System.out.println("The graph contains a negative weight cycle. Algorithm cannot proceed.");
+            return;
+        }
+
+        List<List<Edge>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) adj.add(new ArrayList<>());
+        for (int[] e : edgeList) {
+            int u = e[0], v = e[1], w = e[2];
+            adj.get(u).add(new Edge(v, (int)(w + h.get(u) - h.get(v))));
+        }
+
+        long[][] resultMatrix = new long[V][V];
+
+        for (int s = 0; s < V; s++) {
+            List<Long> d_prime = dijkstra(V, adj, s);
+            for (int v = 0; v < V; v++) {
+                if (d_prime.get(v) == INF) resultMatrix[s][v] = INF;
+                else resultMatrix[s][v] = d_prime.get(v) + h.get(v) - h.get(s);
+            }
+        }
+
+        System.out.println("Shortest Distance Matrix:");
+        for (int i = 0; i < V; i++) {
+            for (int j = 0; j < V; j++) {
+                if (resultMatrix[i][j] >= INF / 2) System.out.printf("%7s", "INF");
+                else System.out.printf("%7d", resultMatrix[i][j]);
+            }
+            System.out.println();
+        }
+    }
+
+    public static void main(String[] args) {
+        int V = 4;
+        List<int[]> edgeList = Arrays.asList(
+            new int[] {0, 1, -5},
+            new int[] {0, 2, 2},
+            new int[] {0, 3, 3},
+            new int[] {1, 2, 4},
+            new int[] {2, 3, 1}
+        );
+
+        johnsonAlgorithm(V, edgeList);
+    }
+}
+
+Python
+
+import heapq
+
+class Edge:
+    def __init__(self, to, weight):
+        self.to = to
+        self.weight = weight
+
+class Pair:
+    def __init__(self, dist, vertex):
+        self.dist = dist
+        self.vertex = vertex
+
+    def __lt__(self, other):
+        return self.dist < other.dist
+
+INF = 1000000000000000
+
+def dijkstra(V, adj, src):
+    dist = [INF] * V
+    pq = []
+    heapq.heappush(pq, Pair(0, src))
+    dist[src] = 0
+
+    while pq:
+        p = heapq.heappop(pq)
+        d = p.dist
+        u = p.vertex
+
+        if d > dist[u]:
+            continue
+
+        for edge in adj[u]:
+            if dist[u] + edge.weight < dist[edge.to]:
+                dist[edge.to] = dist[u] + edge.weight
+                heapq.heappush(pq, Pair(dist[edge.to], edge.to))
+    return dist
+
+def bellmanFord(V, edges, hasCycle):
+    h = [INF] * (V + 1)
+    h[V] = 0
+
+    all_edges = edges + [(V, i, 0) for i in range(V)]
+
+    for _ in range(V):
+        for u, v, w in all_edges:
+            if h[u]!= INF and h[u] + w < h[v]:
+                h[v] = h[u] + w
+
+    hasCycle[0] = False
+    for u, v, w in all_edges:
+        if h[u]!= INF and h[u] + w < h[v]:
+            hasCycle[0] = True
+            return []
+
+    del h[-1]
+    return h
+
+def johnsonAlgorithm(V, edgeList):
+    hasCycle = [False]
+    h = bellmanFord(V, edgeList, hasCycle)
+
+    if hasCycle[0]:
+        print('The graph contains a negative weight cycle. Algorithm cannot proceed.')
+        return
+
+    adj = [[] for _ in range(V)]
+    for u, v, w in edgeList:
+        adj[u].append(Edge(v, w + h[u] - h[v]))
+
+    resultMatrix = [[INF] * V for _ in range(V)]
+
+    for s in range(V):
+        d_prime = dijkstra(V, adj, s)
+        for v in range(V):
+            if d_prime[v] == INF:
+                resultMatrix[s][v] = INF
+            else:
+                resultMatrix[s][v] = d_prime[v] + h[v] - h[s]
+
+    print('Shortest Distance Matrix:')
+    for row in resultMatrix:
+        print(' '.join('INF' if x >= INF // 2 else str(x) for x in row))
+
+if __name__ == '__main__':
+    V = 4
+    edgeList = [
+        (0, 1, -5),
+        (0, 2, 2),
+        (0, 3, 3),
+        (1, 2, 4),
+        (2, 3, 1)
+    ]
+    johnsonAlgorithm(V, edgeList)
+
+C#
+
+'use strict';
+
+class Edge {
+    constructor(to, weight) {
+        this.to = to;
+        this.weight = weight;
+    }
+}
+
+class Pii {
+    constructor(d, u) {
+        this.d = d;
+        this.u = u;
+    }
+}
+
+Pii.prototype.compareTo = function(other) {
+    return this.d < other.d;
+};
+
+const INF = 1000000000000000;
+
+function Dijkstra(V, adj, src) {
+    let dist = new Array(V).fill(INF);
+    dist[src] = 0;
+    let pq = [new Pii(0, src)];
+    while (pq.length > 0) {
+        pq.sort((a, b) => a.d - b.d);
+        let top = pq.shift();
+        let d = top.d;
+        let u = top.u;
+        if (d > dist[u]) {
+            continue;
+        }
+        for (let edge of adj[u]) {
+            if (dist[u] + edge.weight < dist[edge.to]) {
+                dist[edge.to] = dist[u] + edge.weight;
+                pq.push(new Pii(dist[edge.to], edge.to));
+            }
+        }
+    }
+    return dist;
+}
+
+function BellmanFord(V, edges, hasCycle) {
+    let h = new Array(V + 1).fill(INF);
+    h[V] = 0;
+    let all_edges = edges.slice();
+    for (let i = 0; i < V; i++) {
+        all_edges.push([V, i, 0]);
+    }
+    for (let i = 0; i < V; i++) {
+        for (let e of all_edges) {
+            if (h[e[0]]!== INF && h[e[0]] + e[2] < h[e[1]]) {
+                h[e[1]] = h[e[0]] + e[2];
+            }
+        }
+    }
+    hasCycle[0] = false;
+    for (let e of all_edges) {
+        if (h[e[0]]!== INF && h[e[0]] + e[2] < h[e[1]]) {
+            hasCycle[0] = true;
+            return [];
+        }
+    }
+    let result = h.slice(0, -1);
+    return result;
+}
+
+function JohnsonAlgorithm(V, edgeList) {
+    let hasCycle = [false];
+    let h = BellmanFord(V, edgeList, hasCycle);
+    if (hasCycle[0]) {
+        console.log('The graph contains a negative weight cycle. Algorithm cannot proceed.');
+        return;
+    }
+    let adj = new Array(V).fill(0).map(() => []);
+    for (let e of edgeList) {
+        let u = e[0], v = e[1], w = e[2];
+        adj[u].push(new Edge(v, w + h[u] - h[v]));
+    }
+    for (let s = 0; s < V; s++) {
+        let d_prime = Dijkstra(V, adj, s);
+        console.log('\nShortest distances from vertex', s + 1, ':');
+        for (let v = 0; v < V; v++) {
+            if (d_prime[v] === INF) {
+                console.log('To', v + 1, ': INF');
+            } else {
+                let actual_dist = d_prime[v] + h[v] - h[s];
+                console.log('To', v + 1, ':', actual_dist);
+            }
+        }
+    }
+}
+
+function main() {
+    let V = 4;
+    let edgeList = [
+        [0, 1, -5],
+        [0, 2, 2],
+        [0, 3, 3],
+        [1, 2, 4],
+        [2, 3, 1]
+    ];
+    JohnsonAlgorithm(V, edgeList);
+}
+
+main();
+
+JavaScript
+
+class Edge {
+    constructor(to, weight) {
+        this.To = to;
+        this.Weight = weight;
+    }
+}
+
+class GFG {
+    // Using a large value for INF that won't overflow during reweighting
+    static INF = Number.MAX_SAFE_INTEGER / 4;
+
+    // Dijkstra's Algorithm using JavaScript's PriorityQueue
+    static Dijkstra(V, adj, src) {
+        const dist = Array(V).fill(this.INF);
+        const pq = new PriorityQueue();
+
+        dist[src] = 0;
+        pq.enqueue({ vertex: src, distance: 0 });
+
+        while (!pq.isEmpty()) {
+            const { vertex: u, distance: d } = pq.dequeue();
+
+            if (d > dist[u]) continue;
+
+            for (const edge of adj[u]) {
+                if (dist[u] + edge.Weight < dist[edge.To]) {
+                    dist[edge.To] = dist[u] + edge.Weight;
+                    pq.enqueue({ vertex: edge.To, distance: dist[edge.To] });
+                }
+            }
+        }
+        return dist;
+    }
+
+    // Bellman-Ford to find h[] and detect negative cycles
+    static BellmanFord(V, edges, hasCycle) {
+        const h = Array(V + 1).fill(this.INF);
+        h[V] = 0;
+
+        const allEdges = [...edges];
+        for (let i = 0; i < V; i++) allEdges.push([V, i, 0]);
+
+        for (let i = 0; i < V; i++) {
+            for (const e of allEdges) {
+                if (h[e[0]]!== this.INF && h[e[0]] + e[2] < h[e[1]]) {
+                    h[e[1]] = h[e[0]] + e[2];
+                }
+            }
+        }
+
+        hasCycle = false;
+        for (const e of allEdges) {
+            if (h[e[0]]!== this.INF && h[e[0]] + e[2] < h[e[1]]) {
+                hasCycle = true;
+                return null;
+            }
+        }
+
+        return h.slice(0, V);
+    }
+
+    static JohnsonAlgorithm(V, edgeList) {
+        let h = this.BellmanFord(V, edgeList, (hasCycle) => hasCycle);
+
+        if (h === null) {
+            console.log('The graph contains a negative weight cycle. Algorithm cannot proceed.');
+            return;
+        }
+
+        const adj = Array.from({ length: V }, () => []);
+
+        for (const e of edgeList) {
+            const u = e[0], v = e[1], w = e[2];
+            adj[u].push(new Edge(v, w + h[u] - h[v]));
+        }
+
+        const distanceMatrix = Array.from({ length: V }, () => Array(V).fill(this.INF));
+
+        for (let s = 0; s < V; s++) {
+            const dPrime = this.Dijkstra(V, adj, s);
+            for (let v = 0; v < V; v++) {
+                distanceMatrix[s][v] = dPrime[v] === this.INF ? this.INF : dPrime[v] + h[v] - h[s];
+            }
+        }
+
+        // Print the Matrix without row/column numbering
+        console.log('Shortest Distance Matrix:');
+        for (let i = 0; i < V; i++) {
+            let row = [];
+            for (let j = 0; j < V; j++) {
+                row.push(distanceMatrix[i][j] >= this.INF / 2? 'INF' : distanceMatrix[i][j]);
+            }
+            console.log(row.join(' ').padStart(8));
+        }
+    }
+}
+
+class PriorityQueue {
+    constructor() {
+        this.elements = [];
+    }
+
+    enqueue(item) {
+        this.elements.push(item);
+        this.elements.sort((a, b) => a.distance - b.distance);
+    }
+
+    dequeue() {
+        return this.elements.shift();
+    }
+
+    isEmpty() {
+        return this.elements.length === 0;
+    }
+}
+
+// Main function
+(function() {
+    const V = 4;
+    const edgeList = [
+        [0, 1, -5],
+        [0, 2, 2],
+        [0, 3, 3],
+        [1, 2, 4],
+        [2, 3, 1]
+    ];
+
+    GFG.JohnsonAlgorithm(V, edgeList);
+})();
+
+Output
+
+Shortest Distance Matrix:
+      0     -5     -1      0
+    INF      0      4      5
+    INF    INF      0      1
+    INF    INF    INF      0
+
+Time Complexity: The main steps in the algorithm are Bellman-Ford Algorithm called once and Dijkstra called V times. Time complexity of Bellman Ford is O(VE) and time complexity of Dijkstra is O((V + E)Log V). So overall time complexity is O(V 2 log V + VE).
+
+The time complexity of Johnson's algorithm becomes the same as Floyd Warshall's Algorithm when the graph is complete (For a complete graph E = O(V 2 ). But for sparse graphs, the algorithm performs much better than Floyd Warshall's Algorithm.
+
+Auxiliary Space: O(V 2 )

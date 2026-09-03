@@ -1,0 +1,874 @@
+Source: https://www.geeksforgeeks.org/dsa/modulo-2-binary-division/
+Title: Cyclic Redundancy Check and Modulo-2 Division
+Extractor: 2
+
+Cyclic Redundancy Check or CRC is a method of detecting accidental changes/errors in the communication channel. CRC uses Generator Polynomial which is available on both sender and receiver side. An example generator polynomial is of the form like x 3 + x + 1. This generator polynomial represents key 1011. Another example is x 2 + 1 that represents key 101. There are two primary variables in CRC:
+
+> n: Number of bits in data to be sent from sender side k: Number of bits in the key obtained from generator polynomial.
+
+### Encoded Data Generation from Generator Polynomial (Sender Side)
+
+- The binary data is first augmented by adding k-1 zeros in the end of the data.
+- Then, modulo - 2 binary division is used to divide binary data by the key and remainder of division is stored.
+- At last the the remainder is appended at the end of the data to form the encoded data which is later sent.
+
+### Checking Error in Transmission (Receiver Side)
+
+- After receiving the data, to check if the data is error free, perform the modulo-2 division again.
+- If the remainder is 0, then there are not errors, otherwise, the data is faulty and contain transmission errors.
+
+### Modulo 2 Division
+
+The process of modulo-2 binary division is the same as the familiar division process we use for decimal numbers. Just that instead of subtraction, we use XOR here.
+
+- In each step, a copy of the divisor (or data) is XORed with the k bits of the dividend (or key).
+- The result of the XOR operation (remainder) is (k-1) bits, which is used for the next step after 1 extra bit is pulled down to make it k bits long.
+- When there are no bits left to pull down, we have a result. The (k-1) bit remainder which is appended at the sender side.
+
+### Examples:
+
+Case 1: No error in transmission
+
+> Data = 100100, Generator Polynomial (Key) = x 3 + x 2 + 1 (1101) Sender Side Generating Remainder The remainder is 001. Thus the data sent is 100100001. Receiver Side Code word received at the receiver side 100100001 Checking the Remainder The remainder is 0, hence the data received has no errors. CRC Implementation - O(n) Time and O(n) Space
+
+Case 2: Error in Transmission
+
+> Data = 100100, Generator Polynomial (Key) = x 3 + x 2 + 1 (1101) Sender Side The remainder is 001. Thus the data sent is 100100001. Receiver Side Let there be an error and code word received at the receiver side 100000001. As the remainder is not 0, hence there is some error detected in the receiver side.
+
+### Implementation of Cyclic Redundancy Check
+
+> The idea is to firstly generate the encoded data by appending the remainder of modulo - 2 division of data and key in the given data. Then, repeat the same process for the data received, and if the decoded data contains any '1', then there is some error in transmission, otherwise the correct data is received.
+
+Follow the below given step-by-step process:
+
+- Start by appending k-1 zeroes to data to form a new string str, where k is the length of key.
+- Compute the remainder by calling mod2div with dividend set to str and divisor set to key. In mod2div, first slice dividend to the length of divisor, then repeatedly perform the following: If the first character of the current slice (tmp) is '1', call findXor with divisor and tmp; otherwise, call findXor with a string of pick zeroes and tmp. Append the next bit of dividend to the result and increment pick.
+- The function findXor calculates the XOR of two strings a and b by traversing from index 1 to the end: if corresponding bits are the same, it appends "0" to result, otherwise "1".
+- After processing the entire dividend, mod2div returns the final remainder. Append this remainder to data to form the encoded codeword.
+- At the receiver side, extract the first n bits of code and perform mod2div with key to obtain curXor. Then, while cur is not equal to code.size, if curXor’s length is not equal to key’s length, append the next bit from code; otherwise, update curXor by performing mod2div on it.
+- Finally, if curXor’s length equals key’s length, perform a final mod2div. If curXor contains any '1', the data is incorrect; otherwise, the data is correct.
+
+Below is given the implementation:
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Performs bitwise XOR between two binary strings (a and b)
+string findXor(string a, string b) {
+    int n = b.length();
+    string result = "";
+
+    // Compare each bit (skip first bit as per CRC standard)
+    for (int i = 1; i < n; i++) {
+        if (a[i] == b[i])
+            result += "0";
+        else
+            result += "1";
+    }
+    return result;
+}
+
+// Performs Modulo-2 division (CRC division algorithm)
+string mod2div(string dividend, string divisor) {
+    int n = dividend.length();
+    int pick = divisor.length();
+    string tmp = dividend.substr(0, pick); // Initial window
+
+    while (pick < n) {
+        if (tmp[0] == '1')
+            // XOR with divisor and bring down next bit
+            tmp = findXor(divisor, tmp) + dividend[pick];
+        else
+            // XOR with zeros and bring down next bit
+            tmp = findXor(string(pick, '0'), tmp) + dividend[pick];
+        pick++;
+    }
+
+    // Final XOR step
+    if (tmp[0] == '1')
+        tmp = findXor(divisor, tmp);
+    else
+        tmp = findXor(string(pick, '0'), tmp);
+
+    return tmp;
+}
+
+// Appends CRC remainder to the original data
+string encodeData(string data, string key) {
+    int n = key.length();
+    string paddedData = data + string(n - 1, '0'); // Append n-1 zeros
+    string remainder = mod2div(paddedData, key);
+    return data + remainder; // Return data + CRC
+}
+
+// Checks if received data has errors (remainder = 0)
+int receiver(string code, string key) {
+    string remainder = mod2div(code, key);
+    return (remainder.find('1') == string::npos) ? 1 : 0;
+}
+
+int main() {
+    string data = "100100";
+    string key = "1101";
+
+    cout << "Sender Side" << endl;
+    cout << "Data: " << data << endl;
+    cout << "Key: " << key << endl;
+    string code = encodeData(data, key);
+    cout << "Encoded Data: " << code << endl << endl;
+
+    cout << "Receiver Side" << endl;
+    if (receiver(code, key))
+        cout << "Data is correct (No errors detected)" << endl;
+    else
+        cout << "Data is incorrect (Error detected)" << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+    // Returns XOR of 'a' and 'b' (bitwise comparison)
+    static String findXor(String a, String b) {
+        int n = b.length();
+        StringBuilder result = new StringBuilder();
+
+        // Compare each bit (skip first bit as per original logic)
+        for (int i = 1; i < n; i++) {
+            if (a.charAt(i) == b.charAt(i)) {
+                result.append('0');
+            } else {
+                result.append('1');
+            }
+        }
+        return result.toString();
+    }
+
+    // Performs Modulo-2 division (CRC division)
+    static String mod2div(String dividend, String divisor) {
+        int n = dividend.length();
+        int pick = divisor.length();
+        String tmp = dividend.substring(0, pick);
+
+        while (pick < n) {
+            if (tmp.charAt(0) == '1') {
+                // XOR with divisor and bring down next bit
+                tmp = findXor(divisor, tmp) + dividend.charAt(pick);
+            } else {
+                // XOR with zeros and bring down next bit
+                tmp = findXor(String.format("%0" + pick + "d", 0), tmp)
+                      + dividend.charAt(pick);
+            }
+            pick += 1;
+        }
+
+        // Final XOR step
+        if (tmp.charAt(0) == '1') {
+            tmp = findXor(divisor, tmp);
+        } else {
+            tmp = findXor(String.format("%0" + pick + "d", 0), tmp);
+        }
+
+        return tmp;
+    }
+
+    // Appends CRC remainder to original data
+    public static String encodeData(String data, String key) {
+        int n = key.length();
+        String str = data + String.join("", Collections.nCopies(n - 1, "0"));
+        String remainder = mod2div(str, key);
+        return data + remainder;
+    }
+
+    // Checks if received data has errors
+    public static int receiver(String code, String key) {
+        String remainder = mod2div(code, key);
+        return remainder.contains("1") ? 0 : 1;
+    }
+
+    public static void main(String[] args) {
+        String data = "100100";
+        String key = "1101";
+
+        System.out.println("Sender Side");
+        System.out.println("Data: " + data);
+        System.out.println("Key: " + key);
+        String code = encodeData(data, key);
+        System.out.println("Encoded Data: " + code + "\n");
+
+        System.out.println("Receiver Side");
+        if (receiver(code, key) == 1) {
+            System.out.println("Data is correct (No errors detected)");
+        } else {
+            System.out.println("Data is incorrect (Error detected)");
+        }
+    }
+}
+
+Python
+
+def findXor(a, b):
+    #Performs bitwise XOR between two binary strings (a and b).
+    n = len(b)
+    result = ""
+    for i in range(1, n):  # Skip first bit (CRC standard)
+        result += '0' if a[i] == b[i] else '1'
+    return result
+
+def mod2div(dividend, divisor):
+    # Performs Modulo-2 division (CRC division algorithm).
+    n = len(dividend)
+    pick = len(divisor)
+    tmp = dividend[0:pick]  # Initial window
+
+    while pick < n:
+        if tmp[0] == '1':
+            # XOR with divisor and bring down next bit
+            tmp = findXor(divisor, tmp) + dividend[pick]
+        else:
+            # XOR with zeros and bring down next bit
+            tmp = findXor('0' * pick, tmp) + dividend[pick]
+        pick += 1
+
+    # Final XOR step
+    if tmp[0] == '1':
+        tmp = findXor(divisor, tmp)
+    else:
+        tmp = findXor('0' * pick, tmp)
+    return tmp
+
+def encodeData(data, key):
+    # Appends CRC remainder to the original data.
+    n = len(key)
+
+    # Append n-1 zeros
+    padded_data = data + '0' * (n - 1)
+    remainder = mod2div(padded_data, key)
+
+    # Return data + CRC
+    return data + remainder
+
+def receiver(code, key):
+    # Checks if received data has errors (remainder = 0).
+    remainder = mod2div(code, key)
+    return 1 if '1' not in remainder else 0
+
+if __name__ == "__main__":
+    data = "100100"
+    key = "1101"
+
+    print("Sender Side")
+    print("Data:", data)
+    print("Key:", key)
+    code = encodeData(data, key)
+    print("Encoded Data:", code, "\n")
+
+    print("Receiver Side")
+    if receiver(code, key):
+        print("Data is correct (No errors detected)")
+    else:
+        print("Data is incorrect (Error detected)")
+
+C#
+
+using System;
+using System.Text;
+
+class GfG {
+
+    // Returns XOR of 'a' and 'b' (bitwise comparison)
+    private static string FindXor(string a, string b){
+
+        int n = b.Length;
+        StringBuilder result = new StringBuilder();
+
+        // Compare each bit (skip first bit as per original
+        // logic)
+        for (int i = 1; i < n; i++) {
+            if (a[i] == b[i]) {
+                result.Append('0');
+            }
+            else {
+                result.Append('1');
+            }
+        }
+        return result.ToString();
+    }
+
+    // Performs Modulo-2 division (CRC division)
+    static string Mod2Div(string dividend, string divisor){
+
+        int n = dividend.Length;
+        int pick = divisor.Length;
+        string tmp = dividend.Substring(0, pick);
+
+        while (pick < n) {
+
+            if (tmp[0] == '1') {
+                // XOR with divisor and bring down next bit
+                tmp = FindXor(divisor, tmp)
+                      + dividend[pick];
+            }
+            else {
+                // XOR with zeros and bring down next bit
+                tmp = FindXor(new string('0', pick), tmp)
+                      + dividend[pick];
+            }
+
+            pick += 1;
+        }
+
+        // Final XOR step
+        if (tmp[0] == '1') {
+            tmp = FindXor(divisor, tmp);
+        }
+        else {
+            tmp = FindXor(new string('0', pick), tmp);
+        }
+
+        return tmp;
+    }
+
+    // Appends CRC remainder to original data
+    public static string EncodeData(string data, string key){
+
+        int n = key.Length;
+        string str = data + new string('0', n - 1);
+        string remainder = Mod2Div(str, key);
+        return data + remainder;
+    }
+
+    // Checks if received data has errors
+    public static int Receiver(string code, string key){
+
+        string remainder = Mod2Div(code, key);
+        return remainder.Contains("1") ? 0 : 1;
+    }
+
+    static void Main(){
+
+        string data = "100100";
+        string key = "1101";
+
+        Console.WriteLine("Sender Side");
+        Console.WriteLine("Data: " + data);
+        Console.WriteLine("Key: " + key);
+        string code = EncodeData(data, key);
+        Console.WriteLine("Encoded Data: " + code + "\n");
+
+        Console.WriteLine("Receiver Side");
+        if (Receiver(code, key) == 1) {
+            Console.WriteLine("Data is correct (No errors detected)");
+        }
+        else {
+            Console.WriteLine( "Data is incorrect (Error detected)");
+        }
+    }
+}
+
+JavaScript
+
+// Performs bitwise XOR between two binary strings (a and b)
+function findXor(a, b){
+
+    let n = b.length;
+    let result = "";
+    for (let i = 1; i < n; i++) {
+
+        // Skip first bit (CRC standard)
+        result += (a[i] === b[i]) ? "0" : "1";
+    }
+    return result;
+}
+
+// Performs Modulo-2 division (CRC division algorithm)
+function mod2div(dividend, divisor){
+
+    let n = dividend.length;
+    let pick = divisor.length;
+    let tmp = dividend.substring(0, pick);
+
+    while (pick < n) {
+        if (tmp[0] === "1") {
+            // XOR with divisor and bring down next bit
+            tmp = findXor(divisor, tmp) + dividend[pick];
+        }
+        else {
+            // XOR with zeros and bring down next bit
+            tmp = findXor("0".repeat(pick), tmp)
+                  + dividend[pick];
+        }
+        pick++;
+    }
+
+    // Final XOR step
+    if (tmp[0] === "1") {
+        tmp = findXor(divisor, tmp);
+    }
+
+    else {
+        tmp = findXor("0".repeat(pick), tmp);
+    }
+    return tmp;
+}
+
+// Appends CRC remainder to the original data
+function encodeData(data, key){
+
+    const n = key.length;
+    // Append n-1 zeros
+    const paddedData = data + "0".repeat(n - 1);
+    const remainder = mod2div(paddedData, key);
+    // Return data + CRC
+    return data + remainder;
+}
+
+// Checks if received data has errors (remainder = 0)
+function receiver(code, key){
+
+    const remainder = mod2div(code, key);
+    return remainder.includes("1") ? 0 : 1;
+}
+
+// Driver Code
+const data = "100100";
+const key = "1101";
+
+console.log("Sender Side");
+console.log("Data:", data);
+console.log("Key:", key);
+const code = encodeData(data, key);
+console.log("Encoded Data:", code, "\n");
+
+console.log("Receiver Side");
+if (receiver(code, key)) {
+    console.log("Data is correct (No errors detected)");
+}
+else {
+    console.log("Data is incorrect (Error detected)");
+}
+
+Output
+
+Sender Side
+Data: 100100
+Key: 1101
+Encoded Data: 100100001
+
+Receiver Side
+Data is correct (No errors detected)
+
+### CRC Implementation Using Bit Manipulation - O(n) Time and O(n) Space
+
+> The idea is to manipulate the given binary strings by converting them to decimal numbers, and process them. After processing the numbers, convert them back to binary strings.
+
+Follow the below given step-by-step approach:
+
+- Determine n as key.length() and convert key to decimal using toDec(key) to get gen, and convert data to decimal using toDec(data) to get code.
+- Append n-1 zeroes to data by left-shifting code by (n - 1) and store the result in dividend.
+- Compute shft as ceill(log2l(dividend + 1)) - n, which represents the number of least significant bits not involved in the XOR operation.
+- While (dividend >= gen) or (shft >= 0): Calculate rem as (dividend >> shft) XOR gen. Update dividend by combining the unchanged lower shft bits (dividend & ((1 << shft) - 1)) with the new bits (rem << shft) resulting from the XOR operation. Recalculate shft as ceil(log2l(dividend + 1)) - n.
+- After the loop, compute codeword as the bitwise OR of (code << (n - 1)) and dividend.
+- Finally, output the remainder (obtained by converting dividend to binary using toBin(dividend)) and the codeword (obtained by converting codeword to binary using toBin(codeword)).
+
+C++
+
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+#define int long long int
+
+// Function to convert integer to binary string
+string toBin(int num) {
+
+    // Handle case when number is 0
+    if (num == 0) return "0";
+    string bin = "";
+    while (num) {
+        // Append '1' or '0' based on least significant bit
+        bin += (num & 1) ? '1' : '0';
+        // Shift right to process next bit
+        num = num >> 1;
+    }
+    // Reverse string since bits were added in reverse order
+    reverse(bin.begin(), bin.end());
+    return bin;
+}
+
+// Function to convert binary string to decimal integer
+int toDec(string bin) {
+    int n = bin.size();
+
+    // Handle empty string
+    if (n == 0) return 0;
+    int num = 0;
+    for (int i = 0; i < n; i++) {
+        if (bin[i] == '1') {
+            // Compute power of 2 for each '1' in binary string
+            num += 1 << (n - i - 1);
+        }
+    }
+    return num;
+}
+
+// Function to compute CRC and print remainder and codeword
+void CRC(string data, string key) {
+    int n = key.length();
+    if (n == 0) {
+        cout << "Error: Key cannot be empty" << endl;
+        return;
+    }
+
+    // Convert binary strings to decimal integers
+    // Generator polynomial (key)
+    int gen = toDec(key);
+
+    // Original data
+    int code = toDec(data);
+
+    // Append (n - 1) zeros to the data to make space for CRC bits
+    int dividend = code << (n - 1);
+
+    // Calculate the position to start XOR (most significant bit position)
+    int shft;
+    while ((shft = (int)log2(dividend) - n + 1) >= 0) {
+        // Extract top 'n' bits of dividend, XOR with generator polynomial
+        int rem = (dividend >> shft) ^ gen;
+
+        // Replace top bits in dividend with XOR result (remainder)
+        dividend = (dividend & ((1 << shft) - 1)) | (rem << shft);
+    }
+
+    // Final codeword is the original data with the remainder appended
+    int codeword = (code << (n - 1)) | dividend;
+
+    // Print results
+    cout << "Remainder: " << toBin(dividend) << endl;
+    cout << "Codeword : " << toBin(codeword) << endl;
+}
+
+signed main() {
+    string data = "100100";
+    string key  = "1101";
+    CRC(data, key);
+    return 0;
+}
+
+Java
+
+import java.util.Collections;
+
+class GfG {
+
+    // Function to convert integer to binary string
+    public static String toBin(int num) {
+
+        // Handle case when number is 0
+        if (num == 0) return "0";
+        StringBuilder bin = new StringBuilder();
+        while (num != 0) {
+
+            // Append '1' or '0' based on least significant bit
+            bin.append((num & 1) == 1 ? '1' : '0');
+
+            // Shift right to process next bit
+            num = num >> 1;
+        }
+
+        // Reverse string since bits were added in reverse order
+        return bin.reverse().toString();
+    }
+
+    // Function to convert binary string to decimal integer
+    public static int toDec(String bin) {
+        int n = bin.length();
+        // Handle empty string
+        if (n == 0) return 0;
+        int num = 0;
+        for (int i = 0; i < n; i++) {
+            if (bin.charAt(i) == '1') {
+
+                // Compute power of 2 for each '1' in binary string
+                num += 1 << (n - i - 1);
+            }
+        }
+        return num;
+    }
+
+    // Function to compute CRC and print remainder and codeword
+    public static void CRC(String data, String key) {
+        int n = key.length();
+        if (n == 0) {
+            System.out.println("Error: Key cannot be empty");
+            return;
+        }
+
+        // Convert binary strings to decimal integers
+        // Generator polynomial (key)
+        int gen = toDec(key);
+        // Original data
+        int code = toDec(data);
+
+        // Append (n - 1) zeros to the data to make space for CRC bits
+        int dividend = code << (n - 1);
+
+        // Calculate the position to start XOR (most significant bit position)
+        int shft;
+        while ((shft = (int)(Math.log(dividend) / Math.log(2)) - n + 1) >= 0) {
+
+            // Extract top 'n' bits of dividend, XOR with generator polynomial
+            int rem = (dividend >> shft) ^ gen;
+
+            // Replace top bits in dividend with XOR result (remainder)
+            dividend = (dividend & ((1 << shft) - 1)) | (rem << shft);
+        }
+
+        // Final codeword is the original data with the remainder appended
+        int codeword = (code << (n - 1)) | dividend;
+
+        // Print results
+        System.out.println("Remainder: " + toBin(dividend));
+        System.out.println("Codeword : " + toBin(codeword));
+    }
+
+    public static void main(String[] args) {
+        String data = "100100";
+        String key = "1101";
+        CRC(data, key);
+    }
+}
+
+Python
+
+def toBin(num):
+    """Convert integer to binary string"""
+    if num == 0:
+        return "0"
+    bin_str = ""
+    while num:
+        # Append '1' or '0' based on least significant bit
+        bin_str += '1' if num & 1 else '0'
+        # Shift right to process next bit
+        num = num >> 1
+    # Reverse string since bits were added in reverse order
+    return bin_str[::-1]
+
+def toDec(bin_str):
+    """Convert binary string to decimal integer"""
+    n = len(bin_str)
+    if n == 0:
+        return 0
+    num = 0
+    for i in range(n):
+        if bin_str[i] == '1':
+            # Compute power of 2 for each '1' in binary string
+            num += 1 << (n - i - 1)
+    return num
+
+def CRC(data, key):
+    """Compute CRC and print remainder and codeword"""
+    n = len(key)
+    if n == 0:
+        print("Error: Key cannot be empty")
+        return
+
+    # Convert binary strings to decimal integers
+    gen = toDec(key)  # Generator polynomial (key)
+    code = toDec(data)  # Original data
+
+    # Append (n - 1) zeros to the data to make space for CRC bits
+    dividend = code << (n - 1)
+
+    # Calculate the position to start XOR (most significant bit position)
+    shft = 0
+    while True:
+        current_shft = dividend.bit_length() - n
+        if current_shft < 0:
+            break
+        # Extract top 'n' bits of dividend, XOR with generator polynomial
+        rem = (dividend >> current_shft) ^ gen
+        # Replace top bits in dividend with XOR result (remainder)
+        dividend = (dividend & ((1 << current_shft) - 1)) | (rem << current_shft)
+
+    # Final codeword is the original data with the remainder appended
+    codeword = (code << (n - 1)) | dividend
+
+    # Print results
+    print(f"Remainder: {toBin(dividend)}")
+    print(f"Codeword : {toBin(codeword)}")
+
+if __name__ == "__main__":
+    data = "100100"
+    key = "1101"
+    CRC(data, key)
+
+C#
+
+using System;
+using System.Text;
+
+class GfG{
+
+    // Function to convert integer to binary string
+    static string toBin(int num){
+
+        // Handle case when number is 0
+        if (num == 0) return "0";
+        StringBuilder bin = new StringBuilder();
+        while (num != 0){
+
+            // Append '1' or '0' based on least significant bit
+            bin.Append((num & 1) == 1 ? '1' : '0');
+            // Shift right to process next bit
+            num = num >> 1;
+        }
+        // Reverse string since bits were added in reverse order
+        char[] charArray = bin.ToString().ToCharArray();
+        Array.Reverse(charArray);
+        return new string(charArray);
+    }
+
+    // Function to convert binary string to decimal integer
+    static int toDec(string bin){
+
+        int n = bin.Length;
+        // Handle empty string
+        if (n == 0) return 0;
+        int num = 0;
+        for (int i = 0; i < n; i++){
+
+            if (bin[i] == '1'){
+
+                // Compute power of 2 for each '1' in binary string
+                num += 1 << (n - i - 1);
+            }
+        }
+        return num;
+    }
+
+    // Function to compute CRC and print remainder and codeword
+    static void CRC(string data, string key){
+
+        int n = key.Length;
+        if (n == 0){
+
+            Console.WriteLine("Error: Key cannot be empty");
+            return;
+        }
+
+        // Convert binary strings to decimal integers
+        // Generator polynomial (key)
+        int gen = toDec(key);
+        // Original data
+        int code = toDec(data);
+
+        // Append (n - 1) zeros to the data to make space for CRC bits
+        int dividend = code << (n - 1);
+
+        // Calculate the position to start XOR (most significant bit position)
+        int shft;
+        while ((shft = (int)(Math.Log(dividend, 2)) - n + 1) >= 0){
+
+            // Extract top 'n' bits of dividend, XOR with generator polynomial
+            int rem = (dividend >> shft) ^ gen;
+            // Replace top bits in dividend with XOR result (remainder)
+            dividend = (dividend & ((1 << shft) - 1)) | (rem << shft);
+        }
+
+        // Final codeword is the original data with the remainder appended
+        int codeword = (code << (n - 1)) | dividend;
+
+        // Print results
+        Console.WriteLine("Remainder: " + toBin(dividend));
+        Console.WriteLine("Codeword : " + toBin(codeword));
+    }
+
+    static void Main(){
+
+        string data = "100100";
+        string key = "1101";
+        CRC(data, key);
+    }
+}
+
+JavaScript
+
+function toBin(num) {
+    // Convert integer to binary string
+    if (num === 0) return "0";
+    let bin = "";
+    while (num > 0) {
+        // Append '1' or '0' based on least significant bit
+        bin = (num & 1 ? "1" : "0") + bin;
+        // Shift right to process next bit
+        num = num >>> 1;
+    }
+    return bin || "0";
+}
+
+function toDec(bin) {
+    // Convert binary string to decimal integer
+    const n = bin.length;
+    if (n === 0) return 0;
+    let num = 0;
+    for (let i = 0; i < n; i++) {
+        if (bin[i] === '1') {
+            // Compute power of 2 for each '1' in binary string
+            num += 1 << (n - i - 1);
+        }
+    }
+    return num;
+}
+
+function CRC(data, key) {
+    // Compute CRC and print remainder and codeword
+    const n = key.length;
+    if (n === 0) {
+        console.log("Error: Key cannot be empty");
+        return;
+    }
+
+    // Convert binary strings to decimal integers
+    // Generator polynomial (key)
+    const gen = toDec(key);
+
+    // Original data
+    const code = toDec(data);
+
+    // Append (n - 1) zeros to the data to make space for CRC bits
+    let dividend = code << (n - 1);
+
+    // Calculate the position to start XOR (most significant bit position)
+    let shft;
+    while ((shft = Math.floor(Math.log2(dividend)) - n + 1) >= 0) {
+        // Extract top 'n' bits of dividend, XOR with generator polynomial
+        const rem = (dividend >> shft) ^ gen;
+        // Replace top bits in dividend with XOR result (remainder)
+        dividend = (dividend & ((1 << shft) - 1)) | (rem << shft);
+    }
+
+    // Final codeword is the original data with the remainder appended
+    const codeword = (code << (n - 1)) | dividend;
+
+    // Print results
+    console.log(`Remainder: ${toBin(dividend)}`);
+    console.log(`Codeword : ${toBin(codeword)}`);
+}
+
+// Driver Code
+const data = "100100";
+const key = "1101";
+CRC(data, key);
+
+Output
+
+Remainder: 1
+Codeword : 100100001

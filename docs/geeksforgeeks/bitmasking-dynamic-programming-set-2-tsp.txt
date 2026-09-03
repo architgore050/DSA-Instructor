@@ -1,0 +1,800 @@
+Source: https://www.geeksforgeeks.org/dsa/bitmasking-dynamic-programming-set-2-tsp/
+Title: Bitmasking and Dynamic Programming | Travelling Salesman Problem
+Extractor: 2
+
+Given a 2D grid of characters representing a town where '*' represents the houses , 'x' represents the blockage , '.' represents the vacant street area and 'o' represents the starting position. The task is to determine the minimum distance to be moved to visit all the houses if possible otherwise return -1 . We can only move to adjacent cells that share exactly 1 edge with the current cell and we can visit a house twice or more.
+
+Prerequisites :
+
+- DP and formation of DP transition relation
+- Bitmasking in DP
+- Traveling Salesman problem
+
+Examples:
+
+> Input: Output: 22 Input: Output: 12
+
+### Approach - Using BFS + BitMasking
+
+> If we treat each house as a node , the problem can be viewed as finding the minimum steps required to visit all nodes. In this problem, each house is a node in a graph , and we need to find the shortest path to visit all of them. The key challenge is that the same node (house) can be visited multiple times, but only if it allows us to visit more houses. Simply revisiting a node with the same number of visited houses is redundant. Since we are working with a grid and the cost to move to an adjacent cell is always one, we can use BFS to find the shortest path . However, since we can move in all four directions, the same node might be revisited multiple times. This means we cannot simply use a visited array as in standard BFS. Instead, we need a way to uniquely represent each state. To address this, we assign each house a unique houseId . Once we have the houseId , we can track house visits by setting the corresponding bits in a bitmask . The bitmask represents the set of visited houses , and the coordinates (x, y) track the current position . This allows us to mark each state uniquely. Revisiting a node is only valid if it results in a different set of visited houses.
+
+C++
+
+// C++ program to find minimum step required to
+// visit all houses.
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int findMinSteps(vector<vector<char>> &mat) {
+    int n = mat.size();
+    int m = mat[0].size();
+
+    // Transforming the grid: assign unique IDs to
+  	// houses and mark obstacles Grid to store houses and obstacles
+    vector<vector<int>> grid(n, vector<int>(m, 0));
+    int houseId = 0;
+    int startX = 0, startY = 0;
+
+    // Process the grid and assign unique IDs to houses,
+  	// and find starting position
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            if (mat[i][j] == '.') {
+
+                // Open cell, marked as 0
+                grid[i][j] = 0;
+            }
+            else if (mat[i][j] == '*') {
+
+                // Assign unique ID to each house
+                grid[i][j] = houseId++;
+            }
+            else if (mat[i][j] == 'o') {
+
+                // Record starting row and column
+                startX = i;
+                startY = j;
+            }
+            else {
+                // Mark obstacles as -1
+                grid[i][j] = -1;
+            }
+        }
+    }
+
+    // If there are no houses to visit, return 0
+    if (houseId == 0)
+        return 0;
+
+    // BFS setup: Visited array and queue
+    vector<vector<vector<int>>> vis(1 << houseId,
+	vector<vector<int>>(n, vector<int>(m, 0)));
+
+    // BFS queue to store (visitedMask, x, y)
+    queue<vector<int>> q;
+
+    // Mark the starting position as visited
+    vis[0][startX][startY] = 1;
+
+    // Push the initial state (0 mask, startX, startY)
+    q.push({0, startX, startY});
+
+    // Counter for the number of steps
+    int steps = 0;
+
+    // Directions for BFS traversal: right, left, down, up
+    int dx[] = {0, 0, 1, -1};
+    int dy[] = {1, -1, 0, 0};
+
+    // BFS loop
+    while (!q.empty()) {
+        int qSize = q.size();
+
+        for (int idx = 0; idx < qSize; idx++) {
+            auto curr = q.front();
+            q.pop();
+
+            // Mask of visited houses
+            int mask = curr[0];
+
+            // Current x position
+            int x = curr[1];
+
+            // Current y position
+            int y = curr[2];
+
+            // If all houses are visited, return
+          	// the steps taken
+            if (mask == (1 << houseId) - 1) {
+                return steps;
+            }
+
+            // Explore all possible moves (right, left, down, up)
+            for (int k = 0; k < 4; k++)  {
+
+                // Calculate new x  and y position.
+                int newX = x + dx[k];
+                int newY = y + dy[k];
+
+                // Check boundaries and ensure it's not a blocked cell
+                if (newX >= 0 && newX < n && newY >= 0
+                    && newY < m && grid[newX][newY] != -1) {
+                    if (mat[newX][newY] == '*') {
+
+                        // If it's a house, update the visited mask
+                        int newMask = mask | (1 << grid[newX][newY]);
+
+                        // If the new state is already visited, continue
+                        if (vis[newMask][newX][newY])
+                            continue;
+
+                        // Mark the new state as visited
+                        vis[newMask][newX][newY] = 1;
+
+                        // Push the new state to the queue
+                        q.push({newMask, newX, newY});
+                    }
+                    else {
+
+                        // If it's a normal cell, continue without
+                      	// updating the mask
+                        if (vis[mask][newX][newY])
+                            continue;
+
+                        vis[mask][newX][newY] = 1;
+                        q.push({mask, newX, newY});
+                    }
+                }
+            }
+        }
+
+        // Increment step count after processing all
+      	// states at the current level
+        steps++;
+    }
+
+    // If unable to visit all houses, return -1
+    return -1;
+}
+
+int main() {
+
+    vector<vector<char>> mat = {{'.', '.', '.', '.', '.', '.', '.'},
+                                {'.', 'o', '.', '.', '.', '*', '.'},
+                                {'.', '.', '.', '.', '.', '.', '.'},
+                                {'.', '*', '.', '.', '.', '*', '.'},
+                                {'.', '.', '.', '.', '.', '.', '.'}};
+
+    int res = findMinSteps(mat);
+    cout << res << endl;
+
+    return 0;
+}
+
+Java
+
+// Java program to find minimum step required
+// to visit all houses.
+
+import java.util.*;
+
+  class  GfG {
+
+      static int findMinSteps(char[][] mat) {
+        int n = mat.length;
+        int m = mat[0].length;
+
+        // Transforming the grid: assign unique IDs to
+        // houses and mark obstacles Grid to store houses
+        // and obstacles
+        int[][] grid = new int[n][m];
+        int houseId = 0;
+        int startX = 0, startY = 0;
+
+        // Process the grid and assign unique IDs to houses,
+        // and find starting position
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (mat[i][j] == '.') {
+
+                    // Open cell, marked as 0
+                    grid[i][j] = 0;
+                }
+                else if (mat[i][j] == '*') {
+
+                    // Assign unique ID to each house
+                    grid[i][j] = houseId++;
+                }
+                else if (mat[i][j] == 'o') {
+
+                    // Record starting row and column
+                    startX = i;
+                    startY = j;
+                }
+                else {
+
+                    // Mark obstacles as -1
+                    grid[i][j] = -1;
+                }
+            }
+        }
+
+        // If there are no houses to visit, return 0
+        if (houseId == 0)
+            return 0;
+
+        // BFS setup: Visited array and queue
+        boolean[][][] vis = new boolean[1 << houseId][n][m];
+
+        // BFS queue to store (visitedMask, x, y)
+        Queue<int[]> q = new LinkedList<>();
+
+        // Mark the starting position as visited
+        vis[0][startX][startY] = true;
+
+        // Push the initial state (0 mask, startX, startY)
+        q.add(new int[] { 0, startX, startY });
+
+        // Counter for the number of steps
+        int steps = 0;
+
+        // Directions for BFS traversal: right, left, down,
+        // up
+        int[] dx = { 0, 0, 1, -1 };
+        int[] dy = { 1, -1, 0, 0 };
+
+        // BFS loop
+        while (!q.isEmpty()) {
+            int qSize = q.size();
+
+            for (int idx = 0; idx < qSize; idx++) {
+                int[] curr = q.poll();
+
+                // Mask of visited houses
+                int mask = curr[0];
+
+                // Current x position
+                int x = curr[1];
+
+                // Current y position
+                int y = curr[2];
+
+                // If all houses are visited, return the
+                // steps taken
+                if (mask == (1 << houseId) - 1) {
+                    return steps;
+                }
+
+                // Explore all possible moves (right, left,
+                // down, up)
+                for (int k = 0; k < 4; k++) {
+
+                    // Calculate new x and y position.
+                    int newX = x + dx[k];
+                    int newY = y + dy[k];
+
+                    // Check boundaries and ensure it's not
+                    // a blocked cell
+                    if (newX >= 0 && newX < n && newY >= 0
+                        && newY < m
+                        && grid[newX][newY] != -1) {
+                        if (mat[newX][newY] == '*') {
+
+                            // If it's a house, update the
+                            // visited mask
+                            int newMask
+                                = mask
+                                  | (1 << grid[newX][newY]);
+
+                            // If the new state is already
+                            // visited, continue
+                            if (vis[newMask][newX][newY])
+                                continue;
+
+                            // Mark the new state as visited
+                            vis[newMask][newX][newY] = true;
+
+                            // Push the new state to the
+                            // queue
+                            q.add(new int[] { newMask, newX,
+                                              newY });
+                        }
+                        else {
+
+                            // If it's a normal cell,
+                            // continue without updating the
+                            // mask
+                            if (vis[mask][newX][newY])
+                                continue;
+
+                            vis[mask][newX][newY] = true;
+                            q.add(new int[] { mask, newX,
+                                              newY });
+                        }
+                    }
+                }
+            }
+
+            // Increment step count after processing all
+            // states at the current level
+            steps++;
+        }
+
+        // If unable to visit all houses, return -1
+        return -1;
+    }
+
+    public static void main(String[] args) {
+
+        char[][] mat
+            = { { '.', '.', '.', '.', '.', '.', '.' },
+                { '.', 'o', '.', '.', '.', '*', '.' },
+                { '.', '.', '.', '.', '.', '.', '.' },
+                { '.', '*', '.', '.', '.', '*', '.' },
+                { '.', '.', '.', '.', '.', '.', '.' } };
+
+        int res = findMinSteps(mat);
+        System.out.println(res);
+    }
+}
+
+Python
+
+# Python program to find minimum step required
+# to visit all houses.
+
+from collections import deque
+
+def findMinSteps(mat):
+    n = len(mat)
+    m = len(mat[0])
+
+    # Transforming the grid: assign unique IDs to
+    # houses and mark obstacles Grid to store houses and obstacles
+    grid = [[0] * m for _ in range(n)]
+    houseId = 0
+    startX = startY = 0
+
+    # Process the grid and assign unique IDs to houses,
+    # and find starting position
+    for i in range(n):
+        for j in range(m):
+            if mat[i][j] == '.':
+
+                # Open cell, marked as 0
+                grid[i][j] = 0
+            elif mat[i][j] == '*':
+
+                # Assign unique ID to each house
+                grid[i][j] = houseId
+                houseId += 1
+            elif mat[i][j] == 'o':
+
+                # Record starting row and column
+                startX = i
+                startY = j
+            else:
+
+                # Mark obstacles as -1
+                grid[i][j] = -1
+
+    # If there are no houses to visit, return 0
+    if houseId == 0:
+        return 0
+
+    # BFS setup: Visited array and queue
+    vis = [[[False] * m for _ in range(n)] for _ in range(1 << houseId)]
+
+    # BFS queue to store (visitedMask, x, y)
+    q = deque()
+
+    # Mark the starting position as visited
+    vis[0][startX][startY] = True
+
+    # Push the initial state (0 mask, startX, startY)
+    q.append([0, startX, startY])
+
+    # Counter for the number of steps
+    steps = 0
+
+    # Directions for BFS traversal: right, left, down, up
+    dx = [0, 0, 1, -1]
+    dy = [1, -1, 0, 0]
+
+    # BFS loop
+    while q:
+        qSize = len(q)
+
+        for _ in range(qSize):
+            curr = q.popleft()
+
+            # Mask of visited houses
+            mask = curr[0]
+
+            # Current x position
+            x = curr[1]
+
+            # Current y position
+            y = curr[2]
+
+            # If all houses are visited, return the
+            # steps taken
+            if mask == (1 << houseId) - 1:
+                return steps
+
+            # Explore all possible moves (right, left, down, up)
+            for k in range(4):
+
+                # Calculate new x and y position.
+                newX = x + dx[k]
+                newY = y + dy[k]
+
+                # Check boundaries and ensure it's not a blocked cell
+                if 0 <= newX < n and 0 <= newY < m and grid[newX][newY] != -1:
+                    if mat[newX][newY] == '*':
+
+                        # If it's a house, update the visited mask
+                        newMask = mask | (1 << grid[newX][newY])
+
+                        # If the new state is already visited, continue
+                        if vis[newMask][newX][newY]:
+                            continue
+
+                        # Mark the new state as visited
+                        vis[newMask][newX][newY] = True
+
+                        # Push the new state to the queue
+                        q.append([newMask, newX, newY])
+                    else:
+
+                        # If it's a normal cell, continue without
+                        # updating the mask
+                        if vis[mask][newX][newY]:
+                            continue
+
+                        vis[mask][newX][newY] = True
+                        q.append([mask, newX, newY])
+
+        # Increment step count after processing all states
+        # at the current level
+        steps += 1
+
+    # If unable to visit all houses,
+    # return -1
+    return -1
+
+mat = [
+    ['.', '.', '.', '.', '.', '.', '.'],
+    ['.', 'o', '.', '.', '.', '*', '.'],
+    ['.', '.', '.', '.', '.', '.', '.'],
+    ['.', '*', '.', '.', '.', '*', '.'],
+    ['.', '.', '.', '.', '.', '.', '.']
+]
+
+res = findMinSteps(mat)
+print(res)
+
+C#
+
+// C# program to find minimum step required
+// to visit all houses.
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+      static int findMinSteps(char[, ] mat) {
+        int n = mat.GetLength(0);
+        int m = mat.GetLength(1);
+
+        // Transforming the grid: assign unique IDs to
+        // houses and mark obstacles Grid to store houses
+        // and obstacles
+        int[, ] grid = new int[n, m];
+        int houseId = 0;
+        int startX = 0, startY = 0;
+
+        // Process the grid and assign unique IDs to houses,
+        // and find starting position
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (mat[i, j] == '.') {
+
+                    // Open cell, marked as 0
+                    grid[i, j] = 0;
+                }
+                else if (mat[i, j] == '*') {
+
+                    // Assign unique ID to each house
+                    grid[i, j] = houseId;
+                    houseId++;
+                }
+                else if (mat[i, j] == 'o') {
+
+                    // Record starting row and column
+                    startX = i;
+                    startY = j;
+                }
+                else {
+
+                    // Mark obstacles as -1
+                    grid[i, j] = -1;
+                }
+            }
+        }
+
+        // If there are no houses to visit, return 0
+        if (houseId == 0)
+            return 0;
+
+        // BFS setup: Visited array and queue
+        bool[, , ] vis = new bool[1 << houseId, n, m];
+
+        // BFS queue to store (visitedMask, x, y)
+        Queue<int[]> q = new Queue<int[]>();
+
+        // Mark the starting position as visited
+        vis[0, startX, startY] = true;
+
+        // Push the initial state (0 mask, startX, startY)
+        q.Enqueue(new int[] { 0, startX, startY });
+
+        // Counter for the number of steps
+        int steps = 0;
+
+        // Directions for BFS traversal: right, left, down,
+        // up
+        int[] dx = { 0, 0, 1, -1 };
+        int[] dy = { 1, -1, 0, 0 };
+
+        // BFS loop
+        while (q.Count > 0) {
+            int qSize = q.Count;
+
+            for (int idx = 0; idx < qSize; idx++) {
+                int[] curr = q.Dequeue();
+
+                // Mask of visited houses
+                int mask = curr[0];
+
+                // Current x position
+                int x = curr[1];
+
+                // Current y position
+                int y = curr[2];
+
+                // If all houses are visited, return the
+                // steps taken
+                if (mask == (1 << houseId) - 1) {
+                    return steps;
+                }
+
+                // Explore all possible moves (right, left,
+                // down, up)
+                for (int k = 0; k < 4; k++) {
+
+                    // Calculate new x and y position.
+                    int newX = x + dx[k];
+                    int newY = y + dy[k];
+
+                    // Check boundaries and ensure it's not
+                    // a blocked cell
+                    if (newX >= 0 && newX < n && newY >= 0
+                        && newY < m
+                        && grid[newX, newY] != -1) {
+                        if (mat[newX, newY] == '*') {
+
+                            // If it's a house, update the
+                            // visited mask
+                            int newMask
+                                = mask
+                                  | (1 << grid[newX, newY]);
+
+                            // If the new state is already
+                            // visited, continue
+                            if (vis[newMask, newX, newY])
+                                continue;
+
+                            // Mark the new state as visited
+                            vis[newMask, newX, newY] = true;
+
+                            // Push the new state to the
+                            // queue
+                            q.Enqueue(new int[] {
+                                newMask, newX, newY });
+                        }
+                        else {
+
+                            // If it's a normal cell,
+                            // continue without updating the
+                            // mask
+                            if (vis[mask, newX, newY])
+                                continue;
+
+                            vis[mask, newX, newY] = true;
+                            q.Enqueue(new int[] {
+                                mask, newX, newY });
+                        }
+                    }
+                }
+            }
+
+            // Increment step count after processing all
+            // states at the current level
+            steps++;
+        }
+
+        // If unable to visit all houses, return -1
+        return -1;
+    }
+
+    static void Main(string[] args) {
+        char[, ] mat
+            = { { '.', '.', '.', '.', '.', '.', '.' },
+                { '.', 'o', '.', '.', '.', '*', '.' },
+                { '.', '.', '.', '.', '.', '.', '.' },
+                { '.', '*', '.', '.', '.', '*', '.' },
+                { '.', '.', '.', '.', '.', '.', '.' } };
+
+        int res = findMinSteps(mat);
+        Console.WriteLine(res);
+    }
+}
+
+JavaScript
+
+ // JavaScript program to find minimum step required
+ // to visit all houses.
+
+function findMinSteps(mat) {
+    const n = mat.length;
+    const m = mat[0].length;
+
+    // Transforming the grid: assign unique IDs to houses
+    // and mark obstacles Grid to store houses and obstacles
+    const grid
+        = Array.from({length : n}, () => Array(m).fill(0));
+    let houseId = 0;
+    let startX = 0, startY = 0;
+
+    // Process the grid and assign unique IDs to houses, and
+    // find starting position
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < m; j++) {
+            if (mat[i][j] === ".") {
+
+                // Open cell, marked as 0
+                grid[i][j] = 0;
+            }
+            else if (mat[i][j] === "*") {
+
+                // Assign unique ID to each house
+                grid[i][j] = houseId;
+                houseId++;
+            }
+            else if (mat[i][j] === "o") {
+
+                // Record starting row and column
+                startX = i;
+                startY = j;
+            }
+            else {
+
+                // Mark obstacles as -1
+                grid[i][j] = -1;
+            }
+        }
+    }
+
+    // If there are no houses to visit, return 0
+    if (houseId === 0)
+        return 0;
+
+    // BFS setup: Visited array and queue
+    const vis = Array.from(
+        {length : 1 << houseId},
+        () => Array.from({length : n},
+                         () => Array(m).fill(false)));
+
+    // BFS queue to store (visitedMask, x, y)
+    const queue = [];
+
+    // Mark the starting position as visited
+    vis[0][startX][startY] = true;
+
+    // Push the initial state (0 mask, startX, startY)
+    queue.push([ 0, startX, startY ]);
+
+    // Counter for the number of steps
+    let steps = 0;
+
+    // Directions for BFS traversal: right, left, down, up
+    const dx = [ 0, 0, 1, -1 ];
+    const dy = [ 1, -1, 0, 0 ];
+
+    // BFS loop
+    while (queue.length > 0) {
+        const qSize = queue.length;
+
+        for (let idx = 0; idx < qSize; idx++) {
+            const [mask, x, y] = queue.shift();
+
+            // If all houses are visited, return the steps
+            // taken
+            if (mask === (1 << houseId) - 1) {
+                return steps;
+            }
+
+            // Explore all possible moves (right, left,
+            // down, up)
+            for (let k = 0; k < 4; k++) {
+
+                // Calculate new x and y position.
+                const newX = x + dx[k];
+                const newY = y + dy[k];
+
+                // Check boundaries and ensure it's not a
+                // blocked cell
+                if (newX >= 0 && newX < n && newY >= 0
+                    && newY < m
+                    && grid[newX][newY] !== -1) {
+                    if (mat[newX][newY] === "*") {
+
+                        // If it's a house, update the
+                        // visited mask
+                        const newMask
+                            = mask
+                              | (1 << grid[newX][newY]);
+
+                        // If the new state is already
+                        // visited, continue
+                        if (vis[newMask][newX][newY])
+                            continue;
+
+                        // Mark the new state as visited
+                        vis[newMask][newX][newY] = true;
+
+                        // Push the new state to the queue
+                        queue.push([ newMask, newX, newY ]);
+                    }
+                    else {
+
+                        // If it's a normal cell, continue
+                        // without updating the mask
+                        if (vis[mask][newX][newY])
+                            continue;
+
+                        vis[mask][newX][newY] = true;
+                        queue.push([ mask, newX, newY ]);
+                    }
+                }
+            }
+        }
+
+        // Increment step count after processing all states
+        // at the current level
+        steps++;
+    }
+
+    // If unable to visit all houses, return -1
+    return -1;
+}
+
+const mat = [
+    [ ".", ".", ".", ".", ".", ".", "." ],
+    [ ".", "o", ".", ".", ".", "*", "." ],
+    [ ".", ".", ".", ".", ".", ".", "." ],
+    [ ".", "*", ".", ".", ".", "*", "." ],
+    [ ".", ".", ".", ".", ".", ".", "." ]
+];
+
+const res = findMinSteps(mat);
+console.log(res);
+
+Output
+
+8
+
+Time Complexity : O(2^totalHouse*n*m) where n and m are number of rows and columns of matrix and totalHouse is the number of house in matrix. Auxilary Space : O(2^totalHouse*n*m)

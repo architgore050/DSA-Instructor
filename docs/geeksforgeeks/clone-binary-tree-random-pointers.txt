@@ -1,0 +1,600 @@
+Source: https://www.geeksforgeeks.org/dsa/clone-binary-tree-random-pointers/
+Title: Clone a Binary Tree with Random Pointers
+Extractor: 2
+
+Given a Binary Tree where every node has data, a next pointer, a right pointer , and a random pointer . The random pointer points to any random node of the binary tree and can even point to NULL , the task is to clone the given binary tree.
+
+> Example:
+
+Approach:
+
+> The idea is to use hashmap to store mapping from given tree nodes to clone tree nodes in the hashtable. Then in second traversal assign each random pointer according to hash map.
+
+Follow the steps below to solve the problem:
+
+- Traverse the original tree and create a new node for each original node, copying the data, left, and right pointers.
+- Use a hashmap to store the mapping between original nodes and cloned nodes.
+- Traverse the original tree again , using the hashmap to set the random pointers in the cloned nodes.
+- Return the root of the newly cloned tree.
+
+Below is the implementation of above approach:
+
+C++
+
+// A hashmap-based C++ program to clone a binary
+// tree with random pointers
+#include <iostream>
+#include <unordered_map>
+using namespace std;
+
+class Node {
+  public:
+    int data;
+    Node *left;
+    Node *right;
+    Node *random;
+    Node(int x) {
+        data = x;
+        left = right = random = nullptr;
+    }
+};
+
+// This function clones the tree by copying the
+// key (data) and left/right pointers.
+Node *copyLeftRightNode(Node *treeNode,
+                        unordered_map<Node *, Node *> &mp) {
+    if (treeNode == nullptr)
+        return nullptr;
+
+    Node *cloneNode = new Node(treeNode->data);
+
+    // Store the mapping between original node and cloned node
+    mp[treeNode] = cloneNode;
+
+    // Recursively clone the left and right subtrees
+    cloneNode->left = copyLeftRightNode(treeNode->left, mp);
+    cloneNode->right = copyLeftRightNode(treeNode->right, mp);
+
+    return cloneNode;
+}
+
+// This function copies the random pointers using
+// the hashmap created in the previous step.
+void copyRandom(Node *treeNode,
+                unordered_map<Node *, Node *> &mp) {
+    if (treeNode == nullptr)
+        return;
+
+    // Set the random pointer for the
+  	// cloned node
+    mp[treeNode]->random = mp[treeNode->random];
+
+    // Recursively copy random pointers for left
+  	// and right subtrees
+    copyRandom(treeNode->left, mp);
+    copyRandom(treeNode->right, mp);
+}
+
+// This function creates the clone of
+// the given binary tree.
+Node *cloneTree(Node *tree) {
+    if (tree == nullptr)
+        return nullptr;
+
+    // Create a hashmap to store the mapping
+    // between original and cloned nodes
+    unordered_map<Node *, Node *> mp;
+
+    // Clone the tree structure
+  	// (data, left, and right pointers)
+    Node *newTree = copyLeftRightNode(tree, mp);
+
+    // Copy the random pointers using
+  	// the hashmap
+    copyRandom(tree, mp);
+
+    return newTree;
+}
+
+// Function to print the inorder traversal of the binary tree
+// It also prints the random pointer of each node (or NULL if not set)
+void printInorder(Node *curr) {
+    if (curr == nullptr)
+        return;
+    printInorder(curr->left);
+    cout << "[" << curr->data << " ";
+    if (curr->random == nullptr)
+        cout << "NULL], ";
+    else
+        cout << curr->random->data << "], ";
+    printInorder(curr->right);
+}
+
+int main() {
+
+    // Constructing the binary tree with random pointers
+    // Tree structure:
+    //         1
+    //        / \
+    //       2   3
+    //      / \
+    //     4   5
+    // Random pointers:
+    // 1 -> 5, 4 -> 1, 5 -> 3
+
+    Node *node = new Node(1);
+    node->left = new Node(2);
+    node->right = new Node(3);
+    node->left->left = new Node(4);
+    node->left->right = new Node(5);
+
+    node->random = node->left->right;
+    node->left->left->random = node;
+    node->left->right->random = node->right;
+
+    Node *clone = cloneTree(node);
+    printInorder(clone);
+
+    return 0;
+}
+
+Java
+
+// A hashmap-based Java program to clone a binary tree with
+// random pointers
+
+import java.util.HashMap;
+
+class Node {
+    int data;
+    Node left, right, random;
+
+    public Node(int x) {
+        data = x;
+        left = right = random = null;
+    }
+}
+
+class GfG {
+
+    // This function clones the tree by copying the
+    // key (data) and left/right pointers.
+    static Node copyLeftRightNode(Node treeNode,
+                                  HashMap<Node, Node> mp) {
+        if (treeNode == null)
+            return null;
+
+        Node cloneNode = new Node(treeNode.data);
+
+        // Store the mapping between original node and
+        // cloned node
+        mp.put(treeNode, cloneNode);
+
+        // Recursively clone the left and right subtrees
+        cloneNode.left
+            = copyLeftRightNode(treeNode.left, mp);
+        cloneNode.right
+            = copyLeftRightNode(treeNode.right, mp);
+
+        return cloneNode;
+    }
+
+    // This function copies the random pointers using
+    // the hashmap created in the previous step.
+    static void copyRandom(Node treeNode,
+                           HashMap<Node, Node> mp) {
+        if (treeNode == null)
+            return;
+
+        // Set the random pointer for the cloned node
+        mp.get(treeNode).random
+            = mp.get(treeNode.random);
+
+        // Recursively copy random pointers for left and
+        // right subtrees
+        copyRandom(treeNode.left, mp);
+        copyRandom(treeNode.right, mp);
+    }
+
+ 	// Function to print the inorder traversal of the binary
+    // tree It also prints the random pointer of each node
+    // (or NULL if not set)
+    static void printInorder(Node curr) {
+        if (curr == null)
+            return;
+        printInorder(curr.left);
+        System.out.print("[" + curr.data + " ");
+        if (curr.random == null)
+            System.out.print("NULL], ");
+        else
+            System.out.print(curr.random.data + "], ");
+        printInorder(curr.right);
+    }
+
+    // This function creates the clone of the given binary
+    // tree.
+    static Node cloneTree(Node tree) {
+        if (tree == null)
+            return null;
+
+        // Create a hashmap to store the mapping
+        // between original and cloned nodes
+        HashMap<Node, Node> mp = new HashMap<>();
+
+        // Clone the tree structure (data, left, and right
+        // pointers)
+        Node newTree = copyLeftRightNode(tree, mp);
+
+        // Copy the random pointers using the hashmap
+        copyRandom(tree, mp);
+
+        return newTree;
+    }
+
+    public static void main(String[] args) {
+
+        // Constructing the binary tree with random pointers
+        // Tree structure:
+        //         1
+        //        / \
+        //       2   3
+        //      / \
+        //     4   5
+        // Random pointers:
+        // 1 -> 5, 4 -> 1, 5 -> 3
+
+        Node node = new Node(1);
+        node.left = new Node(2);
+        node.right = new Node(3);
+        node.left.left = new Node(4);
+        node.left.right = new Node(5);
+
+        node.random = node.left.right;
+        node.left.left.random = node;
+        node.left.right.random = node.right;
+
+        Node clone = cloneTree(node);
+        printInorder(clone);
+    }
+}
+
+Python
+
+# A hashmap-based Python program to clone a
+# binary tree with random pointers
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = self.right = self.random = None
+
+# Function to print the inorder traversal of the binary tree
+# It also prints the random pointer of each node (or NULL if not set)
+
+def printInorder(curr):
+    if curr is None:
+        return
+    printInorder(curr.left)
+    print(f"[{curr.data} ", end="")
+    if curr.random is None:
+        print("NULL], ", end="")
+    else:
+        print(f"{curr.random.data}], ", end="")
+    printInorder(curr.right)
+
+# This function clones the tree by copying the
+# key (data) and left/right pointers.
+
+def copyLeftRightNode(treeNode, mp):
+    if treeNode is None:
+        return None
+
+    cloneNode = Node(treeNode.data)
+
+    # Store the mapping between original
+    # node and cloned node
+    mp[treeNode] = cloneNode
+
+    # Recursively clone the left and right subtrees
+    cloneNode.left = copyLeftRightNode(treeNode.left, mp)
+    cloneNode.right = copyLeftRightNode(treeNode.right, mp)
+
+    return cloneNode
+
+# This function copies the random pointers using
+# the hashmap created in the previous step.
+
+def copyRandom(treeNode, mp):
+    if treeNode is None:
+        return
+
+    # Set the random pointer for
+    # the cloned node
+    mp[treeNode].random = mp.get(treeNode.random)
+
+    # Recursively copy random pointers for
+    # left and right subtrees
+    copyRandom(treeNode.left, mp)
+    copyRandom(treeNode.right, mp)
+
+# This function creates the clone of the
+# given binary tree.
+
+def cloneTree(tree):
+    if tree is None:
+        return None
+
+    # Create a hashmap to store the mapping
+    # between original and cloned nodes
+    mp = {}
+
+    # Clone the tree structure
+    # (data, left, and right pointers)
+    newTree = copyLeftRightNode(tree, mp)
+
+    # Copy the random pointers using the hashmap
+    copyRandom(tree, mp)
+
+    return newTree
+
+# Constructing the binary tree with random pointers
+# Tree structure:
+#         1
+#        / \
+#       2   3
+#      / \
+#     4   5
+# Random pointers:
+# 1 -> 5, 4 -> 1, 5 -> 3
+
+node = Node(1)
+node.left = Node(2)
+node.right = Node(3)
+node.left.left = Node(4)
+node.left.right = Node(5)
+
+node.random = node.left.right
+node.left.left.random = node
+node.left.right.random = node.right
+
+clone = cloneTree(node)
+printInorder(clone)
+
+C#
+
+// A hashmap-based C# program to clone a binary tree with
+// random pointers
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right, random;
+
+    public Node(int x) {
+        data = x;
+        left = right = random = null;
+    }
+}
+
+class GfG {
+
+    // Function to print the inorder traversal of the binary
+    // tree It also prints the random pointer of each node
+    // (or NULL if not set)
+    static void PrintInorder(Node curr) {
+        if (curr == null)
+            return;
+        PrintInorder(curr.left);
+        Console.Write("[" + curr.data + " ");
+        if (curr.random == null)
+            Console.Write("NULL], ");
+        else
+            Console.Write(curr.random.data + "], ");
+        PrintInorder(curr.right);
+    }
+
+    // This function clones the tree by copying the
+    // key (data) and left/right pointers.
+    static Node
+    CopyLeftRightNode(Node treeNode,
+                      Dictionary<Node, Node> mp) {
+        if (treeNode == null)
+            return null;
+
+        Node cloneNode = new Node(treeNode.data);
+
+        // Store the mapping between original node and
+        // cloned node
+        mp[treeNode] = cloneNode;
+
+        // Recursively clone the left and right subtrees
+        cloneNode.left
+            = CopyLeftRightNode(treeNode.left, mp);
+        cloneNode.right
+            = CopyLeftRightNode(treeNode.right, mp);
+
+        return cloneNode;
+    }
+
+    // This function copies the random pointers using
+    // the hashmap created in the previous step.
+   	static void
+    CopyRandom(Node treeNode, Dictionary<Node, Node> mp) {
+        if (treeNode == null)
+            return;
+
+        // Set the random pointer for the
+      	// cloned node
+        if (treeNode.random != null) {
+            mp[treeNode].random = mp[treeNode.random];
+        }
+
+        // Recursively copy random pointers for left and
+        // right subtrees
+        CopyRandom(treeNode.left, mp);
+        CopyRandom(treeNode.right, mp);
+    }
+
+    // This function creates the clone of the given binary
+    // tree.
+    static Node CloneTree(Node tree) {
+        if (tree == null)
+            return null;
+
+        // Create a hashmap to store the mapping
+        // between original and cloned nodes
+        Dictionary<Node, Node> mp
+            = new Dictionary<Node, Node>();
+
+        // Clone the tree structure (data, left, and right
+        // pointers)
+        Node newTree = CopyLeftRightNode(tree, mp);
+
+        // Copy the random pointers using the hashmap
+        CopyRandom(tree, mp);
+
+        return newTree;
+    }
+
+    static void Main(string[] args) {
+
+        // Constructing the binary tree with random pointers
+        // Tree structure:
+        //         1
+        //        / \
+        //       2   3
+        //      / \
+        //     4   5
+        // Random pointers:
+        // 1 -> 5, 4 -> 1, 5 -> 3
+
+        Node node = new Node(1);
+        node.left = new Node(2);
+        node.right = new Node(3);
+        node.left.left = new Node(4);
+        node.left.right = new Node(5);
+
+        node.random = node.left.right;
+        node.left.left.random = node;
+        node.left.right.random = node.right;
+
+        Node clone = CloneTree(node);
+        PrintInorder(clone);
+    }
+}
+
+JavaScript
+
+// A hashmap-based JavaScript program to clone a binary tree
+// with random pointers
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = this.right = this.random = null;
+    }
+}
+
+// Function to print the inorder traversal of the binary
+// tree It also prints the random pointer of each node (or
+// NULL if not set)
+function printInorder(curr) {
+    if (curr === null)
+        return;
+
+    printInorder(curr.left);
+
+    console.log(`[${curr.data} `);
+    if (curr.random === undefined || curr.random === null)
+        console.log("NULL], ");
+    else
+        console.log(`${curr.random.data}], `);
+
+    printInorder(curr.right);
+}
+
+// This function clones the tree by copying the
+// key (data) and left/right pointers.
+function copyLeftRightNode(treeNode, mp) {
+    if (treeNode === null)
+        return null;
+
+    let cloneNode = new Node(treeNode.data);
+
+    // Store the mapping between original node and cloned
+    // node
+    mp.set(treeNode, cloneNode);
+
+    // Recursively clone the left and right subtrees
+    cloneNode.left
+        = copyLeftRightNode(treeNode.left, mp);
+    cloneNode.right
+        = copyLeftRightNode(treeNode.right, mp);
+
+    return cloneNode;
+}
+
+// This function copies the random pointers using
+// the hashmap created in the previous step.
+function copyRandom(treeNode, mp) {
+    if (treeNode === null)
+        return;
+
+    // Set the random pointer for the cloned node
+    mp.get(treeNode).random = mp.get(treeNode.random);
+
+    // Recursively copy random pointers for left and right
+    // subtrees
+    copyRandom(treeNode.left, mp);
+    copyRandom(treeNode.right, mp);
+}
+
+// This function creates the clone of the given binary tree.
+function cloneTree(tree) {
+    if (tree === null)
+        return null;
+
+    // Create a hashmap to store the mapping
+    // between original and cloned nodes
+    let mp = new Map();
+
+    // Clone the tree structure (data, left, and right
+    // pointers)
+    let newTree = copyLeftRightNode(tree, mp);
+
+    // Copy the random pointers using the hashmap
+    copyRandom(tree, mp);
+
+    return newTree;
+}
+
+// Constructing the binary tree with random pointers
+// Tree structure:
+//         1
+//        / \
+//       2   3
+//      / \
+//     4   5
+// Random pointers:
+// 1 -> 5, 4 -> 1, 5 -> 3
+
+let node = new Node(1);
+node.left = new Node(2);
+node.right = new Node(3);
+node.left.left = new Node(4);
+node.left.right = new Node(5);
+
+node.random = node.left.right;
+node.left.left.random = node;
+node.left.right.random = node.right;
+
+let clone = cloneTree(node);
+printInorder(clone);
+
+Output
+
+[4 1], [2 NULL], [5 3], [1 5], [3 NULL],
+
+Time complexity: O(n), this is because we need to traverse the entire tree in order to copy the left and right pointers, and then we need to traverse the tree again to copy the random pointers. Auxiliary Space: O(n), this is because we need to store a mapping of the original tree’s nodes to their clones.

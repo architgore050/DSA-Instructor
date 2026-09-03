@@ -1,0 +1,502 @@
+Source: https://www.geeksforgeeks.org/dsa/paths-travel-nodes-using-edgeseven-bridges-konigsberg/
+Title: Paths to travel each nodes using each edge (Seven Bridges of Königsberg)
+Extractor: 2
+
+Given n nodes and m edges (bridges) represented as a square adjacency matrix adj[][] of size n x n , where a value 1 indicates a bridge between two nodes. The task is to determine a path that uses each edge exactly once, visiting nodes accordingly. If such a path exists, print the path; otherwise, print -1.
+
+Examples :
+
+> Input: adj[][] = [[0, 1, 0, 0, 1], [1, 0, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 0, 0], [1, 0, 0, 0, 0]] Output: 5 -> 1 -> 2 -> 3 -> 4 -> 2 Explanation: This path uses every edge exactly once. Each step transitions across an edge in the adjacency matrix, no edge is repeated. Input: adj[][] = [[0, 1, 0, 1, 1], [1, 0, 1, 1, 0], [0, 1, 0, 1, 1], [1, 1, 1, 0, 0], [1, 0, 1, 0, 0]] Output: -1 Explanation: No path exists here.
+
+This is one of the most famous problems in Graph Theory , known as the "Seven Bridges of Königsberg" . It was solved by the renowned mathematician Leonhard Euler in 1735 and is widely regarded as the origin of Graph Theory as a mathematical discipline. The original problem asked: Given seven bridges connecting four land masses in the city of Königsberg (then in Prussia), is it possible to start from any land area and cross each bridge exactly once without repeating? To address this, Euler abstracted the land masses as nodes and the bridges as edges of a graph. He then examined whether an Eulerian Path existed, a path that visits every edge exactly once . Euler proved that such a path is only possible under specific conditions regarding the degrees of the nodes (land masses). The problem we're dealing with here is a generalized version of Euler’s original problem, where the graph can have any number of nodes and edges. The goal remains the same: determine whether there is an Eulerian path that uses each edge exactly once . If such a path exists, output the sequence of nodes visited; otherwise, report that no such path is possible.
+
+### Approach:
+
+> The idea is to determine if an Eulerian Path exists in an undirected graph using degree properties. The thought process begins by checking if the number of nodes with odd degree is either 0 or 2, which is a key condition. We then use DFS to traverse the graph, reducing edge counts to avoid repetition and building the path. Finally, we validate if the path covers all edges exactly once and convert it to 1-based indexing for output.
+
+Steps to implement the above idea:
+
+- Create a function to check for Eulerian Path by counting nodes with odd degree and setting the start node.
+- Count total edges before traversal by summing upper triangle of the adjacency matrix for accurate validation.
+- Implement a DFS function that explores all edges from a node while decrementing the used edges in adj matrix.
+- Push the current node to the path only after exploring all its connecting edges to build path in reverse.
+- After DFS , check if the size of path is equal to total edges plus one to ensure correctness.
+- Convert the result from 0-based to 1-based indexing for user-friendly output formatting.
+- If no valid path exists or edge count mismatch, return {-1} to indicate the Eulerian path is not possible.
+
+C++
+
+// C++ program to return Eulerian Path
+// from an undirected graph
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Check if the graph has an Eulerian path
+// and set starting node
+bool hasEulerianPath(vector<vector<int>>& adj,
+                            int& start, int n) {
+    int odd = 0;
+
+    for (int i = 0; i < n; i++) {
+        int deg = 0;
+        for (int j = 0; j < n; j++) {
+            deg += adj[i][j];
+        }
+
+        if (deg % 2 != 0) {
+            odd++;
+            start = i;
+        }
+    }
+
+    return (odd == 0 || odd == 2);
+}
+
+// Perform DFS and build the Eulerian path
+void dfs(int u, vector<vector<int>>& adj,
+               vector<int>& path, int n) {
+
+    for (int v = 0; v < n; v++) {
+        while (adj[u][v] > 0) {
+            adj[u][v]--;
+            adj[v][u]--;
+            dfs(v, adj, path, n);
+        }
+    }
+
+    path.push_back(u);
+}
+
+// Return the Eulerian path or {-1} if not possible
+vector<int> findEulerianPath(vector<vector<int>> adj) {
+    int n = adj.size();
+    int start = 0;
+
+    if (!hasEulerianPath(adj, start, n)) {
+        return {-1};
+    }
+
+    // Count total edges BEFORE DFS
+    int edgeCount = 0;
+    for (int i = 0; i < n; i++)
+        for (int j = i; j < n; j++)
+            edgeCount += adj[i][j];
+
+    vector<int> path;
+    dfs(start, adj, path, n);
+
+    // Eulerian path must use all edges exactly once
+    if ((int)path.size() != edgeCount + 1) {
+        return {-1};
+    }
+
+    // Convert to 1-based indexing
+    for (int& x : path) {
+        x += 1;
+    }
+
+    reverse(path.begin(), path.end());
+    return path;
+}
+
+int main() {
+    vector<vector<int>> adj = {
+        {0, 1, 0, 0, 1},
+        {1, 0, 1, 1, 0},
+        {0, 1, 0, 1, 0},
+        {0, 1, 1, 0, 0},
+        {1, 0, 0, 0, 0}
+    };
+
+    vector<int> res = findEulerianPath(adj);
+
+    if (res.size() == 1 && res[0] == -1) {
+        cout << -1;
+    } else {
+        for (int i = 0; i < res.size(); i++) {
+            cout << res[i];
+            if (i < res.size() - 1) {
+                cout << " -> ";
+            }
+        }
+    }
+
+    return 0;
+}
+
+Java
+
+// Java program to return Eulerian Path
+// from an undirected graph
+import java.util.*;
+
+class GfG {
+
+    // Check if the graph has an Eulerian path
+    // and set starting node
+    static boolean hasEulerianPath(int[][] adj, int[] start, int n) {
+        int odd = 0;
+
+        for (int i = 0; i < n; i++) {
+            int deg = 0;
+            for (int j = 0; j < n; j++) {
+                deg += adj[i][j];
+            }
+
+            if (deg % 2 != 0) {
+                odd++;
+                start[0] = i;
+            }
+        }
+
+        return (odd == 0 || odd == 2);
+    }
+
+    // Perform DFS and build the Eulerian path
+    static void dfs(int u, int[][] adj,
+                    List<Integer> path, int n) {
+
+        for (int v = 0; v < n; v++) {
+            while (adj[u][v] > 0) {
+                adj[u][v]--;
+                adj[v][u]--;
+                dfs(v, adj, path, n);
+            }
+        }
+
+        path.add(u);
+    }
+
+    // Return the Eulerian path or [-1] if not possible
+    static List<Integer> findEulerianPath(int[][] adj) {
+        int n = adj.length;
+        int[] start = new int[1];
+
+        if (!hasEulerianPath(adj, start, n)) {
+            return Arrays.asList(-1);
+        }
+
+        // Count total edges BEFORE DFS
+        int edgeCount = 0;
+        for (int i = 0; i < n; i++)
+            for (int j = i; j < n; j++)
+                edgeCount += adj[i][j];
+
+        List<Integer> path = new ArrayList<>();
+        dfs(start[0], adj, path, n);
+
+        // Eulerian path must use all edges exactly once
+        if (path.size() != edgeCount + 1) {
+            return Arrays.asList(-1);
+        }
+
+        // Convert to 1-based indexing
+        for (int i = 0; i < path.size(); i++) {
+            path.set(i, path.get(i) + 1);
+        }
+
+        Collections.reverse(path);
+        return path;
+    }
+
+    public static void main(String[] args) {
+        int[][] adj = {
+            {0, 1, 0, 0, 1},
+            {1, 0, 1, 1, 0},
+            {0, 1, 0, 1, 0},
+            {0, 1, 1, 0, 0},
+            {1, 0, 0, 0, 0}
+        };
+
+        List<Integer> res = findEulerianPath(adj);
+
+        if (res.size() == 1 && res.get(0) == -1) {
+            System.out.print(-1);
+        } else {
+            for (int i = 0; i < res.size(); i++) {
+                System.out.print(res.get(i));
+                if (i < res.size() - 1) {
+                    System.out.print(" -> ");
+                }
+            }
+        }
+    }
+}
+
+Python
+
+# Python program to return Eulerian Path
+# from an undirected graph
+
+# Check if the graph has an Eulerian path
+# and set starting node
+def hasEulerianPath(adj, start, n):
+    odd = 0
+
+    for i in range(n):
+        deg = sum(adj[i])
+
+        if deg % 2 != 0:
+            odd += 1
+            start[0] = i
+
+    return (odd == 0 or odd == 2)
+
+# Perform DFS and build the Eulerian path
+def dfs(u, adj, path, n):
+    for v in range(n):
+        while adj[u][v] > 0:
+            adj[u][v] -= 1
+            adj[v][u] -= 1
+            dfs(v, adj, path, n)
+
+    path.append(u)
+
+# Return the Eulerian path or [-1] if not possible
+def findEulerianPath(adj):
+    n = len(adj)
+    start = [0]
+
+    if not hasEulerianPath(adj, start, n):
+        return [-1]
+
+    # Count total edges BEFORE DFS
+    edgeCount = 0
+    for i in range(n):
+        for j in range(i, n):
+            edgeCount += adj[i][j]
+
+    path = []
+    dfs(start[0], adj, path, n)
+
+    # Eulerian path must use all edges exactly once
+    if len(path) != edgeCount + 1:
+        return [-1]
+
+    # Convert to 1-based indexing
+    path = [x + 1 for x in path]
+
+    path.reverse()
+    return path
+
+if __name__ == "__main__":
+    adj = [
+        [0, 1, 0, 0, 1],
+        [1, 0, 1, 1, 0],
+        [0, 1, 0, 1, 0],
+        [0, 1, 1, 0, 0],
+        [1, 0, 0, 0, 0]
+    ]
+
+    res = findEulerianPath(adj)
+
+    if len(res) == 1 and res[0] == -1:
+        print(-1)
+    else:
+        for i in range(len(res)):
+            print(res[i], end="")
+            if i < len(res) - 1:
+                print(" -> ", end="")
+
+C#
+
+// C# program to return Eulerian Path
+// from an undirected graph
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Check if the graph has an Eulerian path
+    // and set starting node
+    static bool hasEulerianPath(int[,] adj,
+                                 ref int start, int n) {
+        int odd = 0;
+
+        for (int i = 0; i < n; i++) {
+            int deg = 0;
+            for (int j = 0; j < n; j++) {
+                deg += adj[i, j];
+            }
+
+            if (deg % 2 != 0) {
+                odd++;
+                start = i;
+            }
+        }
+
+        return (odd == 0 || odd == 2);
+    }
+
+    // Perform DFS and build the Eulerian path
+    static void dfs(int u, int[,] adj,
+                    List<int> path, int n) {
+
+        for (int v = 0; v < n; v++) {
+            while (adj[u, v] > 0) {
+                adj[u, v]--;
+                adj[v, u]--;
+                dfs(v, adj, path, n);
+            }
+        }
+
+        path.Add(u);
+    }
+
+    // Return the Eulerian path or [-1] if not possible
+    static List<int> findEulerianPath(int[,] adj) {
+        int n = adj.GetLength(0);
+        int start = 0;
+
+        if (!hasEulerianPath(adj, ref start, n)) {
+            return new List<int> { -1 };
+        }
+
+        // Count total edges BEFORE DFS
+        int edgeCount = 0;
+        for (int i = 0; i < n; i++)
+            for (int j = i; j < n; j++)
+                edgeCount += adj[i, j];
+
+        List<int> path = new List<int>();
+        dfs(start, adj, path, n);
+
+        // Eulerian path must use all edges exactly once
+        if (path.Count != edgeCount + 1) {
+            return new List<int> { -1 };
+        }
+
+        // Convert to 1-based indexing
+        for (int i = 0; i < path.Count; i++) {
+            path[i] += 1;
+        }
+
+        path.Reverse();
+        return path;
+    }
+
+    static void Main() {
+        int[,] adj = {
+            {0, 1, 0, 0, 1},
+            {1, 0, 1, 1, 0},
+            {0, 1, 0, 1, 0},
+            {0, 1, 1, 0, 0},
+            {1, 0, 0, 0, 0}
+        };
+
+        List<int> res = findEulerianPath(adj);
+
+        if (res.Count == 1 && res[0] == -1) {
+            Console.Write(-1);
+        } else {
+            for (int i = 0; i < res.Count; i++) {
+                Console.Write(res[i]);
+                if (i < res.Count - 1) {
+                    Console.Write(" -> ");
+                }
+            }
+        }
+    }
+}
+
+JavaScript
+
+// JavaScript program to return Eulerian Path
+// from an undirected graph
+
+// Check if the graph has an Eulerian path
+// and set starting node
+function hasEulerianPath(adj, start, n) {
+    let odd = 0;
+
+    for (let i = 0; i < n; i++) {
+        let deg = 0;
+        for (let j = 0; j < n; j++) {
+            deg += adj[i][j];
+        }
+
+        if (deg % 2 !== 0) {
+            odd++;
+            start[0] = i;
+        }
+    }
+
+    return (odd === 0 || odd === 2);
+}
+
+// Perform DFS and build the Eulerian path
+function dfs(u, adj, path, n) {
+    for (let v = 0; v < n; v++) {
+        while (adj[u][v] > 0) {
+            adj[u][v]--;
+            adj[v][u]--;
+            dfs(v, adj, path, n);
+        }
+    }
+
+    path.push(u);
+}
+
+// Return the Eulerian path or [-1] if not possible
+function findEulerianPath(adj) {
+    const n = adj.length;
+    const start = [0];
+
+    if (!hasEulerianPath(adj, start, n)) {
+        return [-1];
+    }
+
+    // Count total edges BEFORE DFS
+    let edgeCount = 0;
+    for (let i = 0; i < n; i++)
+        for (let j = i; j < n; j++)
+            edgeCount += adj[i][j];
+
+    const path = [];
+    dfs(start[0], adj, path, n);
+
+    // Eulerian path must use all edges exactly once
+    if (path.length !== edgeCount + 1) {
+        return [-1];
+    }
+
+    // Convert to 1-based indexing
+    for (let i = 0; i < path.length; i++) {
+        path[i]++;
+    }
+
+    path.reverse();
+    return path;
+}
+
+// Driver Code
+const adj = [
+    [0, 1, 0, 0, 1],
+    [1, 0, 1, 1, 0],
+    [0, 1, 0, 1, 0],
+    [0, 1, 1, 0, 0],
+    [1, 0, 0, 0, 0]
+];
+
+const res = findEulerianPath(adj);
+
+if (res.length === 1 && res[0] === -1) {
+    console.log(-1);
+} else {
+    let out = "";
+    for (let i = 0; i < res.length; i++) {
+        out += res[i];
+        if (i < res.length - 1) {
+            out += " -> ";
+        }
+    }
+    console.log(out);
+}
+
+Output
+
+5 -> 1 -> 2 -> 3 -> 4 -> 2
+
+Time Complexity: O(e + v²), DFS traverses all edges; degree checks scan adjacency matrix of size v*v. Space Complexity: O(v + e), recursion and path list need O(v + e) extra space.

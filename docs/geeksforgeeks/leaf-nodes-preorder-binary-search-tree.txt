@@ -1,0 +1,658 @@
+Source: https://www.geeksforgeeks.org/dsa/leaf-nodes-preorder-binary-search-tree/
+Title: Leaf nodes from Preorder of a Binary Search Tree
+Extractor: 2
+
+Given Preorder traversal of a Binary Search Tree. Then the task is to print leaf nodes of the Binary Search Tree from the given preorder.
+
+Examples:
+
+> Input: preorder[] = [4, 2, 1, 3, 6, 5] Output: [1, 3, 5] Explaination: 1, 3 and 5 are the leaf nodes as shown in the figure. Input: preorder[] = [5, 2, 10] Output: [2, 10] Explaination: 2 and 10 are the leaf nodes as shown in the figure. Input: preorder[] = [8, 2, 5, 10, 12] Output: [5, 12] Explaination: 5 and 12 are the leaf nodes as shown in the figure.
+
+Table of Content
+
+- [Expected Approach - 1] Using Inorder and Preorder - O(nlogn) Time and O(n) Space
+- [Expected Approach - 2] Using Stack - O(n) Time and O(n) Space
+
+### [Expected Approach - 1] Using Inorder and Preorder - O(nlogn) Time and O(n) Space
+
+> The idea is to find Inorder by sorting the input preorder traversal, then traverse the tree in preorder fashion (using both inorder and preorder traversals) and while traversing store the leaf nodes.
+
+How to traverse in preorder fashion using two arrays representing inorder and preorder traversals?
+
+- We iterate the preorder array and for each element find that element in the inorder array. For searching , we can use binary search, since inorder traversal of the binary search tree is always sorted. Now, for each element of preorder array, in binary search, we set the range [l, r].
+- And when l == r , the leaf node is found . So, initially, l = 0 and l = n - 1 for first element (i.e root) of preorder array. Now, to search for the element on the left subtree of the root, set l = 0 and r= index of root - 1. Also, for all element of right subtree set l = index of root + 1 and r = n -1. Recursively, follow this, until l == r.
+
+C++
+
+// C++ program to print leaf node from preorder of
+// binary search tree using inorder + preorder
+#include <bits/stdc++.h>
+using namespace std;
+
+int binarySearch(vector<int>& inorder, int l,
+                                       int r, int d) {
+    int mid = (l + r) >> 1;
+
+    if (inorder[mid] == d)
+        return mid;
+
+    else if (inorder[mid] > d)
+        return binarySearch(inorder, l, mid - 1, d);
+
+    else
+        return binarySearch(inorder, mid + 1, r, d);
+}
+
+// Function to find Leaf Nodes by doing preorder
+// traversal of tree using preorder and inorder vectors.
+void leafNodesRec(vector<int>& preorder, vector<int>& inorder,
+                  int l, int r, int& ind, vector<int>& leaves) {
+
+    // If l == r, therefore no right or left subtree.
+    // So, it must be leaf Node, store it.
+    if (l == r) {
+        leaves.push_back(inorder[l]);
+        ind++;
+        return;
+    }
+
+    // If array is out of bound, return.
+    if (l < 0 || l > r || r >= inorder.size())
+        return;
+
+    // Finding the index of preorder element
+    // in inorder vector using binary search.
+    int loc = binarySearch(inorder, l, r, preorder[ind]);
+
+    ind++;
+
+    // Finding on the left subtree.
+    leafNodesRec(preorder, inorder, l, loc - 1,
+                                          ind, leaves);
+
+    // Finding on the right subtree.
+    leafNodesRec(preorder, inorder, loc + 1, r,
+                                          ind, leaves);
+}
+
+// Finds leaf nodes from given preorder traversal.
+vector<int> leafNodes(vector<int>& preorder) {
+    int n = preorder.size();
+    vector<int> inorder(n);
+    vector<int> leaves;
+
+    // Copy the preorder into another vector.
+    for (int i = 0; i < n; i++)
+        inorder[i] = preorder[i];
+
+    // Finding the inorder by sorting the vector.
+    sort(inorder.begin(), inorder.end());
+
+    // Point to the index in preorder.
+    int ind = 0;
+
+    // Find the Leaf Nodes.
+    leafNodesRec(preorder, inorder, 0, n - 1,
+                                      ind, leaves);
+    return leaves;
+}
+
+int main() {
+
+    vector<int> preorder = {4, 2, 1, 3, 6, 5};
+
+    vector<int> result = leafNodes(preorder);
+
+	for (int val : result) {
+        cout << val << " ";
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+class GfG {
+
+    static int binarySearch(ArrayList<Integer> inorder, int l, int r, int d) {
+        int mid = (l + r) / 2;
+
+        if (inorder.get(mid) == d)
+            return mid;
+        else if (inorder.get(mid) > d)
+            return binarySearch(inorder, l, mid - 1, d);
+        else
+            return binarySearch(inorder, mid + 1, r, d);
+    }
+
+    static void leafNodesRec(int[] preorder, ArrayList<Integer> inorder,
+                              int l, int r, int[] ind, ArrayList<Integer> leaves) {
+
+        if (l == r) {
+            leaves.add(inorder.get(l));
+            ind[0]++;
+            return;
+        }
+
+        if (l < 0 || l > r || r >= inorder.size())
+            return;
+
+        int loc = binarySearch(inorder, l, r, preorder[ind[0]]);
+        ind[0]++;
+
+        leafNodesRec(preorder, inorder, l, loc - 1, ind, leaves);
+        leafNodesRec(preorder, inorder, loc + 1, r, ind, leaves);
+    }
+
+    static ArrayList<Integer> leafNodes(int[] preorder) {
+        int n = preorder.length;
+        ArrayList<Integer> inorder = new ArrayList<>();
+        for (int val : preorder)
+            inorder.add(val);
+
+        ArrayList<Integer> leaves = new ArrayList<>();
+        inorder.sort(null);  // sort inorder
+
+        int[] ind = {0};
+
+        leafNodesRec(preorder, inorder, 0, n - 1, ind, leaves);
+        return leaves;
+    }
+
+    public static void main(String[] args) {
+        int[] preorder = {4, 2, 1, 3, 6, 5};
+
+        ArrayList<Integer> result = leafNodes(preorder);
+
+        for (int val : result) {
+            System.out.print(val + " ");
+        }
+    }
+}
+
+Python
+
+# Python program to print leaf nodes from preorder of
+# binary search tree using inorder + preorder
+
+def binarySearch(inorder, l, r, d):
+    mid = (l + r) // 2
+
+    if inorder[mid] == d:
+        return mid
+    elif inorder[mid] > d:
+        return binarySearch(inorder, l, mid - 1, d)
+    else:
+        return binarySearch(inorder, mid + 1, r, d)
+
+# Function to find Leaf Nodes by doing preorder
+# traversal of tree using preorder and inorder lists.
+def leafNodesRec(preorder, inorder, l, r, ind, leaves):
+
+    # If l == r, therefore no right or left subtree.
+    # So, it must be leaf Node, store it.
+    if l == r:
+        leaves.append(inorder[l])
+        ind[0] += 1
+        return
+
+    # If array is out of bounds, return.
+    if l < 0 or l > r or r >= len(inorder):
+        return
+
+    # Finding the index of preorder element in
+    # inorder list using binary search.
+    loc = binarySearch(inorder, l, r, preorder[ind[0]])
+
+    ind[0] += 1
+
+    # Finding on the left subtree.
+    leafNodesRec(preorder, inorder, l, loc - 1, ind, leaves)
+
+    # Finding on the right subtree.
+    leafNodesRec(preorder, inorder, loc + 1, r, ind, leaves)
+
+# Finds leaf nodes from given preorder traversal.
+def leafNodes(preorder):
+    n = len(preorder)
+    inorder = sorted(preorder)
+    leaves = []
+
+    # Point to the index in preorder.
+    ind = [0]
+
+    # Find the Leaf Nodes.
+    leafNodesRec(preorder, inorder, 0, n - 1, ind, leaves)
+    return leaves
+
+if __name__ == "__main__":
+    preorder = [4, 2, 1, 3, 6, 5]
+
+    result = leafNodes(preorder)
+    for val in result:
+        print(val, end=" ")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static int BinarySearch(List<int> inorder, int l, int r, int d) {
+        int mid = (l + r) / 2;
+
+        if (inorder[mid] == d)
+            return mid;
+        else if (inorder[mid] > d)
+            return BinarySearch(inorder, l, mid - 1, d);
+        else
+            return BinarySearch(inorder, mid + 1, r, d);
+    }
+
+    static void LeafNodesRec(int[] preorder, List<int> inorder, int l,
+                             int r, int[] ind, List<int> leaves) {
+        if (l == r) {
+            leaves.Add(inorder[l]);
+            ind[0]++;
+            return;
+        }
+
+        if (l < 0 || l > r || r >= inorder.Count)
+            return;
+
+        int loc = BinarySearch(inorder, l, r, preorder[ind[0]]);
+        ind[0]++;
+
+        LeafNodesRec(preorder, inorder, l, loc - 1, ind, leaves);
+        LeafNodesRec(preorder, inorder, loc + 1, r, ind, leaves);
+    }
+
+    static List<int> leafNodes(int[] preorder) {
+        int n = preorder.Length;
+
+        // Convert array to List and sort for inorder
+        List<int> inorder = new List<int>(preorder);
+        inorder.Sort();
+
+        List<int> leaves = new List<int>();
+        int[] ind = new int[1] { 0 };
+
+        LeafNodesRec(preorder, inorder, 0, n - 1, ind, leaves);
+        return leaves;
+    }
+
+    static void Main() {
+        int[] preorder = {4, 2, 1, 3, 6, 5};
+
+        List<int> result = leafNodes(preorder);
+
+        foreach (int val in result) {
+            Console.Write(val + " ");
+        }
+    }
+}
+
+JavaScript
+
+// JavaScript program to print leaf nodes from preorder of
+// binary search tree using inorder + preorder
+
+function binarySearch(inorder, l, r, d) {
+    const mid = Math.floor((l + r) / 2);
+
+    if (inorder[mid] === d) {
+        return mid;
+    } else if (inorder[mid] > d) {
+        return binarySearch(inorder, l, mid - 1, d);
+    } else {
+        return binarySearch(inorder, mid + 1, r, d);
+    }
+}
+
+// Function to find Leaf Nodes by doing preorder
+// traversal of tree using preorder and inorder arrays.
+function leafNodesRec(preorder, inorder, l, r, ind, leaves) {
+
+    // If l == r, therefore no right or left subtree.
+    // So, it must be a leaf Node, store it.
+    if (l === r) {
+        leaves.push(inorder[l]);
+        ind[0]++;
+        return;
+    }
+
+    // If array is out of bounds, return.
+    if (l < 0 || l > r || r >= inorder.length) {
+        return;
+    }
+
+    // Finding the index of preorder element
+    // in inorder array using binary search.
+    const loc = binarySearch(inorder, l, r, preorder[ind[0]]);
+
+    ind[0]++;
+
+    // Finding on the left subtree.
+    leafNodesRec(preorder, inorder, l, loc - 1, ind, leaves);
+
+    // Finding on the right subtree.
+    leafNodesRec(preorder, inorder, loc + 1, r, ind, leaves);
+}
+
+// Finds leaf nodes from given preorder traversal.
+function leafNodes(preorder) {
+    const n = preorder.length;
+    const inorder = [...preorder];
+    inorder.sort((a, b) => a - b);
+    const leaves = [];
+
+    // Point to the index in preorder.
+    const ind = [0];
+
+    // Find the Leaf Nodes.
+    leafNodesRec(preorder, inorder, 0, n - 1, ind, leaves);
+    return leaves;
+}
+
+// Driver Code
+const preorder = [4, 2, 1, 3, 6, 5];
+
+const result = leafNodes(preorder);
+console.log(result.join(' '));
+
+Output
+
+1 3 5
+
+### [Expected Approach - 2] Using Stack - O(n) Time and O(n) Space
+
+> The idea is to use the property of the Binary Search Tree and stack . Traverse the array using two pointer i and j to the array, initially i = 0 and j = 1 . Whenever a[i] > a[j] , we can say a[j] i s left part of a[i] , since preorder traversal follows Node -> Left -> Right . So, we push a[i] into the stack. For those points violating the rule, we start to pop element from the stack till a[i] > top element of the stack and break when it doesn't and print the corresponding j th value.
+
+How does this algorithm work? Preorder traversal traverse in the order: Node, Left, Right. And we know the left nod e of any node in BST is always less than the node. So preorder traversal will first traverse from root to leftmost node. Therefore, preorder will be in decreasing order first. Now, after decreasing order, there may be a node that is greater or which breaks the decreasing order. So, there can be a case like this :
+
+In case 1, 20 is a leaf node whereas in case 2, 20 is not the leaf node. So, our problem is how to identify if we have to print 20 as a leaf node or not? This is solved using stack. While running above algorithm on case 1 and case 2, when i = 2 and j = 3, state of a stack will be the same in both the case:
+
+So, node 65 will pop 20 and 50 from the stack. This is because 65 is the right child of a node which is before 20. This information we store using the found variable. So, 20 is a leaf node. While in case 2 , 40 will not able to pop any element from the stack. Because 40 is the right node of a node which is after 20. So, 20 is not a leaf node. Note: In the algorithm, we will not be able to check the condition of the leaf node of the rightmost node or rightmost element of the preorder. So, simply print the rightmost node because we know this will always be a leaf node in preorder traversal.
+
+C++
+
+// C++ program to print leaf nodes from the preorder
+// traversal of a Binary Search Tree using a stack
+#include <iostream>
+#include <stack>
+#include <vector>
+
+using namespace std;
+
+// Function to find leaf nodes from the
+// preorder traversal
+vector<int> leafNodes(vector<int>& preorder) {
+    stack<int> s;
+    vector<int> leaves;
+    int n = preorder.size();
+
+    // Iterate through the preorder vector
+    for (int i = 0, j = 1; j < n; i++, j++) {
+        bool found = false;
+
+        // Push current node if it's greater than
+        // the next node
+        if (preorder[i] > preorder[j]) {
+            s.push(preorder[i]);
+        }
+        else {
+
+            // Pop elements from stack until current node is
+            // less than or equal to top of stack
+            while (!s.empty()) {
+                if (preorder[j] > s.top()) {
+                    s.pop();
+                    found = true;
+                }
+                else {
+                    break;
+                }
+            }
+        }
+
+        // If a leaf node is found, add it
+        // to the leaves vector
+        if (found) {
+            leaves.push_back(preorder[i]);
+        }
+    }
+
+    // Since the rightmost element
+    // is always a leaf node
+    leaves.push_back(preorder[n - 1]);
+
+    return leaves;
+}
+
+int main() {
+
+    vector<int> preorder = {4, 2, 1, 3, 6, 5};
+    vector<int> result = leafNodes(preorder);
+
+    for (int val : result) {
+        cout << val << " ";
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Stack;
+import java.util.Arrays;
+
+class GfG {
+
+    // Function to find leaf nodes from the
+    // preorder traversal
+    static ArrayList<Integer> leafNodes(int[] preorder) {
+
+        Stack<Integer> s = new Stack<>();
+        ArrayList<Integer> leaves = new ArrayList<>();
+        int n = preorder.length;
+
+        // Iterate through the preorder array
+        for (int i = 0, j = 1; j < n; i++, j++) {
+            boolean found = false;
+
+            // Push current node if it's greater than the next
+            if (preorder[i] > preorder[j]) {
+                s.push(preorder[i]);
+            } else {
+                // Pop elements from stack until the next value is
+                // less than or equal to top
+                while (!s.isEmpty()) {
+                    if (preorder[j] > s.peek()) {
+                        s.pop();
+                        found = true;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            // If a leaf node is found, add it to result
+            if (found) {
+                leaves.add(preorder[i]);
+            }
+        }
+
+        // Add the last element, it's always a leaf in BST preorder
+        leaves.add(preorder[n - 1]);
+
+        return leaves;
+    }
+
+    public static void main(String[] args) {
+
+        int[] preorder = {4, 2, 1, 3, 6, 5};
+
+        ArrayList<Integer> result = leafNodes(preorder);
+
+        for (int val : result) {
+            System.out.print(val + " ");
+        }
+    }
+}
+
+Python
+
+# Python program to print leaf nodes from the preorder
+# traversal of a Binary Search Tree using a stack
+
+def leafNodes(preorder):
+    s = []
+    leaves = []
+    n = len(preorder)
+
+    # Iterate through the preorder list
+    for i in range(n - 1):
+        found = False
+
+        # Push current node if it's greater
+        # than the next node
+        if preorder[i] > preorder[i + 1]:
+            s.append(preorder[i])
+        else:
+            # Pop elements from stack until current node is
+            # less than or equal to top of stack
+            while s and preorder[i + 1] > s[-1]:
+                s.pop()
+                found = True
+
+        # If a leaf node is found, add it to the
+        # leaves list
+        if found:
+            leaves.append(preorder[i])
+
+    # Since the rightmost element is always
+    # a leaf node
+    leaves.append(preorder[-1])
+
+    return leaves
+
+if __name__ == "__main__":
+
+    preorder = [4, 2, 1, 3, 6, 5]
+
+    result = leafNodes(preorder)
+
+    print(" ".join(map(str, result)))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to find leaf nodes from the preorder traversal
+    static List<int> leafNodes(int[] preorder) {
+        Stack<int> s = new Stack<int>();
+        List<int> leaves = new List<int>();
+        int n = preorder.Length;
+
+        // Iterate through the preorder array
+        for (int i = 0, j = 1; j < n; i++, j++) {
+            bool found = false;
+
+            // Push current node if it's greater than the next node
+            if (preorder[i] > preorder[j]) {
+                s.Push(preorder[i]);
+            } else {
+                // Pop elements until next is not greater than top
+                while (s.Count > 0) {
+                    if (preorder[j] > s.Peek()) {
+                        s.Pop();
+                        found = true;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (found) {
+                leaves.Add(preorder[i]);
+            }
+        }
+
+        // Last node is always a leaf
+        leaves.Add(preorder[n - 1]);
+
+        return leaves;
+    }
+
+    static void Main(string[] args) {
+        int[] preorder = {4, 2, 1, 3, 6, 5};
+
+        List<int> result = leafNodes(preorder);
+        foreach (int val in result) {
+            Console.Write(val + " ");
+        }
+    }
+}
+
+JavaScript
+
+// JavaScript program to print leaf nodes from the preorder
+// traversal of a Binary Search Tree using a stack
+
+function leafNodes(preorder) {
+    let s = [];
+    let leaves = [];
+    let n = preorder.length;
+
+    // Iterate through the preorder list
+    for (let i = 0, j = 1; j < n; i++, j++) {
+        let found = false;
+
+        // Push current node if it's greater
+        // than the next node
+        if (preorder[i] > preorder[j]) {
+            s.push(preorder[i]);
+        }
+        else {
+
+            // Pop elements from stack until current node is
+            // less than or equal to top of stack
+            while (s.length > 0 && preorder[j] > s[s.length - 1]) {
+                s.pop();
+                found = true;
+            }
+        }
+
+        // If a leaf node is found, add it to the leaves array
+        if (found) {
+            leaves.push(preorder[i]);
+        }
+    }
+
+    // Since the rightmost element is always a leaf node
+    leaves.push(preorder[n - 1]);
+
+    return leaves;
+}
+
+// Driver Code
+let preorder = [4, 2, 1, 3, 6, 5];
+
+let result = leafNodes(preorder);
+console.log(result.join(' '));
+
+Output
+
+1 3 5
+
+Related articles:
+
+- Leaf nodes from Preorder of a Binary Search Tree (Using Recursion)

@@ -1,0 +1,512 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-product-subset-array/
+Title: Minimum product subset of an array
+Extractor: 2
+
+Given an integer array arr[] , determine the minimum possible product that can be obtained by multiplying the elements of any non-empty subset of the array.
+
+Examples:
+
+> Input: arr[] = [1, 2, 3] Output: 1 Explanation: The possible subset products are 1, 2, 3, 2, 3, 6, and 6. The minimum product is 1, obtained by selecting the subset [1]. Input: arr[] = [4, -2, 5] Output: -40 Explanation: The minimum product is -40, obtained by selecting the subset [4, -2, 5].
+
+Table of Content
+
+- [Naive Approach] Generate All Non-Empty Subsets - O(2 ^ n * n) Time and O(1) Space
+- [Expected Approach] Mathematical Observation - O(n) Time and O(1) Space
+
+### [Naive Approach] Generate All Non-Empty Subsets - O(2 ^ n * n) Time and O(1) Space
+
+> The idea is to generate all possible non-empty subsets of the array using bit masking. For each subset, calculate the product of its elements and keep track of the minimum product obtained. Finally, return the smallest product among all subsets.
+
+Working of Approach:
+
+- Generate all possible non-empty subsets using bitmasks.
+- For each subset, calculate the product of its selected elements and update the minimum product.
+- After checking all 2^n - 1 subsets, return the minimum product obtained.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int minProd(vector<int> &arr)
+{
+    int n = arr.size();
+    int ans = INT_MAX;
+
+    // Generate all non-empty subsets
+    for (int mask = 1; mask < (1 << n); mask++)
+    {
+        int prod = 1;
+
+        for (int i = 0; i < n; i++)
+        {
+            if (mask & (1 << i))
+            {
+                prod *= arr[i];
+            }
+        }
+
+        ans = min(ans, prod);
+    }
+
+    return ans;
+}
+
+int main()
+{
+    vector<int> arr = {4, -2, 5};
+
+    cout << minProd(arr);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class GFG {
+    public static int minProd(List<Integer> arr)
+    {
+        int n = arr.size();
+        int ans = Integer.MAX_VALUE;
+
+        // Generate all non-empty subsets
+        for (int mask = 1; mask < (1 << n); mask++) {
+            int prod = 1;
+
+            for (int i = 0; i < n; i++) {
+                if ((mask & (1 << i)) != 0) {
+                    prod *= arr.get(i);
+                }
+            }
+
+            ans = Math.min(ans, prod);
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args)
+    {
+        List<Integer> arr = Arrays.asList(4, -2, 5);
+
+        System.out.println(minProd(arr));
+    }
+}
+
+Python
+
+def minProd(arr):
+    n = len(arr)
+    ans = float('inf')
+
+    # Generate all non-empty subsets
+    for mask in range(1, 1 << n):
+        prod = 1
+
+        for i in range(n):
+            if mask & (1 << i):
+                prod *= arr[i]
+
+        ans = min(ans, prod)
+
+    return ans
+
+if __name__ == "__main__":
+    arr = [4, -2, 5]
+
+    print(minProd(arr))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static int minProd(List<int> arr)
+    {
+        int n = arr.Count;
+        int ans = int.MaxValue;
+
+        // Generate all non-empty subsets
+        for (int mask = 1; mask < (1 << n); mask++) {
+            int prod = 1;
+
+            for (int i = 0; i < n; i++) {
+                if ((mask & (1 << i)) != 0) {
+                    prod *= arr[i];
+                }
+            }
+
+            ans = Math.Min(ans, prod);
+        }
+
+        return ans;
+    }
+
+    static void Main()
+    {
+        List<int> arr = new List<int>{ 4, -2, 5 };
+
+        Console.WriteLine(minProd(arr));
+    }
+}
+
+JavaScript
+
+function minProd(arr)
+{
+    let n = arr.length;
+    let ans = Number.MAX_SAFE_INTEGER;
+
+    // Generate all non-empty subsets
+    for (let mask = 1; mask < (1 << n); mask++) {
+        let prod = 1;
+
+        for (let i = 0; i < n; i++) {
+            if (mask & (1 << i)) {
+                prod *= arr[i];
+            }
+        }
+
+        ans = Math.min(ans, prod);
+    }
+
+    return ans;
+}
+
+// Driver Code
+let arr = [ 4, -2, 5 ];
+
+console.log(minProd(arr));
+
+Output
+
+-40
+
+### [Expected Approach] Mathematical Observation - O(n) Time and O(1) Space
+
+> The idea is to use the properties of positive, negative, and zero elements. Compute the product of all non-zero elements and count the number of negative values. if the number of negatives is odd, the product of all non-zero elements gives the minimum product. if it is even, exclude the negative element with the smallest absolute value. Handle special cases involving only zeros or only positive numbers separately.
+
+Let us understand with example: Input: arr[] = [4, -2, 5]
+
+- Initialize neg = 0, zero = 0, prod = 1, mnNegAbs = INT_MAX, and mnPos = INT_MAX.
+- Process 4: prod = 4, mnPos = 4.
+- Process -2: prod = -8, neg = 1, mnNegAbs = 2.
+- Process 5: prod = -40, mnPos = 4.
+- Since the number of negative elements is odd (neg = 1), return prod = -40 as the minimum subset product.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int minProd(vector<int> &arr)
+{
+    int neg = 0;            // count of negative numbers
+    int zero = 0;           // count of zeros
+    int prod = 1;           // product of all non-zero elements
+    int mnNegAbs = INT_MAX; // smallest absolute value among negatives
+    int mnPos = INT_MAX;    // smallest positive value
+
+    for (int x : arr)
+    {
+        if (x == 0)
+        {
+            zero++;
+            continue;
+        }
+
+        prod *= x;
+
+        if (x < 0)
+        {
+            neg++;
+            mnNegAbs = min(mnNegAbs, abs(x));
+        }
+        else
+        {
+            mnPos = min(mnPos, x);
+        }
+    }
+
+    // All elements are zero
+    if (neg == 0 && mnPos == INT_MAX)
+    {
+        return 0;
+    }
+
+    // If there is at least one negative number
+    if (neg > 0)
+    {
+        // Odd number of negatives => product of all non-zero elements is already
+        // minimum
+        if (neg % 2 == 1)
+        {
+            return prod;
+        }
+
+        // Even number of negatives => remove one negative with smallest abs value
+        return prod / (-mnNegAbs);
+    }
+
+    // No negative numbers
+    if (zero > 0)
+    {
+        return 0;
+    }
+
+    // Only positive numbers
+    return mnPos;
+}
+
+int main()
+{
+    vector<int> arr = {4, -2, 5};
+
+    cout << minProd(arr);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class GFG {
+
+    public static int minProd(List<Integer> arr)
+    {
+        int neg = 0; // count of negative numbers
+        int zero = 0; // count of zeros
+        int prod = 1; // product of all non-zero elements
+        int mnNegAbs = Integer.MAX_VALUE;
+        int mnPos = Integer.MAX_VALUE;
+
+        for (int x : arr) {
+            if (x == 0) {
+                zero++;
+                continue;
+            }
+
+            prod *= x;
+
+            if (x < 0) {
+                neg++;
+                mnNegAbs = Math.min(mnNegAbs, Math.abs(x));
+            }
+            else {
+                mnPos = Math.min(mnPos, x);
+            }
+        }
+
+        // All elements are zero
+        if (neg == 0 && mnPos == Integer.MAX_VALUE) {
+            return 0;
+        }
+
+        // If there is at least one negative number
+        if (neg > 0) {
+            // Odd number of negatives
+            if (neg % 2 == 1) {
+                return prod;
+            }
+
+            // Even number of negatives
+            return prod / (-mnNegAbs);
+        }
+
+        // No negative numbers
+        if (zero > 0) {
+            return 0;
+        }
+
+        // Only positive numbers
+        return mnPos;
+    }
+
+    public static void main(String[] args)
+    {
+        List<Integer> arr = Arrays.asList(4, -2, 5);
+
+        System.out.println(minProd(arr));
+    }
+}
+
+Python
+
+def minProd(arr):
+    neg = 0             # count of negative numbers
+    zero = 0            # count of zeros
+    prod = 1            # product of all non-zero elements
+    mnNegAbs = float('inf')  # smallest absolute value among negatives
+    mnPos = float('inf')    # smallest positive value
+
+    for x in arr:
+        if x == 0:
+            zero += 1
+            continue
+
+        prod *= x
+
+        if x < 0:
+            neg += 1
+            mnNegAbs = min(mnNegAbs, abs(x))
+        else:
+            mnPos = min(mnPos, x)
+
+    # All elements are zero
+    if neg == 0 and mnPos == float('inf'):
+        return 0
+
+    # If there is at least one negative number
+    if neg > 0:
+        # Odd number of negatives => product of all non-zero elements is already
+        # minimum
+        if neg % 2 == 1:
+            return prod
+
+        # Even number of negatives => remove one negative with smallest abs value
+        return prod // (-mnNegAbs)
+
+    # No negative numbers
+    if zero > 0:
+        return 0
+
+    # Only positive numbers
+    return mnPos
+
+if __name__ == "__main__":
+    arr = [4, -2, 5]
+
+    print(minProd(arr))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public class GFG {
+    public int minProd(List<int> arr)
+    {
+        int neg = 0; // count of negative numbers
+        int zero = 0; // count of zeros
+        int prod = 1; // product of all non-zero elements
+        int mnNegAbs
+            = int.MaxValue; // smallest absolute value among
+                            // negatives
+        int mnPos = int.MaxValue; // smallest positive value
+
+        foreach(int x in arr)
+        {
+            if (x == 0) {
+                zero++;
+                continue;
+            }
+
+            prod *= x;
+
+            if (x < 0) {
+                neg++;
+                mnNegAbs = Math.Min(mnNegAbs, Math.Abs(x));
+            }
+            else {
+                mnPos = Math.Min(mnPos, x);
+            }
+        }
+
+        // All elements are zero
+        if (neg == 0 && mnPos == int.MaxValue) {
+            return 0;
+        }
+
+        // If there is at least one negative number
+        if (neg > 0) {
+            // Odd number of negatives => product of all
+            // non-zero elements is already minimum
+            if (neg % 2 == 1) {
+                return prod;
+            }
+
+            // Even number of negatives => remove one
+            // negative with smallest abs value
+            return prod / (-mnNegAbs);
+        }
+
+        // No negative numbers
+        if (zero > 0) {
+            return 0;
+        }
+
+        // Only positive numbers
+        return mnPos;
+    }
+
+    public static void Main()
+    {
+        List<int> arr = new List<int>{ 4, -2, 5 };
+
+        GfG obj = new GfG();
+        Console.WriteLine(obj.minProd(arr));
+    }
+}
+
+JavaScript
+
+function minProd(arr) {
+    let neg = 0;            // count of negative numbers
+    let zero = 0;           // count of zeros
+    let prod = 1;           // product of all non-zero elements
+    let mnNegAbs = Number.MAX_VALUE; // smallest absolute value among negatives
+    let mnPos = Number.MAX_VALUE;    // smallest positive value
+
+    for (let x of arr) {
+        if (x === 0) {
+            zero++;
+            continue;
+        }
+
+        prod *= x;
+
+        if (x < 0) {
+            neg++;
+            mnNegAbs = Math.min(mnNegAbs, Math.abs(x));
+        } else {
+            mnPos = Math.min(mnPos, x);
+        }
+    }
+
+    // All elements are zero
+    if (neg === 0 && mnPos === Number.MAX_VALUE) {
+        return 0;
+    }
+
+    // If there is at least one negative number
+    if (neg > 0) {
+        // Odd number of negatives => product of all non-zero elements is already
+        // minimum
+        if (neg % 2 === 1) {
+            return prod;
+        }
+
+        // Even number of negatives => remove one negative with smallest abs value
+        return Math.floor(prod / (-mnNegAbs));
+    }
+
+    // No negative numbers
+    if (zero > 0) {
+        return 0;
+    }
+
+    // Only positive numbers
+    return mnPos;
+}
+
+// Driver Code
+let arr = [4, -2, 5];
+console.log(minProd(arr));
+
+Output
+
+-40

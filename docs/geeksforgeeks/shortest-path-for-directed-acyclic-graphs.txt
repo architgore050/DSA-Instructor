@@ -1,0 +1,630 @@
+Source: https://www.geeksforgeeks.org/dsa/shortest-path-for-directed-acyclic-graphs/
+Title: Shortest Path in Directed Acyclic Graph
+Extractor: 2
+
+Given a weighted Directed Acyclic Graph (DAG) with n nodes and m edges , where each edge is represented as [u, v, w] (a directed edge from u to v with weight w ), and a source node src , find the shortest distance from src to all other nodes.
+
+Note: If it is impossible to reach a node from source node, then mark the distance as -1 .
+
+Example:
+
+> Input: n = 6, src = 0, edges[][] = [[0,1,2], [0,4,1], [4,5,4], [4,2,2], [1,2,3], [2,3,6], [5,3,1]] Output: 0 2 3 6 1 5 Explanation: Distance of source from itself is zero. Node 1: Shortest path is 0 -> 1 = 2. Node 2: Shortest path is 0 -> 4 -> 2 = 1 + 2 = 3. Node 3: Shortest path is 0 -> 4 -> 5 -> 3 = 1 + 4 + 1 = 6. Node 4: Shortest path is 0 -> 4 = 1. Node 5: Shortest path is 0 -> 4 -> 5 = 1 + 4 = 5. Input: V = 4, E = 2, edges = [[0,1,2], [0,2,1]] Output: [0, 2, 1, -1] Explanation: Shortest path from 0 to 1 is 0->1 with edge weight 2. The shortest path from 0 to 2 is 0->2 with edge weight 1. There is no way we can reach 3, so it's -1 for 3.
+
+Table of Content
+
+- [Naive Approach] Using General Purpose Algorithm
+- [Expected Approach] Using Topological Sort and Edge Relaxation - O(V + E) Time O(V + E) Space
+
+### [Naive Approach] Using General Purpose Algorithm
+
+> For a general weighted graph, we can calculate single source shortest distances in O(V + E) time using Bellman–Ford Algorithm . For a graph with no negative weights, we can do better and calculate single source shortest distances in O(E + VLogV) time using Dijkstra's algorithm .
+
+### [Expected Approach] Using Topological Sort and Edge Relaxation - O(V + E) Time O(V + E) Space
+
+#### Can we do even better for Directed Acyclic Graph (DAG)?
+
+For a DAG , we can compute shortest paths in O(V + E) time using topological sorting . Initialize distances (source = 0, others = ∞), get the topological order, and relax edges in that order. Since the graph has no cycles, each edge is processed once, making it the most efficient approach.
+
+We initialize distances to all vertices as infinite and distance to source as 0, then we find a topological sorting of the graph. Topological Sorting of a graph represents a linear ordering of the graph (See below, figure). Once we have topological order (or linear representation), we one by one process all vertices in topological order. For every vertex being processed, we update distances of its adjacent using distance of current vertex.
+
+> Following is complete algorithm for finding shortest distances. Initialize dist[] = {INF, INF, ....} and dist[s] = 0 where s is the source vertex. Create a topological order of all vertices. Do following for every vertex u in topological order. ...........Do following for every adjacent vertex v of u ..................if (dist[v] > dist[u] + weight(u, v)) ...........................dist[v] = dist[u] + weight(u, v)
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to perform Topological Sort using DFS
+void topoSort(int node, vector<int>& vis, stack<int>& st,
+              vector<vector<pair<int,int>>>& adj) {
+
+    vis[node] = 1;
+
+    // Traverse all adjacent nodes
+    for (auto &it : adj[node]) {
+        if (!vis[it.first]) {
+            topoSort(it.first, vis, st, adj);
+        }
+    }
+
+    // Push node to stack after visiting all neighbors
+    st.push(node);
+}
+
+// Function to find shortest path in DAG
+vector<int> shortestPath(int V, int E, vector<vector<int>>& edges) {
+
+    // Adjacency list: {node -> {adjacent_node, weight}}
+    vector<vector<pair<int,int>>> adj(V);
+
+    // Build the graph from given edges
+    for (auto &e : edges) {
+        int u = e[0];
+        int v = e[1];
+        int wt = e[2];
+        adj[u].push_back({v, wt});
+    }
+
+    // Visited array for DFS
+    vector<int> vis(V, 0);
+    stack<int> st;
+
+    //Perform Topological Sort for all nodes
+    for (int i = 0; i < V; i++) {
+        if (!vis[i]) {
+            topoSort(i, vis, st, adj);
+        }
+    }
+
+    //Initialize distances
+    const int INF = 1e9;
+    vector<int> dist(V, INF);
+    dist[0] = 0;
+
+    //Process nodes in topological order
+    while (!st.empty()) {
+        int node = st.top();
+        st.pop();
+
+        // If node is reachable
+        if (dist[node] != INF) {
+
+            // Relax all adjacent edges
+            for (auto &it : adj[node]) {
+                int v = it.first;
+                int wt = it.second;
+
+                // Update distance if shorter path is found
+                if (dist[node] + wt < dist[v]) {
+                    dist[v] = dist[node] + wt;
+                }
+            }
+        }
+    }
+
+    // Mark unreachable nodes as -1
+    for (int i = 0; i < V; i++) {
+        if (dist[i] == INF) {
+            dist[i] = -1;
+        }
+    }
+
+    return dist;
+}
+
+int main() {
+
+    int V = 6;
+    int E = 7;
+
+    // Edge list: {u, v, weight}
+    vector<vector<int>> edges = {
+        {0,1,2}, {0,4,1}, {4,5,4},
+        {4,2,2}, {1,2,3}, {2,3,6}, {5,3,1}
+    };
+
+    vector<int> result = shortestPath(V, E, edges);
+    for (int x : result) {
+        cout << x << " ";
+    }
+
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <limits.h>
+
+#define MAX_NODES 100
+
+typedef struct Edge {
+    int v, wt;
+} Edge;
+
+typedef struct Node {
+    Edge* edges;
+    int size;
+} Node;
+
+Node* adj[MAX_NODES];
+int vis[MAX_NODES];
+int dist[MAX_NODES];
+
+// Function to perform Topological Sort using DFS
+void topoSort(int node, int vis[], int st[], int* top, Node* adj[]) {
+    vis[node] = 1;
+
+    for (int i = 0; i < adj[node]->size; i++) {
+        Edge it = adj[node]->edges[i];
+        if (!vis[it.v]) {
+            topoSort(it.v, vis, st, top, adj);
+        }
+    }
+
+    st[(*top)++] = node;
+}
+
+// Function to find shortest path in DAG
+void shortestPath(int V, int E, int edges[][3]) {
+    // Initialize adjacency list
+    for (int i = 0; i < V; i++) {
+        adj[i] = (Node*)malloc(sizeof(Node));
+        adj[i]->edges = (Edge*)malloc(sizeof(Edge) * MAX_NODES);
+        adj[i]->size = 0;
+    }
+
+    // Build the graph from given edges
+    for (int i = 0; i < E; i++) {
+        int u = edges[i][0];
+        int v = edges[i][1];
+        int wt = edges[i][2];
+        adj[u]->edges[adj[u]->size++] = (Edge){v, wt};
+    }
+
+    // Visited array for DFS
+    for (int i = 0; i < V; i++) {
+        vis[i] = 0;
+    }
+    int st[V];
+    int top = 0;
+
+    // Perform Topological Sort for all nodes
+    for (int i = 0; i < V; i++) {
+        if (!vis[i]) {
+            topoSort(i, vis, st, &top, adj);
+        }
+    }
+
+    // Initialize distances
+    for (int i = 0; i < V; i++) {
+        dist[i] = INT_MAX;
+    }
+    dist[0] = 0;
+
+    // Process nodes in topological order
+    for (int i = top - 1; i >= 0; i--) {
+        int node = st[i];
+
+        // If node is reachable
+        if (dist[node]!= INT_MAX) {
+            // Relax all adjacent edges
+            for (int j = 0; j < adj[node]->size; j++) {
+                Edge it = adj[node]->edges[j];
+                int v = it.v;
+                int wt = it.wt;
+                // Update distance if shorter path is found
+                if (dist[node] + wt < dist[v]) {
+                    dist[v] = dist[node] + wt;
+                }
+            }
+        }
+    }
+
+    // Mark unreachable nodes as -1
+    for (int i = 0; i < V; i++) {
+        if (dist[i] == INT_MAX) {
+            dist[i] = -1;
+        }
+    }
+
+    // Print the result
+    for (int i = 0; i < V; i++) {
+        printf("%d ", dist[i]);
+    }
+}
+
+int main() {
+    int V = 6;
+    int E = 7;
+
+    // Edge list: {u, v, weight}
+    int edges[][3] = {
+        {0,1,2}, {0,4,1}, {4,5,4},
+        {4,2,2}, {1,2,3}, {2,3,6}, {5,3,1}
+    };
+
+    shortestPath(V, E, edges);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class GfG {
+    // Function to perform Topological Sort using DFS
+    static void topoSort(int node, boolean[] vis, Stack<Integer> st, ArrayList<ArrayList<int[]>> adj) {
+        vis[node] = true;
+        // Traverse all adjacent nodes
+        for (int[] it : adj.get(node)) {
+            if (!vis[it[0]]) {
+                topoSort(it[0], vis, st, adj);
+            }
+        }
+        // Push node to stack after visiting all neighbors
+        st.push(node);
+    }
+
+    // Function to find shortest path in DAG
+    static int[] shortestPath(int V, int E, int[][] edges) {
+        // Adjacency list: {node -> {adjacent_node, weight}}
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) {
+            adj.add(new ArrayList<>());
+        }
+        // Build the graph from given edges
+        for (int[] e : edges) {
+            int u = e[0];
+            int v = e[1];
+            int wt = e[2];
+            adj.get(u).add(new int[]{v, wt});
+        }
+        // Visited array for DFS
+        boolean[] vis = new boolean[V];
+        Stack<Integer> st = new Stack<>();
+        // Perform Topological Sort for all nodes
+        for (int i = 0; i < V; i++) {
+            if (!vis[i]) {
+                topoSort(i, vis, st, adj);
+            }
+        }
+        // Initialize distances
+        final int INF = (int) 1e9;
+        int[] dist = new int[V];
+        Arrays.fill(dist, INF);
+        dist[0] = 0;
+        // Process nodes in topological order
+        while (!st.isEmpty()) {
+            int node = st.pop();
+            // If node is reachable
+            if (dist[node]!= INF) {
+                // Relax all adjacent edges
+                for (int[] it : adj.get(node)) {
+                    int v = it[0];
+                    int wt = it[1];
+                    // Update distance if shorter path is found
+                    if (dist[node] + wt < dist[v]) {
+                        dist[v] = dist[node] + wt;
+                    }
+                }
+            }
+        }
+        // Mark unreachable nodes as -1
+        for (int i = 0; i < V; i++) {
+            if (dist[i] == INF) {
+                dist[i] = -1;
+            }
+        }
+        return dist;
+    }
+
+    public static void main(String[] args) {
+        int V = 6;
+        int E = 7;
+        int[][] edges = {{0,1,2}, {0,4,1}, {4,5,4},
+                          {4,2,2}, {1,2,3}, {2,3,6}, {5,3,1}};
+        int[] result = shortestPath(V, E, edges);
+        for (int x : result) {
+            System.out.print(x + " ");
+        }
+    }
+}
+
+Python
+
+from collections import defaultdict
+
+# Function to perform Topological Sort using DFS
+def topoSort(node, vis, st, adj):
+    vis[node] = True
+
+    # Traverse all adjacent nodes
+    for it in adj[node]:
+        if not vis[it[0]]:
+            topoSort(it[0], vis, st, adj)
+
+    # Push node to stack after visiting all neighbors
+    st.append(node)
+
+# Function to find shortest path in DAG
+def shortestPath(V, E, edges):
+
+    # Adjacency list: {node -> {adjacent_node, weight}}
+    adj = defaultdict(list)
+
+    # Build the graph from given edges
+    for e in edges:
+        u, v, wt = e
+        adj[u].append((v, wt))
+
+    # Visited array for DFS
+    vis = [False] * V
+    st = []
+
+    # Perform Topological Sort for all nodes
+    for i in range(V):
+        if not vis[i]:
+            topoSort(i, vis, st, adj)
+
+    # Initialize distances
+    INF = 10**9
+    dist = [INF] * V
+    dist[0] = 0
+
+    # Process nodes in topological order
+    while st:
+        node = st.pop()
+
+        # If node is reachable
+        if dist[node]!= INF:
+
+            # Relax all adjacent edges
+            for v, wt in adj[node]:
+
+                # Update distance if shorter path is found
+                if dist[node] + wt < dist[v]:
+                    dist[v] = dist[node] + wt
+
+    # Mark unreachable nodes as -1
+    for i in range(V):
+        if dist[i] == INF:
+            dist[i] = -1
+    return dist
+
+if __name__ == '__main__':
+    V = 6
+    E = 7
+    edges = [(0,1,2), (0,4,1), (4,5,4),
+             (4,2,2), (1,2,3), (2,3,6), (5,3,1)]
+    result = shortestPath(V, E, edges)
+    print(' '.join(map(str, result)))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG
+{
+    // Function to perform Topological Sort using DFS
+    static void topoSort(int node, List<int> vis, Stack<int> st, List<List<Tuple<int,int>>> adj)
+    {
+        vis[node] = 1;
+
+        // Traverse all adjacent nodes
+        foreach (var it in adj[node])
+        {
+            if (vis[it.Item1] == 0)
+            {
+                topoSort(it.Item1, vis, st, adj);
+            }
+        }
+
+        // Push node to stack after visiting all neighbors
+        st.Push(node);
+    }
+
+    // Function to find shortest path in DAG
+    static List<int> shortestPath(int V, int E, List<List<int>> edges)
+    {
+        // Adjacency list: {node -> {adjacent_node, weight}}
+        List<List<Tuple<int,int>>> adj = new List<List<Tuple<int,int>>>();
+        for (int i = 0; i < V; i++)
+        {
+            adj.Add(new List<Tuple<int,int>>(V));
+        }
+
+        // Build the graph from given edges
+        foreach (var e in edges)
+        {
+            int u = e[0];
+            int v = e[1];
+            int wt = e[2];
+            adj[u].Add(new Tuple<int,int>(v, wt));
+        }
+
+        // Visited array for DFS
+        List<int> vis = new List<int>(V);
+        for (int i = 0; i < V; i++)
+        {
+            vis.Add(0);
+        }
+        Stack<int> st = new Stack<int>();
+
+        //Perform Topological Sort for all nodes
+        for (int i = 0; i < V; i++)
+        {
+            if (vis[i] == 0)
+            {
+                topoSort(i, vis, st, adj);
+            }
+        }
+
+        //Initialize distances
+        const int INF = 1000000000;
+        List<int> dist = new List<int>(V);
+        for (int i = 0; i < V; i++)
+        {
+            dist.Add(INF);
+        }
+        dist[0] = 0;
+
+        //Process nodes in topological order
+        while (st.Count > 0)
+        {
+            int node = st.Pop();
+
+            // If node is reachable
+            if (dist[node]!= INF)
+            {
+                // Relax all adjacent edges
+                foreach (var it in adj[node])
+                {
+                    int v = it.Item1;
+                    int wt = it.Item2;
+
+                    // Update distance if shorter path is found
+                    if (dist[node] + wt < dist[v])
+                    {
+                        dist[v] = dist[node] + wt;
+                    }
+                }
+            }
+        }
+
+        // Mark unreachable nodes as -1
+        for (int i = 0; i < V; i++)
+        {
+            if (dist[i] == INF)
+            {
+                dist[i] = -1;
+            }
+        }
+
+        return dist;
+    }
+
+    static void Main(string[] args)
+    {
+        int V = 6;
+        int E = 7;
+
+        // Edge list: {u, v, weight}
+        List<List<int>> edges = new List<List<int>>()
+        {
+            new List<int> {0,1,2},
+            new List<int> {0,4,1},
+            new List<int> {4,5,4},
+            new List<int> {4,2,2},
+            new List<int> {1,2,3},
+            new List<int> {2,3,6},
+            new List<int> {5,3,1}
+        };
+
+        List<int> result = shortestPath(V, E, edges);
+        foreach (int x in result)
+        {
+            Console.Write(x + " ");
+        }
+    }
+}
+
+JavaScript
+
+function topoSort(node, vis, st, adj) {
+    vis[node] = 1;
+
+    // Traverse all adjacent nodes
+    for (let it of adj[node]) {
+        if (!vis[it[0]]) {
+            topoSort(it[0], vis, st, adj);
+        }
+    }
+
+    // Push node to stack after visiting all neighbors
+    st.push(node);
+}
+
+// Function to find shortest path in DAG
+function shortestPath(V, E, edges) {
+
+    // Adjacency list: {node -> {adjacent_node, weight}}
+    let adj = Array.from({length: V}, () => []);
+
+    // Build the graph from given edges
+    for (let e of edges) {
+        let u = e[0];
+        let v = e[1];
+        let wt = e[2];
+        adj[u].push([v, wt]);
+    }
+
+    // Visited array for DFS
+    let vis = Array(V).fill(0);
+    let st = [];
+
+    //Perform Topological Sort for all nodes
+    for (let i = 0; i < V; i++) {
+        if (!vis[i]) {
+            topoSort(i, vis, st, adj);
+        }
+    }
+
+    //Initialize distances
+    const INF = 1e9;
+    let dist = Array(V).fill(INF);
+    dist[0] = 0;
+
+    //Process nodes in topological order
+    while (st.length > 0) {
+        let node = st.pop();
+
+        // If node is reachable
+        if (dist[node]!== INF) {
+
+            // Relax all adjacent edges
+            for (let it of adj[node]) {
+                let v = it[0];
+                let wt = it[1];
+
+                // Update distance if shorter path is found
+                if (dist[node] + wt < dist[v]) {
+                    dist[v] = dist[node] + wt;
+                }
+            }
+        }
+    }
+
+    // Mark unreachable nodes as -1
+    for (let i = 0; i < V; i++) {
+        if (dist[i] === INF) {
+            dist[i] = -1;
+        }
+    }
+
+    return dist;
+}
+
+let V = 6;
+let E = 7;
+
+// Edge list: {u, v, weight}
+let edges = [
+    [0,1,2], [0,4,1], [4,5,4],
+    [4,2,2], [1,2,3], [2,3,6], [5,3,1]
+];
+
+let result = shortestPath(V, E, edges);
+for (let x of result) {
+    console.log(x + " ");
+}
+
+Output
+
+0 2 3 6 1 5
+
+Time Complexity: O(V + E), we perform topological sort and relax each edge once Space Complexity: O(V + E) , for graph storage and distance array

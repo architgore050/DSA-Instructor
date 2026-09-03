@@ -1,0 +1,1763 @@
+Source: https://www.geeksforgeeks.org/dsa/boggle-using-trie/
+Title: Word Boggle
+Extractor: 2
+
+Given a string array dictionary[] of size n containing distinct words and a character matrix board[][] of size r × c , find all words from the dictionary that can be formed in the board.
+
+- A word can be formed by starting from any cell and moving to any of its 8 adjacent cells (horizontally, vertically, or diagonally).
+- Each cell can be used at most once while forming a single word.
+
+Return all dictionary words that can be formed in the board.
+
+Note: The words in the output can be returned in any order.
+
+Example:
+
+> Input: board[][] = [[C, A, P], [A, N, D], [T, I, E]], dictionary[] = ["CAT"] Output: ["CAT"] Explanation: "CAT" can be formed by traversing adjacent cells (8 directions) without reusing any cell. Input: board[][] = [[G, I, Z], [U, E, K], [Q, S, E]], dictionary[] = ["GEEKS", "FOR", "QUIZ", "GO"] Output: ["GEEKS","QUIZ"] Explanation: "GEEKS" and "QUIZ" can be formed by traversing adjacent cells (8 directions) without reusing any cell.
+
+Table of Content
+
+- [Naive Approach] DFS from Every Cell - O(r × c × 8^l + l) Time and O(r × c + l) Space
+- [Better Approach] Word-by-Word DFS - O(n × r × c × 8^l) Time and O(r × c + l) Space
+- [Expected Approach] Trie + DFS Backtracking - O(n × l + r × c × 8^l) Time and O(n × l + r × c) Space
+
+### [Naive Approach] DFS from Every Cell - O(r × c × 8^l + l) Time and O(r × c + l) Space
+
+> The idea is to treat every cell in the matrix as a potential starting point and generate all words that begin with the cell using depth - first search. For every generated word, check if it is present in the given set of words. If yes, then add it to the result and remove it from the given words to avoid duplicates. During DFS search , it is crucial to maintain a record of visited cells, ensuring that each cell is used only once in forming any given word.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// DFS to explore all possible paths from (i, j)
+void dfs(vector<vector<char>> &board, vector<vector<bool>> &visited, int i, int j, string &str,
+         unordered_set<string> &wordSet, vector<string> &ans)
+{
+
+    int n = board.size();
+    int m = board[0].size();
+
+    // Step 1: Boundary check + visited check
+    if (i < 0 || i >= n || j < 0 || j >= m || visited[i][j])
+        return;
+
+    // Step 2: Mark current cell as visited
+    visited[i][j] = true;
+
+    // Step 3: Add current character to forming string
+    str.push_back(board[i][j]);
+
+    // Step 4: Check if current string exists in dictionary set
+    if (wordSet.find(str) != wordSet.end())
+    {
+        ans.push_back(str);
+
+        // remove to avoid duplicates
+        wordSet.erase(str);
+    }
+
+    // Step 5: Explore all 8 directions (including diagonals)
+    for (int dx = -1; dx <= 1; dx++)
+    {
+        for (int dy = -1; dy <= 1; dy++)
+        {
+
+            // skip current cell itself
+            if (dx == 0 && dy == 0)
+                continue;
+
+            dfs(board, visited, i + dx, j + dy, str, wordSet, ans);
+        }
+    }
+
+    // Step 6: Backtracking
+    str.pop_back();
+
+    // unmark current cell so it can be used in other paths
+    visited[i][j] = false;
+}
+
+vector<string> wordBoggle(vector<vector<char>> &board, vector<string> &dictionary)
+{
+
+    int n = board.size();
+    int m = board[0].size();
+
+    vector<string> ans;
+
+    // Step 1: Store dictionary in a hash set for fast lookup
+    unordered_set<string> wordSet(dictionary.begin(), dictionary.end());
+
+    // Step 2: Visited array to avoid reusing same cell in one path
+    vector<vector<bool>> visited(n, vector<bool>(m, false));
+
+    string str = "";
+
+    // Step 3: Start DFS from every cell in the grid
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < m; j++)
+        {
+            dfs(board, visited, i, j, str, wordSet, ans);
+        }
+    }
+
+    return ans;
+}
+
+int main()
+{
+
+    vector<string> dictionary = {"GEEKS", "FOR", "QUIZ", "GO"};
+
+    vector<vector<char>> board = {{'G', 'I', 'Z'}, {'U', 'E', 'K'}, {'Q', 'S', 'E'}};
+    vector<string> res = wordBoggle(board, dictionary);
+
+    if (res.empty())
+    {
+        cout << "[]";
+    }
+    else
+    {
+        sort(res.begin(), res.end());
+
+        cout << "[";
+
+        for (int i = 0; i < res.size(); i++)
+        {
+            cout << "\"" << res[i] << "\"";
+            if (i + 1 != res.size())
+                cout << ",";
+        }
+
+        cout << "]";
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+
+class GFG {
+
+    // DFS to explore all possible paths from (i, j)
+    static void dfs(char[][] board, boolean[][] visited,
+                    int i, int j, StringBuilder str,
+                    HashSet<String> wordSet,
+                    ArrayList<String> ans)
+    {
+
+        int n = board.length;
+        int m = board[0].length;
+
+        // Step 1: Boundary check + visited check
+        if (i < 0 || i >= n || j < 0 || j >= m
+            || visited[i][j])
+            return;
+
+        // Step 2: Mark current cell as visited
+        visited[i][j] = true;
+
+        // Step 3: Add current character to forming string
+        str.append(board[i][j]);
+
+        // Step 4: Check if current string exists in
+        // dictionary set
+        if (wordSet.contains(str.toString())) {
+            ans.add(str.toString());
+            wordSet.remove(str.toString());
+        }
+
+        // Step 5: Explore all 8 directions
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0)
+                    continue;
+                dfs(board, visited, i + dx, j + dy, str,
+                    wordSet, ans);
+            }
+        }
+
+        // Step 6: Backtracking
+        str.deleteCharAt(str.length() - 1);
+        visited[i][j] = false;
+    }
+
+    static ArrayList<String> wordBoggle(char[][] board,
+                                        String[] dictionary)
+    {
+
+        int n = board.length;
+        int m = board[0].length;
+
+        ArrayList<String> ans = new ArrayList<>();
+        HashSet<String> wordSet
+            = new HashSet<>(Arrays.asList(dictionary));
+        boolean[][] visited = new boolean[n][m];
+        StringBuilder str = new StringBuilder();
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                dfs(board, visited, i, j, str, wordSet,
+                    ans);
+            }
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args)
+    {
+
+        String[] dictionary = { "GEEKS", "FOR", "QUIZ", "GO" };
+
+        char[][] board = { { 'G', 'I', 'Z' },
+                           { 'U', 'E', 'K' },
+                           { 'Q', 'S', 'E' } };
+
+        ArrayList<String> res
+            = wordBoggle(board, dictionary);
+
+        Collections.sort(res);
+
+        System.out.print(res);
+    }
+}
+
+Python
+
+# DFS to explore all possible paths from (i, j)
+def dfs(board, visited, i, j, str, wordSet, ans):
+
+    n = len(board)
+    m = len(board[0])
+
+    # Step 1: Boundary check + visited check
+    if i < 0 or i >= n or j < 0 or j >= m or visited[i][j]:
+        return
+
+    # Step 2: Mark current cell as visited
+    visited[i][j] = True
+
+    # Step 3: Add current character to forming string
+    str += board[i][j]
+
+    # Step 4: Check if current string exists in dictionary set
+    if str in wordSet:
+        ans.append(str)
+        wordSet.remove(str)
+
+    # Step 5: Explore all 8 directions
+    for dx in range(-1, 2):
+        for dy in range(-1, 2):
+            if dx == 0 and dy == 0:
+                continue
+            dfs(board, visited, i + dx, j + dy, str, wordSet, ans)
+
+    # Step 6: Backtracking
+    visited[i][j] = False
+
+def wordBoggle(board, dictionary):
+
+    n = len(board)
+    m = len(board[0])
+
+    ans = []
+    wordSet = set(dictionary)
+    visited = [[False] * m for _ in range(n)]
+    str = ""
+
+    for i in range(n):
+        for j in range(m):
+            dfs(board, visited, i, j, str, wordSet, ans)
+
+    return ans
+
+if __name__ == "__main__":
+
+    dictionary = ["GEEKS", "FOR", "QUIZ", "GO"]
+
+board = [
+    ['G', 'I', 'Z'],
+    ['U', 'E', 'K'],
+    ['Q', 'S', 'E']
+]
+
+res = wordBoggle(board, dictionary)
+
+print(sorted(res))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // DFS to explore all possible paths from (i, j)
+     void dfs(char[, ] board, bool[, ] visited, int i,
+                    int j, string str,
+                    HashSet<string> wordSet,
+                    List<string> ans)
+    {
+        int n = board.GetLength(0);
+        int m = board.GetLength(1);
+
+        // Step 1: Boundary check + visited check
+        if (i < 0 || i >= n || j < 0 || j >= m
+            || visited[i, j])
+            return;
+
+        // Step 2: Mark current cell as visited
+        visited[i, j] = true;
+
+        // Step 3: Add current character to forming string
+        str = str + board[i, j];
+
+        // Step 4: Check if current string exists in
+        // dictionary set
+        if (wordSet.Contains(str)) {
+            ans.Add(str);
+
+            // remove to avoid duplicates
+            wordSet.Remove(str);
+        }
+
+        // Step 5: Explore all 8 directions (including
+        // diagonals)
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0)
+                    continue;
+
+                dfs(board, visited, i + dx, j + dy, str,
+                    wordSet, ans);
+            }
+        }
+
+        // Step 6: Backtracking
+        visited[i, j] = false;
+    }
+
+    public  List<string>
+    wordBoggle(char[, ] board, string[] dictionary)
+    {
+        int n = board.GetLength(0);
+        int m = board.GetLength(1);
+
+        List<string> ans = new List<string>();
+
+        HashSet<string> wordSet
+            = new HashSet<string>(dictionary);
+        bool[, ] visited = new bool[n, m];
+
+        string str = "";
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                dfs(board, visited, i, j, str, wordSet,
+                    ans);
+            }
+        }
+
+        return ans;
+    }
+
+    // Driver code
+    static void Main()
+    {
+        string[] dictionary
+            = { "GEEKS", "FOR", "QUIZ", "GO" };
+
+        char[, ] board = { { 'G', 'I', 'Z' },
+                           { 'U', 'E', 'K' },
+                           { 'Q', 'S', 'E' } };
+
+        GFG obj=new GFG();
+        List<string> res = obj.wordBoggle(board, dictionary);
+
+        res.Sort();
+
+        Console.Write("[");
+
+        for (int i = 0; i < res.Count; i++) {
+            Console.Write("\"" + res[i] + "\"");
+
+            if (i != res.Count - 1)
+                Console.Write(",");
+        }
+
+        Console.Write("]");
+    }
+}
+
+JavaScript
+
+// DFS to explore all possible paths from (i, j)
+function dfs(board, visited, i, j, str, wordSet, ans)
+{
+
+    let n = board.length;
+    let m = board[0].length;
+
+    // Step 1: Boundary check + visited check
+    if (i < 0 || i >= n || j < 0 || j >= m || visited[i][j])
+        return;
+
+    // Step 2: Mark current cell as visited
+    visited[i][j] = true;
+
+    // Step 3: Add current character to forming string
+    str += board[i][j];
+
+    // Step 4: Check if current string exists in dictionary
+    // set
+    if (wordSet.has(str)) {
+        ans.push(str);
+        wordSet.delete(str);
+    }
+
+    // Step 5: Explore all 8 directions
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+            if (dx === 0 && dy === 0)
+                continue;
+            dfs(board, visited, i + dx, j + dy, str,
+                wordSet, ans);
+        }
+    }
+
+    // Step 6: Backtracking
+    visited[i][j] = false;
+}
+
+function wordBoggle(board, dictionary)
+{
+
+    let n = board.length;
+    let m = board[0].length;
+
+    let ans = [];
+    let wordSet = new Set(dictionary);
+    let visited = Array.from({length : n},
+                             () => Array(m).fill(false));
+    let str = "";
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            dfs(board, visited, i, j, str, wordSet, ans);
+        }
+    }
+
+    return ans.sort();
+}
+
+// Driver code
+const dictionary = ["GEEKS", "FOR", "QUIZ", "GO"];
+
+const board = [
+    ['G', 'I', 'Z'],
+    ['U', 'E', 'K'],
+    ['Q', 'S', 'E']
+];
+
+console.log(wordBoggle(board, dictionary));
+
+Output
+
+["GEEKS","QUIZ"]
+
+### [Better Approach] Word-by-Word DFS - O(n × r × c × 8^l) Time and O(r × c + l) Space
+
+> The idea is to check every word in the dictionary one by one and verify whether it can be formed from the given board using Depth First Search (DFS) . For each word, we start DFS from every cell in the board and try to match characters sequentially. During traversal, we mark cells as visited to avoid reusing them in the same path and unmark them while backtracking.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// function to perform dfs on the grid
+bool dfs(vector<vector<char>> &board, string word, int i, int j, int index)
+{
+    int n = board.size();
+    int m = board[0].size();
+
+    // check if the current cell is out of bounds
+    if (i < 0 || i >= n || j < 0 || j >= m)
+        return false;
+
+    // check if the current cell matches the character in the word
+    if (board[i][j] != word[index])
+        return false;
+
+    // check if we have found the complete word
+    if (index == word.size() - 1)
+        return true;
+
+    // mark the current cell as visited
+    char temp = board[i][j];
+    board[i][j] = '#';
+
+    // perform dfs on all 8 directions
+    for (int row = -1; row <= 1; row++)
+    {
+        for (int col = -1; col <= 1; col++)
+        {
+            // skip the current cell
+            if (row == 0 && col == 0)
+                continue;
+
+            if (dfs(board, word, i + row, j + col, index + 1))
+            {
+                board[i][j] = temp;
+                return true;
+            }
+        }
+    }
+
+    // unmark the current cell as visited
+    board[i][j] = temp;
+
+    return false;
+}
+
+// find all words in a given grid of characters
+vector<string> wordBoggle(vector<vector<char>> &board, vector<string> &dictionary)
+{
+    int n = board.size();
+    int m = board[0].size();
+
+    vector<string> ans;
+    unordered_set<string> result;
+
+    // try each word from dictionary
+    for (int i = 0; i < dictionary.size(); i++)
+    {
+        string word = dictionary[i];
+
+        // try every starting cell in board
+        for (int r = 0; r < n; r++)
+        {
+            for (int c = 0; c < m; c++)
+            {
+                if (dfs(board, word, r, c, 0))
+                {
+                    result.insert(word);
+                }
+            }
+        }
+    }
+
+    // convert set to vector
+    for (auto &word : result)
+        ans.push_back(word);
+
+    return ans;
+}
+
+int main()
+{
+    vector<string> dictionary = {"GEEKS", "FOR", "QUIZ", "GO"};
+
+    vector<vector<char>> board = {{'G', 'I', 'Z'}, {'U', 'E', 'K'}, {'Q', 'S', 'E'}};
+
+    vector<string> ans = wordBoggle(board, dictionary);
+    sort(ans.begin(), ans.end());
+    cout << "[";
+    for (int i = 0; i < ans.size(); i++)
+    {
+        cout << "\"" << ans[i] << "\"";
+        if (i != ans.size() - 1)
+            cout << ",";
+    }
+    cout << "]";
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+
+class GFG {
+
+    // function to perform dfs on the grid
+    static boolean dfs(char[][] board, String word, int i, int j, int index)
+    {
+        int n = board.length;
+        int m = board[0].length;
+
+        // check if the current cell is out of bounds
+        if (i < 0 || i >= n || j < 0 || j >= m)
+            return false;
+
+        // check if the current cell matches the character in the word
+        if (board[i][j] != word.charAt(index))
+            return false;
+
+        // check if we have found the complete word
+        if (index == word.length() - 1)
+            return true;
+
+        // mark the current cell as visited
+        char temp = board[i][j];
+        board[i][j] = '#';
+
+        // perform dfs on all 8 directions
+        for (int row = -1; row <= 1; row++)
+        {
+            for (int col = -1; col <= 1; col++)
+            {
+                if (row == 0 && col == 0)
+                    continue;
+
+                if (dfs(board, word, i + row, j + col, index + 1))
+                {
+                    board[i][j] = temp;
+                    return true;
+                }
+            }
+        }
+
+        // unmark the current cell as visited
+        board[i][j] = temp;
+
+        return false;
+    }
+
+    // find all words in a given grid of characters
+    static ArrayList<String> wordBoggle( char[][] board,String[] dictionary)
+    {
+        int n = board.length;
+        int m = board[0].length;
+
+        ArrayList<String> ans = new ArrayList<>();
+        HashSet<String> result = new HashSet<>();
+
+        // try each word from dictionary
+        for (String word : dictionary)
+        {
+            // try every starting cell in board
+            for (int r = 0; r < n; r++)
+            {
+                for (int c = 0; c < m; c++)
+                {
+                    if (dfs(board, word, r, c, 0))
+                    {
+                        result.add(word);
+                        break;
+                    }
+                }
+            }
+        }
+
+        ans.addAll(result);
+        return ans;
+    }
+
+    public static void main(String[] args)
+    {
+        String[] dictionary = {"GEEKS", "FOR", "QUIZ", "GO"};
+
+char[][] board = {
+    {'G', 'I', 'Z'},
+    {'U', 'E', 'K'},
+    {'Q', 'S', 'E'}
+};
+
+        ArrayList<String> ans = wordBoggle(board, dictionary);
+
+        Collections.sort(ans);
+        System.out.print(ans);
+    }
+}
+
+Python
+
+# function to perform dfs on the grid
+def dfs(board, word, i, j, index):
+
+    n = len(board)
+    m = len(board[0])
+
+    # check if the current cell is out of bounds
+    if i < 0 or i >= n or j < 0 or j >= m:
+        return False
+
+    # check if the current cell matches the character in the word
+    if board[i][j] != word[index]:
+        return False
+
+    # check if we have found the complete word
+    if index == len(word) - 1:
+        return True
+
+    # mark the current cell as visited
+    temp = board[i][j]
+    board[i][j] = '#'
+
+    # perform dfs on all 8 directions
+    for row in range(-1, 2):
+        for col in range(-1, 2):
+
+            if row == 0 and col == 0:
+                continue
+
+            if dfs(board, word, i + row, j + col, index + 1):
+                board[i][j] = temp
+                return True
+
+    # unmark the current cell as visited
+    board[i][j] = temp
+
+    return False
+
+# find all words in a given grid of characters
+def wordBoggle(board, dictionary):
+
+    n = len(board)
+    m = len(board[0])
+
+    result = set()
+
+    # try each word from dictionary
+    for word in dictionary:
+
+        # try every starting cell in board
+        for r in range(n):
+            for c in range(m):
+                if dfs(board, word, r, c, 0):
+                    result.add(word)
+
+    return list(result)
+
+if __name__ == "__main__":
+
+    dictionary = ["GEEKS", "FOR", "QUIZ", "GO"]
+
+board = [
+    ['G', 'I', 'Z'],
+    ['U', 'E', 'K'],
+    ['Q', 'S', 'E']
+]
+
+ans = wordBoggle(board, dictionary)
+
+print(sorted(ans))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // function to perform dfs on the grid
+    static bool dfs(char[,] board, string word, int i, int j, int index)
+    {
+        int n = board.GetLength(0);
+        int m = board.GetLength(1);
+
+        // check if the current cell is out of bounds
+        if (i < 0 || i >= n || j < 0 || j >= m)
+            return false;
+
+        // check if the current cell matches the character in the word
+        if (board[i, j] != word[index])
+            return false;
+
+        // check if we have found the complete word
+        if (index == word.Length - 1)
+            return true;
+
+        // mark the current cell as visited
+        char temp = board[i, j];
+        board[i, j] = '#';
+
+        // perform dfs on all 8 directions
+        for (int row = -1; row <= 1; row++)
+        {
+            for (int col = -1; col <= 1; col++)
+            {
+                if (row == 0 && col == 0)
+                    continue;
+
+                if (dfs(board, word, i + row, j + col, index + 1))
+                {
+                    board[i, j] = temp; // backtrack
+                    return true;
+                }
+            }
+        }
+
+        // unmark the current cell as visited
+        board[i, j] = temp;
+
+        return false;
+    }
+
+    // find all words in a given grid of characters
+    public static List<string> wordBoggle(char[,] board, string[] dictionary)
+    {
+        int n = board.GetLength(0);
+        int m = board.GetLength(1);
+
+        List<string> ans = new List<string>();
+        HashSet<string> result = new HashSet<string>();
+
+        // try each word from dictionary
+        foreach (string word in dictionary)
+        {
+            // try every starting cell in board
+            for (int r = 0; r < n; r++)
+            {
+                for (int c = 0; c < m; c++)
+                {
+                    if (dfs(board, word, r, c, 0))
+                        result.Add(word);
+                }
+            }
+        }
+
+        return new List<string>(result);
+    }
+
+    static void Main()
+    {
+        string[] dictionary = { "GEEKS", "FOR", "QUIZ", "GO" };
+
+char[,] board =
+{
+    { 'G', 'I', 'Z' },
+    { 'U', 'E', 'K' },
+    { 'Q', 'S', 'E' }
+};
+
+        List<string> ans = wordBoggle(board, dictionary);
+
+        ans.Sort();
+        Console.Write("[");
+
+        for (int i = 0; i < ans.Count; i++)
+        {
+            Console.Write("\"" + ans[i] + "\"");
+            if (i != ans.Count - 1)
+                Console.Write(",");
+        }
+
+        Console.Write("]");
+    }
+}
+
+JavaScript
+
+// function to perform dfs on the grid
+function dfs(board, word, i, j, index)
+{
+    let n = board.length;
+    let m = board[0].length;
+
+    // check if the current cell is out of bounds
+    if (i < 0 || i >= n || j < 0 || j >= m)
+        return false;
+
+    // check if the current cell matches the character in the word
+    if (board[i][j] != word[index])
+        return false;
+
+    // check if we have found the complete word
+    if (index == word.length - 1)
+        return true;
+
+    // mark the current cell as visited
+    let temp = board[i][j];
+    board[i][j] = '#';
+
+    // perform dfs on all 8 directions
+    for (let row = -1; row <= 1; row++)
+    {
+        for (let col = -1; col <= 1; col++)
+        {
+            if (row == 0 && col == 0)
+                continue;
+
+            if (dfs(board, word, i + row, j + col, index + 1))
+            {
+                board[i][j] = temp;
+                return true;
+            }
+        }
+    }
+
+    // unmark the current cell as visited
+    board[i][j] = temp;
+
+    return false;
+}
+
+// find all words in a given grid of characters
+function wordBoggle(board,dictionary)
+{
+    let n = board.length;
+    let m = board[0].length;
+
+    let result = new Set();
+    let ans = [];
+
+    // try each word from dictionary
+    for (let word of dictionary)
+    {
+        // try every starting cell in board
+        for (let r = 0; r < n; r++)
+        {
+            for (let c = 0; c < m; c++)
+            {
+                if (dfs(board, word, r, c, 0))
+                    result.add(word);
+            }
+        }
+    }
+
+    return [...result];
+}
+
+// DRIVER CODE
+const dictionary = ["GEEKS", "FOR", "QUIZ", "GO"];
+
+const board = [
+    ['G', 'I', 'Z'],
+    ['U', 'E', 'K'],
+    ['Q', 'S', 'E']
+];
+
+let ans = wordBoggle( board,dictionary);
+
+console.log(ans);
+
+Output
+
+["GEEKS","QUIZ"]
+
+### [Expected Approach] Trie + DFS Backtracking - O(n × l + r × c × 8^l) Time and O(n × l + r × c) Space
+
+> The idea is to store all dictionary words in a Trie (Prefix Tree) and perform a DFS from every cell of the board. During the traversal, we move through both the board and the Trie simultaneously. For each cell, we check whether its character exists as a child of the current Trie node. If it does not, the search along that path stops immediately. Otherwise, we continue exploring all 8 adjacent cells. Whenever a Trie node marked as the end of a word is reached, the corresponding word is added to the answer. A visited matrix is used to ensure that a cell is not reused while forming a word, and backtracking restores the state after exploring a path.
+
+- Insert all dictionary words into a Trie.
+- Create a visited matrix of size r × c .
+- Start DFS from every cell of the board.
+- For each DFS call, check if the current character exists in the Trie.
+- Mark the current cell as visited.
+- If the Trie node is a leaf, add the word to the answer.
+- Explore all 8 adjacent cells.
+- Backtrack by unmarking the current cell.
+- Return all discovered words.
+
+Consider : board[][] = [[G, I, Z], [U, E, K], [Q, S, E]], dictionary[] = ["GEEKS", "FOR", "QUIZ", "GO"]
+
+Step 1: All words are inserted into Trie:
+
+Step 2: DFS Traversal
+
+- Start from (0,0) = 'G', 'G' is in Trie, explore path: G -> E -> E -> K -> S, found "GEEKS"
+- Start from (2,0) = 'Q', 'Q' is in Trie, explore path: Q -> U ->I ->Z, found "QUIZ"
+- Other DFS paths either do not match any Trie prefix or do not form a complete dictionary word, so they are pruned.
+
+Final Output: ["GEEKS", "QUIZ"]
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Maximum 26 lowercase + 26 uppercase letters
+static const int SIZE = 52;
+
+// Trie Node Definition
+class TrieNode
+{
+  public:
+    TrieNode *child[SIZE];
+    bool leaf;
+
+    TrieNode()
+    {
+        leaf = false;
+        for (int i = 0; i < SIZE; i++)
+            child[i] = NULL;
+    }
+};
+
+// A-Z ? 0-25
+// a-z ? 26-51
+static int getIndex(char ch)
+{
+
+    if (ch >= 'A' && ch <= 'Z')
+        return ch - 'A';
+
+    if (ch >= 'a' && ch <= 'z')
+        return ch - 'a' + 26;
+
+    return -1;
+}
+
+// Insert Word into Trie
+static void insert(TrieNode *root, string word)
+{
+
+    TrieNode *curr = root;
+
+    for (char ch : word)
+    {
+
+        int idx = getIndex(ch);
+
+        if (idx == -1)
+            continue;
+
+        if (curr->child[idx] == NULL)
+            curr->child[idx] = new TrieNode();
+
+        curr = curr->child[idx];
+    }
+
+    curr->leaf = true;
+}
+
+// Check valid cell
+static bool isSafe(int i, int j, vector<vector<bool>> &vis, int r, int c)
+{
+    return (i >= 0 && i < r && j >= 0 && j < c && !vis[i][j]);
+}
+
+// DFS on board + Trie
+static void dfs(TrieNode *node, vector<vector<char>> &board, int i, int j, vector<vector<bool>> &vis,
+                string path, vector<string> &res, unordered_set<string> &st, int r, int c)
+{
+
+    if (!node)
+        return;
+
+    if (node->leaf)
+    {
+        if (st.find(path) == st.end())
+        {
+            st.insert(path);
+            res.push_back(path);
+        }
+    }
+
+    vis[i][j] = true;
+
+    int dx[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    int dy[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+
+    for (int d = 0; d < 8; d++)
+    {
+
+        int ni = i + dx[d];
+        int nj = j + dy[d];
+
+        if (isSafe(ni, nj, vis, r, c))
+        {
+
+            char ch = board[ni][nj];
+            int idx = getIndex(ch);
+
+            // validate idx
+            if (idx != -1 && node->child[idx] != NULL)
+            {
+
+                dfs(node->child[idx], board, ni, nj, vis, path + ch, res, st, r, c);
+            }
+        }
+    }
+
+    vis[i][j] = false;
+}
+
+vector<string> wordBoggle(vector<vector<char>> &board, vector<string> &dictionary)
+{
+
+    vector<string> empty;
+    if (board.empty() || board[0].empty())
+        return empty;
+
+    int r = board.size();
+    int c = board[0].size();
+
+    TrieNode *root = new TrieNode();
+
+    // Step 1: Build Trie
+    for (string word : dictionary)
+        insert(root, word);
+
+    vector<string> res;
+    unordered_set<string> st;
+    vector<vector<bool>> vis(r, vector<bool>(c, false));
+
+    // Step 2: Start DFS from each cell
+    for (int i = 0; i < r; i++)
+    {
+        for (int j = 0; j < c; j++)
+        {
+
+            int idx = getIndex(board[i][j]);
+
+            if (idx != -1 && root->child[idx] != NULL)
+            {
+
+                dfs(root->child[idx], board, i, j, vis, string(1, board[i][j]), res, st, r, c);
+            }
+        }
+    }
+
+    return res;
+}
+
+int main()
+{
+    vector<string> dictionary = {"GEEKS", "FOR", "QUIZ", "GO"};
+
+vector<vector<char>> board = {
+    {'G', 'I', 'Z'},
+    {'U', 'E', 'K'},
+    {'Q', 'S', 'E'}
+};
+
+    vector<string> ans = wordBoggle(board, dictionary);
+
+    sort(ans.begin(), ans.end());
+
+    cout << "[";
+    for (int i = 0; i < ans.size(); i++)
+    {
+        cout << "\"" << ans[i] << "\"";
+        if (i != ans.size() - 1)
+            cout << ",";
+    }
+    cout << "]";
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+
+class GFG {
+
+    static final int SIZE = 52;
+
+    // Trie Node Definition
+    static class TrieNode {
+        TrieNode[] child = new TrieNode[SIZE];
+        boolean leaf;
+
+        TrieNode() { leaf = false; }
+    }
+
+    // A-Z → 0-25
+    // a-z → 26-51
+    static int getIndex(char ch)
+    {
+
+        if (ch >= 'A' && ch <= 'Z')
+            return ch - 'A';
+
+        if (ch >= 'a' && ch <= 'z')
+            return ch - 'a' + 26;
+
+        return -1;
+    }
+
+    // Insert Word into Trie
+    static void insert(TrieNode root, String word)
+    {
+
+        TrieNode curr = root;
+
+        for (char ch : word.toCharArray()) {
+
+            int idx = getIndex(ch);
+
+            if (idx == -1)
+                continue;
+
+            if (curr.child[idx] == null)
+                curr.child[idx] = new TrieNode();
+
+            curr = curr.child[idx];
+        }
+
+        curr.leaf = true;
+    }
+
+    // Check valid cell
+    static boolean isSafe(int i, int j, boolean[][] vis,
+                          int r, int c)
+    {
+        return (i >= 0 && i < r && j >= 0 && j < c
+                && !vis[i][j]);
+    }
+
+    // DFS on board + Trie
+    static void dfs(TrieNode node, char[][] board, int i,
+                    int j, boolean[][] vis, String path,
+                    ArrayList<String> res,
+                    HashSet<String> st, int r, int c)
+    {
+
+        if (node == null)
+            return;
+
+        if (node.leaf) {
+            if (!st.contains(path)) {
+                st.add(path);
+                res.add(path);
+            }
+        }
+
+        vis[i][j] = true;
+
+        int[] dx = { -1, -1, -1, 0, 0, 1, 1, 1 };
+        int[] dy = { -1, 0, 1, -1, 1, -1, 0, 1 };
+
+        for (int d = 0; d < 8; d++) {
+
+            int ni = i + dx[d];
+            int nj = j + dy[d];
+
+            if (isSafe(ni, nj, vis, r, c)) {
+
+                char ch = board[ni][nj];
+                int idx = getIndex(ch);
+
+                // validate idx
+                if (idx != -1 && node.child[idx] != null) {
+
+                    dfs(node.child[idx], board, ni, nj, vis,
+                        path + ch, res, st, r, c);
+                }
+            }
+        }
+
+        vis[i][j] = false;
+    }
+
+    static ArrayList<String> wordBoggle(char[][] board,
+                                        String[] dictionary)
+    {
+
+        ArrayList<String> empty = new ArrayList<>();
+        if (board.length == 0 || board[0].length == 0)
+            return empty;
+
+        int r = board.length;
+        int c = board[0].length;
+
+        TrieNode root = new TrieNode();
+
+        // Step 1: Build Trie
+        for (String word : dictionary)
+            insert(root, word);
+
+        ArrayList<String> res = new ArrayList<>();
+        HashSet<String> st = new HashSet<>();
+        boolean[][] vis = new boolean[r][c];
+
+        // Step 2: Start DFS from each cell
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < c; j++) {
+
+                int idx = getIndex(board[i][j]);
+
+                if (idx != -1 && root.child[idx] != null) {
+
+                    dfs(root.child[idx], board, i, j, vis,
+                        String.valueOf(board[i][j]), res,
+                        st, r, c);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args)
+    {
+        String[] dictionary
+            = { "GEEKS", "FOR", "QUIZ", "GO" };
+
+        char[][] board = { { 'G', 'I', 'Z' },
+                           { 'U', 'E', 'K' },
+                           { 'Q', 'S', 'E' } };
+
+        ArrayList<String> ans
+            = wordBoggle(board, dictionary);
+
+        Collections.sort(ans);
+
+        System.out.print(ans);
+    }
+}
+
+Python
+
+class TrieNode:
+    SIZE = 52
+
+    def __init__(self):
+
+        # child[i] stores reference to next TrieNode
+        self.child = [None] * TrieNode.SIZE
+
+        # True if this node represents end of a word
+        self.leaf = False
+
+# Convert character to index (A-Z → 0-25, a-z → 26-51)
+def getIndex(ch):
+    if 'A' <= ch <= 'Z':
+        return ord(ch) - ord('A')
+    if 'a' <= ch <= 'z':
+        return ord(ch) - ord('a') + 26
+    return -1
+
+# Insert a word into Trie
+def insert(root, word):
+    curr = root
+
+    for ch in word:
+        idx = getIndex(ch)
+
+        # ignore invalid characters
+        if idx == -1:
+            continue
+
+        # create node if not present
+        if curr.child[idx] is None:
+            curr.child[idx] = TrieNode()
+
+        curr = curr.child[idx]
+
+    # mark end of word
+    curr.leaf = True
+
+# Check if cell is within bounds and not visited
+def isSafe(i, j, vis, r, c):
+    return 0 <= i < r and 0 <= j < c and not vis[i][j]
+
+# DFS traversal on board + Trie simultaneously
+def dfs(node, board, i, j, vis, path, res, st, r, c):
+
+    if node is None:
+        return
+
+    # if current Trie node marks end of word
+    if node.leaf and path not in st:
+        st.add(path)
+        res.append(path)
+
+    # mark current cell as visited
+    vis[i][j] = True
+
+    # all 8 possible directions
+    dx = [-1, -1, -1, 0, 0, 1, 1, 1]
+    dy = [-1, 0, 1, -1, 1, -1, 0, 1]
+
+    # explore neighbors
+    for d in range(8):
+        ni, nj = i + dx[d], j + dy[d]
+
+        if isSafe(ni, nj, vis, r, c):
+            ch = board[ni][nj]
+            idx = getIndex(ch)
+
+            # move only if Trie path exists
+            if idx != -1 and node.child[idx] is not None:
+                dfs(node.child[idx], board, ni, nj,
+                    vis, path + ch, res, st, r, c)
+
+    # backtrack (unmark visited)
+    vis[i][j] = False
+
+def wordBoggle(board, dictionary):
+
+    # edge case: empty board
+    if not board or not board[0]:
+        return []
+
+    r, c = len(board), len(board[0])
+
+    # Step 1: Build Trie from dictionary
+    root = TrieNode()
+    for word in dictionary:
+        insert(root, word)
+
+    res = []
+    st = set()
+
+    # visited matrix for DFS
+    vis = [[False for _ in range(c)] for _ in range(r)]
+
+    # Step 2: start DFS from every cell
+    for i in range(r):
+        for j in range(c):
+
+            idx = getIndex(board[i][j])
+
+            # start DFS only if character exists in Trie root
+            if idx != -1 and root.child[idx] is not None:
+                dfs(root.child[idx], board, i, j,
+                    vis, board[i][j], res, st, r, c)
+
+    return res
+
+if __name__ == "__main__":
+
+    dictionary = ["GEEKS", "FOR", "QUIZ", "GO"]
+
+board = [
+    ['G', 'I', 'Z'],
+    ['U', 'E', 'K'],
+    ['Q', 'S', 'E']
+]
+
+ans = wordBoggle(board, dictionary)
+
+ans.sort()
+
+print(ans)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public class GFG
+{
+    static readonly int SIZE = 52;
+
+    // Trie Node Definition
+    class TrieNode
+    {
+        public TrieNode[] child;
+        public bool leaf;
+
+        public TrieNode()
+        {
+            child = new TrieNode[SIZE];
+            leaf = false;
+        }
+    }
+
+    // A-Z -> 0-25
+    // a-z -> 26-51
+    int getIndex(char ch)
+    {
+        if (ch >= 'A' && ch <= 'Z')
+            return ch - 'A';
+
+        if (ch >= 'a' && ch <= 'z')
+            return ch - 'a' + 26;
+
+        return -1;
+    }
+
+    // Insert Word into Trie
+    void insert(TrieNode root, string word)
+    {
+        TrieNode curr = root;
+
+        foreach (char ch in word)
+        {
+            int idx = getIndex(ch);
+
+            if (idx == -1)
+                continue;
+
+            if (curr.child[idx] == null)
+                curr.child[idx] = new TrieNode();
+
+            curr = curr.child[idx];
+        }
+
+        curr.leaf = true;
+    }
+
+    // Check valid cell
+    bool isSafe(int i, int j, bool[,] vis, int r, int c)
+    {
+        return i >= 0 && i < r &&
+               j >= 0 && j < c &&
+               !vis[i, j];
+    }
+
+    // DFS on board + Trie
+    void dfs(TrieNode node, char[,] board, int i, int j,
+             bool[,] vis, string path,
+             List<string> res, HashSet<string> st,
+             int r, int c)
+    {
+        if (node.leaf)
+        {
+            if (!st.Contains(path))
+            {
+                st.Add(path);
+                res.Add(path);
+            }
+        }
+
+        vis[i, j] = true;
+
+        int[] dx = { -1, -1, -1, 0, 0, 1, 1, 1 };
+        int[] dy = { -1, 0, 1, -1, 1, -1, 0, 1 };
+
+        for (int d = 0; d < 8; d++)
+        {
+            int ni = i + dx[d];
+            int nj = j + dy[d];
+
+            if (isSafe(ni, nj, vis, r, c))
+            {
+                char ch = board[ni, nj];
+                int idx = getIndex(ch);
+
+                if (idx != -1 && node.child[idx] != null)
+                {
+                    dfs(node.child[idx],
+                        board,
+                        ni,
+                        nj,
+                        vis,
+                        path + ch,
+                        res,
+                        st,
+                        r,
+                        c);
+                }
+            }
+        }
+
+        vis[i, j] = false;
+    }
+
+    public List<string> wordBoggle(char[,] board,
+                                   string[] dictionary)
+    {
+        int r = board.GetLength(0);
+        int c = board.GetLength(1);
+
+        TrieNode root = new TrieNode();
+
+        // Step 1: Build Trie
+        foreach (string word in dictionary)
+            insert(root, word);
+
+        List<string> res = new List<string>();
+        HashSet<string> st = new HashSet<string>();
+
+        bool[,] vis = new bool[r, c];
+
+        // Step 2: Start DFS from each cell
+        for (int i = 0; i < r; i++)
+        {
+            for (int j = 0; j < c; j++)
+            {
+                int idx = getIndex(board[i, j]);
+
+                if (idx != -1 && root.child[idx] != null)
+                {
+                    dfs(root.child[idx],
+                        board,
+                        i,
+                        j,
+                        vis,
+                        board[i, j].ToString(),
+                        res,
+                        st,
+                        r,
+                        c);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    public static void Main()
+    {
+        string[] dictionary = { "GEEKS", "FOR", "QUIZ", "GO" };
+
+        char[,] board =
+        {
+            { 'G', 'I', 'Z' },
+            { 'U', 'E', 'K' },
+            { 'Q', 'S', 'E' }
+        };
+
+        GFG obj = new GFG();
+
+        List<string> ans = obj.wordBoggle(board, dictionary);
+
+        ans.Sort();
+
+        Console.Write("[");
+
+        for (int i = 0; i < ans.Count; i++)
+        {
+            Console.Write("\"" + ans[i] + "\"");
+
+            if (i != ans.Count - 1)
+                Console.Write(",");
+        }
+
+        Console.Write("]");
+    }
+}
+
+JavaScript
+
+// Trie Node Definition
+class TrieNode {
+    constructor() {
+        this.child = Array.from({ length: 52 }, () => null);
+        this.leaf = false;
+    }
+}
+
+// Map character to index (A-Z: 0-25, a-z: 26-51)
+function getIndex(ch) {
+    if (ch >= 'A' && ch <= 'Z')
+        return ch.charCodeAt(0) - 'A'.charCodeAt(0);
+
+    if (ch >= 'a' && ch <= 'z')
+        return ch.charCodeAt(0) - 'a'.charCodeAt(0) + 26;
+
+    return -1;
+}
+
+// Insert word into Trie
+function insert(root, word) {
+    let curr = root;
+
+    for (let ch of word) {
+        let idx = getIndex(ch);
+        if (idx === -1) continue;
+
+        if (!curr.child[idx])
+            curr.child[idx] = new TrieNode();
+
+        curr = curr.child[idx];
+    }
+
+    curr.leaf = true;
+}
+
+// Check valid grid cell
+function isSafe(i, j, vis, r, c) {
+    return i >= 0 && i < r && j >= 0 && j < c && !vis[i][j];
+}
+
+// DFS with Trie traversal
+function dfs(node, board, i, j, vis, path, res, set, r, c) {
+
+    if (!node) return;
+
+    // If word found
+    if (node.leaf) {
+        if (!set.has(path)) {
+            set.add(path);
+            res.push(path);
+        }
+    }
+
+    vis[i][j] = true;
+
+    // Explore 8 directions
+    let dx = [-1, -1, -1, 0, 0, 1, 1, 1];
+    let dy = [-1, 0, 1, -1, 1, -1, 0, 1];
+
+    for (let d = 0; d < 8; d++) {
+
+        let ni = i + dx[d];
+        let nj = j + dy[d];
+
+        if (isSafe(ni, nj, vis, r, c)) {
+
+            let ch = board[ni][nj];
+            let idx = getIndex(ch);
+
+            if (idx !== -1 && node.child[idx]) {
+                dfs(node.child[idx], board, ni, nj,
+                    vis, path + ch, res, set, r, c);
+            }
+        }
+    }
+
+    vis[i][j] = false;
+}
+
+function wordBoggle(board, dictionary) {
+
+    if (!board.length || !board[0].length)
+        return [];
+
+    let r = board.length;
+    let c = board[0].length;
+
+    // Build Trie from dictionary
+    let root = new TrieNode();
+    for (let word of dictionary)
+        insert(root, word);
+
+    let res = [];
+    let set = new Set();
+    let vis = Array.from({ length: r }, () => Array(c).fill(false));
+
+    // Start DFS from every cell
+    for (let i = 0; i < r; i++) {
+        for (let j = 0; j < c; j++) {
+
+            let idx = getIndex(board[i][j]);
+
+            if (idx !== -1 && root.child[idx]) {
+                dfs(root.child[idx], board, i, j,
+                    vis, board[i][j], res, set, r, c);
+            }
+        }
+    }
+
+    return res;
+}
+
+// Driver code
+const dictionary = ["GEEKS", "FOR", "QUIZ", "GO"];
+
+const board = [
+    ['G', 'I', 'Z'],
+    ['U', 'E', 'K'],
+    ['Q', 'S', 'E']
+];
+
+let ans = wordBoggle(board, dictionary);
+
+ans.sort();
+
+process.stdout.write("[" + ans.map(w => `"${w}"`).join(",") + "]");
+
+Output
+
+["GEEKS","QUIZ"]

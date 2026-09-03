@@ -1,0 +1,1021 @@
+Source: https://www.geeksforgeeks.org/dsa/scapegoat-tree-set-1-introduction-insertion/
+Title: ScapeGoat Tree | Set 1 (Introduction and Insertion)
+Extractor: 2
+
+A ScapeGoat tree is a self-balancing Binary Search Tree like AVL Tree , Red-Black Tree , Splay Tree , ..etc.
+
+- Search time is O(Log n) in worst case. Time taken by deletion and insertion is amortized O(Log n)
+- The balancing idea is to make sure that nodes are ? size balanced. ? size balanced means sizes of left and right subtrees are at most ? * (Size of node). The idea is based on the fact that if a node is ? weight balanced, then it is also height balanced: height <= log 1/&aplpha; (size) + 1
+- Unlike other self-balancing BSTs, ScapeGoat tree doesn't require extra space per node. For example, Red Black Tree nodes are required to have color. In below implementation of ScapeGoat Tree, we only have left, right and parent pointers in Node class. Use of parent is done for simplicity of implementation and can be avoided.
+
+Insertion (Assuming ? = 2/3): To insert value x in a Scapegoat Tree:
+
+- Create a new node u and insert x using the BST insert algorithm.
+- If the depth of u is greater than log 3/2 n where n is number of nodes in tree then we need to make tree balanced. To make balanced, we use below step to find a scapegoat. Walk up from u until we reach a node w with size(w) > (2/3)*size(w.parent). This node is scapegoat Rebuild the subtree rooted at w.parent.
+
+What does rebuilding the subtree mean? In rebuilding, we simply convert the subtree to the most possible balanced BST. We first store inorder traversal of BST in an array, then we build a new BST from array by recursively dividing it into two halves.
+
+  60                            50
+ /                           /     \
+40                          42       58
+  \          Rebuild      /    \    /   \
+   50       --------->  40      47 55    60
+     \
+      55
+     /   \
+   47     58
+  /
+42
+
+Below is C++ implementation of insert operation on Scapegoat Tree.
+
+C++
+
+// C++ program to implement insertion in
+// ScapeGoat Tree
+#include<bits/stdc++.h>
+using namespace std;
+
+// Utility function to get value of log32(n)
+static int const log32(int n)
+{
+  double const log23 = 2.4663034623764317;
+  return (int)ceil(log23 * log(n));
+}
+
+// A ScapeGoat Tree node
+class Node
+{
+public:
+  Node *left, *right, *parent;
+  float value;
+  Node()
+  {
+    value = 0;
+    left = right = parent = NULL;
+  }
+  Node (float v)
+  {
+    value = v;
+    left = right = parent = NULL;
+  }
+};
+
+// This functions stores inorder traversal
+// of tree rooted with ptr in an array arr[]
+int storeInArray(Node *ptr, Node *arr[], int i)
+{
+  if (ptr == NULL)
+    return i;
+
+  i = storeInArray(ptr->left, arr, i);
+  arr[i++] = ptr;
+  return storeInArray(ptr->right, arr, i);
+}
+
+// Class to represent a ScapeGoat Tree
+class SGTree
+{
+private:
+  Node *root;
+  int n; // Number of nodes in Tree
+public:
+  void preorder(Node *);
+  int size(Node *);
+  bool insert(float x);
+  void rebuildTree(Node *u);
+  SGTree()   { root = NULL; n = 0; }
+  void preorder() { preorder(root); }
+
+  // Function to built tree with balanced nodes
+  Node *buildBalancedFromArray(Node **a, int i, int n);
+
+  // Height at which element is to be added
+  int BSTInsertAndFindDepth(Node *u);
+};
+
+// Preorder traversal of the tree
+void SGTree::preorder(Node *node)
+{
+  if (node != NULL)
+  {
+    cout << node->value << " ";
+    preorder(node -> left);
+    preorder(node -> right);
+  }
+}
+
+// To count number of nodes in the tree
+int SGTree::size(Node *node)
+{
+  if (node == NULL)
+    return 0;
+  return 1 + size(node->left) + size(node->right);
+}
+
+// To insert new element in the tree
+bool SGTree::insert(float x)
+{
+  // Create a new node
+  Node *node = new Node(x);
+
+  // Perform BST insertion and find depth of
+  // the inserted node.
+  int h = BSTInsertAndFindDepth(node);
+
+  // If tree becomes unbalanced
+  if (h > log32(n))
+  {
+    // Find Scapegoat
+    Node *p = node->parent;
+    while (3*size(p) <= 2*size(p->parent))
+      p = p->parent;
+
+    // Rebuild tree rooted under scapegoat
+    rebuildTree(p->parent);
+  }
+
+  return h >= 0;
+}
+
+// Function to rebuilt tree from new node. This
+// function basically uses storeInArray() to
+// first store inorder traversal of BST rooted
+// with u in an array.
+// Then it converts array to the most possible
+// balanced BST using buildBalancedFromArray()
+void SGTree::rebuildTree(Node *u)
+{
+  int n = size(u);
+  Node *p = u->parent;
+  Node **a = new Node* [n];
+  storeInArray(u, a, 0);
+  if (p == NULL)
+  {
+    root = buildBalancedFromArray(a, 0, n);
+    root->parent = NULL;
+  }
+  else if (p->right == u)
+  {
+    p->right = buildBalancedFromArray(a, 0, n);
+    p->right->parent = p;
+  }
+  else
+  {
+    p->left = buildBalancedFromArray(a, 0, n);
+    p->left->parent = p;
+  }
+}
+
+// Function to built tree with balanced nodes
+Node * SGTree::buildBalancedFromArray(Node **a,
+                int i, int n)
+{
+  if (n== 0)
+    return NULL;
+  int m = n / 2;
+
+  // Now a[m] becomes the root of the new
+  // subtree a[0],.....,a[m-1]
+  a[i+m]->left = buildBalancedFromArray(a, i, m);
+
+  // elements a[0],...a[m-1] gets stored
+  // in the left subtree
+  if (a[i+m]->left != NULL)
+    a[i+m]->left->parent = a[i+m];
+
+  // elements a[m+1],....a[n-1] gets stored
+  // in the right subtree
+  a[i+m]->right =
+    buildBalancedFromArray(a, i+m+1, n-m-1);
+  if (a[i+m]->right != NULL)
+    a[i+m]->right->parent = a[i+m];
+
+  return a[i+m];
+}
+
+// Performs standard BST insert and returns
+// depth of the inserted node.
+int SGTree::BSTInsertAndFindDepth(Node *u)
+{
+  // If tree is empty
+  Node *w = root;
+  if (w == NULL)
+  {
+    root = u;
+    n++;
+    return 0;
+  }
+
+  // While the node is not inserted
+  // or a node with same key exists.
+  bool done = false;
+  int d = 0;
+  do
+  {
+    if (u->value < w->value)
+    {
+      if (w->left == NULL)
+      {
+        w->left = u;
+        u->parent = w;
+        done = true;
+      }
+      else
+        w = w->left;
+    }
+    else if (u->value > w->value)
+    {
+      if (w->right == NULL)
+      {
+        w->right = u;
+        u->parent = w;
+        done = true;
+      }
+      else
+        w = w->right;
+    }
+    else
+      return -1;
+    d++;
+  }
+  while (!done);
+
+  n++;
+  return d;
+}
+
+// Driver code
+int main()
+{
+  SGTree sgt;
+  sgt.insert(7);
+  sgt.insert(6);
+  sgt.insert(3);
+  sgt.insert(1);
+  sgt.insert(0);
+  sgt.insert(8);
+  sgt.insert(9);
+  sgt.insert(4);
+  sgt.insert(5);
+  sgt.insert(2);
+  sgt.insert(3.5);
+  printf("Preorder traversal of the"
+    " constructed ScapeGoat tree is \n");
+  sgt.preorder();
+  return 0;
+}
+
+Python3
+
+# Python3 implementation for the above approach.
+
+import math
+
+# Define a class for a node in the tree
+class Node:
+    def __init__(self, value=0):
+        self.left = None
+        self.right = None
+        self.parent = None
+        self.value = value
+
+# Define a class for the ScapeGoat Tree
+class SGTree:
+    def __init__(self):
+        self.root = None
+        self.n = 0
+
+    # Traverse the tree in preorder and print the node values
+    def preorder(self, node):
+        if node is not None:
+            print(node.value, end=" ")
+            self.preorder(node.left)
+            self.preorder(node.right)
+
+    # Get the size of the subtree rooted at a given node
+    def size(self, node):
+        if node is None:
+            return 0
+        return 1 + self.size(node.left) + self.size(node.right)
+
+    # Insert a new node into the tree
+    def insert(self, x):
+
+        node = Node(x)
+
+        # insert the node into the tree and get its depth
+        h = self.BSTInsertAndFindDepth(node)
+
+        # check if the tree is unbalanced
+        if h > math.ceil(2.4663034623764317 * math.log(self.n, 3)):
+            p = node.parent
+
+             # find the root of the subtree to be rebuilt
+            while 3*self.size(p) <= 2*self.size(p.parent):
+                p = p.parent
+            self.rebuildTree(p.parent)  # rebuild the subtree
+
+        return h >= 0
+
+    def rebuildTree(self, u):
+
+        # find the number of nodes in the subtree rooted at u
+        n = self.size(u)
+
+        # get u's parent
+        p = u.parent
+
+        # create an array of size n
+        a = [None]*n
+
+        # fill the array with nodes from the subtree rooted at u
+        self.storeInArray(u, a, 0)
+
+        if p is None:
+            # if u is the root of the tree, build a balanced tree from the array
+            self.root = self.buildBalancedFromArray(a, 0, n)
+            self.root.parent = None
+
+        elif p.right == u:
+            # if u is the right child of its parent, build a balanced tree from the array
+            # and make it the new right child of p
+            p.right = self.buildBalancedFromArray(a, 0, n)
+            p.right.parent = p
+
+        else:
+            # if u is the left child of its parent, build a balanced tree from the array
+            # and make it the new left child of p
+            p.left = self.buildBalancedFromArray(a, 0, n)
+            p.left.parent = p
+
+    def buildBalancedFromArray(self, a, i, n):
+
+        # base case: if n is 0, return None
+        if n == 0:
+            return None
+
+        # find the middle element of the array
+        m = n // 2
+
+        # create a node for the middle element and recursively build balanced
+        # binary search trees from the left and right halves of the array
+        a[i+m].left = self.buildBalancedFromArray(a, i, m)
+
+        if a[i+m].left is not None:
+            a[i+m].left.parent = a[i+m]
+        a[i+m].right = self.buildBalancedFromArray(a, i+m+1, n-m-1)
+
+        if a[i+m].right is not None:
+            a[i+m].right.parent = a[i+m]
+
+        # return the root of the balanced binary search tree
+        return a[i+m]
+
+    def BSTInsertAndFindDepth(self, u):
+        w = self.root
+        if w is None:
+            self.root = u
+            self.n += 1
+            return 0
+        done = False
+        d = 0
+        while not done:
+            if u.value < w.value:
+                if w.left is None:
+                    w.left = u
+                    u.parent = w
+                    done = True
+                else:
+                    w = w.left
+            elif u.value > w.value:
+                if w.right is None:
+                    w.right = u
+                    u.parent = w
+                    done = True
+                else:
+                    w = w.right
+            else:
+                return -1
+            d += 1
+        self.n += 1
+        return d
+
+# Main function for driver code
+def main():
+
+  # Inserting elements into the tree
+  sgt = SGTree()
+  sgt.insert(7)
+  sgt.insert(6)
+  sgt.insert(3)
+  sgt.insert(1)
+  sgt.insert(0)
+  sgt.insert(8)
+  sgt.insert(9)
+  sgt.insert(4)
+  sgt.insert(5)
+  sgt.insert(2)
+  sgt.insert(3.5)
+
+  # Printing the preorder
+  print("Preorder traversal of the constructed ScapeGoat tree is:")
+  sgt.preorder(sgt.root)
+
+if __name__=='__main__':
+  main()
+
+# This code is contributed by Amit Mangal
+
+JavaScript
+
+// JavaScript program to implement insertion in
+// ScapeGoat Tree
+class Node {
+    constructor(value = 0) {
+        this.left = null;
+        this.right = null;
+        this.parent = null;
+        this.value = value;
+    }
+}
+
+class SGTree {
+    constructor() {
+        this.root = null;
+        this.n = 0;
+    }
+
+    preorder(node) {
+        if (node !== null) {
+            process.stdout.write(`${node.value} `);
+            this.preorder(node.left);
+            this.preorder(node.right);
+        }
+    }
+
+    size(node) {
+        if (node === null) {
+            return 0;
+        }
+        return 1 + this.size(node.left) + this.size(node.right);
+    }
+
+    insert(x) {
+        const node = new Node(x);
+        const h = this.BSTInsertAndFindDepth(node);
+        if (h > Math.ceil(2.4663034623764317 * Math.log(this.n) / Math.log(3))) {
+            let p = node.parent;
+            while (3 * this.size(p) <= 2 * this.size(p.parent)) {
+                p = p.parent;
+            }
+            this.rebuildTree(p.parent);
+        }
+        return h >= 0;
+    }
+
+    rebuildTree(u) {
+        const n = this.size(u);
+        const p = u.parent;
+        const a = new Array(n).fill(null);
+        this.storeInArray(u, a, 0);
+        if (p === null) {
+            this.root = this.buildBalancedFromArray(a, 0, n);
+            this.root.parent = null;
+        } else if (p.right === u) {
+            p.right = this.buildBalancedFromArray(a, 0, n);
+            p.right.parent = p;
+        } else {
+            p.left = this.buildBalancedFromArray(a, 0, n);
+            p.left.parent = p;
+        }
+    }
+
+    buildBalancedFromArray(a, i, n) {
+        if (n === 0) {
+            return null;
+        }
+        const m = Math.floor(n / 2);
+        a[i + m].left = this.buildBalancedFromArray(a, i, m);
+        if (a[i + m].left !== null) {
+            a[i + m].left.parent = a[i + m];
+        }
+        a[i + m].right = this.buildBalancedFromArray(a, i + m + 1, n - m - 1);
+        if (a[i + m].right !== null) {
+            a[i + m].right.parent = a[i + m];
+        }
+        return a[i + m];
+    }
+
+    BSTInsertAndFindDepth(u) {
+        let w = this.root;
+        if (w === null) {
+            this.root = u;
+            this.n += 1;
+            return 0;
+        }
+        let done = false;
+        let d = 0;
+        while (!done) {
+            if (u.value < w.value) {
+                if (w.left === null) {
+                    w.left = u;
+                    u.parent = w;
+                    done = true;
+                } else {
+                    w = w.left;
+                }
+            } else if (u.value > w.value) {
+                if (w.right === null) {
+                    w.right = u;
+                    u.parent = w;
+                    done = true;
+                } else {
+                    w = w.right;
+                }
+            } else {
+                return -1;
+            }
+            d += 1;
+        }
+        this.n += 1;
+        return d;
+    }
+}
+
+// Inserting elements into the tree
+const sgt = new SGTree();
+sgt.insert(7);
+sgt.insert(6);
+sgt.insert(3);
+sgt.insert(1);
+sgt.insert(0);
+sgt.insert(8);
+sgt.insert(9);
+sgt.insert(4);
+sgt.insert(5);
+sgt.insert(2);
+sgt.insert(3.5);
+
+// Printing the preorder
+console.log("Preorder traversal of the constructed ScapeGoat tree is:");
+sgt.preorder(sgt.root);
+
+// Contributed by adityasharmadev01
+
+Java
+
+import java.util.Arrays;
+
+class Node {
+    public Node left, right, parent;
+    public float value;
+
+    public Node()
+    {
+        value = 0;
+        left = right = parent = null;
+    }
+
+    public Node(float v)
+    {
+        value = v;
+        left = right = parent = null;
+    }
+}
+
+class SGTree {
+    private Node root;
+    private int n; // Number of nodes in Tree
+    public Node getRoot() {
+        return root;
+    }
+    public void preorder(Node node)
+    {
+        if (node != null) {
+            System.out.print(node.value + " ");
+            preorder(node.left);
+            preorder(node.right);
+        }
+    }
+
+    public int size(Node node)
+    {
+        if (node == null)
+            return 0;
+        return 1 + size(node.left) + size(node.right);
+    }
+
+    public boolean insert(float x)
+    {
+        Node node = new Node(x);
+        int h = BSTInsertAndFindDepth(node);
+        if (h > log32(n)) { // Find Scapegoat
+            Node p = node.parent;
+            while (3 * size(p) <= 2 * size(p.parent))
+                p = p.parent;
+            rebuildTree(p.parent);
+        }
+        return h >= 0;
+    }
+
+    public void rebuildTree(Node u)
+    {
+        int n = size(u);
+        Node p = u.parent;
+        Node[] a = new Node[n];
+        storeInArray(u, a, 0);
+        if (p == null) {
+            root = buildBalancedFromArray(a, 0, n);
+            root.parent = null;
+        }
+        else if (p.right == u) {
+            p.right = buildBalancedFromArray(a, 0, n);
+            p.right.parent = p;
+        }
+        else {
+            p.left = buildBalancedFromArray(a, 0, n);
+            p.left.parent = p;
+        }
+    }
+
+    private static final double log23 = 2.4663034623764317;
+
+    private static int log32(int n)
+    {
+        return (int)Math.ceil(log23 * Math.log(n));
+    }
+
+    private int storeInArray(Node ptr, Node[] arr, int i)
+    {
+        if (ptr == null)
+            return i;
+        i = storeInArray(ptr.left, arr, i);
+        arr[i++] = ptr;
+        return storeInArray(ptr.right, arr, i);
+    }
+
+    private int BSTInsertAndFindDepth(Node u)
+    {
+        // If tree is empty
+        Node w = root;
+        if (w == null) {
+            root = u;
+            n++;
+            return 0;
+        }
+
+        // While the node is not inserted
+        // or a node with same key exists.
+        boolean done = false;
+        int d = 0;
+        do {
+            if (u.value < w.value) {
+                if (w.left == null) {
+                    w.left = u;
+                    u.parent = w;
+                    done = true;
+                }
+                else
+                    w = w.left;
+            }
+            else if (u.value > w.value) {
+                if (w.right == null) {
+                    w.right = u;
+                    u.parent = w;
+                    done = true;
+                }
+                else
+                    w = w.right;
+            }
+            else
+                return -1;
+            d++;
+        } while (!done);
+        n++;
+        return d;
+    }
+
+    private Node buildBalancedFromArray(Node[] a, int i,
+                                        int n)
+    {
+        if (n == 0)
+            return null;
+        int m = n / 2;
+        a[i + m].left = buildBalancedFromArray(a, i, m);
+        if (a[i + m].left != null)
+            a[i + m].left.parent = a[i + m];
+        a[i + m].right = buildBalancedFromArray(
+            a, i + m + 1, n - m - 1);
+        if (a[i + m].right != null)
+            a[i + m].right.parent = a[i + m];
+        return a[i + m];
+    }
+}
+
+public class Main {
+    public static void main(String[] args)
+    {
+        SGTree sgt = new SGTree();
+        sgt.insert(7);
+        sgt.insert(6);
+        sgt.insert(3);
+        sgt.insert(1);
+        sgt.insert(0);
+        sgt.insert(8);
+        sgt.insert(9);
+        sgt.insert(4);
+        sgt.insert(5);
+        sgt.insert(2);
+        sgt.insert((float)(3.5));
+        System.out.println(
+            "Preorder traversal of the constructed ScapeGoat tree is");
+        sgt.preorder(sgt.getRoot());
+    }
+}
+
+C#
+
+// C# code addition
+
+using System;
+
+// A ScapeGoat Tree node
+public class Node
+{
+    public Node left;
+    public Node right;
+    public Node parent;
+    public double value;
+
+    public Node(double value = 0)
+    {
+        left = null;
+        right = null;
+        parent = null;
+        this.value = value;
+    }
+}
+
+// Class to represent a ScapeGoat Tree
+public class SGTree
+{
+    public Node root;
+    public int n; // Number of nodes in Tree
+
+    public SGTree()
+    {
+        root = null;
+        n = 0;
+    }
+
+    // Preorder traversal of the tree
+    public void Preorder(Node node)
+    {
+        if (node != null)
+        {
+            Console.Write(node.value + " ");
+            Preorder(node.left);
+            Preorder(node.right);
+        }
+    }
+
+    // To count number of nodes in the tree
+    public int Size(Node node)
+    {
+        if (node == null)
+        {
+            return 0;
+        }
+        return 1 + Size(node.left) + Size(node.right);
+    }
+
+    // To insert new element in the tree
+    public bool Insert(double x)
+    {
+        // Create a new node
+        Node node = new Node(x);
+
+        // Perform BST insertion and find depth of
+        // the inserted node.
+        int h = BSTInsertAndFindDepth(node);
+
+        // If tree becomes unbalanced
+        if (h > Math.Ceiling(2.4663034623764317 * Math.Log(n) / Math.Log(3)))
+        {
+
+            // Find Scapegoat
+            Node p = node.parent;
+            while (3 * Size(p) <= 2 * Size(p.parent))
+            {
+                p = p.parent;
+            }
+
+            // Rebuild tree rooted under scapegoat
+            RebuildTree(p.parent);
+        }
+        return h >= 0;
+    }
+
+    // This functions stores inorder traversal
+    // of tree rooted with ptr in an array arr[]
+    public int StoreInArray(Node ptr, Node[] arr, int i)
+    {
+        if (ptr == null)
+            return i;
+        i = StoreInArray(ptr.left, arr, i);
+        arr[i++] = ptr;
+        return StoreInArray(ptr.right, arr, i);
+    }
+
+    // Function to rebuilt tree from new node. This
+    // function basically uses storeInArray() to
+    // first store inorder traversal of BST rooted
+    // with u in an array.
+    // Then it converts array to the most possible
+    // balanced BST using buildBalancedFromArray()
+    public void RebuildTree(Node u)
+    {
+        int n = Size(u);
+        Node p = u.parent;
+        Node[] a = new Node[n];
+        StoreInArray(u, a, 0);
+        if (p == null)
+        {
+            root = BuildBalancedFromArray(a, 0, n);
+            root.parent = null;
+        }
+        else if (p.right == u)
+        {
+            p.right = BuildBalancedFromArray(a, 0, n);
+            p.right.parent = p;
+        }
+        else
+        {
+            p.left = BuildBalancedFromArray(a, 0, n);
+            p.left.parent = p;
+        }
+    }
+
+    // Function to built tree with balanced nodes
+    public Node BuildBalancedFromArray(Node[] a, int i, int n)
+    {
+        if (n == 0)
+        {
+            return null;
+        }
+        int m = (int)Math.Floor((double)n / 2);
+
+        // Now a[m] becomes the root of the new
+        // subtree a[0],.....,a[m-1]
+        a[i + m].left = BuildBalancedFromArray(a, i, m);
+
+        // elements a[0],...a[m-1] gets stored
+        // in the left subtree
+        if (a[i + m].left != null)
+        {
+            a[i + m].left.parent = a[i + m];
+        }
+
+        // elements a[m+1],....a[n-1] gets stored
+        // in the right subtree
+        a[i + m].right = BuildBalancedFromArray(a, i + m + 1, n - m - 1);
+        if (a[i + m].right != null)
+        {
+            a[i + m].right.parent = a[i + m];
+        }
+        return a[i + m];
+    }
+
+    // Height at which element is to be added
+    public int BSTInsertAndFindDepth(Node u)
+    {
+
+        // If tree is empty
+        Node w = root;
+        if (w == null)
+        {
+            root = u;
+            n += 1;
+            return 0;
+        }
+
+        // While the node is not inserted
+        // or a node with same key exists.
+        bool done = false;
+        int d = 0;
+        while (!done)
+        {
+            if (u.value < w.value)
+            {
+                if (w.left == null)
+                {
+                    w.left = u;
+                    u.parent = w;
+                    done = true;
+                }
+                else
+                {
+                    w = w.left;
+                }
+            }
+            else if (u.value > w.value)
+            {
+                if (w.right == null)
+                {
+                    w.right = u;
+                    u.parent = w;
+                    done = true;
+                } else {
+                    w = w.right;
+                }
+            } else {
+                return -1;
+            }
+            d += 1;
+        }
+        n += 1;
+        return d;
+    }
+}
+
+class GFG{
+
+    // Utility function to get value of log32(n)
+    public static int log32(int n)
+    {
+      double log23 = 2.4663034623764317;
+      return (int)Math.Ceiling(log23 * Math.Log(n));
+    }
+
+    static void Main(string[] args)
+    {
+        // Inserting elements into the tree
+        var sgt = new SGTree();
+        sgt.Insert(7);
+        sgt.Insert(6);
+        sgt.Insert(3);
+        sgt.Insert(1);
+        sgt.Insert(0);
+        sgt.Insert(8);
+        sgt.Insert(9);
+        sgt.Insert(4);
+        sgt.Insert(5);
+        sgt.Insert(2);
+        sgt.Insert(3.5);
+
+        // Printing the preorder
+        Console.WriteLine("Preorder traversal of the constructed ScapeGoat tree is:");
+        sgt.Preorder(sgt.root);
+
+    }
+}
+
+// The code Contributed by Arushi Goel.
+
+Output
+
+Preorder traversal of the constructed ScapeGoat tree is
+7 6 3 1 0 2 4 3.5 5 8 9
+
+Example to illustrate insertion:
+
+A scapegoat tree with 10 nodes and height 5.
+
+               7
+             /  \
+            6    8
+           /      \
+          5        9
+        /
+       2
+     /  \
+    1    4
+   /    /
+  0    3
+
+Let’s insert 3.5 in the below scapegoat tree.
+
+Initially d = 5 < log 3/2 n where n = 10;
+
+Since, d > log 3/2 n i.e., 6 > log 3/2 n, so we have to find the scapegoat in order to solve the problem of exceeding height.
+
+- Now we find a ScapeGoat. We start with newly added node 3.5 and check whether size(3.5)/size(3) >2/3.
+- Since, size(3.5) = 1 and size(3) = 2, so size(3.5)/size(3) = ½ which is less than 2/3. So, this is not the scapegoat and we move up .
+
+- Since 3 is not the scapegoat, we move and check the same condition for node 4. Since size(3) = 2 and size(4) = 3, so size(3)/size(4) = 2/3 which is not greater than 2/3. So, this is not the scapegoat and we move up .
+
+- Since 3 is not the scapegoat, we move and check the same condition for node 4. Since, size(3) = 2 and size(4) = 3, so size(3)/size(4) = 2/3 which is not greater than 2/3. So, this is not the scapegoat and we move up .
+- Now, size(4)/size(2) = 3/6. Since, size(4)= 3 and size(2) = 6 but 3/6 is still less than 2/3, which does not fulfill the condition of scapegoat so we again move up.
+
+- Now, size(2)/size(5) = 6/7. Since, size(2) = 6 and size(5) = 7. 6/7 >2/3 which fulfills the condition of scapegoat, so we stop here and hence node 5 is a scapegoat
+
+Finally, after finding the scapegoat, rebuilding will be taken at the subtree rooted at scapegoat i.e., at 5. Final tree:
+
+Comparison with other self-balancing BSTs
+
+Red-Black and AVL : Time complexity of search, insert and delete is O(Log n)
+
+Splay Tree : Worst case time complexities of search, insert and delete is O(n). But amortized time complexity of these operations is O(Log n).
+
+ScapeGoat Tree: Like Splay Tree, it is easy to implement and has worst case time complexity of search as O(Log n). Worst case and amortized time complexities of insert and delete are same as Splay Tree for Scapegoat tree.

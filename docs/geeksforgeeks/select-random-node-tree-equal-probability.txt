@@ -1,0 +1,504 @@
+Source: https://www.geeksforgeeks.org/dsa/select-random-node-tree-equal-probability/
+Title: Select a Random Node from a tree with equal probability
+Extractor: 2
+
+Given a Binary Tree with children Nodes, Return a random Node with an equal Probability of selecting any Node in tree. Consider the given tree with root as 1.
+
+      10
+    /    \
+   20     30
+  / \      / \
+40   50   60   70
+
+Examples:
+
+Input : getRandom(root);
+Output : A Random Node From Tree : 3
+
+Input : getRandom(root);
+Output : A Random Node From Tree : 2
+
+A simple solution is to store Inorder traversal of tree in an array. Let the count of nodes be n. To get a random node, we generate a random number from 0 to n-1, use this number as index in array and return the value at index.
+
+An alternate solution is to modify tree structure. We store count of children in every node. Consider the above tree. We use inorder traversal here also. We generate a number smaller than or equal count of nodes. We traverse tree and go to the node at that index. We use counts to quickly reach the desired node. With counts, we reach in O(h) time where h is height of tree.
+
+      10,6
+    /      \
+  20,2       30,2
+ /   \       /   \
+40,0 50,0  60,0  70,0
+The first value is node and second
+value is count of children.
+
+We start traversing the tree, on each node we either go to left subtree or right subtree considering whether the count of children is less than random count or not. If the random count is less than the count of children then we go left else we go right.
+
+Below is the implementation of above Algorithm. getElements will return count of children for root, InsertChildrenCount inserts children data to each node, RandomNode returns the random node with the help of Utility Function RandomNodeUtil.
+
+Implementation:
+
+C++
+
+// CPP program to Select a Random Node from a tree
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Node {
+    int data;
+    int children;
+    Node *left, *right;
+};
+
+Node* newNode(int data)
+{
+    Node *temp = new Node;
+    temp->data = data;
+    temp->left = temp->right = NULL;
+    temp->children = 0;
+    return temp;
+}
+
+// This is used to fill children counts.
+int getElements(Node* root)
+{
+    if (!root)
+        return 0;
+    return getElements(root->left) +
+          getElements(root->right) + 1;
+}
+
+// Inserts Children count for each node
+void insertChildrenCount(Node*& root)
+{
+    if (!root)
+        return;
+
+    root->children = getElements(root) - 1;
+    insertChildrenCount(root->left);
+    insertChildrenCount(root->right);
+}
+
+// returns number of children for root
+int children(Node* root)
+{
+    if (!root)
+        return 0;
+    return root->children + 1;
+}
+
+// Helper Function to return a random node
+int randomNodeUtil(Node* root, int count)
+{
+    if (!root)
+        return 0;
+
+    if (count == children(root->left))
+        return root->data;
+
+    if (count < children(root->left))
+        return randomNodeUtil(root->left, count);
+
+    return randomNodeUtil(root->right,
+              count - children(root->left) - 1);
+}
+
+// Returns Random node
+int randomNode(Node* root)
+{
+    srand(time(0));
+
+    int count = rand() % (root->children + 1);
+    return randomNodeUtil(root, count);
+}
+
+int main()
+{
+    // Creating Above Tree
+    Node* root = newNode(10);
+    root->left = newNode(20);
+    root->right = newNode(30);
+    root->left->right = newNode(40);
+    root->left->right = newNode(50);
+    root->right->left = newNode(60);
+    root->right->right = newNode(70);
+
+    insertChildrenCount(root);
+
+    cout << "A Random Node From Tree : "
+         << randomNode(root) << endl;
+
+    return 0;
+}
+
+Java
+
+// Java program to Select a Random Node from a tree
+import java.util.*;
+import java.lang.*;
+import java.io.*;
+
+class GFG
+{
+static class Node
+{
+    int data;
+    int children;
+    Node left, right;
+}
+
+static Node newNode(int data)
+{
+    Node temp = new Node();
+    temp.data = data;
+    temp.left = temp.right = null;
+    temp.children = 0;
+    return temp;
+}
+
+// This is used to fill children counts.
+static int getElements(Node root)
+{
+    if (root == null)
+        return 0;
+    return getElements(root.left) +
+        getElements(root.right) + 1;
+}
+
+// Inserts Children count for each node
+static Node insertChildrenCount(Node root)
+{
+    if (root == null)
+        return null;
+
+    root.children = getElements(root) - 1;
+    root.left = insertChildrenCount(root.left);
+    root.right = insertChildrenCount(root.right);
+    return root;
+}
+
+// returns number of children for root
+static int children(Node root)
+{
+    if (root == null)
+        return 0;
+    return root.children + 1;
+}
+
+// Helper Function to return a random node
+static int randomNodeUtil(Node root, int count)
+{
+    if (root == null)
+        return 0;
+
+    if (count == children(root.left))
+        return root.data;
+
+    if (count < children(root.left))
+        return randomNodeUtil(root.left, count);
+
+    return randomNodeUtil(root.right,
+         count - children(root.left) - 1);
+}
+
+// Returns Random node
+static int randomNode(Node root)
+{
+
+    int count = (int) Math.random() *
+                     (root.children + 1);
+    return randomNodeUtil(root, count);
+}
+
+// Driver Code
+public static void main(String args[])
+{
+
+    // Creating Above Tree
+    Node root = newNode(10);
+    root.left = newNode(20);
+    root.right = newNode(30);
+    root.left.right = newNode(40);
+    root.left.right = newNode(50);
+    root.right.left = newNode(60);
+    root.right.right = newNode(70);
+
+    insertChildrenCount(root);
+
+    System.out.println( "A Random Node From Tree : " +
+                                    randomNode(root));
+}
+}
+
+// This code is contributed by Arnab Kundu
+
+Python3
+
+# Python3 program to Select a
+# Random Node from a tree
+from random import randint
+
+class Node:
+
+    def __init__(self, data):
+        self.data = data
+        self.children = 0
+        self.left = None
+        self.right = None
+
+# This is used to fill children counts.
+def getElements(root):
+
+    if root == None:
+        return 0
+
+    return (getElements(root.left) +
+            getElements(root.right) + 1)
+
+# Inserts Children count for each node
+def insertChildrenCount(root):
+
+    if root == None:
+        return
+
+    root.children = getElements(root) - 1
+    insertChildrenCount(root.left)
+    insertChildrenCount(root.right)
+
+# Returns number of children for root
+def children(root):
+
+    if root == None:
+        return 0
+    return root.children + 1
+
+# Helper Function to return a random node
+def randomNodeUtil(root, count):
+
+    if root == None:
+        return 0
+
+    if count == children(root.left):
+        return root.data
+
+    if count < children(root.left):
+        return randomNodeUtil(root.left, count)
+
+    return randomNodeUtil(root.right,
+            count - children(root.left) - 1)
+
+# Returns Random node
+def randomNode(root):
+
+    count = randint(0, root.children)
+    return randomNodeUtil(root, count)
+
+# Driver Code
+if __name__ == "__main__":
+
+    # Creating Above Tree
+    root = Node(10)
+    root.left = Node(20)
+    root.right = Node(30)
+    root.left.right = Node(40)
+    root.left.right = Node(50)
+    root.right.left = Node(60)
+    root.right.right = Node(70)
+
+    insertChildrenCount(root)
+
+    print("A Random Node From Tree :",
+           randomNode(root))
+
+# This code is contributed by Rituraj Jain
+
+C#
+
+// C# program to Select a Random Node from a tree
+using System;
+
+class GFG
+{
+
+class Node
+{
+    public int data;
+    public int children;
+    public Node left, right;
+}
+
+static Node newNode(int data)
+{
+    Node temp = new Node();
+    temp.data = data;
+    temp.left = temp.right = null;
+    temp.children = 0;
+    return temp;
+}
+
+// This is used to fill children counts.
+static int getElements(Node root)
+{
+    if (root == null)
+        return 0;
+    return getElements(root.left) +
+        getElements(root.right) + 1;
+}
+
+// Inserts Children count for each node
+static Node insertChildrenCount(Node root)
+{
+    if (root == null)
+        return null;
+
+    root.children = getElements(root) - 1;
+    root.left = insertChildrenCount(root.left);
+    root.right = insertChildrenCount(root.right);
+    return root;
+}
+
+// returns number of children for root
+static int children(Node root)
+{
+    if (root == null)
+        return 0;
+    return root.children + 1;
+}
+
+// Helper Function to return a random node
+static int randomNodeUtil(Node root, int count)
+{
+    if (root == null)
+        return 0;
+
+    if (count == children(root.left))
+        return root.data;
+
+    if (count < children(root.left))
+        return randomNodeUtil(root.left, count);
+
+    return randomNodeUtil(root.right,
+        count - children(root.left) - 1);
+}
+
+// Returns Random node
+static int randomNode(Node root)
+{
+
+    int count = (int) new Random().Next(0, root.children + 1);
+    return randomNodeUtil(root, count);
+}
+
+// Driver Code
+public static void Main(String []args)
+{
+
+    // Creating Above Tree
+    Node root = newNode(10);
+    root.left = newNode(20);
+    root.right = newNode(30);
+    root.left.right = newNode(40);
+    root.left.right = newNode(50);
+    root.right.left = newNode(60);
+    root.right.right = newNode(70);
+
+    insertChildrenCount(root);
+
+    Console.Write( "A Random Node From Tree : " +
+                                    randomNode(root));
+}
+}
+
+// This code is contributed by Arnab Kundu
+
+JavaScript
+
+<script>
+
+// JavaScript program to Select a Random Node from a tree
+
+class Node
+{
+    constructor(data)
+    {
+        this.data=data;
+        this.left=this.right=null;
+        this.children = 0;
+    }
+}
+
+// This is used to fill children counts.
+function getElements(root)
+{
+    if (root == null)
+        return 0;
+    return getElements(root.left) +
+        getElements(root.right) + 1;
+}
+
+// Inserts Children count for each node
+function insertChildrenCount(root)
+{
+    if (root == null)
+        return null;
+
+    root.children = getElements(root) - 1;
+    root.left = insertChildrenCount(root.left);
+    root.right = insertChildrenCount(root.right);
+    return root;
+}
+
+// returns number of children for root
+function children(root)
+{
+    if (root == null)
+        return 0;
+    return root.children + 1;
+}
+
+// Helper Function to return a random node
+function randomNodeUtil(root,count)
+{
+    if (root == null)
+        return 0;
+
+    if (count == children(root.left))
+        return root.data;
+
+    if (count < children(root.left))
+        return randomNodeUtil(root.left, count);
+
+    return randomNodeUtil(root.right,
+         count - children(root.left) - 1);
+}
+
+// Returns Random node
+function randomNode(root)
+{
+    let count =  Math.floor(Math.random() *
+                     (root.children + 1));
+    return randomNodeUtil(root, count);
+}
+
+// Driver Code
+// Creating Above Tree
+let root = new Node(10);
+root.left = new Node(20);
+root.right = new Node(30);
+root.left.right = new Node(40);
+root.left.right = new Node(50);
+root.right.left = new Node(60);
+root.right.right = new Node(70);
+
+insertChildrenCount(root);
+
+document.write( "A Random Node From Tree : " +
+                   randomNode(root)+"<br>");
+
+// This code is contributed by avanitrachhadiya2155
+
+</script>
+
+Output
+
+A Random Node From Tree : 30
+
+Time Complexity of randomNode is O(h) where h is height of tree. Note that we are either moving to right or to left at a time. Auxiliary Space: O(h)

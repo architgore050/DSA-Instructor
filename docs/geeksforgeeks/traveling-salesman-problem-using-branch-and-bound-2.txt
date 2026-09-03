@@ -1,0 +1,1347 @@
+Source: https://www.geeksforgeeks.org/dsa/traveling-salesman-problem-using-branch-and-bound-2/
+Title: Traveling Salesman Problem using Branch And Bound
+Extractor: 2
+
+Given a set of cities and distance between every pair of cities, the problem is to find the shortest possible tour that visits every city exactly once and returns to the starting point.
+
+For example, consider the graph shown in figure on right side. A TSP tour in the graph is 0-1-3-2-0. The cost of the tour is 10+25+30+15 which is 80. We have discussed following solutions 1) Naive and Dynamic Programming 2) Approximate solution using MST
+
+## Branch and Bound Solution for TSP
+
+> In the Branch and Bound method, we explore the solution space as a state space tree where each node represents a partial tour. For every node, we compute a bound on the best possible solution that can be obtained from that node. If this bound is greater than the best solution found so far, the subtree rooted at that node is ignored (pruned) because it cannot produce a better solution.
+
+### Cost Components of a Node
+
+The total cost associated with a node consists of two parts
+
+- Cost of reaching the node from the root, This is the cost of the edges already included in the partial tour.
+- Estimated cost to complete the tour from the current node,  This is computed using a lower bound on the remaining edges.
+
+For a minimization problem like the Travelling Salesman Problem, we compute a lower bound. This lower bound represents the minimum possible cost of completing the tour from the current node.
+
+### Lower Bound Calculation using Cost Matrix Reduction
+
+To compute the lower bound efficiently, we use matrix reduction .
+
+#### Row Reduction
+
+For each row of the cost matrix
+
+- Find the minimum value in that row.
+- Subtract it from all elements of that row.
+- Add the subtracted value to the reduction cost.
+
+#### Column Reduction
+
+For each column
+
+- Find the minimum value in that column.
+- Subtract it from all elements of that column.
+- Add the subtracted value to the reduction cost.
+
+The sum of all reductions gives a lower bound on the cost of completing the tour.
+
+### State Space Tree Expansion
+
+The algorithm constructs a state space tree where
+
+- Each level represents a city added to the partial tour.
+- Each node stores the reduced cost matrix, the current cost (lower bound), the current city, and the path taken so far.
+
+A priority queue (min-heap) is used so that the node with the s mallest lower bound is expanded first.
+
+### Creating Child Nodes
+
+When moving from city i → j :
+
+- The row of city i is set to ∞ (cannot leave again).
+- The column of city j is set to ∞ (cannot revisit).
+- The edge j → start may also be restricted until the last level.
+- The matrix is reduced again to compute a new lower bound.
+
+The new node cost becomes:
+
+> New Cost = Parent Cost + Edge Cost(i, j) + Reduction Cost of new matrix
+
+### Pruning Condition
+
+If Node Cost ≥ Best Tour Cost Found, then the node (subtree) is pruned, because it cannot produce a better solution.
+
+Note: When a node reaches level n-1 (all cities visited), the algorithm adds the edge back to the starting city to complete the tour. The tour with the minimum cost among all possible tours explored is returned as the optimal solution.
+
+C++
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+using namespace std;
+
+//Driver Code Ends
+
+// large value used to represent no edge
+const int inf = 1e9;
+
+// structure representing a node in the state space tree
+struct node {
+
+    // reduced cost matrix
+    vector<vector<int>> matrix;
+
+    // lower bound cost of this node
+    int cost;
+
+    // current city
+    int vertex;
+
+    // number of cities visited so far
+    int level;
+
+    // path taken to reach this node
+    vector<int> path;
+
+    node(int n = 0) {
+        matrix.assign(n, vector<int>(n, inf));
+        cost = 0;
+        vertex = 0;
+        level = 0;
+    }
+};
+
+// reduce rows and columns of matrix, return total reduction cost
+int reducematrix(vector<vector<int>> &mat) {
+
+    int n = mat.size();
+    int reduction = 0;
+
+    // row reduction
+    for (int i = 0; i < n; i++) {
+
+        int rowmin = inf;
+
+        // find minimum value in the row
+        for (int j = 0; j < n; j++)
+            rowmin = min(rowmin, mat[i][j]);
+
+        // subtract row minimum from all elements of that row
+        if (rowmin != inf && rowmin > 0) {
+
+            reduction += rowmin;
+
+            for (int j = 0; j < n; j++)
+                if (mat[i][j] != inf)
+                    mat[i][j] -= rowmin;
+        }
+    }
+
+    // column reduction
+    for (int j = 0; j < n; j++) {
+
+        int colmin = inf;
+
+        // find minimum value in the column
+        for (int i = 0; i < n; i++)
+            colmin = min(colmin, mat[i][j]);
+
+        // subtract column minimum from all elements of that column
+        if (colmin != inf && colmin > 0) {
+
+            reduction += colmin;
+
+            for (int i = 0; i < n; i++)
+                if (mat[i][j] != inf)
+                    mat[i][j] -= colmin;
+        }
+    }
+
+    // return total reduction cost which contributes to lower bound
+    return reduction;
+}
+
+// create a child node after moving from one city to another
+node createchild(const node &parent, int from, int to) {
+
+    int n = parent.matrix.size();
+    node child(n);
+
+    // copy parent reduced matrix
+    child.matrix = parent.matrix;
+
+    // disable all outgoing edges from current city
+    for (int j = 0; j < n; j++)
+        child.matrix[from][j] = inf;
+
+    // disable all incoming edges to the next city
+    for (int i = 0; i < n; i++)
+        child.matrix[i][to] = inf;
+
+    // cost of edge used for transition
+    int edgecost = parent.matrix[from][to];
+
+    // new cost includes parent cost and edge cost
+    child.cost = parent.cost + edgecost;
+
+    // perform reduction on the new matrix
+    int reduction = reducematrix(child.matrix);
+
+    // add reduction cost to obtain lower bound
+    child.cost += reduction;
+
+    // update node information
+    child.vertex = to;
+    child.level = parent.level + 1;
+
+    // copy path and append new city
+    child.path = parent.path;
+    child.path.push_back(to);
+
+    return child;
+};
+
+// comparison for selecting minimum cost node
+struct comparenode {
+
+    // priority queue selects node with minimum cost
+    bool operator()(const node &a, const node &b) const {
+        return a.cost > b.cost;
+    }
+};
+
+// solve tsp using branch and bound
+pair<int, vector<int>> solvetsp(const vector<vector<int>> &costmatrix) {
+
+    int n = costmatrix.size();
+
+    // create root node
+    node root(n);
+    root.matrix = costmatrix;
+    root.vertex = 0;
+    root.level = 0;
+
+    // starting city
+    root.path.push_back(0);
+
+    // compute initial reduction
+    root.cost = reducematrix(root.matrix);
+
+    // priority queue to select node with smallest bound
+    priority_queue<node, vector<node>, comparenode> pq;
+    pq.push(root);
+
+    int bestcost = inf;
+    vector<int> bestpath;
+
+    // explore nodes until queue becomes empty
+    while (!pq.empty()) {
+
+        node cur = pq.top();
+        pq.pop();
+
+        // prune nodes whose bound is already worse
+        if (cur.cost >= bestcost)
+            continue;
+
+        // if all cities are visited
+        if (cur.level == n - 1) {
+
+            // cost to return to starting city
+            int finaledge = cur.matrix[cur.vertex][0];
+
+            if (finaledge == inf)
+                continue;
+
+            int totalcost = cur.cost + finaledge;
+
+            // update best solution
+            if (totalcost < bestcost) {
+
+                bestcost = totalcost;
+                bestpath = cur.path;
+                bestpath.push_back(0);
+            }
+
+            continue;
+        }
+
+        // expand current node to all possible next cities
+        for (int j = 0; j < n; j++) {
+
+            if (cur.matrix[cur.vertex][j] != inf) {
+
+                bool visited = false;
+
+                // check if city already visited
+                for (int v : cur.path)
+                    if (v == j)
+                        visited = true;
+
+                if (visited)
+                    continue;
+
+                // create child node
+                node child = createchild(cur, cur.vertex, j);
+
+                // push only promising nodes
+                if (child.cost < bestcost)
+                    pq.push(child);
+            }
+        }
+    }
+
+    return {bestcost, bestpath};
+}
+
+//Driver Code Starts
+
+// driver code
+int main() {
+
+    // example cost matrix for 5 cities
+    vector<vector<int>> costmatrix = {
+        {0, 72, 184, 136, 115},
+        {72, 0, 143, 180, 58},
+        {184, 143, 0, 23, 182},
+        {136, 180, 23, 0, 156},
+        {115, 58, 182, 156, 0}
+    };
+
+    auto result = solvetsp(costmatrix);
+
+    int bestcost = result.first;
+    vector<int> path = result.second;
+
+    if (bestcost >= inf) {
+
+        cout << "No Hamiltonian cycle found
+";
+
+    } else {
+
+        cout << "Minimum cost: " << bestcost << "
+";
+        cout << "Path: ";
+
+        for (int i = 0; i < path.size(); i++) {
+
+            cout << path[i];
+
+            if (i + 1 < path.size())
+                cout << " ";
+        }
+
+        cout << "
+";
+    }
+
+    return 0;
+}
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.ArrayList;
+import java.util.PriorityQueue;
+import java.util.Comparator;
+
+class GfG {
+
+//Driver Code Ends
+
+    // large value used to represent no edge
+    static final int inf = (int)1e9;
+
+    // structure representing a node in the state space tree
+    static class node {
+
+        // reduced cost matrix
+        ArrayList<ArrayList<Integer>> matrix;
+
+        // lower bound cost of this node
+        int cost;
+
+        // current city
+        int vertex;
+
+        // number of cities visited so far
+        int level;
+
+        // path taken to reach this node
+        ArrayList<Integer> path;
+
+        node(int n) {
+
+            matrix = new ArrayList<>();
+
+            for (int i = 0; i < n; i++) {
+
+                ArrayList<Integer> row = new ArrayList<>();
+
+                for (int j = 0; j < n; j++)
+                    row.add(inf);
+
+                matrix.add(row);
+            }
+
+            cost = 0;
+            vertex = 0;
+            level = 0;
+            path = new ArrayList<>();
+        }
+    }
+
+    // reduce rows and columns of matrix, return total reduction cost
+    static int reducematrix(ArrayList<ArrayList<Integer>> mat) {
+
+        int n = mat.size();
+        int reduction = 0;
+
+        // row reduction
+        for (int i = 0; i < n; i++) {
+
+            int rowmin = inf;
+
+            // find minimum value in the row
+            for (int j = 0; j < n; j++)
+                rowmin = Math.min(rowmin, mat.get(i).get(j));
+
+            // subtract row minimum from all elements of that row
+            if (rowmin != inf && rowmin > 0) {
+
+                reduction += rowmin;
+
+                for (int j = 0; j < n; j++)
+                    if (mat.get(i).get(j) != inf)
+                        mat.get(i).set(j, mat.get(i).get(j) - rowmin);
+            }
+        }
+
+        // column reduction
+        for (int j = 0; j < n; j++) {
+
+            int colmin = inf;
+
+            // find minimum value in the column
+            for (int i = 0; i < n; i++)
+                colmin = Math.min(colmin, mat.get(i).get(j));
+
+            // subtract column minimum from all elements of that column
+            if (colmin != inf && colmin > 0) {
+
+                reduction += colmin;
+
+                for (int i = 0; i < n; i++)
+                    if (mat.get(i).get(j) != inf)
+                        mat.get(i).set(j, mat.get(i).get(j) - colmin);
+            }
+        }
+
+        // return total reduction cost which contributes to lower bound
+        return reduction;
+    }
+
+    // create a child node after moving from one city to another
+    static node createchild(node parent, int from, int to) {
+
+        int n = parent.matrix.size();
+        node child = new node(n);
+
+        // copy parent reduced matrix
+        for (int i = 0; i < n; i++)
+            child.matrix.set(i, new ArrayList<>(parent.matrix.get(i)));
+
+        // disable all outgoing edges from current city
+        for (int j = 0; j < n; j++)
+            child.matrix.get(from).set(j, inf);
+
+        // disable all incoming edges to the next city
+        for (int i = 0; i < n; i++)
+            child.matrix.get(i).set(to, inf);
+
+        // cost of edge used for transition
+        int edgecost = parent.matrix.get(from).get(to);
+
+        // new cost includes parent cost and edge cost
+        child.cost = parent.cost + edgecost;
+
+        // perform reduction on the new matrix
+        int reduction = reducematrix(child.matrix);
+
+        // add reduction cost to obtain lower bound
+        child.cost += reduction;
+
+        // update node information
+        child.vertex = to;
+        child.level = parent.level + 1;
+
+        // copy path and append new city
+        child.path = new ArrayList<>(parent.path);
+        child.path.add(to);
+
+        return child;
+    }
+
+    // comparison for selecting minimum cost node
+    static class comparenode implements Comparator<node> {
+
+        // priority queue selects node with minimum cost
+        public int compare(node a, node b) {
+            return a.cost - b.cost;
+        }
+    }
+
+    // solve tsp using branch and bound
+    static Pair solvetsp(int[][] costmatrix) {
+
+        int n = costmatrix.length;
+
+        // create root node
+        node root = new node(n);
+
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                root.matrix.get(i).set(j, costmatrix[i][j]);
+
+        root.vertex = 0;
+        root.level = 0;
+
+        // starting city
+        root.path.add(0);
+
+        // compute initial reduction
+        root.cost = reducematrix(root.matrix);
+
+        // priority queue to select node with smallest bound
+        PriorityQueue<node> pq = new PriorityQueue<>(new comparenode());
+        pq.add(root);
+
+        int bestcost = inf;
+        ArrayList<Integer> bestpath = new ArrayList<>();
+
+        // explore nodes until queue becomes empty
+        while (!pq.isEmpty()) {
+
+            node cur = pq.poll();
+
+            // prune nodes whose bound is already worse
+            if (cur.cost >= bestcost)
+                continue;
+
+            // if all cities are visited
+            if (cur.level == n - 1) {
+
+                // cost to return to starting city
+                int finaledge = cur.matrix.get(cur.vertex).get(0);
+
+                if (finaledge == inf)
+                    continue;
+
+                int totalcost = cur.cost + finaledge;
+
+                // update best solution
+                if (totalcost < bestcost) {
+
+                    bestcost = totalcost;
+                    bestpath = new ArrayList<>(cur.path);
+                    bestpath.add(0);
+                }
+
+                continue;
+            }
+
+            // expand current node to all possible next cities
+            for (int j = 0; j < n; j++) {
+
+                if (cur.matrix.get(cur.vertex).get(j) != inf) {
+
+                    boolean visited = false;
+
+                    // check if city already visited
+                    for (int v : cur.path)
+                        if (v == j)
+                            visited = true;
+
+                    if (visited)
+                        continue;
+
+                    // create child node
+                    node child = createchild(cur, cur.vertex, j);
+
+                    // push only promising nodes
+                    if (child.cost < bestcost)
+                        pq.add(child);
+                }
+            }
+        }
+
+        return new Pair(bestcost, bestpath);
+    }
+
+    static class Pair {
+
+        int cost;
+        ArrayList<Integer> path;
+
+        Pair(int c, ArrayList<Integer> p) {
+            cost = c;
+            path = p;
+        }
+    }
+
+//Driver Code Starts
+
+    // driver code
+    public static void main(String[] args) {
+
+        int[][] costmatrix = {
+            {0,72,184,136,115},
+            {72,0,143,180,58},
+            {184,143,0,23,182},
+            {136,180,23,0,156},
+            {115,58,182,156,0}
+        };
+
+        Pair result = solvetsp(costmatrix);
+
+        int bestcost = result.cost;
+        ArrayList<Integer> path = result.path;
+
+        if (bestcost >= inf) {
+
+            System.out.println("No Hamiltonian cycle found");
+
+        } else {
+
+            System.out.println("Minimum cost: " + bestcost);
+            System.out.print("Path: ");
+
+            for (int i = 0; i < path.size(); i++) {
+
+                System.out.print(path.get(i));
+
+                if (i + 1 < path.size())
+                    System.out.print(" ");
+            }
+
+            System.out.println();
+        }
+    }
+}
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+import heapq
+
+#Driver Code Ends
+
+# large value used to represent no edge
+inf = 10**9
+
+# structure representing a node in the state space tree
+class Node:
+    def __init__(self, n=0):
+
+        # reduced cost matrix
+        self.matrix = [[inf] * n for _ in range(n)]
+
+        # lower bound cost of this node
+        self.cost = 0
+
+        # current city
+        self.vertex = 0
+
+        # number of cities visited so far
+        self.level = 0
+
+        # path taken to reach this node
+        self.path = []
+
+    def __lt__(self, other):
+        return self.cost < other.cost
+
+# reduce rows and columns of matrix, return total reduction cost
+def reduce_matrix(mat):
+
+    n = len(mat)
+    reduction = 0
+
+    # row reduction
+    for i in range(n):
+
+        row_min = min(mat[i])
+
+        # subtract row minimum from all elements of that row
+        if row_min != inf and row_min > 0:
+
+            reduction += row_min
+
+            for j in range(n):
+                if mat[i][j] != inf:
+                    mat[i][j] -= row_min
+
+    # column reduction
+    for j in range(n):
+
+        col_min = min(mat[i][j] for i in range(n))
+
+        # subtract column minimum from all elements of that column
+        if col_min != inf and col_min > 0:
+
+            reduction += col_min
+
+            for i in range(n):
+                if mat[i][j] != inf:
+                    mat[i][j] -= col_min
+
+    # return total reduction cost which contributes to lower bound
+    return reduction
+
+# create a child node after moving from one city to another
+def create_child(parent, from_city, to):
+
+    n = len(parent.matrix)
+    child = Node(n)
+
+    # copy parent reduced matrix
+    child.matrix = [row[:] for row in parent.matrix]
+
+    # disable all outgoing edges from current city
+    for j in range(n):
+        child.matrix[from_city][j] = inf
+
+    # disable all incoming edges to the next city
+    for i in range(n):
+        child.matrix[i][to] = inf
+
+    # cost of edge used for transition
+    edge_cost = parent.matrix[from_city][to]
+
+    # new cost includes parent cost and edge cost
+    child.cost = parent.cost + edge_cost
+
+    # perform reduction on the new matrix
+    reduction = reduce_matrix(child.matrix)
+
+    # add reduction cost to obtain lower bound
+    child.cost += reduction
+
+    # update node information
+    child.vertex = to
+    child.level = parent.level + 1
+
+    # copy path and append new city
+    child.path = parent.path[:]
+    child.path.append(to)
+
+    return child
+
+# solve tsp using branch and bound
+def solve_tsp(cost_matrix):
+
+    n = len(cost_matrix)
+
+    # create root node
+    root = Node(n)
+    root.matrix = [row[:] for row in cost_matrix]
+    root.vertex = 0
+    root.level = 0
+
+    # starting city
+    root.path.append(0)
+
+    # compute initial reduction
+    root.cost = reduce_matrix(root.matrix)
+
+    # priority queue to select node with smallest bound
+    pq = []
+    heapq.heappush(pq, root)
+
+    best_cost = inf
+    best_path = []
+
+    # explore nodes until queue becomes empty
+    while pq:
+
+        cur = heapq.heappop(pq)
+
+        # prune nodes whose bound is already worse
+        if cur.cost >= best_cost:
+            continue
+
+        # if all cities are visited
+        if cur.level == n - 1:
+
+            # cost to return to starting city
+            final_edge = cur.matrix[cur.vertex][0]
+
+            if final_edge == inf:
+                continue
+
+            total_cost = cur.cost + final_edge
+
+            # update best solution
+            if total_cost < best_cost:
+
+                best_cost = total_cost
+                best_path = cur.path[:]
+                best_path.append(0)
+
+            continue
+
+        # expand current node to all possible next cities
+        for j in range(n):
+
+            if cur.matrix[cur.vertex][j] != inf:
+
+                visited = j in cur.path
+
+                if visited:
+                    continue
+
+                # create child node
+                child = create_child(cur, cur.vertex, j)
+
+                # push only promising nodes
+                if child.cost < best_cost:
+                    heapq.heappush(pq, child)
+
+    return best_cost, best_path
+
+if __name__=="__main__":
+
+#Driver Code Starts
+    cost_matrix = [
+        [0, 72, 184, 136, 115],
+        [72, 0, 143, 180, 58],
+        [184, 143, 0, 23, 182],
+        [136, 180, 23, 0, 156],
+        [115, 58, 182, 156, 0]
+    ]
+
+    best_cost, path = solve_tsp(cost_matrix)
+
+    if best_cost >= inf:
+        print("No Hamiltonian cycle found")
+    else:
+        print("Minimum cost:", best_cost)
+        print("Path:", " ".join(map(str, path)))
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class GfG
+{
+//Driver Code Ends
+
+    // large value used to represent no edge
+    private const int inf = 1_000_000_000;
+
+    // structure representing a node in the state space tree
+    class Node
+    {
+        // reduced cost matrix
+        public List<List<int>> Matrix { get; set; }
+
+        // lower bound cost of this node
+        public int Cost { get; set; }
+
+        // current city
+        public int Vertex { get; set; }
+
+        // number of cities visited so far
+        public int Level { get; set; }
+
+        // path taken to reach this node
+        public List<int> Path { get; set; }
+
+        public Node(int n = 0)
+        {
+            Matrix = new List<List<int>>(n);
+            for (int i = 0; i < n; i++)
+            {
+                Matrix.Add(Enumerable.Repeat(inf, n).ToList());
+            }
+            Cost = 0;
+            Vertex = 0;
+            Level = 0;
+            Path = new List<int>();
+        }
+    }
+
+    // reduce rows and columns of matrix, return total reduction cost
+    static int ReduceMatrix(List<List<int>> mat)
+    {
+        int n = mat.Count;
+        int reduction = 0;
+
+        // row reduction
+        for (int i = 0; i < n; i++)
+        {
+            int rowMin = inf;
+
+            // find minimum value in the row
+            for (int j = 0; j < n; j++)
+                rowMin = Math.Min(rowMin, mat[i][j]);
+
+            // subtract row minimum from all elements of that row
+            if (rowMin != inf && rowMin > 0)
+            {
+                reduction += rowMin;
+
+                for (int j = 0; j < n; j++)
+                    if (mat[i][j] != inf)
+                        mat[i][j] -= rowMin;
+            }
+        }
+
+        // column reduction
+        for (int j = 0; j < n; j++)
+        {
+            int colMin = inf;
+
+            // find minimum value in the column
+            for (int i = 0; i < n; i++)
+                colMin = Math.Min(colMin, mat[i][j]);
+
+            // subtract column minimum from all elements of that column
+            if (colMin != inf && colMin > 0)
+            {
+                reduction += colMin;
+
+                for (int i = 0; i < n; i++)
+                    if (mat[i][j] != inf)
+                        mat[i][j] -= colMin;
+            }
+        }
+
+        // return total reduction cost which contributes to lower bound
+        return reduction;
+    }
+
+    // create a child node after moving from one city to another
+    static Node CreateChild(Node parent, int fromCity, int toCity)
+    {
+        int n = parent.Matrix.Count;
+        Node child = new Node(n);
+
+        // copy parent reduced matrix
+        child.Matrix = parent.Matrix.Select(row => new List<int>(row)).ToList();
+
+        // disable all outgoing edges from current city
+        for (int j = 0; j < n; j++)
+            child.Matrix[fromCity][j] = inf;
+
+        // disable all incoming edges to the next city
+        for (int i = 0; i < n; i++)
+            child.Matrix[i][toCity] = inf;
+
+        // cost of edge used for transition
+        int edgeCost = parent.Matrix[fromCity][toCity];
+
+        // new cost includes parent cost and edge cost
+        child.Cost = parent.Cost + edgeCost;
+
+        // perform reduction on the new matrix
+        int reduction = ReduceMatrix(child.Matrix);
+
+        // add reduction cost to obtain lower bound
+        child.Cost += reduction;
+
+        // update node information
+        child.Vertex = toCity;
+        child.Level = parent.Level + 1;
+
+        // copy path and append new city
+        child.Path = new List<int>(parent.Path) { toCity };
+
+        return child;
+    }
+
+    // solve tsp using branch and bound
+    static (int bestCost, List<int> bestPath) SolveTSP(List<List<int>> costMatrix)
+    {
+        int n = costMatrix.Count;
+
+        // create root node
+        Node root = new Node(n);
+        root.Matrix = costMatrix.Select(row => new List<int>(row)).ToList();
+        root.Vertex = 0;
+        root.Level = 0;
+
+        // starting city
+        root.Path.Add(0);
+
+        // compute initial reduction
+        root.Cost = ReduceMatrix(root.Matrix);
+
+        // priority queue to select node with smallest bound (using .NET 6+ PriorityQueue)
+        var pq = new PriorityQueue<Node, int>();
+        pq.Enqueue(root, root.Cost);
+
+        int bestCost = inf;
+        List<int> bestPath = new List<int>();
+
+        // explore nodes until queue becomes empty
+        while (pq.Count > 0)
+        {
+            Node cur = pq.Dequeue();
+
+            // prune nodes whose bound is already worse
+            if (cur.Cost >= bestCost)
+                continue;
+
+            // if all cities are visited
+            if (cur.Level == n - 1)
+            {
+                // cost to return to starting city
+                int finalEdge = cur.Matrix[cur.Vertex][0];
+
+                if (finalEdge == inf)
+                    continue;
+
+                int totalCost = cur.Cost + finalEdge;
+
+                // update best solution
+                if (totalCost < bestCost)
+                {
+                    bestCost = totalCost;
+                    bestPath = new List<int>(cur.Path) { 0 };
+                }
+
+                continue;
+            }
+
+            // expand current node to all possible next cities
+            for (int j = 0; j < n; j++)
+            {
+                if (cur.Matrix[cur.Vertex][j] != inf)
+                {
+                    bool visited = false;
+
+                    // check if city already visited
+                    foreach (int v in cur.Path)
+                        if (v == j)
+                            visited = true;
+
+                    if (visited)
+                        continue;
+
+                    // create child node
+                    Node child = CreateChild(cur, cur.Vertex, j);
+
+                    // push only promising nodes
+                    if (child.Cost < bestCost)
+                        pq.Enqueue(child, child.Cost);
+                }
+            }
+        }
+
+        return (bestCost, bestPath);
+    }
+
+//Driver Code Starts
+
+    // driver code
+    static void Main()
+    {
+        // example cost matrix for 5 cities
+        List<List<int>> costMatrix = new List<List<int>>
+        {
+            new List<int> {0, 72, 184, 136, 115},
+            new List<int> {72, 0, 143, 180, 58},
+            new List<int> {184, 143, 0, 23, 182},
+            new List<int> {136, 180, 23, 0, 156},
+            new List<int> {115, 58, 182, 156, 0}
+        };
+
+        var result = SolveTSP(costMatrix);
+        int bestCost = result.bestCost;
+        List<int> path = result.bestPath;
+
+        if (bestCost >= inf)
+        {
+            Console.WriteLine("No Hamiltonian cycle found");
+        }
+        else
+        {
+            Console.WriteLine("Minimum cost: " + bestCost);
+            Console.Write("Path: ");
+            for (int i = 0; i < path.Count; i++)
+            {
+                Console.Write(path[i]);
+                if (i + 1 < path.Count)
+                    Console.Write(" ");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+//Driver Code Ends
+
+JavaScript
+
+// large value used to represent no edge
+const inf = 1e9;
+
+// structure representing a node in the state space tree
+class Node {
+    constructor(n = 0) {
+        // reduced cost matrix
+        this.matrix = Array.from({ length: n }, () => Array(n).fill(inf));
+        // lower bound cost of this node
+        this.cost = 0;
+        // current city
+        this.vertex = 0;
+        // number of cities visited so far
+        this.level = 0;
+        // path taken to reach this node
+        this.path = [];
+    }
+}
+
+// simple min-heap implementation for nodes (based on cost)
+class MinHeap {
+    constructor() {
+        this.heap = [];
+    }
+
+    push(node) {
+        this.heap.push(node);
+        this._siftUp(this.heap.length - 1);
+    }
+
+    pop() {
+        if (this.heap.length === 0) return null;
+        const top = this.heap[0];
+        const bottom = this.heap.pop();
+        if (this.heap.length > 0) {
+            this.heap[0] = bottom;
+            this._siftDown(0);
+        }
+        return top;
+    }
+
+    _siftUp(index) {
+        while (index > 0) {
+            const parent = Math.floor((index - 1) / 2);
+            if (this.heap[parent].cost <= this.heap[index].cost) break;
+            [this.heap[parent], this.heap[index]] = [this.heap[index], this.heap[parent]];
+            index = parent;
+        }
+    }
+
+    _siftDown(index) {
+        const length = this.heap.length;
+        while (true) {
+            let left = 2 * index + 1;
+            let right = 2 * index + 2;
+            let smallest = index;
+
+            if (left < length && this.heap[left].cost < this.heap[smallest].cost)
+                smallest = left;
+            if (right < length && this.heap[right].cost < this.heap[smallest].cost)
+                smallest = right;
+
+            if (smallest === index) break;
+            [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
+            index = smallest;
+        }
+    }
+
+    size() {
+        return this.heap.length;
+    }
+}
+
+// reduce rows and columns of matrix, return total reduction cost
+function reduceMatrix(mat) {
+    const n = mat.length;
+    let reduction = 0;
+
+    // row reduction
+    for (let i = 0; i < n; i++) {
+        let rowMin = inf;
+
+        // find minimum value in the row
+        for (let j = 0; j < n; j++)
+            rowMin = Math.min(rowMin, mat[i][j]);
+
+        // subtract row minimum from all elements of that row
+        if (rowMin !== inf && rowMin > 0) {
+            reduction += rowMin;
+
+            for (let j = 0; j < n; j++)
+                if (mat[i][j] !== inf)
+                    mat[i][j] -= rowMin;
+        }
+    }
+
+    // column reduction
+    for (let j = 0; j < n; j++) {
+        let colMin = inf;
+
+        // find minimum value in the column
+        for (let i = 0; i < n; i++)
+            colMin = Math.min(colMin, mat[i][j]);
+
+        // subtract column minimum from all elements of that column
+        if (colMin !== inf && colMin > 0) {
+            reduction += colMin;
+
+            for (let i = 0; i < n; i++)
+                if (mat[i][j] !== inf)
+                    mat[i][j] -= colMin;
+        }
+    }
+
+    // return total reduction cost which contributes to lower bound
+    return reduction;
+}
+
+// create a child node after moving from one city to another
+function createChild(parent, fromCity, toCity) {
+    const n = parent.matrix.length;
+    const child = new Node(n);
+
+    // copy parent reduced matrix (deep copy)
+    child.matrix = parent.matrix.map(row => [...row]);
+
+    // disable all outgoing edges from current city
+    for (let j = 0; j < n; j++)
+        child.matrix[fromCity][j] = inf;
+
+    // disable all incoming edges to the next city
+    for (let i = 0; i < n; i++)
+        child.matrix[i][toCity] = inf;
+
+    // cost of edge used for transition
+    const edgeCost = parent.matrix[fromCity][toCity];
+
+    // new cost includes parent cost and edge cost
+    child.cost = parent.cost + edgeCost;
+
+    // perform reduction on the new matrix
+    const reduction = reduceMatrix(child.matrix);
+
+    // add reduction cost to obtain lower bound
+    child.cost += reduction;
+
+    // update node information
+    child.vertex = toCity;
+    child.level = parent.level + 1;
+
+    // copy path and append new city
+    child.path = [...parent.path, toCity];
+
+    return child;
+}
+
+// solve tsp using branch and bound
+function solveTSP(costMatrix) {
+    const n = costMatrix.length;
+
+    // create root node
+    const root = new Node(n);
+    root.matrix = costMatrix.map(row => [...row]); // deep copy
+    root.vertex = 0;
+    root.level = 0;
+
+    // starting city
+    root.path.push(0);
+
+    // compute initial reduction
+    root.cost = reduceMatrix(root.matrix);
+
+    // priority queue to select node with smallest bound
+    const pq = new MinHeap();
+    pq.push(root);
+
+    let bestCost = inf;
+    let bestPath = [];
+
+    // explore nodes until queue becomes empty
+    while (pq.size() > 0) {
+        const cur = pq.pop();
+
+        // prune nodes whose bound is already worse
+        if (cur.cost >= bestCost)
+            continue;
+
+        // if all cities are visited
+        if (cur.level === n - 1) {
+            // cost to return to starting city
+            const finalEdge = cur.matrix[cur.vertex][0];
+
+            if (finalEdge === inf)
+                continue;
+
+            const totalCost = cur.cost + finalEdge;
+
+            // update best solution
+            if (totalCost < bestCost) {
+                bestCost = totalCost;
+                bestPath = [...cur.path, 0];
+            }
+
+            continue;
+        }
+
+        // expand current node to all possible next cities
+        for (let j = 0; j < n; j++) {
+            if (cur.matrix[cur.vertex][j] !== inf) {
+                // check if city already visited
+                if (cur.path.includes(j))
+                    continue;
+
+                // create child node
+                const child = createChild(cur, cur.vertex, j);
+
+                // push only promising nodes
+                if (child.cost < bestCost)
+                    pq.push(child);
+            }
+        }
+    }
+
+    return { bestCost, bestPath };
+}
+
+//Driver Code Starts
+// Driver code
+
+// example cost matrix for 5 cities
+const costMatrix = [
+    [0, 72, 184, 136, 115],
+    [72, 0, 143, 180, 58],
+    [184, 143, 0, 23, 182],
+    [136, 180, 23, 0, 156],
+    [115, 58, 182, 156, 0]
+];
+
+const { bestCost, bestPath } = solveTSP(costMatrix);
+
+if (bestCost >= inf) {
+    console.log("No Hamiltonian cycle found");
+} else {
+    console.log("Minimum cost: " + bestCost);
+    console.log("Path: " + bestPath.join(" "));
+}
+
+//Driver Code Ends
+
+Output :
+
+Minimum cost : 80Path Taken : 0 1 3 2 0
+
+### Complexity
+
+- Worst-case Time Complexity: O(n!)
+- Space Complexity: Depends on the number of nodes stored in the priority queue .

@@ -1,0 +1,737 @@
+Source: https://www.geeksforgeeks.org/dsa/maximum-cost-path-from-source-node-to-destination-node-via-at-most-k-intermediate-nodes/
+Title: Maximum cost path from source node to destination node via at most K intermediate nodes
+Extractor: 2
+
+Given a directed weighted graph consisting of N vertices and an array Edges[][] , with each row representing two vertices connected by an edge and the weight of that edge, the task is to find the path with the maximum sum of weights from a given source vertex src to a given destination vertex dst , made up of at most K intermediate vertices. If no such path exists, then print -1 .
+
+Examples:
+
+> Input: N = 3, Edges[][] = {{0, 1, 100}, {1, 2, 100}, {0, 2, 500}}, src = 0, dst = 2, K = 0 Output: 500 Explanation: Path 0 → 2: The path with maximum weight and at most 0 intermediate nodes is of weight 500.
+
+Approach: The given problem can be solved by using BFS(Breadth-First Search) Traversal . Follow the steps below to solve the problem:
+
+- Initialize the variable, say ans , to store the maximum distance between the source and the destination node having at most K intermediates nodes.
+- Initialize an adjacency list of the graph using the edges.
+- Initialize an empty queue and push the source vertex into it . Initialize a variable, say lvl , to store the number of nodes present in between src and dst .
+- While the queue is not empty and lvl is less than K + 2 perform the following steps: Store the size of the queue in a variable, say S . Iterate over the range [1, S] and perform the following steps: Pop the front element of the queue and store it in a variable, say T . If T is the dst vertex, then update the value of ans as the maximum of ans and the current distance T.second . Traverse through all the neighbors of the current popped node and check if the distance of its neighbor is greater than the current distance or not. If found to be true, then push it in the queue and update its distance. Increase the value of lvl by 1 .
+- After completing the above steps, print the value of ans as the resultant maximum distance.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ program for the above approach
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to find the longest distance
+// from source to destination with at
+// most K intermediate nodes
+int findShortestPath(
+    int n, vector<vector<int> >& edges,
+    int src, int dst, int K)
+{
+    // Initialize the adjacency list
+    vector<vector<pair<int, int> > > adjlist(
+        n, vector<pair<int, int> >());
+
+    // Initialize a queue to perform BFS
+    queue<pair<int, int> > q;
+
+    unordered_map<int, int> mp;
+
+    // Store the maximum distance of
+    // every node from source vertex
+    int ans = INT_MIN;
+
+    // Initialize adjacency list
+    for (int i = 0; i < edges.size(); i++) {
+
+        auto edge = edges[i];
+
+        adjlist[edge[0]].push_back(
+            make_pair(edge[1], edge[2]));
+    }
+
+    // Push the first element into queue
+    q.push({ src, 0 });
+
+    int level = 0;
+
+    // Iterate until the queue becomes empty
+    // and the number of nodes between src
+    // and dst vertex is at most to K
+    while (!q.empty() && level < K + 2) {
+
+        // Current size of the queue
+        int sz = q.size();
+
+        for (int i = 0; i < sz; i++) {
+
+            // Extract the front
+            // element of the queue
+            auto pr = q.front();
+
+            // Pop the front element
+            // of the queue
+            q.pop();
+
+            // If the dst vertex is reached
+            if (pr.first == dst)
+                ans = max(ans, pr.second);
+
+            // Traverse the adjacent nodes
+            for (auto pr2 : adjlist[pr.first]) {
+
+                // If the distance is greater
+                // than the current distance
+                if (mp.find(pr2.first)
+                        == mp.end()
+                    || mp[pr2.first]
+                           < pr.second
+                                 + pr2.second) {
+
+                    // Push it into the queue
+                    q.push({ pr2.first,
+                             pr.second
+                                 + pr2.second });
+                    mp[pr2.first] = pr.second
+                                    + pr2.second;
+                }
+            }
+        }
+
+        // Increment the level by 1
+        level++;
+    }
+
+    // Finally, return the maximum distance
+    return ans != INT_MIN ? ans : -1;
+}
+
+// Driver Code
+int main()
+{
+    int n = 3, src = 0, dst = 2, k = 1;
+    vector<vector<int> > edges
+        = { { 0, 1, 100 },
+            { 1, 2, 100 },
+            { 0, 2, 500 } };
+
+    cout << findShortestPath(n, edges,
+                             src, dst, k);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class Main {
+
+    // Function to find the longest distance
+    // from source to destination with at
+    // most K intermediate nodes
+    public static int findShortestPath(int n, int[][] edges,
+                                       int src, int dst,
+                                       int K)
+    {
+        // Initialize the adjacency list
+        List<List<int[]> > adjlist = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            adjlist.add(new ArrayList<int[]>());
+        }
+
+        // Initialize a queue to perform BFS
+        Queue<int[]> q = new LinkedList<>();
+
+        Map<Integer, Integer> mp = new HashMap<>();
+
+        // Store the maximum distance of
+        // every node from source vertex
+        int ans = Integer.MIN_VALUE;
+
+        // Initialize adjacency list
+        for (int[] edge : edges) {
+            adjlist.get(edge[0]).add(
+                new int[] { edge[1], edge[2] });
+        }
+
+        // Push the first element into queue
+        q.add(new int[] { src, 0 });
+
+        int level = 0;
+
+        // Iterate until the queue becomes empty
+        // and the number of nodes between src
+        // and dst vertex is at most to K
+        while (!q.isEmpty() && level < K + 2) {
+
+            // Current size of the queue
+            int sz = q.size();
+
+            for (int i = 0; i < sz; i++) {
+
+                // Extract the front
+                // element of the queue
+                int[] pr = q.poll();
+
+                // If the dst vertex is reached
+                if (pr[0] == dst)
+                    ans = Math.max(ans, pr[1]);
+
+                // Traverse the adjacent nodes
+                for (int[] pr2 : adjlist.get(pr[0])) {
+
+                    // If the distance is greater
+                    // than the current distance
+                    if (!mp.containsKey(pr2[0])
+                        || mp.get(pr2[0])
+                               > pr[1] + pr2[1]) {
+
+                        // Push it into the queue
+                        q.add(new int[] { pr2[0],
+                                          pr[1] + pr2[1] });
+                        mp.put(pr2[0], pr[1] + pr2[1]);
+                    }
+                }
+            }
+
+            // Increment the level by 1
+            level++;
+        }
+
+        // Finally, return the maximum distance
+        return ans != Integer.MIN_VALUE ? ans : -1;
+    }
+
+    // Driver Code
+    public static void main(String[] args)
+    {
+        int n = 3, src = 0, dst = 2, k = 1;
+        int[][] edges = { { 0, 1, 100 },
+                          { 1, 2, 100 },
+                          { 0, 2, 500 } };
+
+        System.out.println(
+            findShortestPath(n, edges, src, dst, k));
+    }
+}
+
+Python
+
+# Python3 program for the above approach
+from collections import deque
+
+# Function to find the longest distance
+# from source to destination with at
+# most K intermediate nodes
+def findShortestPath(n, edges, src, dst, K):
+
+    # Initialize the adjacency list
+    adjlist = [[] for i in range(n)]
+
+    # Initialize a queue to perform BFS
+    q = deque()
+
+    mp = {}
+
+    # Store the maximum distance of
+    # every node from source vertex
+    ans = -10**9
+
+    # Initialize adjacency list
+    for i in range(len(edges)):
+        edge = edges[i]
+        adjlist[edge[0]].append([edge[1],
+                                 edge[2]])
+
+    # Push the first element into queue
+    q.append([src, 0])
+
+    level = 0
+
+    # Iterate until the queue becomes empty
+    # and the number of nodes between src
+    # and dst vertex is at most to K
+    while (len(q) > 0 and level < K + 2):
+
+        # Current size of the queue
+        sz = len(q)
+
+        for i in range(sz):
+
+            # Extract the front
+            # element of the queue
+            pr = q.popleft()
+
+            # Pop the front element
+            # of the queue
+            # q.pop()
+
+            # If the dst vertex is reached
+            if (pr[0] == dst):
+                ans = max(ans, pr[1])
+
+            # Traverse the adjacent nodes
+            for pr2 in adjlist[pr[0]]:
+
+                # If the distance is greater
+                # than the current distance
+                if ((pr2[0] not in mp) or
+                  mp[pr2[0]] > pr[1] + pr2[1]):
+
+                    # Push it into the queue
+                    q.append([pr2[0], pr[1] + pr2[1]])
+                    mp[pr2[0]] = pr[1] + pr2[1]
+
+        # Increment the level by 1
+        level += 1
+
+    # Finally, return the maximum distance
+    return ans if ans != -10**9 else -1
+
+# Driver Code
+if __name__ == '__main__':
+
+    n, src, dst, k = 3, 0, 2, 1
+
+    edges= [ [ 0, 1, 100 ],
+             [ 1, 2, 100 ],
+             [ 0, 2, 500 ] ]
+
+    print(findShortestPath(n, edges,src, dst, k))
+
+# This code is contributed by mohit kumar 29
+
+C#
+
+// C# program for the above approach
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    // Function to find the longest distance
+    // from source to destination with at
+    // most K intermediate nodes
+    static int FindShortestPath(int n, int[][] edges, int src, int dst, int K)
+    {
+        // Initialize the adjacency list
+        List<int[]>[] adjlist = new List<int[]>[n];
+        for (int i = 0; i < n; i++) {
+            adjlist[i] = new List<int[]>();
+        }
+
+        // Initialize a queue to perform BFS
+        Queue<int[]> q = new Queue<int[]>();
+
+        Dictionary<int, int> mp = new Dictionary<int, int>();
+
+        // Store the maximum distance of
+        // every node from source vertex
+        int ans = -1000000000;
+
+        // Initialize adjacency list
+        for (int i = 0; i < edges.Length; i++) {
+            int[] edge = edges[i];
+            adjlist[edge[0]].Add(new int[] {edge[1], edge[2]});
+        }
+
+        // Push the first element into queue
+        q.Enqueue(new int[] {src, 0});
+
+        int level = 0;
+
+        // Iterate until the queue becomes empty
+        // and the number of nodes between src
+        // and dst vertex is at most to K
+        while (q.Count > 0 && level < K + 2) {
+
+            // Current size of the queue
+            int sz = q.Count;
+
+            for (int i = 0; i < sz; i++) {
+
+                // Extract the front
+                // element of the queue
+                int[] pr = q.Dequeue();
+
+                // If the dst vertex is reached
+                if (pr[0] == dst) {
+                    ans = Math.Max(ans, pr[1]);
+                }
+
+                // Traverse the adjacent nodes
+                foreach (int[] pr2 in adjlist[pr[0]]) {
+
+                    // If the distance is greater
+                    // than the current distance
+                    if (!mp.ContainsKey(pr2[0]) || mp[pr2[0]] > pr[1] + pr2[1]) {
+                        // Push it into the queue
+                        q.Enqueue(new int[] {pr2[0], pr[1] + pr2[1]});
+                        mp[pr2[0]] = pr[1] + pr2[1];
+                    }
+                }
+            }
+
+            // Increment the level by 1
+            level++;
+        }
+
+        // Finally, return the maximum distance
+        return ans != -1000000000 ? ans : -1;
+    }
+
+    // Driver Code
+    public static void Main()
+    {
+        int n = 3, src = 0, dst = 2, k = 1;
+
+        int[][] edges = new int[][] {
+            new int[] {0, 1, 100},
+            new int[] {1, 2, 100},
+            new int[] {0, 2, 500}
+        };
+
+        Console.WriteLine(FindShortestPath(n, edges, src, dst, k));
+    }
+}
+
+// This code is contributed by codebraxnzt
+
+JavaScript
+
+// JavaScript implementation of the above C++ code
+
+function findShortestPath(n, edges, src, dst, k) {
+    // Initialize the adjacency list
+    var adjlist = new Array(n).fill(null).map(() => []);
+
+    // Initialize a queue to perform BFS
+    var q = [];
+
+    var mp = new Map();
+
+    // Store the maximum distance of
+    // every node from source vertex
+    var ans = Number.MIN_SAFE_INTEGER;
+
+    // Initialize adjacency list
+    for (var i = 0; i < edges.length; i++) {
+        var edge = edges[i];
+        adjlist[edge[0]].push([edge[1], edge[2]]);
+    }
+
+    // Push the first element into queue
+    q.push([src, 0]);
+
+    var level = 0;
+
+    // Iterate until the queue becomes empty
+    // and the number of nodes between src
+    // and dst vertex is at most to K
+    while (q.length > 0 && level < k + 2) {
+        // Current size of the queue
+        var sz = q.length;
+
+        for (var i = 0; i < sz; i++) {
+            // Extract the front
+            // element of the queue
+            var pr = q.shift();
+
+            // If the dst vertex is reached
+            if (pr[0] === dst) {
+                ans = Math.max(ans, pr[1]);
+            }
+
+            // Traverse the adjacent nodes
+            for (var j = 0; j < adjlist[pr[0]].length; j++) {
+                var pr2 = adjlist[pr[0]][j];
+
+                // If the distance is greater
+                // than the current distance
+                if (mp.get(pr2[0]) === undefined || mp.get(pr2[0]) > pr[1] + pr2[1]) {
+                    // Push it into the queue
+                    q.push([pr2[0], pr[1] + pr2[1]]);
+                    mp.set(pr2[0], pr[1] + pr2[1]);
+                }
+            }
+        }
+
+        // Increment the level by 1
+        level++;
+    }
+
+    // Finally, return the maximum distance
+    return ans !== Number.MIN_SAFE_INTEGER ? ans : -1;
+}
+
+// Example usage
+var n = 3, src = 0, dst = 2, k = 1;
+var edges = [[0, 1, 100], [1, 2, 100], [0, 2, 500]];
+
+console.log(findShortestPath(n, edges, src, dst, k));
+
+Output
+
+500
+
+Time Complexity: O(N + E) Auxiliary Space: O(N)
+
+## Alternate approach: Modification of Bellman Ford algorithm after modifying the weights
+
+If all the weights of the given graph are made negative of the original weights, the path taken to minimize the sum of weights with at most k nodes in middle will give us the path we need. Hence this question is similar to this problem. Below is the code implementation of the problem
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int max_cost(int n, vector<vector<int> >& edges, int src,
+             int dst, int k)
+{
+    // We use 2 arrays for this algorithm
+    // temp is the shortest distances array in current pass
+    vector<int> temp(n, INT_MAX);
+    temp[src] = 0;
+    for (int i = 0; i <= k; i++) {
+        // c is the shortest distances array in previous
+        // pass For every iteration current pass becomes the
+        // previous
+        vector<int> c(temp);
+        for (auto edge : edges) {
+            int a = edge[0], b = edge[1], d = edge[2];
+            // Updating the current array using previous
+            // array Subtracting d is same as adding -d
+            temp[b]
+                = min(temp[b],
+                      c[a] == INT_MAX ? INT_MAX : c[a] - d);
+        }
+    }
+    // Checking is dst is reachable from src or not
+    if (temp[dst] != INT_MAX) {
+        // Returning the negative value of the shortest
+        // distance to return the longest distance
+        return -temp[dst];
+    }
+    return -1;
+}
+
+int main()
+{
+    vector<vector<int> > edges = {
+        { 0, 1, 100 },
+        { 1, 2, 100 },
+        { 0, 2, 500 },
+    };
+    int src = 0;
+    int dst = 2;
+    int k = 1;
+    int n = 3;
+
+    cout << max_cost(n, edges, src, dst, k) << endl;
+    return 0;
+}
+// This code was contributed Prajwal Kandekar
+
+Java
+
+import java.util.*;
+
+public class Main {
+    static int max_cost(int n, List<List<Integer>> edges, int src,
+             int dst, int k)
+    {
+
+        // We use 2 arrays for this algorithm
+        // temp is the shortest distances array in current pass
+        int[] temp = new int[n];
+        Arrays.fill(temp, Integer.MAX_VALUE);
+        temp[src] = 0;
+        for (int i = 0; i <= k; i++)
+        {
+
+            // c is the shortest distances array in previous
+            // pass For every iteration current pass becomes the
+            // previous
+            int[] c = temp.clone();
+            for (List<Integer> edge : edges) {
+                int a = edge.get(0), b = edge.get(1), d = edge.get(2);
+
+                // Updating the current array using previous
+                // array Subtracting d is same as adding -d
+                temp[b] = Math.min(temp[b], c[a] == Integer.MAX_VALUE ? Integer.MAX_VALUE : c[a] - d);
+            }
+        }
+
+        // Checking if dst is reachable from src or not
+        if (temp[dst] != Integer.MAX_VALUE)
+        {
+
+            // Returning the negative value of the shortest
+            // distance to return the longest distance
+            return -temp[dst];
+        }
+        return -1;
+    }
+
+    public static void main(String[] args) {
+        List<List<Integer>> edges = Arrays.asList(
+            Arrays.asList(0, 1, 100),
+            Arrays.asList(1, 2, 100),
+            Arrays.asList(0, 2, 500)
+        );
+        int src = 0;
+        int dst = 2;
+        int k = 1;
+        int n = 3;
+
+        System.out.println(max_cost(n, edges, src, dst, k));
+    }
+}
+
+Python
+
+def max_cost(n, edges, src, dst, k):
+      # We use 2 arrays for this algorithm
+    # temp is the shortest distances array in current pass
+    temp=[0 if i==src else float("inf") for i in range(n)]
+    for _ in range(k+1):
+          # c is the shortest distances array in previous pass
+        # For every iteration current pass becomes the previous
+        c=temp.copy()
+        for a,b,d in edges:
+              # Updating the current array using previous array
+            # Subtracting d is same as adding -d
+            temp[b]=min(temp[b],c[a]-d)
+    # Checking is dst is reachable from src or not
+    if temp[dst]!=float("inf"):
+          # Returning the negative value of the shortest distance to return the longest distance
+        return -temp[dst]
+    return -1
+
+edges = [
+    [0, 1, 100],
+    [1, 2, 100],
+    [0, 2, 500],
+]
+
+src = 0
+dst = 2
+k = 1
+n = 3
+
+print(max_cost(n,edges,src,dst,k))
+
+# This code was contributed by Akshayan Muralikrishnan
+
+C#
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class MainClass
+{
+    static int MaxCost(int n, List<List<int>> edges, int src, int dst, int k)
+    {
+
+        // We use 2 arrays for this algorithm
+        // temp is the shortest distances array in current pass
+        int[] temp = new int[n];
+        Array.Fill(temp, int.MaxValue);
+        temp[src] = 0;
+        for (int i = 0; i <= k; i++)
+        {
+
+            // c is the shortest distances array in previous
+            // pass For every iteration current pass becomes the
+            // previous
+            int[] c = (int[])temp.Clone();
+            foreach (var edge in edges)
+            {
+                int a = edge[0], b = edge[1], d = edge[2];
+
+                // Updating the current array using previous
+                // array Subtracting d is same as adding -d
+                temp[b] = Math.Min(temp[b], c[a] == int.MaxValue ? int.MaxValue : c[a] - d);
+            }
+        }
+
+        // Checking if dst is reachable from src or not
+        if (temp[dst] != int.MaxValue)
+        {
+
+            // Returning the negative value of the shortest
+            // distance to return the longest distance
+            return -temp[dst];
+        }
+        return -1;
+    }
+
+    public static void Main()
+    {
+        List<List<int>> edges = new List<List<int>>()
+        {
+            new List<int>(){0, 1, 100},
+            new List<int>(){1, 2, 100},
+            new List<int>(){0, 2, 500}
+        };
+        int src = 0;
+        int dst = 2;
+        int k = 1;
+        int n = 3;
+
+        Console.WriteLine(MaxCost(n, edges, src, dst, k));
+    }
+}
+
+JavaScript
+
+function max_cost(n, edges, src, dst, k) {
+    // We use 2 arrays for this algorithm
+    // temp is the shortest distances array in current pass
+    let temp = new Array(n).fill(Number.MAX_SAFE_INTEGER);
+    temp[src] = 0;
+
+    for (let i = 0; i <= k; i++) {
+        // c is the shortest distances array in previous
+        // pass For every iteration current pass becomes the
+        // previous
+        let c = [...temp];
+        for (let j = 0; j < edges.length; j++) {
+            let [a, b, d] = edges[j];
+            // Updating the current array using previous
+            // array Subtracting d is same as adding -d
+            temp[b] = Math.min(temp[b], (c[a] === Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : c[a] - d);
+        }
+    }
+
+    // Checking is dst is reachable from src or not
+    if (temp[dst] !== Number.MAX_SAFE_INTEGER) {
+        // Returning the negative value of the shortest
+        // distance to return the longest distance
+        return -temp[dst];
+    }
+    return -1;
+}
+
+let edges = [    [0, 1, 100],
+    [1, 2, 100],
+    [0, 2, 500]
+];
+let src = 0;
+let dst = 2;
+let k = 1;
+let n = 3;
+
+console.log(max_cost(n, edges, src, dst, k));
+
+Output
+
+500
+
+Time Complexity: O(E*k) where E is the number of edges Auxiliary Space: O(n)

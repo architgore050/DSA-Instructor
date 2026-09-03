@@ -1,0 +1,726 @@
+Source: https://www.geeksforgeeks.org/dsa/merge-sort-tree-for-range-order-statistics/
+Title: Merge Sort Tree for Range Order Statistics
+Extractor: 2
+
+Given an array of n numbers, the task is to answer the following queries:
+
+kthSmallest(start, end, k) : Find the Kth smallest
+                             number in the range from array
+                             index 'start' to 'end'.
+
+Examples:
+
+Input : arr[] = {3, 2, 5, 1, 8, 9|
+     Query 1: start = 2, end = 5, k = 2
+     Query 2: start = 1, end = 6, k = 4
+Output : 2
+         5
+Explanation:
+[2, 5, 1, 8] represents the range from 2 to
+5 and 2 is the 2nd smallest number
+in the range[3, 2, 5, 1, 8, 9] represents
+the range from 1 to 6 and 5 is the 4th
+smallest number in the range
+
+The key idea is to build a Segment Tree with a vector at every node and the vector contains all the elements of the sub-range in a sorted order. And if we observe this segment tree structure this is somewhat similar to the tree formed during the merge sort algorithm (that is why it is called merge sort tree) We use same implementation as discussed in Merge Sort Tree (Smaller or equal elements in given row range) Firstly, we maintain a vector of pairs where each pair {value, index} is such that first element of pair represents the element of the input array and the second element of the pair represents the index at which it occurs.
+
+Now we sort this vector of pairs on the basis of the first element of each pair. After this we build a Merge Sort Tree where each node has a vector of indices in the sorted range. When we have to answer a query we find if the K th smallest number lies in the left sub-tree or in the right sub-tree.
+
+The idea is to use two binary searches and find the number of elements in the left sub-tree such  that the indices lie within the given query range. Let the number of such indices be M. If M>=K, it means we will be able to find the K th smallest Number in the left sub-tree thus we call on the left sub-tree. Else the K th smallest number lies in the right sub-tree but this time we don't have to look for the K th smallest number as we already have first M smallest numbers of the range in the left sub-tree thus we should look for the remaining part ie the (K-M) th number in the right sub-tree. This is the Index of K th smallest number the value at this index is the required number.
+
+Implementation:
+
+C++
+
+// CPP program to implement k-th order statistics
+#include <bits/stdc++.h>
+using namespace std;
+
+const int MAX = 1000;
+
+// Constructs a segment tree and stores tree[]
+void buildTree(int treeIndex, int l, int r,
+    vector<pair<int, int> > &a, vector<int> tree[])
+{
+
+    /* l => start of range,
+        r => ending of a range
+        treeIndex => index in the Segment Tree/Merge
+                    Sort Tree */
+
+    /* leaf node */
+    if (l == r) {
+        tree[treeIndex].push_back(a[l].second);
+        return;
+    }
+
+    int mid = (l + r) / 2;
+
+    /* building left subtree */
+    buildTree(2 * treeIndex, l, mid, a, tree);
+
+    /* building left subtree */
+    buildTree(2 * treeIndex + 1, mid + 1, r, a, tree);
+
+    /* merging left and right child in sorted order */
+    merge(tree[2 * treeIndex].begin(),
+        tree[2 * treeIndex].end(),
+        tree[2 * treeIndex + 1].begin(),
+        tree[2 * treeIndex + 1].end(),
+        back_inserter(tree[treeIndex]));
+}
+
+// Returns the Kth smallest number in query range
+int queryRec(int segmentStart, int segmentEnd,
+            int queryStart, int queryEnd, int treeIndex,
+                int K, vector<int> tree[])
+{
+    /*
+        segmentStart => start of a Segment,
+        segmentEnd => ending of a Segment,
+        queryStart => start of a query range,
+        queryEnd     => ending of a query range,
+        treeIndex => index in the Segment
+                        Tree/Merge Sort Tree,
+        K => kth smallest number to find */
+
+    if (segmentStart == segmentEnd)
+        return tree[treeIndex][0];
+
+    int mid = (segmentStart + segmentEnd) / 2;
+
+    // finds the last index in the segment
+    // which is <= queryEnd
+    int last_in_query_range =
+            (upper_bound(tree[2 * treeIndex].begin(),
+                        tree[2 * treeIndex].end(),
+                                        queryEnd)
+                    - tree[2 * treeIndex].begin());
+
+    // finds the first index in the segment
+    // which is >= queryStart
+    int first_in_query_range =
+                (lower_bound(tree[2 * treeIndex].begin(),
+                            tree[2 * treeIndex].end(),
+                                        queryStart)
+                        - tree[2 * treeIndex].begin());
+
+    int M = last_in_query_range - first_in_query_range;
+
+    if (M >= K) {
+
+        // Kth smallest is in left subtree,
+        // so recursively call left subtree for Kth
+        // smallest number
+        return queryRec(segmentStart, mid, queryStart,
+                    queryEnd, 2 * treeIndex, K, tree);
+    }
+
+    else {
+
+        // Kth smallest is in right subtree,
+        // so recursively call right subtree for the
+        // (K-M)th smallest number
+        return queryRec(mid + 1, segmentEnd, queryStart,
+            queryEnd, 2 * treeIndex + 1, K - M, tree);
+    }
+}
+
+// A wrapper over query()
+int query(int queryStart, int queryEnd, int K, int n,
+        vector<pair<int, int> > &a, vector<int> tree[])
+{
+
+    return queryRec(0, n - 1, queryStart - 1, queryEnd - 1,
+                                            1, K, tree);
+}
+
+// Driver code
+int main()
+{
+    int arr[] = { 3, 2, 5, 1, 8, 9 };
+    int n = sizeof(arr)/sizeof(arr[0]);
+
+    // vector of pairs of form {element, index}
+    vector<pair<int, int> > v;
+    for (int i = 0; i < n; i++) {
+        v.push_back(make_pair(arr[i], i));
+    }
+
+    // sort the vector
+    sort(v.begin(), v.end());
+
+    // Construct segment tree in tree[]
+    vector<int> tree[MAX];
+    buildTree(1, 0, n - 1, v, tree);
+
+    // Answer queries
+    // kSmallestIndex hold the index of the kth smallest number
+    int kSmallestIndex = query(2, 5, 2, n, v, tree);
+    cout << arr[kSmallestIndex] << endl;
+
+    kSmallestIndex = query(1, 6, 4, n, v, tree);
+    cout << arr[kSmallestIndex] << endl;
+
+    return 0;
+}
+
+Java
+
+/*package whatever //do not write package name here */
+import java.io.*;
+import java.util.*;
+
+class GFG {
+
+  static final int MAX = 1000;
+
+  // Constructs a segment tree and stores tree[]
+  static void buildTree(int treeIndex, int l, int r,
+                        List<Pair<Integer, Integer> > a,
+                        List<List<Integer> > tree)
+  {
+
+    /* l => start of range,
+        r => ending of a range
+        treeIndex => index in the Segment Tree/Merge
+                    Sort Tree */
+
+    /* leaf node */
+    if (l == r) {
+      tree.get(treeIndex).add(a.get(l).second);
+      return;
+    }
+
+    int mid = (l + r) / 2;
+
+    /* building left subtree */
+    buildTree(2 * treeIndex, l, mid, a, tree);
+
+    /* building right subtree */
+    buildTree(2 * treeIndex + 1, mid + 1, r, a, tree);
+
+    /* merging left and right child in sorted order */
+    List<Integer> leftChild = tree.get(2 * treeIndex);
+    List<Integer> rightChild
+      = tree.get(2 * treeIndex + 1);
+    List<Integer> currentTree = new ArrayList<>();
+    int leftIndex = 0, rightIndex = 0;
+
+    while (leftIndex < leftChild.size()
+           && rightIndex < rightChild.size()) {
+      if (leftChild.get(leftIndex)
+          < rightChild.get(rightIndex)) {
+        currentTree.add(leftChild.get(leftIndex));
+        leftIndex++;
+      }
+      else {
+        currentTree.add(rightChild.get(rightIndex));
+        rightIndex++;
+      }
+    }
+
+    while (leftIndex < leftChild.size()) {
+      currentTree.add(leftChild.get(leftIndex));
+      leftIndex++;
+    }
+
+    while (rightIndex < rightChild.size()) {
+      currentTree.add(rightChild.get(rightIndex));
+      rightIndex++;
+    }
+
+    tree.set(treeIndex, currentTree);
+  }
+
+  // Returns the Kth smallest number in query range
+  static int queryRec(int segmentStart, int segmentEnd,
+                      int queryStart, int queryEnd,
+                      int treeIndex, int K,
+                      List<List<Integer> > tree)
+  {
+    /*
+        segmentStart => start of a Segment,
+        segmentEnd => ending of a Segment,
+        queryStart => start of a query range,
+        queryEnd     => ending of a query range,
+        treeIndex => index in the Segment
+                        Tree/Merge Sort Tree,
+        K => kth smallest number to find */
+
+    if (segmentStart == segmentEnd)
+      return tree.get(treeIndex).get(0);
+
+    int mid = (segmentStart + segmentEnd) / 2;
+
+    // finds the last index in the segment
+    // which is <= queryEnd
+    List<Integer> leftChild = tree.get(2 * treeIndex);
+    int last_in_query_range
+      = upperBound(leftChild, queryEnd);
+
+    // finds the first index in the segment
+    // which is >= queryStart
+    int first_in_query_range
+      = lowerBound(leftChild, queryStart);
+
+    int M = last_in_query_range - first_in_query_range;
+
+    if (M >= K) {
+
+      // Kth smallest is in left subtree,
+      // so recursively call left subtree for Kth
+      // smallest number
+      return queryRec(segmentStart, mid, queryStart,
+                      queryEnd, 2 * treeIndex, K,
+                      tree);
+    }
+    else {
+
+      // Kth smallest is in right subtree,
+      // so recursively call right subtree for the
+      // (K-M)th smallest number
+      return queryRec(mid + 1, segmentEnd, queryStart,
+                      queryEnd, 2 * treeIndex + 1,
+                      K - M, tree);
+    }
+  }
+  static int query(int queryStart, int queryEnd, int K,
+                   int n, List<Pair<Integer, Integer> > a,
+                   List<Integer>[] tree)
+  {
+
+    return queryRec(0, n - 1, queryStart - 1,
+                    queryEnd - 1, 1, K, tree);
+  }
+  public static void main(String[] args)
+  {
+    int[] arr = { 3, 2, 5, 1, 8, 9 };
+    int n = arr.length;
+
+    // vector of pairs of form {element, index}
+    List<Pair<Integer, Integer> > v
+      = new ArrayList<Pair<Integer, Integer> >();
+    for (int i = 0; i < n; i++) {
+      v.add(new Pair<Integer, Integer>(arr[i], i));
+    }
+
+    // sort the vector
+    Collections.sort(
+      v, new Comparator<Pair<Integer, Integer> >() {
+        public int compare(Pair<Integer, Integer> a,
+                           Pair<Integer, Integer> b)
+        {
+          return a.getKey().compareTo(b.getKey());
+        }
+      });
+
+    // Construct segment tree in tree[]
+    List<Integer>[] tree = new List[n * 4];
+    for (int i = 0; i < n * 4; i++) {
+      tree[i] = new ArrayList<Integer>();
+    }
+    buildTree(1, 0, n - 1, v, tree);
+
+    // Answer queries
+    // kSmallestIndex hold the index of the kth smallest
+    // number
+    int kSmallestIndex = query(2, 5, 2, n, v, tree);
+    System.out.println(arr[kSmallestIndex]);
+
+    kSmallestIndex = query(1, 6, 4, n, v, tree);
+    System.out.println(arr[kSmallestIndex]);
+  }
+}
+
+Python3
+
+import math
+
+# maximum size of the array
+MAX = 100
+
+def buildTree(treeIndex, left, right, a, tree):
+    # base case
+    if left == right:
+        tree[treeIndex] = a[left][1]
+        return
+
+    # recursive case
+    mid = (left + right) // 2
+    buildTree(2 * treeIndex, left, mid, a, tree)
+    buildTree(2 * treeIndex + 1, mid + 1, right, a, tree)
+
+    tree[treeIndex] = min(tree[2 * treeIndex], tree[2 * treeIndex + 1])
+
+def query(treeIndex, left, right, l, r, a, tree):
+    # base case
+    if l <= left and r >= right:
+        return tree[treeIndex]
+
+    # recursive case
+    mid = (left + right) // 2
+    if r <= mid:
+        return query(2 * treeIndex, left, mid, l, r, a, tree)
+    elif l > mid:
+        return query(2 * treeIndex + 1, mid + 1, right, l, r, a, tree)
+    else:
+        leftResult = query(2 * treeIndex, left, mid, l, r, a, tree)
+        rightResult = query(2 * treeIndex + 1, mid + 1, right, l, r, a, tree)
+        return min(leftResult, rightResult)
+
+if __name__ == '__main__':
+    arr = [3, 2, 5, 1, 8, 9]
+    n = len(arr)
+
+    # vector of pairs of form {element, index}
+    v = []
+    for i in range(n):
+        v.append((arr[i], i))
+
+    # sort the vector
+    v.sort()
+
+    # Construct segment tree
+    tree = [0] * (4 * n)
+    buildTree(1, 0, n - 1, v, tree)
+
+    # Answer queries
+    # kSmallestIndex hold the index of the kth smallest number
+    kSmallestIndex = query(1, 0, n - 1, 2, 5, v, tree)
+    print(arr[kSmallestIndex])
+
+    kSmallestIndex = query(1, 0, n - 1, 1, 6, v, tree)
+    print(arr[kSmallestIndex])
+
+JavaScript
+
+// maximum size of the array
+let MAX = 100;
+
+function buildTree(treeIndex, left, right, a, tree){
+    // base case
+    if (left == right){
+        tree[treeIndex] = a[left][1];
+        return;
+    }
+
+    // recursive case
+    let mid = Math.floor((left + right)/2);
+    buildTree(2 * treeIndex, left, mid, a, tree);
+    buildTree(2 * treeIndex + 1, mid + 1, right, a, tree);
+
+    tree[treeIndex] = Math.min(tree[2 * treeIndex], tree[2 * treeIndex + 1]);
+}
+
+function query(treeIndex, left, right, l, r, a, tree){
+    // base case
+    if(l <= left && r >= right)
+        return tree[treeIndex];
+
+    // recursive case
+    let mid = Math.floor((left + right)/2);
+    if(r <= mid)
+        return query(2 * treeIndex, left, mid, l, r, a, tree);
+    else if( l > mid)
+        return query(2 * treeIndex + 1, mid + 1, right, l, r, a, tree);
+    else{
+        let leftResult = query(2 * treeIndex, left, mid, l, r, a, tree);
+        let rightResult = query(2 * treeIndex + 1, mid + 1, right, l, r, a, tree);
+        return Math.min(leftResult, rightResult);
+    }
+
+}
+
+let arr = [3, 2, 5, 1, 8, 9];
+let n = arr.length;
+
+// vector of pairs of form {element, index}
+let v = [];
+for(let i = 0; i < n; i++)
+    v.push([arr[i], i]);
+
+// sort the vector
+v.sort(function(a, b){
+    if(a[0] == b[0]) return a[1] - b[1];
+    return a[0] - b[0];
+});
+
+// Construct segment tree
+let tree = new Array(4*n).fill(0);
+buildTree(1, 0, n - 1, v, tree);
+
+// Answer queries
+// kSmallestIndex hold the index of the kth smallest number
+let kSmallestIndex = query(1, 0, n - 1, 2, 5, v, tree);
+console.log(arr[kSmallestIndex]-1);
+
+kSmallestIndex = query(1, 0, n - 1, 1, 6, v, tree);
+console.log(arr[kSmallestIndex]+2);
+
+// The code is contributed by Nidhi goel.
+
+C#
+
+using System;
+using System.Linq;
+
+class Program {
+    static int MAX = 100;
+
+    // Constructs a segment tree and stores tree[]
+    static void BuildTree(int treeIndex, int l, int r,
+                          int[][] a, int[] tree)
+    {
+        /* l => start of range,
+        r => ending of a range
+        treeIndex => index in the Segment Tree/Merge
+                    Sort Tree */
+
+        /* leaf node */
+        if (l == r) {
+            tree[treeIndex] = a[l][1];
+            return;
+        }
+
+        int mid = (l + r) / 2;
+
+        /* building left subtree */
+        BuildTree(2 * treeIndex, l, mid, a, tree);
+
+        /* building left subtree */
+        BuildTree(2 * treeIndex + 1, mid + 1, r, a, tree);
+
+        /* merging left and right child in sorted order */
+        tree[treeIndex] = Math.Min(tree[2 * treeIndex],
+                                   tree[2 * treeIndex + 1]);
+    }
+
+    static int Query(int treeIndex, int left, int right,
+                     int l, int r, int[][] a, int[] tree)
+    {
+        if (l <= left && r >= right)
+            return tree[treeIndex];
+
+        int mid = (left + right) / 2;
+        if (r <= mid)
+            return Query(2 * treeIndex, left, mid, l, r, a,
+                         tree);
+        else if (l > mid)
+            return Query(2 * treeIndex + 1, mid + 1, right,
+                         l, r, a, tree);
+        else {
+            int leftResult = Query(2 * treeIndex, left, mid,
+                                   l, r, a, tree);
+            int rightResult
+                = Query(2 * treeIndex + 1, mid + 1, right,
+                        l, r, a, tree);
+            return Math.Min(leftResult, rightResult);
+        }
+    }
+
+    static void Main(string[] args)
+    {
+        int[] arr = { 3, 2, 5, 1, 8, 9 };
+        int n = arr.Length;
+
+        int[][] v = new int[n][];
+        for (int i = 0; i < n; i++)
+            v[i] = new int[] { arr[i], i };
+
+        Array.Sort(v, (a, b) = > {
+            if (a[0] == b[0])
+                return a[1] - b[1];
+            return a[0] - b[0];
+        });
+
+        int[] tree = new int[4 * n];
+        BuildTree(1, 0, n - 1, v, tree);
+
+        int kSmallestIndex
+            = Query(1, 0, n - 1, 2, 5, v, tree);
+        Console.WriteLine(arr[kSmallestIndex] - 1);
+
+        kSmallestIndex = Query(1, 0, n - 1, 1, 6, v, tree);
+        Console.WriteLine(arr[kSmallestIndex] + 2);
+    }
+}
+
+Output:
+
+2
+5
+
+Thus, we can get the K th smallest number query in range L to R, in O(n(logn) 2 ) by building the merge sort tree on indices.
+
+Auxiliary Space: O(n)
+
+### Another Easy approach using Slicing:
+
+Here we first slice the list as per query's start and end. Then we sort the sliced list and return the (k-1)th element (as list index start from 0) which is the 3rd element of the query list, of the sorted sliced list.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+void kth_elem(vector<int> arr, vector<int> q){
+    if (q[1] > arr.size()){
+        cout<<"List index is out of range"<<endl;
+        return;
+    }
+    else if ((q[1]-q[0]+1) < q[2]){
+        cout<<"Kth element is not present"<<endl;
+        return;
+    }
+      else{
+          auto first = arr.begin() + q[0]-1;
+        auto last = arr.begin() + q[1];
+        vector<int> temp(first, last);
+        sort(temp.begin(), temp.end());
+        cout<<temp[q[2]-1]<<endl;
+    }
+}
+
+int main(){
+    vector<int> arr = {3, 2, 5, 1, 8, 9};
+    vector<int> query1 = {2, 5, 2};
+    kth_elem(arr, query1);
+    vector<int> query2 = {1, 6, 4};
+    kth_elem(arr, query2);
+      return 0;
+}
+
+// This code is contributed by Susobhan Akhuli
+
+Java
+
+// Java program to implement k-th order statistics
+// Using Arrays.copyOfRange()
+
+import java.util.Arrays;
+import java.util.stream.IntStream;
+
+class GFG {
+
+    // Function to get kth_elem
+    public static void kth_elem(int[] arr, int[] q)
+    {
+        if (q[1] > arr.length)
+            System.out.println(
+                "List index is out of range");
+        else if ((q[1] - q[0] + 1) < q[2])
+            System.out.println(
+                "Kth element is not present");
+        else {
+            int[] temp
+                = Arrays.copyOfRange(arr, q[0] - 1, q[1]);
+            Arrays.sort(temp);
+            System.out.println(temp[q[2] - 1]);
+        }
+    }
+    public static void main(String[] args)
+    {
+        int arr[] = { 3, 2, 5, 1, 8, 9 };
+        int query1[] = { 2, 5, 2 };
+        kth_elem(arr, query1);
+        int query2[] = { 1, 6, 4 };
+        kth_elem(arr, query2);
+    }
+}
+
+// This code is contributed by Susobhan Akhuli
+
+Python3
+
+# Python3 program to implement k-th order statistics
+
+def kth_elem(arr, q):
+    if q[1] > len(arr):
+        print("List index is out of range")
+        return
+    if (q[1]-q[0]+1) < q[2]:
+        print("Kth element is not present")
+        return
+    temp = arr[q[0]-1:q[1]]
+    temp.sort()
+    print(temp[q[2]-1])
+
+arr = [3, 2, 5, 1, 8, 9]
+query1 = [2, 5, 2]
+kth_elem(arr, query1)
+query2 = [1, 6, 4]
+kth_elem(arr, query2)
+
+# This code is contributed by Susobhan Akhuli
+
+C#
+
+// C# code for the above approach
+using System;
+using System.Linq;
+
+class GFG
+{
+
+  // Function to get kth_elem
+  public static void kth_elem(int[] arr, int[] q)
+  {
+    if (q[1] > arr.Length)
+      Console.WriteLine("List index is out of range");
+    else if ((q[1] - q[0] + 1) < q[2])
+      Console.WriteLine("Kth element is not present");
+    else {
+      int[] temp = arr.Skip(q[0] - 1)
+        .Take(q[1] - q[0] + 1)
+        .ToArray();
+      Array.Sort(temp);
+      Console.WriteLine(temp[q[2] - 1]);
+    }
+  }
+  public static void Main(string[] args)
+  {
+    int[] arr = { 3, 2, 5, 1, 8, 9 };
+    int[] query1 = { 2, 5, 2 };
+    kth_elem(arr, query1);
+    int[] query2 = { 1, 6, 4 };
+    kth_elem(arr, query2);
+  }
+}
+
+// This code is contributed by ik_9
+
+JavaScript
+
+// Javascript Program
+function kth_elem(arr, q) {
+        if (q[1] > arr.length) {
+          console.log("List index is out of range");
+          return;
+        } else if (q[1] - q[0] + 1 < q[2]) {
+          console.log("Kth element is not present");
+          return;
+        } else {
+          let temp = [...arr];
+          temp = temp.splice(q[0] - 1, q[1] - 1);
+          temp.sort(function (a, b) {
+            return a - b;
+          });
+          console.log(temp[q[2] - 1]);
+        }
+      }
+
+      let arr = [3, 2, 5, 1, 8, 9];
+      let query1 = [2, 5, 2];
+      kth_elem(arr, query1);
+      let query2 = [1, 6, 4];
+      kth_elem(arr, query2);
+
+      // This code is contributed by satwiksuman.
+
+Output
+
+2
+5
+
+Time complexity: O(nlogn) Auxiliary Space: O(n) [To store the list in a temporary list temp]

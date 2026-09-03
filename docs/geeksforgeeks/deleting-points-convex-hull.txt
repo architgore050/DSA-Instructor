@@ -1,0 +1,1185 @@
+Source: https://www.geeksforgeeks.org/dsa/deleting-points-convex-hull/
+Title: Deleting points from Convex Hull
+Extractor: 2
+
+Given a fixed set of points. We need to find convex hull of given set. We also need to find convex hull when a point is removed from the set.
+
+Example:
+
+Initial Set of Points: (-2, 8) (-1, 2) (0, 1) (1, 0)                        (-3, 0) (-1, -9) (2, -6) (3, 0)                         (5, 3) (2, 5) Initial convex hull:- (-2, 8) (-3, 0) (-1, -9) (2, -6)                      (5, 3)Point to remove from the set : (-2, 8)Final convex hull: (2, 5) (-3, 0) (-1, -9) (2, -6) (5, 3)
+
+Prerequisite : Convex Hull (Simple Divide and Conquer Algorithm) The algorithm for solving the above problem is very easy. We simply check whether the point to be removed is a part of the convex hull. If it is, then we have to remove that point from the initial set and then make the convex hull again (refer Convex hull (divide and conquer) ).
+
+And if not then we already have the solution (the convex hull will not change).
+
+C++
+
+// C++ program to demonstrate delete operation
+// on Convex Hull.
+#include<bits/stdc++.h>
+using namespace std;
+
+// stores the center of polygon (It is made
+// global because it is used in compare function)
+pair<int, int> mid;
+
+// determines the quadrant of a point
+// (used in compare())
+int quad(pair<int, int> p)
+{
+    if (p.first >= 0 && p.second >= 0)
+        return 1;
+    if (p.first <= 0 && p.second >= 0)
+        return 2;
+    if (p.first <= 0 && p.second <= 0)
+        return 3;
+    return 4;
+}
+
+// Checks whether the line is crossing the polygon
+int orientation(pair<int, int> a, pair<int, int> b,
+                pair<int, int> c)
+{
+    int res = (b.second-a.second)*(c.first-b.first) -
+              (c.second-b.second)*(b.first-a.first);
+
+    if (res == 0)
+        return 0;
+    if (res > 0)
+        return 1;
+    return -1;
+}
+
+// compare function for sorting
+bool compare(pair<int, int> p1, pair<int, int> q1)
+{
+    pair<int, int> p = make_pair(p1.first - mid.first,
+                                 p1.second - mid.second);
+    pair<int, int> q = make_pair(q1.first - mid.first,
+                                 q1.second - mid.second);
+
+    int one = quad(p);
+    int two = quad(q);
+
+    if (one != two)
+        return (one < two);
+    return (p.second*q.first < q.second*p.first);
+}
+
+// Finds upper tangent of two polygons 'a' and 'b'
+// represented as two vectors.
+vector<pair<int, int> > merger(vector<pair<int, int> > a,
+                               vector<pair<int, int> > b)
+{
+    // n1 -> number of points in polygon a
+    // n2 -> number of points in polygon b
+    int n1 = a.size(), n2 = b.size();
+
+    int ia = 0, ib = 0;
+    for (int i=1; i<n1; i++)
+        if (a[i].first > a[ia].first)
+            ia = i;
+
+    // ib -> leftmost point of b
+    for (int i=1; i<n2; i++)
+        if (b[i].first < b[ib].first)
+            ib=i;
+
+    // finding the upper tangent
+    int inda = ia, indb = ib;
+    bool done = 0;
+    while (!done)
+    {
+        done = 1;
+        while (orientation(b[indb], a[inda], a[(inda+1)%n1]) >=0)
+            inda = (inda + 1) % n1;
+
+        while (orientation(a[inda], b[indb], b[(n2+indb-1)%n2]) <=0)
+        {
+            indb = (n2+indb-1)%n2;
+            done = 0;
+        }
+    }
+
+    int uppera = inda, upperb = indb;
+    inda = ia, indb=ib;
+    done = 0;
+    int g = 0;
+    while (!done)//finding the lower tangent
+    {
+        done = 1;
+        while (orientation(a[inda], b[indb], b[(indb+1)%n2])>=0)
+            indb=(indb+1)%n2;
+
+        while (orientation(b[indb], a[inda], a[(n1+inda-1)%n1])<=0)
+        {
+            inda=(n1+inda-1)%n1;
+            done=0;
+        }
+    }
+
+    int lowera = inda, lowerb = indb;
+    vector<pair<int, int> > ret;
+
+    //ret contains the convex hull after merging the two convex hulls
+    //with the points sorted in anti-clockwise order
+    int ind = uppera;
+    ret.push_back(a[uppera]);
+    while (ind != lowera)
+    {
+        ind = (ind+1)%n1;
+        ret.push_back(a[ind]);
+    }
+
+    ind = lowerb;
+    ret.push_back(b[lowerb]);
+    while (ind != upperb)
+    {
+        ind = (ind+1)%n2;
+        ret.push_back(b[ind]);
+    }
+    return ret;
+
+}
+
+// Brute force algorithm to find convex hull for a set
+// of less than 6 points
+vector<pair<int, int> > bruteHull(vector<pair<int, int> > a)
+{
+    // Take any pair of points from the set and check
+    // whether it is the edge of the convex hull or not.
+    // if all the remaining points are on the same side
+    // of the line then the line is the edge of convex
+    // hull otherwise not
+    set<pair<int, int> >s;
+
+    for (int i=0; i<a.size(); i++)
+    {
+        for (int j=i+1; j<a.size(); j++)
+        {
+            int x1 = a[i].first, x2 = a[j].first;
+            int y1 = a[i].second, y2 = a[j].second;
+
+            int a1 = y1-y2;
+            int b1 = x2-x1;
+            int c1 = x1*y2-y1*x2;
+            int pos = 0, neg = 0;
+            for (int k=0; k<a.size(); k++)
+            {
+                if (a1*a[k].first+b1*a[k].second+c1 <= 0)
+                    neg++;
+                if (a1*a[k].first+b1*a[k].second+c1 >= 0)
+                    pos++;
+            }
+            if (pos == a.size() || neg == a.size())
+            {
+                s.insert(a[i]);
+                s.insert(a[j]);
+            }
+        }
+    }
+
+    vector<pair<int, int> >ret;
+    for (auto e : s)
+        ret.push_back(e);
+
+    // Sorting the points in the anti-clockwise order
+    mid = {0, 0};
+    int n = ret.size();
+    for (int i=0; i<n; i++)
+    {
+        mid.first += ret[i].first;
+        mid.second += ret[i].second;
+        ret[i].first *= n;
+        ret[i].second *= n;
+    }
+    sort(ret.begin(), ret.end(), compare);
+    for (int i=0; i<n; i++)
+        ret[i] = make_pair(ret[i].first/n, ret[i].second/n);
+
+    return ret;
+}
+
+// Returns the convex hull for the given set of points
+vector<pair<int, int>> findHull(vector<pair<int, int>> a)
+{
+    // If the number of points is less than 6 then the
+    // function uses the brute algorithm to find the
+    // convex hull
+    if (a.size() <= 5)
+        return bruteHull(a);
+
+    // left contains the left half points
+    // right contains the right half points
+    vector<pair<int, int>>left, right;
+    for (int i=0; i<a.size()/2; i++)
+        left.push_back(a[i]);
+    for (int i=a.size()/2; i<a.size(); i++)
+        right.push_back(a[i]);
+
+    // convex hull for the left and right sets
+    vector<pair<int, int>>left_hull = findHull(left);
+    vector<pair<int, int>>right_hull = findHull(right);
+
+    // merging the convex hulls
+    return merger(left_hull, right_hull);
+}
+
+// Returns the convex hull for the given set of points after
+// removing a point p.
+vector<pair<int, int>> removePoint(vector<pair<int, int>> a,
+                                   vector<pair<int, int>> hull,
+                                   pair<int, int> p)
+{
+    // checking whether the point is a part of the
+    // convex hull or not.
+    bool found = 0;
+    for (int i=0; i < hull.size() && !found; i++)
+        if (hull[i].first == p.first &&
+                hull[i].second == p.second)
+            found = 1;
+
+    // If point is not part of convex hull
+    if (found == 0)
+        return hull;
+
+    // if it is the part of the convex hull then
+    // we remove the point and again make the convex hull
+    // and if not, we print the same convex hull.
+    for (int i=0; i<a.size(); i++)
+    {
+        if (a[i].first==p.first && a[i].second==p.second)
+        {
+            a.erase(a.begin()+i);
+            break;
+        }
+    }
+
+    sort(a.begin(), a.end());
+    return findHull(a);
+}
+
+// Driver code
+int main()
+{
+    vector<pair<int, int> > a;
+    a.push_back(make_pair(0, 0));
+    a.push_back(make_pair(1, -4));
+    a.push_back(make_pair(-1, -5));
+    a.push_back(make_pair(-5, -3));
+    a.push_back(make_pair(-3, -1));
+    a.push_back(make_pair(-1, -3));
+    a.push_back(make_pair(-2, -2));
+    a.push_back(make_pair(-1, -1));
+    a.push_back(make_pair(-2, -1));
+    a.push_back(make_pair(-1, 1));
+
+    int n = a.size();
+
+    // sorting the set of points according
+    // to the x-coordinate
+    sort(a.begin(), a.end());
+    vector<pair<int, int> >hull = findHull(a);
+
+    cout << "Convex hull:\n";
+    for (auto e : hull)
+        cout << e.first << " "
+             << e.second << endl;
+
+    pair<int, int> p = make_pair(-5, -3);
+    removePoint(a, hull, p);
+
+    cout << "\nModified Convex Hull:\n";
+    for (auto e:hull)
+        cout << e.first << " "
+             << e.second << endl;
+
+    return 0;
+}
+
+Java
+
+// Nikunj Sonigara
+
+import java.util.*;
+
+class Main {
+    // Stores the center of the polygon (It is made global because it is used in the compare function)
+    static Pair mid;
+
+    // Determines the quadrant of a point (used in compare())
+    static int quad(Pair p) {
+        if (p.first >= 0 && p.second >= 0)
+            return 1;
+        if (p.first <= 0 && p.second >= 0)
+            return 2;
+        if (p.first <= 0 && p.second <= 0)
+            return 3;
+        return 4;
+    }
+
+    // Checks whether the line is crossing the polygon
+    static int orientation(Pair a, Pair b, Pair c) {
+        int res = (b.second - a.second) * (c.first - b.first) - (c.second - b.second) * (b.first - a.first);
+
+        if (res == 0)
+            return 0;
+        if (res > 0)
+            return 1;
+        return -1;
+    }
+
+    // Compare function for sorting
+    static class PointComparator implements Comparator<Pair> {
+        @Override
+        public int compare(Pair p1, Pair p2) {
+            Pair p = new Pair(p1.first - mid.first, p1.second - mid.second);
+            Pair q = new Pair(p2.first - mid.first, p2.second - mid.second);
+
+            int one = quad(p);
+            int two = quad(q);
+
+            if (one != two)
+                return one - two;
+            return Long.signum((long) p.second * q.first - (long) q.second * p.first);
+        }
+    }
+
+    // Nikunj Sonigara
+
+    // Finds upper tangent of two polygons 'a' and 'b' represented as two lists.
+    static List<Pair> merger(List<Pair> a, List<Pair> b) {
+        int n1 = a.size();
+        int n2 = b.size();
+
+        int ia = 0, ib = 0;
+        for (int i = 1; i < n1; i++) {
+            if (a.get(i).first > a.get(ia).first)
+                ia = i;
+        }
+
+        for (int i = 1; i < n2; i++) {
+            if (b.get(i).first < b.get(ib).first)
+                ib = i;
+        }
+
+        int inda = ia, indb = ib;
+        boolean done = false;
+        while (!done) {
+            done = true;
+            while (orientation(b.get(indb), a.get(inda), a.get((inda + 1) % n1)) >= 0)
+                inda = (inda + 1) % n1;
+
+            while (orientation(a.get(inda), b.get(indb), b.get((n2 + indb - 1) % n2)) <= 0) {
+                indb = (n2 + indb - 1) % n2;
+                done = false;
+            }
+        }
+
+        int uppera = inda, upperb = indb;
+        inda = ia;
+        indb = ib;
+        done = false;
+        int g = 0;
+        while (!done) {
+            done = true;
+            while (orientation(a.get(inda), b.get(indb), b.get((indb + 1) % n2)) >= 0)
+                indb = (indb + 1) % n2;
+
+            while (orientation(b.get(indb), a.get(inda), a.get((n1 + inda - 1) % n1)) <= 0) {
+                inda = (n1 + inda - 1) % n1;
+                done = false;
+            }
+        }
+
+        int lowera = inda, lowerb = indb;
+        List<Pair> ret = new ArrayList<>();
+
+        int ind = uppera;
+        ret.add(a.get(uppera));
+        while (ind != lowera) {
+            ind = (ind + 1) % n1;
+            ret.add(a.get(ind));
+        }
+
+        ind = lowerb;
+        ret.add(b.get(lowerb));
+        while (ind != upperb) {
+            ind = (ind + 1) % n2;
+            ret.add(b.get(ind));
+        }
+        return ret;
+    }
+
+    // Nikunj Sonigara
+
+    // Brute force algorithm to find convex hull for a set of less than 6 points
+    static List<Pair> bruteHull(List<Pair> a) {
+        Set<Pair> s = new HashSet<>();
+
+        for (int i = 0; i < a.size(); i++) {
+            for (int j = i + 1; j < a.size(); j++) {
+                int x1 = a.get(i).first, x2 = a.get(j).first;
+                int y1 = a.get(i).second, y2 = a.get(j).second;
+
+                int a1 = y1 - y2;
+                int b1 = x2 - x1;
+                int c1 = x1 * y2 - y1 * x2;
+                int pos = 0, neg = 0;
+                for (int k = 0; k < a.size(); k++) {
+                    if (a1 * a.get(k).first + b1 * a.get(k).second + c1 <= 0)
+                        neg++;
+                    if (a1 * a.get(k).first + b1 * a.get(k).second + c1 >= 0)
+                        pos++;
+                }
+                if (pos == a.size() || neg == a.size()) {
+                    s.add(a.get(i));
+                    s.add(a.get(j));
+                }
+            }
+        }
+
+        List<Pair> ret = new ArrayList<>(s);
+
+        mid = new Pair(0, 0);
+        int n = ret.size();
+        for (int i = 0; i < n; i++) {
+            mid.first += ret.get(i).first;
+            mid.second += ret.get(i).second;
+            ret.get(i).first *= n;
+            ret.get(i).second *= n;
+        }
+
+        Collections.sort(ret, new PointComparator());
+        for (int i = 0; i < n; i++) {
+            ret.get(i).first /= n;
+            ret.get(i).second /= n;
+        }
+
+        return ret;
+    }
+
+    // Nikunj Sonigara
+
+    // Returns the convex hull for the given set of points
+    static List<Pair> findHull(List<Pair> a) {
+        if (a.size() <= 5)
+            return bruteHull(a);
+
+        List<Pair> left = new ArrayList<>();
+        List<Pair> right = new ArrayList<>();
+        for (int i = 0; i < a.size() / 2; i++)
+            left.add(a.get(i));
+        for (int i = a.size() / 2; i < a.size(); i++)
+            right.add(a.get(i));
+
+        List<Pair> leftHull = findHull(left);
+        List<Pair> rightHull = findHull(right);
+
+        return merger(leftHull, rightHull);
+    }
+
+    // Returns the convex hull for the given set of points after removing a point p.
+    static List<Pair> removePoint(List<Pair> a, List<Pair> hull, Pair p) {
+        boolean found = false;
+        for (int i = 0; i < hull.size() && !found; i++) {
+            if (hull.get(i).first == p.first && hull.get(i).second == p.second)
+                found = true;
+        }
+
+        if (!found)
+            return hull;
+
+        for (int i = 0; i < a.size(); i++) {
+            if (a.get(i).first == p.first && a.get(i).second == p.second) {
+                a.remove(i);
+                break;
+            }
+        }
+
+        Collections.sort(a);
+        return findHull(a);
+    }
+
+    // Nikunj Sonigara
+
+    public static void main(String[] args) {
+        List<Pair> a = new ArrayList<>();
+        a.add(new Pair(0, 0));
+        a.add(new Pair(1, -4));
+        a.add(new Pair(-1, -5));
+        a.add(new Pair(-5, -3));
+        a.add(new Pair(-3, -1));
+        a.add(new Pair(-1, -3));
+        a.add(new Pair(-2, -2));
+        a.add(new Pair(-1, -1));
+        a.add(new Pair(-2, -1));
+        a.add(new Pair(-1, 1));
+
+        // Sorting the set of points according to the x-coordinate
+        Collections.sort(a);
+
+        List<Pair> hull = findHull(a);
+
+        System.out.println("Convex hull:");
+        for (Pair e : hull) {
+            System.out.println(e.first + " " + e.second);
+        }
+
+        Pair p = new Pair(-5, -3);
+        removePoint(a, hull, p);
+
+        System.out.println("\nModified Convex Hull:");
+        for (Pair e : hull) {
+            System.out.println(e.first + " " + e.second);
+        }
+    }
+}
+
+// Nikunj Sonigara
+
+class Pair implements Comparable<Pair> {
+    int first, second;
+
+    Pair(int first, int second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    @Override
+    public int compareTo(Pair other) {
+        if (this.first != other.first)
+            return this.first - other.first;
+        return this.second - other.second;
+    }
+}
+
+Python3
+
+def cross_product(p1, p2, p3):
+    return (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0])
+
+def convex_hull(points):
+    # sort the points by x-coordinate (in case of ties, sort by y-coordinate)
+    points = sorted(points, key=lambda p: (p[0], p[1]))
+
+    # initialize upper and lower hulls
+    upper_hull = [points[0], points[1]]
+    lower_hull = [points[0], points[1]]
+
+    # compute the upper hull
+    for i in range(2, len(points)):
+        upper_hull.append(points[i])
+        while len(upper_hull) > 2 and cross_product(upper_hull[-3], upper_hull[-2], upper_hull[-1]) >= 0:
+            upper_hull.pop(-2)
+
+    # compute the lower hull
+    for i in range(len(points)-3, -1, -1):
+        lower_hull.append(points[i])
+        while len(lower_hull) > 2 and cross_product(lower_hull[-3], lower_hull[-2], lower_hull[-1]) >= 0:
+            lower_hull.pop(-2)
+
+    # combine the upper and lower hulls
+    hull = upper_hull + lower_hull[1:-1]
+
+    return hull
+
+# define the set of points
+points = [(-2, 8), (-1, 2), (0, 1), (1, 0), (-3, 0), (-1, -9), (2, -6), (3, 0), (5, 3), (2, 5)]
+
+# compute the initial convex hull
+initial_hull = convex_hull(points)
+
+# print the initial convex hull
+print("Initial convex hull:", initial_hull)
+
+# define the point to remove
+point_to_remove = (-2, 8)
+
+# remove the point from the set of points
+points.remove(point_to_remove)
+
+# compute the new convex hull
+new_hull = convex_hull(points)
+
+# print the new convex hull
+print("New convex hull:", set(new_hull))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Pair : IComparable<Pair>
+{
+    public int First { get; set; }
+    public int Second { get; set; }
+
+    public Pair(int first, int second)
+    {
+        First = first;
+        Second = second;
+    }
+
+    public int CompareTo(Pair other)
+    {
+        if (First != other.First)
+        {
+            return First - other.First;
+        }
+        return Second - other.Second;
+    }
+}
+
+class ConvexHull
+{
+    // Stores the center of the polygon (made global because it is used in the Compare function)
+    static Pair mid = new Pair(0, 0);
+
+    // Determines the quadrant of a point (used in Compare())
+    static int Quad(Pair p)
+    {
+        if (p.First >= 0 && p.Second >= 0)
+        {
+            return 1;
+        }
+        if (p.First <= 0 && p.Second >= 0)
+        {
+            return 2;
+        }
+        if (p.First <= 0 && p.Second <= 0)
+        {
+            return 3;
+        }
+        return 4;
+    }
+
+    // Checks whether the line is crossing the polygon
+    static int Orientation(Pair a, Pair b, Pair c)
+    {
+        int res = (b.Second - a.Second) * (c.First - b.First) - (c.Second - b.Second) * (b.First - a.First);
+
+        if (res == 0)
+        {
+            return 0;
+        }
+        if (res > 0)
+        {
+            return 1;
+        }
+        return -1;
+    }
+
+    // Compare function for sorting
+    static int Compare(Pair p1, Pair p2)
+    {
+        Pair p = new Pair(p1.First - mid.First, p1.Second - mid.Second);
+        Pair q = new Pair(p2.First - mid.First, p2.Second - mid.Second);
+
+        int one = Quad(p);
+        int two = Quad(q);
+
+        if (one != two)
+        {
+            return one - two;
+        }
+        return Math.Sign(p.Second * q.First - q.Second * p.First);
+    }
+
+    // Finds upper tangent of two polygons 'a' and 'b' represented as two lists.
+    static List<Pair> Merger(List<Pair> a, List<Pair> b)
+    {
+        int n1 = a.Count;
+        int n2 = b.Count;
+
+        int ia = 0, ib = 0;
+        for (int i = 1; i < n1; i++)
+        {
+            if (a[i].First > a[ia].First)
+            {
+                ia = i;
+            }
+        }
+
+        for (int i = 1; i < n2; i++)
+        {
+            if (b[i].First < b[ib].First)
+            {
+                ib = i;
+            }
+        }
+
+        int inda = ia, indb = ib;
+        bool done = false;
+        while (!done)
+        {
+            done = true;
+            while (Orientation(b[indb], a[inda], a[(inda + 1) % n1]) >= 0)
+            {
+                inda = (inda + 1) % n1;
+            }
+
+            while (Orientation(a[inda], b[indb], b[(n2 + indb - 1) % n2]) <= 0)
+            {
+                indb = (n2 + indb - 1) % n2;
+                done = false;
+            }
+        }
+
+        int uppera = inda, upperb = indb;
+        inda = ia;
+        indb = ib;
+        done = false;
+        while (!done)
+        {
+            done = true;
+            while (Orientation(a[inda], b[indb], b[(indb + 1) % n2]) >= 0)
+            {
+                indb = (indb + 1) % n2;
+            }
+
+            while (Orientation(b[indb], a[inda], a[(n1 + inda - 1) % n1]) <= 0)
+            {
+                inda = (n1 + inda - 1) % n1;
+                done = false;
+            }
+        }
+
+        int lowera = inda, lowerb = indb;
+        List<Pair> ret = new List<Pair>();
+
+        int ind = uppera;
+        ret.Add(a[uppera]);
+        while (ind != lowera)
+        {
+            ind = (ind + 1) % n1;
+            ret.Add(a[ind]);
+        }
+
+        ind = lowerb;
+        ret.Add(b[lowerb]);
+        while (ind != upperb)
+        {
+            ind = (ind + 1) % n2;
+            ret.Add(b[ind]);
+        }
+        return ret;
+    }
+
+    // Brute force algorithm to find convex hull for a set of less than 6 points
+    static List<Pair> BruteHull(List<Pair> a)
+    {
+        HashSet<Pair> s = new HashSet<Pair>();
+
+        for (int i = 0; i < a.Count; i++)
+        {
+            for (int j = i + 1; j < a.Count; j++)
+            {
+                int x1 = a[i].First, x2 = a[j].First;
+                int y1 = a[i].Second, y2 = a[j].Second;
+
+                int a1 = y1 - y2;
+                int b1 = x2 - x1;
+                int c1 = x1 * y2 - y1 * x2;
+                int pos = 0, neg = 0;
+                foreach (var k in a)
+                {
+                    if (a1 * k.First + b1 * k.Second + c1 <= 0)
+                    {
+                        neg++;
+                    }
+                    if (a1 * k.First + b1 * k.Second + c1 >= 0)
+                    {
+                        pos++;
+                    }
+                }
+                if (pos == a.Count || neg == a.Count)
+                {
+                    s.Add(a[i]);
+                    s.Add(a[j]);
+                }
+            }
+        }
+
+        List<Pair> ret = new List<Pair>(s);
+
+        mid = new Pair(0, 0);
+        int n = ret.Count;
+        for (int i = 0; i < n; i++)
+        {
+            mid.First += ret[i].First;
+            mid.Second += ret[i].Second;
+            ret[i].First *= n;
+            ret[i].Second *= n;
+        }
+
+        ret.Sort(Compare);
+
+        for (int i = 0; i < n; i++)
+        {
+            ret[i].First /= n;
+            ret[i].Second /= n;
+        }
+
+        return ret;
+    }
+
+    // Returns the convex hull for the given set of points
+    static List<Pair> FindHull(List<Pair> a)
+    {
+        if (a.Count <= 5)
+        {
+            return BruteHull(a);
+        }
+
+        List<Pair> left = new List<Pair>();
+        List<Pair> right = new List<Pair>();
+        for (int i = 0; i < a.Count / 2; i++)
+        {
+            left.Add(a[i]);
+        }
+
+        for (int i = a.Count / 2; i < a.Count; i++)
+        {
+            right.Add(a[i]);
+        }
+
+        List<Pair> leftHull = FindHull(left);
+        List<Pair> rightHull = FindHull(right);
+
+        return Merger(leftHull, rightHull);
+    }
+
+    // Returns the convex hull for the given set of points after removing a point p.
+    static List<Pair> RemovePoint(List<Pair> a, List<Pair> hull, Pair p)
+    {
+        bool found = false;
+        for (int i = 0; i < hull.Count && !found; i++)
+        {
+            if (hull[i].First == p.First && hull[i].Second == p.Second)
+            {
+                found = true;
+            }
+        }
+
+        if (!found)
+        {
+            return hull;
+        }
+
+        for (int i = 0; i < a.Count; i++)
+        {
+            if (a[i].First == p.First && a[i].Second == p.Second)
+            {
+                a.RemoveAt(i);
+                break;
+            }
+        }
+
+        a.Sort(Compare);
+        return FindHull(a);
+    }
+
+    // Driver code
+    public static void Main(string[] args)
+    {
+        List<Pair> a = new List<Pair>();
+        a.Add(new Pair(0, 0));
+        a.Add(new Pair(1, -4));
+        a.Add(new Pair(-1, -5));
+        a.Add(new Pair(-5, -3));
+        a.Add(new Pair(-3, -1));
+        a.Add(new Pair(-1, -3));
+        a.Add(new Pair(-2, -2));
+        a.Add(new Pair(-1, -1));
+        a.Add(new Pair(-2, -1));
+        a.Add(new Pair(-1, 1));
+
+        // Sorting the set of points according to the x-coordinate
+        a.Sort();
+
+        List<Pair> hull = FindHull(a);
+
+        Console.WriteLine("Convex hull:");
+        foreach (var e in hull)
+        {
+            Console.WriteLine($"{e.First} {e.Second}");
+        }
+
+        Pair p = new Pair(-5, -3);
+        hull = RemovePoint(a, hull, p);
+
+        Console.WriteLine("\nModified Convex Hull:");
+        foreach (var e in hull)
+        {
+            Console.WriteLine($"{e.First} {e.Second}");
+        }
+    }
+}
+
+JavaScript
+
+class Pair {
+    constructor(first, second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    compareTo(other) {
+        if (this.first !== other.first) {
+            return this.first - other.first;
+        }
+        return this.second - other.second;
+    }
+}
+
+// Stores the center of the polygon (It is made global because it is used in the compare function)
+let mid = new Pair(0, 0);
+
+// Determines the quadrant of a point (used in compare())
+function quad(p) {
+    if (p.first >= 0 && p.second >= 0) {
+        return 1;
+    }
+    if (p.first <= 0 && p.second >= 0) {
+        return 2;
+    }
+    if (p.first <= 0 && p.second <= 0) {
+        return 3;
+    }
+    return 4;
+}
+
+// Checks whether the line is crossing the polygon
+function orientation(a, b, c) {
+    let res = (b.second - a.second) * (c.first - b.first) - (c.second - b.second) * (b.first - a.first);
+
+    if (res === 0) {
+        return 0;
+    }
+    if (res > 0) {
+        return 1;
+    }
+    return -1;
+}
+
+// Compare function for sorting
+function compare(p1, p2) {
+    let p = new Pair(p1.first - mid.first, p1.second - mid.second);
+    let q = new Pair(p2.first - mid.first, p2.second - mid.second);
+
+    let one = quad(p);
+    let two = quad(q);
+
+    if (one !== two) {
+        return one - two;
+    }
+    return Math.sign(p.second * q.first - q.second * p.first);
+}
+
+// Finds upper tangent of two polygons 'a' and 'b' represented as two arrays.
+function merger(a, b) {
+    let n1 = a.length;
+    let n2 = b.length;
+
+    let ia = 0, ib = 0;
+    for (let i = 1; i < n1; i++) {
+        if (a[i].first > a[ia].first) {
+            ia = i;
+        }
+    }
+
+    for (let i = 1; i < n2; i++) {
+        if (b[i].first < b[ib].first) {
+            ib = i;
+        }
+    }
+
+    let inda = ia, indb = ib;
+    let done = false;
+    while (!done) {
+        done = true;
+        while (orientation(b[indb], a[inda], a[(inda + 1) % n1]) >= 0) {
+            inda = (inda + 1) % n1;
+        }
+
+        while (orientation(a[inda], b[indb], b[(n2 + indb - 1) % n2]) <= 0) {
+            indb = (n2 + indb - 1) % n2;
+            done = false;
+        }
+    }
+
+    let uppera = inda, upperb = indb;
+    inda = ia;
+    indb = ib;
+    done = false;
+    let g = 0;
+    while (!done) {
+        done = true;
+        while (orientation(a[inda], b[indb], b[(indb + 1) % n2]) >= 0) {
+            indb = (indb + 1) % n2;
+        }
+
+        while (orientation(b[indb], a[inda], a[(n1 + inda - 1) % n1]) <= 0) {
+            inda = (n1 + inda - 1) % n1;
+            done = false;
+        }
+    }
+
+    let lowera = inda, lowerb = indb;
+    let ret = [];
+
+    let ind = uppera;
+    ret.push(a[uppera]);
+    while (ind !== lowera) {
+        ind = (ind + 1) % n1;
+        ret.push(a[ind]);
+    }
+
+    ind = lowerb;
+    ret.push(b[lowerb]);
+    while (ind !== upperb) {
+        ind = (ind + 1) % n2;
+        ret.push(b[ind]);
+    }
+    return ret;
+}
+
+// Brute force algorithm to find convex hull for a set of less than 6 points
+function bruteHull(a) {
+    let s = new Set();
+
+    for (let i = 0; i < a.length; i++) {
+        for (let j = i + 1; j < a.length; j++) {
+            let x1 = a[i].first, x2 = a[j].first;
+            let y1 = a[i].second, y2 = a[j].second;
+
+            let a1 = y1 - y2;
+            let b1 = x2 - x1;
+            let c1 = x1 * y2 - y1 * x2;
+            let pos = 0, neg = 0;
+            for (let k = 0; k < a.length; k++) {
+                if (a1 * a[k].first + b1 * a[k].second + c1 <= 0) {
+                    neg++;
+                }
+                if (a1 * a[k].first + b1 * a[k].second + c1 >= 0) {
+                    pos++;
+                }
+            }
+            if (pos === a.length || neg === a.length) {
+                s.add(a[i]);
+                s.add(a[j]);
+            }
+        }
+    }
+
+    let ret = Array.from(s);
+
+    mid = new Pair(0, 0);
+    let n = ret.length;
+    for (let i = 0; i < n; i++) {
+        mid.first += ret[i].first;
+        mid.second += ret[i].second;
+        ret[i].first *= n;
+        ret[i].second *= n;
+    }
+
+    ret.sort(compare);
+    for (let i = 0; i < n; i++) {
+        ret[i].first /= n;
+        ret[i].second /= n;
+    }
+
+    return ret;
+}
+
+// Returns the convex hull for the given set of points
+function findHull(a) {
+    if (a.length <= 5) {
+        return bruteHull(a);
+    }
+
+    let left = [];
+    let right = [];
+    for (let i = 0; i < a.length / 2; i++) {
+        left.push(a[i]);
+    }
+    for (let i = a.length / 2; i < a.length; i++) {
+        right.push(a[i]);
+    }
+
+    let leftHull = findHull(left);
+    let rightHull = findHull(right);
+
+    return merger(leftHull, rightHull);
+}
+
+// Returns the convex hull for the given set of points after removing a point p.
+function removePoint(a, hull, p) {
+    let found = false;
+    for (let i = 0; i < hull.length && !found; i++) {
+        if (hull[i].first === p.first && hull[i].second === p.second) {
+            found = true;
+        }
+    }
+
+    if (!found) {
+        return hull;
+    }
+
+    for (let i = 0; i < a.length; i++) {
+        if (a[i].first === p.first && a[i].second === p.second) {
+            a.splice(i, 1);
+            break;
+        }
+    }
+
+    a.sort(compare);
+    return findHull(a);
+}
+
+// Main function
+function main() {
+    let a = [];
+    a.push(new Pair(0, 0));
+    a.push(new Pair(1, -4));
+    a.push(new Pair(-1, -5));
+    a.push(new Pair(-5, -3));
+    a.push(new Pair(-3, -1));
+    a.push(new Pair(-1, -3));
+    a.push(new Pair(-2, -2));
+    a.push(new Pair(-1, -1));
+    a.push(new Pair(-2, -1));
+    a.push(new Pair(-1, 1));
+
+    // Sorting the set of points according to the x-coordinate
+    a.sort(compare);
+
+    let hull = findHull(a);
+
+    console.log("Convex hull:");
+    for (let e of hull) {
+        console.log(e.first + " " + e.second);
+    }
+
+    let p = new Pair(-5, -3);
+    removePoint(a, hull, p);
+
+    console.log("\nModified Convex Hull:");
+    for (let e of hull) {
+        console.log(e.first + " " + e.second);
+    }
+}
+
+// Call the main function to execute the code
+main();
+
+Output:
+
+convex hull:-3 0-1 -92 -65 32 5
+
+Time Complexity: It is simple to see that the maximum time taken per query is the time taken to construct the convex hull which is O(n*logn). So, the overall complexity is O(q*n*logn), where q is the number of points to be deleted.
+
+Auxiliary Space: O(n), since n extra space has been taken.
+
+This article is contributed by Aarti_Rathi and Amritya Vagmi.

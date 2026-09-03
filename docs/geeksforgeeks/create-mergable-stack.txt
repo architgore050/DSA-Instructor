@@ -1,0 +1,563 @@
+Source: https://www.geeksforgeeks.org/dsa/create-mergable-stack/
+Title: How to create mergeable stack?
+Extractor: 2
+
+Design a stack with the following operations.
+
+1. push(Stack s, x): Adds an item x to stack s
+2. pop(Stack s): Removes the top item from stack s
+3. merge(Stack s1, Stack s2): Merge contents of s2 into s1.
+
+Time Complexity of all above operations should be O(1).
+
+If we use array implementation of the stack, then merge is not possible to do in O(1) time as we have to do the following steps.
+
+1. Delete old arrays.
+2. Create a new array for s1 with a size equal to the size of the old array for s1 plus size of s2.
+3. Copy old contents of s1 and s2 to new array for s1
+
+The above operations take O(n) time.
+
+We can use a linked list with two pointers, one pointer to the first node (also used as a top when elements are added and removed from the beginning). The other pointer is needed for the last node so that we can quickly link the linked list of s2 at the end of s1. Following are all operations.
+
+- push(): Adds the new item at the beginning of linked list using the first pointer.
+- pop(): Removes an item from the beginning using the first pointer.
+- merge(): Links the first pointer second stack as next of the last pointer of the first list.
+
+Can we do it if we are not allowed to use an extra pointer?
+
+We can do it with a circular linked list . The idea is to keep track of the last node in the linked list. The next of the last node indicates the top of the stack.
+
+- push(): Adds the new item as next of the last node.
+- pop(): Removes next of last node.
+- merge() : Links the top (next of last) of the second list to the top (next of last) of the first list. And makes last of the second list as last of the whole list.
+
+The code for the above is given below:
+
+C++
+
+#include <iostream>
+using namespace std;
+
+class node {
+public:
+    int data;
+    node* next;
+};
+
+class mystack {
+public:
+    node* head;
+    node* tail;
+
+    mystack()
+    {
+        head = NULL;
+        tail = NULL;
+    }
+};
+
+mystack* create()
+{
+    mystack* ms = new mystack(); // creating a new stack
+    return ms;
+}
+
+void push(int data, mystack* ms)
+{
+    node* temp = new node();
+    temp->data = data;
+    temp->next = ms->head;
+
+    // when pushing first element in the stack the tail
+    // must be pointed by that first element
+    if (ms->head == NULL)
+        ms->tail = temp;
+
+    ms->head = temp;
+}
+
+int pop(mystack* ms)
+{
+    if (ms->head == NULL) {
+        cout << "stack underflow" << endl;
+        return 0;
+    }
+    else {
+        node* temp = ms->head;
+        ms->head = ms->head->next;
+        int popped = temp->data;
+        delete temp;
+        return popped;
+    }
+}
+
+// making the next pointer of tail of
+// one stack point to other stack
+void merge(mystack* ms1, mystack* ms2)
+{
+if (ms1->head == NULL)
+{
+    ms1->head = ms2->head;
+    ms1->tail = ms2->tail;
+    return;
+}
+
+ms1->tail->next = ms2->head;
+ms1->tail = ms2->tail;
+}
+
+void display(mystack* ms)
+{
+    node* temp = ms->head;
+    while (temp != NULL) {
+        cout << temp->data << " ";
+        temp = temp->next;
+    }
+}
+
+int main()
+{
+    mystack* ms1 = create();
+    mystack* ms2 = create();
+
+    push(6, ms1);
+    push(5, ms1);
+    push(4, ms1);
+    push(9, ms2);
+    push(8, ms2);
+    push(7, ms2);
+    merge(ms1, ms2);
+    display(ms1);
+}
+
+// This code is contributed by jayshmi
+
+Java
+
+import java.io.*;
+
+// The class Node contains the
+// structure of our Node of
+// the linked list
+class Node
+{
+    Node next;
+    Node prev;
+    int data;
+
+    // Create a node with the
+    // given value
+    Node(int value)
+    {
+        data = value;
+        next = null;
+        prev = null;
+    }
+}
+
+class Stack{
+
+private Node head;
+private Node tail;
+
+// Initialize stack class
+// with its head and tail as null
+Stack()
+{
+    head = null;
+    tail = null;
+}
+
+public void push(int value)
+{
+    Node newNode = new Node(value);
+    if(head == null)
+    {
+        head = newNode;
+        head.next=null;
+        head.prev = null;
+        tail = newNode;
+    }
+    else
+    {
+        newNode.prev = tail;
+        tail.next = newNode;
+        tail = newNode;
+    }
+}
+
+public void pop()
+{
+    if(head == null)
+        System.out.println("stack underflow");
+
+    if(head == tail)
+    {
+        head = null;
+        tail = null;
+    }
+    else
+    {
+        Node n = tail;
+        tail = tail.prev;
+        n.prev = null;
+        tail.next = null;
+    }
+}
+
+public void merge(Stack s)
+{
+    head.prev = s.tail;
+    s.tail.next = head;
+    head = s.head;
+    s.tail = null;
+    s.head = null;
+}
+
+public void display()
+{
+    if(tail != null)
+    {
+        Node n = tail;
+        while(n != null)
+        {
+            System.out.print(n.data + " ");
+            n = n.prev;
+        }
+        System.out.println();
+    }
+    else
+    {
+        System.out.println("Stack Underflow");
+    }
+}
+}
+
+class GFG{
+public static void main (String[] args)
+{
+    Stack ms1 = new Stack();
+    Stack ms2 = new Stack();
+
+    ms1.push(6);
+    ms1.push(5);
+    ms1.push(4);
+    ms2.push(9);
+    ms2.push(8);
+    ms2.push(7);
+
+    ms1.merge(ms2);
+    ms1.display();
+}
+}
+
+// This code is contributed by Ayaan
+
+Python3
+
+# The Node class for Linked List
+class Node():
+    def __init__(self,data):
+
+        self.next = None
+        self.prev = None
+        self.data = data
+
+class Stack():
+
+    # Initialize stack class with
+    # its head and tail as None
+    def __init__(self):
+
+        self.head = None
+        self.tail = None
+
+    def push(self, data):
+
+        new_node = Node(data)
+
+        if (self.head == None):
+            self.head = new_node
+            self.head.next= None
+            self.head.prev = None
+            self.tail = new_node
+
+        else:
+            new_node.prev = self.tail
+            self.tail.next = new_node
+            self.tail = new_node
+
+    def pop(self):
+
+        if (self.head == None):
+            print("Stack underflow")
+
+        if (self.head == self.tail):
+            self.head = None
+            self.tail = None
+
+        else:
+            node = self.tail
+            self.tail = self.tail.prev
+            del node
+            self.tail.next = None
+
+    # self (stack) is linked on top (which is tail here) of stack
+    # self becomes the merged stack
+    def merge(self, stack):
+        if stack.head == None: return  # if stack is empty self stays as it is
+        if self.head == None:        # self (stack) is empty -> point to stack
+            self.head = stack.head
+            self.tail = stack.tail
+            return
+        self.head.prev = stack.tail # link self on top of stack
+        stack.tail.nxt = self.head
+        self.head = stack.head      # set new head for self (stack)
+
+    def display(self):
+
+        if (self.tail != None):
+            n = self.tail
+
+            while (n != None):
+                print(n.data, end = " ")
+                n = n.prev
+
+            print()
+
+        else:
+            print("Stack Underflow")
+
+# Driver code
+ms1 = Stack()
+ms2 = Stack()
+
+ms1.push(6)
+ms1.push(5)
+ms1.push(4)
+ms2.push(9)
+ms2.push(8)
+ms2.push(7)
+
+ms1.merge(ms2)
+ms1.display()
+while ms1.head != ms1.tail:
+  ms1.pop ()
+print ("check pop all elements until head == tail (one element left)")
+print ("on merged stack: ", end = "")
+ms1.display()
+# This code is contributed by maheswaripiyush9
+
+C#
+
+using System;
+// The class Node contains the
+// structure of our Node of
+// the linked list
+public
+
+    class Node {
+    public
+
+        Node next;
+    public
+
+        Node prev;
+    public
+
+        int data;
+
+    // Create a node with the
+    // given value
+    public
+
+        Node(int value)
+    {
+        data = value;
+        next = null;
+        prev = null;
+    }
+}
+
+public
+
+    class Stack {
+
+    private Node head;
+    private Node tail;
+
+    // Initialize stack class
+    // with its head and tail as null
+    public Stack()
+    {
+        head = null;
+        tail = null;
+    }
+
+    public void Push(int value)
+    {
+        Node newNode = new Node(value);
+        if (head == null) {
+            head = newNode;
+            head.next = null;
+            head.prev = null;
+            tail = newNode;
+        }
+        else {
+            newNode.prev = tail;
+            tail.next = newNode;
+            tail = newNode;
+        }
+    }
+
+    public void Pop()
+    {
+        if (head == null)
+            Console.WriteLine("stack underflow");
+
+        if (head == tail) {
+            head = null;
+            tail = null;
+        }
+        else {
+            Node n = tail;
+            tail = tail.prev;
+            n.prev = null;
+            tail.next = null;
+        }
+    }
+
+    public void merge(Stack s)
+    {
+        head.prev = s.tail;
+        s.tail.next = head;
+        head = s.head;
+        s.tail = null;
+        s.head = null;
+    }
+
+    public void display()
+    {
+        if (tail != null) {
+            Node n = tail;
+            while (n != null) {
+                Console.Write(n.data + " ");
+                n = n.prev;
+            }
+            Console.WriteLine();
+        }
+        else {
+            Console.WriteLine("Stack Underflow");
+        }
+    }
+}
+
+public class GFG {
+    public static void Main(String[] args)
+    {
+        Stack ms1 = new Stack();
+        Stack ms2 = new Stack();
+
+        ms1.Push(6);
+        ms1.Push(5);
+        ms1.Push(4);
+        ms2.Push(9);
+        ms2.Push(8);
+        ms2.Push(7);
+
+        ms1.merge(ms2);
+        ms1.display();
+    }
+}
+// This code contributed by aashish1995
+
+JavaScript
+
+// Javascript code
+class node {
+    constructor() {
+      this.data;
+      this.next;
+    }
+  }
+
+  class mystack {
+    constructor() {
+      this.head = null;
+      this.tail = null;
+    }
+  }
+
+  function create() {
+    var ms = new mystack(); // creating a new stack
+    return ms;
+  }
+
+  function push(data, ms) {
+    var temp = new node();
+    temp.data = data;
+    temp.next = ms.head;
+
+    // when pushing first element in the stack the tail
+    // must be pointed by that first element
+    if (ms.head == null) ms.tail = temp;
+
+    ms.head = temp;
+  }
+
+  function pop(ms) {
+    if (ms.head == null) {
+      console.log("stack underflow");
+      return 0;
+    } else {
+      temp = ms.head;
+      ms.head = ms.head.next;
+      var popped = temp.data;
+      delete temp;
+      return popped;
+    }
+  }
+
+  // making the next pointer of tail of
+  // one stack point to other stack
+  function merge(ms1, ms2) {
+    if (ms1.head == null) {
+      ms1.head = ms2.head;
+      ms1.tail = ms2.tail;
+      return;
+    }
+
+    ms1.tail.next = ms2.head;
+    ms1.tail = ms2.tail;
+  }
+
+  function display(ms) {
+    temp = ms.head;
+    while (temp != null) {
+      console.log(temp.data + " ");
+      temp = temp.next;
+    }
+  }
+
+  ms1 = create();
+  ms2 = create();
+
+  push(6, ms1);
+  push(5, ms1);
+  push(4, ms1);
+  push(9, ms2);
+  push(8, ms2);
+  push(7, ms2);
+  merge(ms1, ms2);
+  display(ms1);
+
+  // This code is contributed by satwiksuman.
+
+Output
+
+4 5 6 7 8 9
+
+Time Complexity : O(1) , as all operation use constant time.
+
+Auxiliary Space : O(1) , since no extra space used.

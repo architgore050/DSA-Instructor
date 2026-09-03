@@ -1,0 +1,765 @@
+Source: https://www.geeksforgeeks.org/dsa/find-the-point-where-maximum-intervals-overlap/
+Title: Find the point where maximum intervals overlap
+Extractor: 2
+
+Consider a big party where a log register for guest's entry and exit times is maintained. Find the time at which there are maximum guests in the party. Given the Entry(Entry[]) and Exit (E xit[] ) times of individuals at a place.
+
+Note: Entries in the register are not in sorted order.
+
+Examples:
+
+> Input : Entry[] = [1, 2, 9, 5, 5] Exit[] = [4, 5, 12, 9, 12] Output: 3 5 Explanation: Time     Event Type         Total Guests Present ------------------------------------------------ 1        Entry                      1 2        Entry                    2 4        Exit                      1 5        Entry                    2 5        Entry                   3    // Max Guests 5        Exit                     2 9        Exit                     1 10       Entry                  2 12       Exit                     1 12       Exit                     0 The maximum number of guests present at any time is 3 , occurring at time 5 . Input: Entry[] = [3, 0, 5, 8, 6] Exit[] = [7, 6, 9, 10, 8] Output: 3 6 Explanation: Maximum guests are 3 at time 6 Input: Entry[] = [2, 3, 5, 7, 8] Exit[] = [4, 6, 8, 9, 10] Output: 2 5 Explanation: Maximum guests are 2 at time 5
+
+Table of Content
+
+- [Naive Approach] - Using Nested for loop - O((max-min+1)*n) Time and O(max-min+1) Space
+- [Better Approach] - Using Sorting - O(n * logn) Time and O(1) Space
+- [Expected Approach] - Using Difference Array - O(n) Time and O(max-min+1) Space
+
+### [Naive Approach] - Using Nested for loop - O((max-min+1)*n) Time and O(max-min+1) Space
+
+> Find the minimum and maximum times from the guest entry and exit times, then iterate through this range to count the number of guests present at each time. The maximum count gives the peak number of guests.
+
+C++
+
+// Program to find maximum guest at any time in a party
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<int> findMaxGuests(vector<int> &Entry, vector<int> &Exit)
+{
+    int n = Entry.size();
+    int mini_time = INT_MAX, max_time = INT_MIN;
+
+    // find the minimum time of the guests
+    for (int i = 0; i < n; i++)
+    {
+        mini_time = min(mini_time, Entry[i]);
+    }
+
+    // find the maximum time of the guests
+    for (int i = 0; i < n; i++)
+    {
+        max_time = max(max_time, Exit[i]);
+    }
+
+    // ith index store the count of the guest
+    // at time (mini_time + i)
+    vector<int> count(max_time - mini_time + 1, 0);
+
+    // traverse over the array
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = Entry[i]; j <= Exit[i]; j++)
+        {
+            // increase the count of the guest at the
+            // time they are present
+            count[j - mini_time]++;
+        }
+    }
+    // find the maximum guests number at any time and store it
+    int time = -1, max_guests = INT_MIN;
+    for (int i = mini_time; i <= max_time; i++)
+    {
+        if (max_guests < count[i - mini_time])
+        {
+            max_guests = count[i - mini_time];
+            time = i;
+        }
+    }
+
+    return {max_guests, time};
+}
+
+// Driver program to test above function
+int main()
+{
+    vector<int> Entry = {1, 2, 10, 5, 5};
+    vector<int> Exit = {4, 5, 12, 9, 12};
+    int n = Entry.size();
+    vector<int> ans = findMaxGuests(Entry, Exit);
+    cout << ans[0] << " " << ans[1];
+    return 0;
+}
+
+Java
+
+import java.io.*;
+import java.math.*;
+import java.text.*;
+import java.util.*;
+import java.util.regex.*;
+
+class GfG {
+
+    public static int[] findMaxGuests(int[] Entry,
+                                      int[] Exit)
+    {
+        // Finding maximum Entrying time
+        int n = Entry.length;
+        int maxa = Arrays.stream(Entry).max().getAsInt();
+
+        // Finding maximum Exiting time
+        int maxb = Arrays.stream(Exit).max().getAsInt();
+
+        int maxc = Math.max(maxa, maxb);
+
+        int[] x = new int[maxc + 2];
+        Arrays.fill(x, 0);
+
+        int cur = 0, idx = 0;
+
+        // Creating an auxiliary array
+        for (int i = 0; i < n; i++) {
+            // Lazy addition
+            for (int j = Entry[i]; j <= Exit[i]; j++) {
+                x[j]++;
+            }
+        }
+
+        int maxy = Integer.MIN_VALUE;
+
+        // Lazily Calculating value at index i
+        for (int i = 0; i <= maxc; i++) {
+            cur = x[i];
+            if (maxy < cur) {
+                maxy = cur;
+                idx = i;
+            }
+        }
+        return new int[] { maxy, idx };
+    }
+
+    // Driver code
+    public static void main(String[] args)
+    {
+        int[] Entry = new int[] { 1, 2, 10, 5, 5 };
+        int[] Exit = new int[] { 4, 5, 12, 9, 12 };
+        int[] ans = findMaxGuests(Entry, Exit);
+        System.out.println(ans[0] + " " + ans[1]);
+    }
+}
+
+Python
+
+def findMaxGuests(Entry, Exit):
+    mini_time = min(Entry)
+    max_time = max(Exit)
+    n = len(Entry)
+    count = [0] * (max_time - mini_time + 1)
+
+    for i in range(n):
+        for j in range(Entry[i], Exit[i] + 1):
+            count[j - mini_time] += 1
+
+    max_guests = max(count)
+    time = mini_time + count.index(max_guests)
+
+    return [max_guests, time]
+
+# Driver code
+Entry = [1, 2, 10, 5, 5]
+Exit = [4, 5, 12, 9, 12]
+
+ans = findMaxGuests(Entry, Exit)
+print(ans[0], " ", ans[1])
+
+C#
+
+using System;
+
+class GfG {
+    static int[] findMaxGuests(int[] Entry, int[] Exit)
+    {
+        int mini_time = int.MaxValue, max_time
+                                      = int.MinValue;
+        int n = Entry.Length;
+
+        for (int i = 0; i < n; i++) {
+            mini_time = Math.Min(mini_time, Entry[i]);
+            max_time = Math.Max(max_time, Exit[i]);
+        }
+
+        int[] count = new int[max_time - mini_time + 1];
+
+        for (int i = 0; i < n; i++) {
+            for (int j = Entry[i]; j <= Exit[i]; j++) {
+                count[j - mini_time]++;
+            }
+        }
+
+        int time = -1, max_guests = int.MinValue;
+        for (int i = mini_time; i <= max_time; i++) {
+            if (max_guests < count[i - mini_time]) {
+                max_guests = count[i - mini_time];
+                time = i;
+            }
+        }
+
+        return new int[] { max_guests, time };
+    }
+
+    public static void Main()
+    {
+        int[] Entry = { 1, 2, 10, 5, 5 };
+        int[] Exit = { 4, 5, 12, 9, 12 };
+
+        int[] ans = findMaxGuests(Entry, Exit);
+        Console.WriteLine(ans[0] + " " + ans[1]);
+    }
+}
+
+JavaScript
+
+function findMaxGuests(Entry, Exit)
+{
+    let mini_time = Math.min(...Entry);
+    let max_time = Math.max(...Exit);
+    let n = Entry.length;
+
+    let count = new Array(max_time - mini_time + 1).fill(0);
+
+    for (let i = 0; i < n; i++) {
+        for (let j = Entry[i]; j <= Exit[i]; j++) {
+            count[j - mini_time]++;
+        }
+    }
+
+    let time = -1, max_guests = -Infinity;
+    for (let i = mini_time; i <= max_time; i++) {
+        if (max_guests < count[i - mini_time]) {
+            max_guests = count[i - mini_time];
+            time = i;
+        }
+    }
+
+    return [ max_guests, time ];
+}
+
+// Driver Code
+let Entry = [ 1, 2, 10, 5, 5 ];
+let Exit = [ 4, 5, 12, 9, 12 ];
+
+let ans = findMaxGuests(Entry, Exit);
+console.log(ans[0], " ", ans[1]);
+
+Output
+
+3 5
+
+Time Complexity: O((max-min+1)*n) where n is the length of the array of guests Auxiliary Space: O(max-min+1 ) where min is the minimum time at which any guests enter and max is the maximum time at which any guests exit.
+
+### [Better Approach] - Using Sorting - O(n * logn) Time and O(1) Space
+
+> Sort the entry and exit times, then use two pointers to track guests arriving and leaving. Maintain a count of guests present at any time and update the maximum count whenever needed.
+
+C++
+
+// Program to find maximum guest at any time in a party
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<int> findMaxGuests(vector<int> &Entry, vector<int> &Exit)
+{
+    int n = Entry.size();
+
+    // Sort arrival and Exit arrays
+    sort(Entry.begin(), Entry.end());
+    sort(Exit.begin(), Exit.end());
+
+    // guests_in indicates number of guests at a time
+    int guests_in = 1, max_guests = 1, time = Entry[0];
+    int i = 1, j = 0;
+
+    // Similar to merge in merge sort to process
+    // all events in sorted order
+    while (i < n && j < n)
+    {
+        // If next event in sorted order is arrival,
+        // increment count of guests
+        if (Entry[i] <= Exit[j])
+        {
+            guests_in++;
+
+            // Update max_guests if needed
+            if (guests_in > max_guests)
+            {
+                max_guests = guests_in;
+                time = Entry[i];
+            }
+            i++; // increment index of arrival array
+        }
+        else // If event is Exit, decrement count
+        {    // of guests.
+            guests_in--;
+            j++;
+        }
+    }
+
+    return {max_guests, time};
+}
+
+// Driver program to test above function
+int main()
+{
+    vector<int> Entry = {1, 2, 10, 5, 5};
+    vector<int> Exit = {4, 5, 12, 9, 12};
+    vector<int> ans = findMaxGuests(Entry, Exit);
+    cout << ans[0] << " " << ans[1];
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+    static int[] findMaxGuests(int[] Entry, int[] Exit)
+    {
+        int n = Entry.length;
+
+        // Sort arrival and Exit arrays
+        Arrays.sort(Entry);
+        Arrays.sort(Exit);
+
+        int guests_in = 1, max_guests = 1, time = Entry[0];
+        int i = 1, j = 0;
+
+        // Merge-like processing for sorted events
+        while (i < n && j < n) {
+            if (Entry[i] <= Exit[j]) {
+                guests_in++;
+
+                // Update max_guests if needed
+                if (guests_in > max_guests) {
+                    max_guests = guests_in;
+                    time = Entry[i];
+                }
+                i++;
+            }
+            else {
+                guests_in--;
+                j++;
+            }
+        }
+        return new int[] { max_guests, time };
+    }
+
+    // Driver program to test the function
+    public static void main(String[] args)
+    {
+        int[] Entry = { 1, 2, 10, 5, 5 };
+        int[] Exit = { 4, 5, 12, 9, 12 };
+
+        int[] ans = findMaxGuests(Entry, Exit);
+        System.out.println(ans[0] + " " + ans[1]);
+    }
+}
+
+Python
+
+def findMaxGuests(Entry, Exit):
+
+    # Sort arrival and Exit arrays
+    Entry.sort()
+    Exit.sort()
+    n = len(Entry)
+    # guests_in indicates number of
+    # guests at a time
+    guests_in = 1
+    max_guests = 1
+    time = Entry[0]
+    i = 1
+    j = 0
+
+    # Similar to merge in merge sort to
+    # process all events in sorted order
+    while (i < n and j < n):
+
+        # If next event in sorted order is
+        # arrival, increment count of guests
+        if (Entry[i] <= Exit[j]):
+
+            guests_in = guests_in + 1
+
+        # Update max_guests if needed
+            if (guests_in > max_guests):
+
+                max_guests = guests_in
+                time = Entry[i]
+
+            # increment index of arrival array
+            i = i + 1
+
+        else:
+            guests_in = guests_in - 1
+            j = j + 1
+
+    return [max_guests, time]
+
+# Driver Code
+Entry = [1, 2, 10, 5, 5]
+Exit = [4, 5, 12, 9, 12]
+n = len(Entry)
+ans = findMaxGuests(Entry, Exit)
+print(ans[0], " ", ans[1])
+
+C#
+
+using System;
+
+class GfG {
+    static int[] findMaxGuests(int[] Entry, int[] Exit)
+    {
+        int n = Entry.Length;
+        // Sort arrival and Exit arrays
+        Array.Sort(Entry);
+        Array.Sort(Exit);
+
+        // guests_in indicates number
+        // of guests at a time
+        int guests_in = 1, max_guests = 1, time = Entry[0];
+        int i = 1, j = 0;
+
+        while (i < n && j < n) {
+
+            if (Entry[i] <= Exit[j]) {
+                guests_in++;
+
+                // Update max_guests if needed
+                if (guests_in > max_guests) {
+                    max_guests = guests_in;
+                    time = Entry[i];
+                }
+
+                // increment index of arrival array
+                i++;
+            }
+
+            // If event is Exit, decrement
+            // count of guests.
+            else {
+                guests_in--;
+                j++;
+            }
+        }
+
+        return new int[] { max_guests, time };
+    }
+
+    // Driver Code
+    public static void Main()
+    {
+        int[] Entry = { 1, 2, 10, 5, 5 };
+        int[] Exit = { 4, 5, 12, 9, 12 };
+        int n = Entry.Length;
+        int[] ans = findMaxGuests(Entry, Exit);
+        Console.WriteLine(ans[0] + " " + ans[1]);
+    }
+}
+
+JavaScript
+
+function findMaxGuests(Entry, Exit)
+{
+    // Sort arrival and Exit arrays
+    let n = Entry.length;
+    Entry.sort((a, b) => a - b);
+    Exit.sort((a, b) => a - b);
+
+    let guests_in = 1, max_guests = 1, time = Entry[0];
+    let i = 1, j = 0;
+
+    // Process all events in sorted order
+    while (i < n && j < n) {
+        // If the next event is an arrival, increment guest
+        // count
+        if (Entry[i] <= Exit[j]) {
+            guests_in++;
+
+            // Update max_guests if needed
+            if (guests_in > max_guests) {
+                max_guests = guests_in;
+                time = Entry[i];
+            }
+            i++; // Move to the next arrival
+        }
+        else {
+            // If it's an Exit, decrement the guest count
+            guests_in--;
+            j++; // Move to the next Exit
+        }
+    }
+
+    return [ max_guests, time ];
+}
+
+// Sample Input
+let Entry = [ 1, 2, 10, 5, 5 ];
+let Exit = [ 4, 5, 12, 9, 12 ];
+
+// Function Call
+let ans = findMaxGuests(Entry, Exit);
+console.log(ans[0], " ", ans[1]);
+
+Output
+
+3 5
+
+### [Expected A pproach ] - Using Difference Array - O(n) Time and O(max-min+1) Space
+
+> Use a difference array to record guest entries and exits, then compute a running sum to track the number of guests at any time, updating the maximum count accordingly.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<int> findMaxGuests(vector<int> &Entry, vector<int> &Exit)
+{
+
+    int n = Entry.size();
+
+    // Finding maximum Entrying time O(n)
+    int maxa = *max_element(Entry.begin(), Entry.end());
+
+    // Finding maximum Exiting time O(n)
+    int maxb = *max_element(Exit.begin(), Exit.end());
+
+    int maxc = max(maxa, maxb);
+
+    int x[maxc + 2];
+    memset(x, 0, sizeof x);
+
+    int cur = 0, idx;
+
+    // Creating and auxiliary array O(n)
+    for (int i = 0; i < n; i++)
+    {
+        // Lazy addition
+        ++x[Entry[i]];
+        --x[Exit[i] + 1];
+    }
+
+    int maxy = INT_MIN;
+
+    // Lazily Calculating value at index i O(n)
+    for (int i = 0; i <= maxc; i++)
+    {
+        cur += x[i];
+        if (maxy < cur)
+        {
+            maxy = cur;
+            idx = i;
+        }
+    }
+    return {maxy, idx};
+}
+
+// Driver code
+int main()
+{
+    vector<int> Entry = {1, 2, 10, 5, 5}, Exit = {4, 5, 12, 9, 12};
+
+    vector<int> ans = findMaxGuests(Entry, Exit);
+    cout << ans[0] << " " << ans[1];
+    return 0;
+}
+
+Java
+
+import java.io.*;
+import java.math.*;
+import java.text.*;
+import java.util.*;
+import java.util.regex.*;
+
+class GFG {
+
+    static int[] findMaxGuests(int[] Entry, int[] Exit)
+    {
+        // Finding maximum Entrying time
+        int n = Entry.length;
+        int maxa = Arrays.stream(Entry).max().getAsInt();
+
+        // Finding maximum Exiting time
+        int maxb = Arrays.stream(Exit).max().getAsInt();
+
+        int maxc = Math.max(maxa, maxb);
+
+        int[] x = new int[maxc + 2];
+        Arrays.fill(x, 0);
+
+        int cur = 0, idx = 0;
+
+        // Creating an auxiliary array
+        for (int i = 0; i < n; i++) {
+            // Lazy addition
+            ++x[Entry[i]];
+            --x[Exit[i] + 1];
+        }
+
+        int maxy = Integer.MIN_VALUE;
+
+        // Lazily Calculating value at index i
+        for (int i = 0; i <= maxc; i++) {
+            cur += x[i];
+            if (maxy < cur) {
+                maxy = cur;
+                idx = i;
+            }
+        }
+        return new int[] { maxy, idx };
+    }
+
+    // Driver code
+    public static void main(String[] args)
+    {
+        int[] Entry = new int[] { 1, 2, 10, 5, 5 };
+        int[] Exit = new int[] { 4, 5, 12, 9, 12 };
+        int[] ans = findMaxGuests(Entry, Exit);
+        System.out.println(ans[0] + " " + ans[1]);
+    }
+}
+
+Python
+
+import sys
+
+def findMaxGuests(Entry, Exit):
+
+    n = len(Entry)
+    maxa = max(Entry)
+    maxb = max(Exit)
+    maxc = max(maxa, maxb)
+    x = (maxc + 2) * [0]
+    cur = 0
+    idx = 0
+
+    for i in range(0, n):
+        x[Entry[i]] += 1
+        x[Exit[i] + 1] -= 1
+
+    maxy = -1
+    # Lazily Calculating value at index i
+    for i in range(0, maxc + 1):
+        cur += x[i]
+        if maxy < cur:
+            maxy = cur
+            idx = i
+    return [maxy, idx]
+
+if __name__ == "__main__":
+
+    Entry = [1, 2, 10, 5, 5]
+    Exit = [4, 5, 12, 9, 12]
+
+    ans = findMaxGuests(Entry, Exit)
+    print(ans[0], " ", ans[1])
+
+C#
+
+using System;
+using System.Linq;
+
+class GfG {
+
+    static int[] findMaxGuests(int[] Entry, int[] Exit)
+    {
+        int n = Entry.Length;
+        // Finding maximum Entrying time
+        int maxa = Entry.Max();
+
+        // Finding maximum Exiting time
+        int maxb = Exit.Max();
+
+        int maxc = Math.Max(maxa, maxb);
+
+        int[] x = new int[maxc + 2];
+
+        int cur = 0, idx = 0;
+
+        // Creating an auxiliary array
+        for (int i = 0; i < n; i++) {
+            // Lazy addition
+            ++x[Entry[i]];
+            --x[Exit[i] + 1];
+        }
+
+        int maxy = int.MinValue;
+
+        // Lazily Calculating value at index i
+        for (int i = 0; i <= maxc; i++) {
+            cur += x[i];
+            if (maxy < cur) {
+                maxy = cur;
+                idx = i;
+            }
+        }
+        return new int[] { maxy, idx };
+    }
+
+    // Driver code
+    public static void Main()
+    {
+        int[] Entry = new int[] { 1, 2, 10, 5, 5 };
+        int[] Exit = new int[] { 4, 5, 12, 9, 12 };
+        int[] ans = findMaxGuests(Entry, Exit);
+        Console.WriteLine(ans[0] + " " + ans[1]);
+    }
+}
+
+JavaScript
+
+// Javascript implementation of above approach
+
+function findMaxGuests(Entry, Exit)
+{
+    let n = Entry.length;
+    // Finding maximum Entrying time
+    let maxa = 0;
+    for (let i = 0; i < Entry.length; i++) {
+        maxa = Math.max(maxa, Entry[i]);
+    }
+
+    // Finding maximum Exiting time
+    let maxb = 0;
+    for (let i = 0; i < Exit.length; i++) {
+        maxb = Math.max(maxb, Exit[i]);
+    }
+
+    let maxc = Math.max(maxa, maxb);
+
+    let x = new Array(maxc + 2);
+    x.fill(0);
+
+    let cur = 0, idx = 0;
+
+    // Creating an auxiliary array
+    for (let i = 0; i < n; i++) {
+        // Lazy addition
+        ++x[Entry[i]];
+        --x[Exit[i] + 1];
+    }
+
+    let maxy = Number.MIN_VALUE;
+
+    // Lazily Calculating value at index i
+    for (let i = 0; i <= maxc; i++) {
+        cur += x[i];
+        if (maxy < cur) {
+            maxy = cur;
+            idx = i;
+        }
+    }
+    return [ maxy, idx ]
+}
+
+let Entry = [ 1, 2, 10, 5, 5 ];
+let Exit = [ 4, 5, 12, 9, 12 ];
+let ans = findMaxGuests(Entry, Exit);
+console.log(ans[0], " ", ans[1]);
+
+Output
+
+3 5

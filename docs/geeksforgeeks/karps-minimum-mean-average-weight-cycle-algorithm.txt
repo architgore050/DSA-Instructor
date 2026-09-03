@@ -1,0 +1,595 @@
+Source: https://www.geeksforgeeks.org/dsa/karps-minimum-mean-average-weight-cycle-algorithm/
+Title: Karp's minimum mean (or average) weight cycle algorithm
+Extractor: 2
+
+Given a directed and strongly connected graph with non-negative edge weights. We define the mean weight of a cycle as the summation of all the edge weights of the cycle divided by the no. of edges. Our task is to find the minimum mean weight among all the directed cycles of the graph.
+
+The input is provided as a list of edges, where each edge is represented by a triplet [u, v, w] indicating a directed edge from node u to node v with weight w . Nodes are labeled from 0 to n-1 , and the graph is guaranteed to be strongly connected, meaning a path exists between every pair of nodes.
+
+Example:
+
+> Input: [[0, 1, 1], [0, 2, 10], [1, 2, 3], [2, 3, 2], [3, 1, 0], [3, 0, 8]] Output: 1.66667
+
+### Approach:
+
+Method to find the smallest mean weight value cycle efficiently
+
+> Step 1: Choose first vertex as source. Step 2: Compute the shortest path to all other vertices on a path consisting of k edges 0 <= k <= V where V is number of vertices. This is a simple dp problem which can be computed by the recursive solution dp[k][v] = min(dp[k][v], dp[k-1][u] + weight(u,v) where v is the destination and the edge(u,v) should belong to E Step 3: For each vertex calculate max(dp[n][v]-dp[k][v])/(n-k) where 0<=k<=n-1 Step 4: The minimum of the values calculated above is the required answer.
+
+Implementation:
+
+C++
+
+// C++ program to find minimum average
+// weight of a cycle in connected and
+// directed graph.
+#include<bits/stdc++.h>
+using namespace std;
+
+const int V = 4;
+
+// a struct to represent edges
+struct edge
+{
+    int from, weight;
+};
+
+// vector to store edges
+vector <edge> edges[V];
+
+void addedge(int u,int v,int w)
+{
+    edges[v].push_back({u, w});
+}
+
+// calculates the shortest path
+void shortestpath(int dp[][V])
+{
+    // initializing all distances as -1
+    for (int i=0; i<=V; i++)
+        for (int j=0; j<V; j++)
+            dp[i][j] = -1;
+
+    // shortest distance from first vertex
+    // to in itself consisting of 0 edges
+    dp[0][0] = 0;
+
+    // filling up the dp table
+    for (int i=1; i<=V; i++)
+    {
+        for (int j=0; j<V; j++)
+        {
+            for (int k=0; k<edges[j].size(); k++)
+            {
+                if (dp[i-1][edges[j][k].from] != -1)
+                {
+                    int curr_wt = dp[i-1][edges[j][k].from] +
+                                  edges[j][k].weight;
+                    if (dp[i][j] == -1)
+                        dp[i][j] = curr_wt;
+                    else
+                       dp[i][j] = min(dp[i][j], curr_wt);
+                }
+            }
+        }
+    }
+}
+
+// Returns minimum value of average weight of a
+// cycle in graph.
+double minAvgWeight()
+{
+    int dp[V+1][V];
+    shortestpath(dp);
+
+    // array to store the avg values
+    double avg[V];
+    for (int i=0; i<V; i++)
+        avg[i] = -1;
+
+    // Compute average values for all vertices using
+    // weights of shortest paths store in dp.
+    for (int i=0; i<V; i++)
+    {
+        if (dp[V][i] != -1)
+        {
+            for (int j=0; j<V; j++)
+                if (dp[j][i] != -1)
+                    avg[i] = max(avg[i],
+                ((double)dp[V][i]-dp[j][i])/(V-j));
+        }
+    }
+
+    // Find minimum value in avg[]
+    double result = avg[0];
+    for (int i=0; i<V; i++)
+        if (avg[i] != -1 && avg[i] < result)
+            result = avg[i];
+
+    return result;
+}
+
+// Driver function
+int main()
+{
+    addedge(0, 1, 1);
+    addedge(0, 2, 10);
+    addedge(1, 2, 3);
+    addedge(2, 3, 2);
+    addedge(3, 1, 0);
+    addedge(3, 0, 8);
+
+    cout << minAvgWeight();
+
+    return 0;
+}
+
+Java
+
+// Java program to find minimum average
+// weight of a cycle in connected and
+// directed graph.
+import java.io.*;
+import java.util.*;
+
+class GFG
+{
+static int V = 4;
+
+// a struct to represent edges
+static class Edge
+{
+    int from, weight;
+
+    Edge(int from, int weight)
+    {
+        this.from = from;
+        this.weight = weight;
+    }
+}
+
+// vector to store edges
+//@SuppressWarnings("unchecked")
+static Vector<Edge>[] edges = new Vector[V];
+static
+{
+    for (int i = 0; i < V; i++)
+        edges[i] = new Vector<>();
+}
+
+static void addedge(int u, int v, int w)
+{
+    edges[v].add(new Edge(u, w));
+}
+
+// calculates the shortest path
+static void shortestpath(int[][] dp)
+{
+    // initializing all distances as -1
+    for (int i = 0; i <= V; i++)
+        for (int j = 0; j < V; j++)
+            dp[i][j] = -1;
+
+    // shortest distance from first vertex
+    // to in itself consisting of 0 edges
+    dp[0][0] = 0;
+
+    // filling up the dp table
+    for (int i = 1; i <= V; i++)
+    {
+        for (int j = 0; j < V; j++)
+        {
+            for (int k = 0; k < edges[j].size(); k++)
+            {
+                if (dp[i - 1][edges[j].elementAt(k).from] != -1)
+                {
+                    int curr_wt = dp[i - 1][edges[j].elementAt(k).from] +
+                                            edges[j].elementAt(k).weight;
+                    if (dp[i][j] == -1)
+                        dp[i][j] = curr_wt;
+                    else
+                        dp[i][j] = Math.min(dp[i][j], curr_wt);
+                }
+            }
+        }
+    }
+}
+
+// Returns minimum value of average weight
+// of a cycle in graph.
+static double minAvgWeight()
+{
+    int[][] dp = new int[V + 1][V];
+    shortestpath(dp);
+
+    // array to store the avg values
+    double[] avg = new double[V];
+    for (int i = 0; i < V; i++)
+        avg[i] = -1;
+
+    // Compute average values for all vertices using
+    // weights of shortest paths store in dp.
+    for (int i = 0; i < V; i++)
+    {
+        if (dp[V][i] != -1)
+        {
+            for (int j = 0; j < V; j++)
+                if (dp[j][i] != -1)
+                    avg[i] = Math.max(avg[i],
+                                    ((double) dp[V][i] -
+                                              dp[j][i]) / (V - j));
+        }
+    }
+
+    // Find minimum value in avg[]
+    double result = avg[0];
+    for (int i = 0; i < V; i++)
+        if (avg[i] != -1 && avg[i] < result)
+            result = avg[i];
+
+    return result;
+}
+
+// Driver Code
+public static void main(String[] args)
+{
+    addedge(0, 1, 1);
+    addedge(0, 2, 10);
+    addedge(1, 2, 3);
+    addedge(2, 3, 2);
+    addedge(3, 1, 0);
+    addedge(3, 0, 8);
+
+    System.out.printf("%.5f", minAvgWeight());
+}
+}
+
+// This code is contributed by
+// sanjeev2552
+
+Python3
+
+# Python3 program to find minimum
+# average weight of a cycle in
+# connected and directed graph.
+
+# a struct to represent edges
+class edge:
+    def __init__(self, u, w):
+        self.From = u
+        self.weight = w
+
+def addedge(u, v, w):
+    edges[v].append(edge(u, w))
+
+# calculates the shortest path
+def shortestpath(dp):
+
+    # initializing all distances as -1
+    for i in range(V + 1):
+        for j in range(V):
+            dp[i][j] = -1
+
+    # shortest distance From first vertex
+    # to in itself consisting of 0 edges
+    dp[0][0] = 0
+
+    # filling up the dp table
+    for i in range(1, V + 1):
+        for j in range(V):
+            for k in range(len(edges[j])):
+                if (dp[i - 1][edges[j][k].From] != -1):
+                    curr_wt = (dp[i - 1][edges[j][k].From] +
+                                         edges[j][k].weight)
+                    if (dp[i][j] == -1):
+                        dp[i][j] = curr_wt
+                    else:
+                        dp[i][j] = min(dp[i][j], curr_wt)
+
+# Returns minimum value of average
+# weight of a cycle in graph.
+def minAvgWeight():
+    dp = [[None] * V for i in range(V + 1)]
+    shortestpath(dp)
+
+    # array to store the avg values
+    avg = [-1] * V
+
+    # Compute average values for all
+    # vertices using weights of
+    # shortest paths store in dp.
+    for i in range(V):
+        if (dp[V][i] != -1):
+            for j in range(V):
+                if (dp[j][i] != -1):
+                    avg[i] = max(avg[i], (dp[V][i] -
+                                          dp[j][i]) / (V - j))
+
+    # Find minimum value in avg[]
+    result = avg[0]
+    for i in range(V):
+        if (avg[i] != -1 and avg[i] < result):
+            result = avg[i]
+
+    return result
+
+# Driver Code
+V = 4
+
+# vector to store edges
+edges = [[] for i in range(V)]
+
+addedge(0, 1, 1)
+addedge(0, 2, 10)
+addedge(1, 2, 3)
+addedge(2, 3, 2)
+addedge(3, 1, 0)
+addedge(3, 0, 8)
+
+print(minAvgWeight())
+
+# This code is contributed by Pranchalk
+
+C#
+
+// C# program to find minimum
+// average weight of a cycle
+// in connected and directed graph.
+using System;
+using System.Collections.Generic;
+class GFG{
+
+static int V = 4;
+
+// a struct to represent
+// edges
+public class Edge
+{
+  public int from, weight;
+  public Edge(int from,
+              int weight)
+  {
+    this.from = from;
+    this.weight = weight;
+  }
+}
+
+// vector to store edges
+static List<Edge>[] edges =
+            new List<Edge>[V];
+
+static void addedge(int u,
+                    int v, int w)
+{
+  edges[v].Add(new Edge(u, w));
+}
+
+// calculates the shortest path
+static void shortestpath(int[,] dp)
+{
+  // initializing all distances
+  // as -1
+  for (int i = 0; i <= V; i++)
+    for (int j = 0; j < V; j++)
+      dp[i, j] = -1;
+
+  // shortest distance from
+  // first vertex to in itself
+  // consisting of 0 edges
+  dp[0, 0] = 0;
+
+  // filling up the dp table
+  for (int i = 1; i <= V; i++)
+  {
+    for (int j = 0; j < V; j++)
+    {
+      for (int k = 0;
+               k < edges[j].Count; k++)
+      {
+        if (dp[i - 1,
+               edges[j][k].from] != -1)
+        {
+          int curr_wt = dp[i - 1,
+                           edges[j][k].from] +
+                           edges[j][k].weight;
+          if (dp[i, j] == -1)
+            dp[i, j] = curr_wt;
+          else
+            dp[i, j] = Math.Min(dp[i, j],
+                                curr_wt);
+        }
+      }
+    }
+  }
+}
+
+// Returns minimum value of
+// average weight of a cycle
+// in graph.
+static double minAvgWeight()
+{
+  int[,] dp = new int[V + 1, V];
+  shortestpath(dp);
+
+  // array to store the
+  // avg values
+  double[] avg = new double[V];
+
+  for (int i = 0; i < V; i++)
+    avg[i] = -1;
+
+  // Compute average values for
+  // all vertices using weights
+  // of shortest paths store in dp.
+  for (int i = 0; i < V; i++)
+  {
+    if (dp[V, i] != -1)
+    {
+      for (int j = 0; j < V; j++)
+        if (dp[j, i] != -1)
+          avg[i] = Math.Max(avg[i],
+                           ((double) dp[V, i] -
+                             dp[j, i]) /
+                             (V - j));
+    }
+  }
+
+  // Find minimum value in avg[]
+  double result = avg[0];
+
+  for (int i = 0; i < V; i++)
+    if (avg[i] != -1 &&
+        avg[i] < result)
+      result = avg[i];
+
+  return result;
+}
+
+// Driver Code
+public static void Main(String[] args)
+{
+  for (int i = 0; i < V; i++)
+    edges[i] = new List<Edge>();
+
+  addedge(0, 1, 1);
+  addedge(0, 2, 10);
+  addedge(1, 2, 3);
+  addedge(2, 3, 2);
+  addedge(3, 1, 0);
+  addedge(3, 0, 8);
+
+  Console.Write("{0:F5}",
+                minAvgWeight());
+}
+}
+
+// This code is contributed by Princi Singh
+
+JavaScript
+
+<script>
+
+// JavaScript program to find minimum
+// average weight of a cycle
+// in connected and directed graph.
+
+var V = 4;
+
+// a struct to represent
+// edges
+class Edge
+{
+    constructor(from, weight)
+    {
+        this.from = from;
+        this.weight = weight;
+    }
+}
+
+// vector to store edges
+var edges = Array.from(Array(V), ()=>Array());
+
+function addedge(u, v, w)
+{
+  edges[v].push(new Edge(u, w));
+}
+
+// calculates the shortest path
+function shortestpath(dp)
+{
+  // initializing all distances
+  // as -1
+  for (var i = 0; i <= V; i++)
+    for (var j = 0; j < V; j++)
+      dp[i][j] = -1;
+
+  // shortest distance from
+  // first vertex to in itself
+  // consisting of 0 edges
+  dp[0][0] = 0;
+
+  // filling up the dp table
+  for (var i = 1; i <= V; i++)
+  {
+    for (var j = 0; j < V; j++)
+    {
+      for (var k = 0;
+               k < edges[j].length; k++)
+      {
+        if (dp[i - 1][
+               edges[j][k].from] != -1)
+        {
+          var curr_wt = dp[i - 1][
+                           edges[j][k].from] +
+                           edges[j][k].weight;
+          if (dp[i][j] == -1)
+            dp[i][j] = curr_wt;
+          else
+            dp[i][j] = Math.min(dp[i][j],
+                                curr_wt);
+        }
+      }
+    }
+  }
+}
+
+// Returns minimum value of
+// average weight of a cycle
+// in graph.
+function minAvgWeight()
+{
+  var dp = Array.from(Array(V+1), ()=>Array(V).fill(0))
+  shortestpath(dp);
+
+  // array to store the
+  // avg values
+  var avg = Array(V).fill(0);
+
+  for (var i = 0; i < V; i++)
+    avg[i] = -1;
+
+  // Compute average values for
+  // all vertices using weights
+  // of shortest paths store in dp.
+  for (var i = 0; i < V; i++)
+  {
+    if (dp[V][i] != -1)
+    {
+      for (var j = 0; j < V; j++)
+        if (dp[j][i] != -1)
+          avg[i] = Math.max(avg[i],
+                           ( dp[V][i] -
+                             dp[j][i]) /
+                             (V - j));
+    }
+  }
+
+  // Find minimum value in avg[]
+  var result = avg[0];
+
+  for (var i = 0; i < V; i++)
+    if (avg[i] != -1 &&
+        avg[i] < result)
+      result = avg[i];
+
+  return result;
+}
+
+// Driver Code
+addedge(0, 1, 1);
+addedge(0, 2, 10);
+addedge(1, 2, 3);
+addedge(2, 3, 2);
+addedge(3, 1, 0);
+addedge(3, 0, 8);
+document.write(minAvgWeight().toFixed(5));
+
+</script>
+
+Output
+
+1.66667
+
+Time Complexity : The time complexity of the given program is O(V^3) , where V is the number of vertices in the graph. This is because the program uses a nested loop to fill up the dp table, and the size of the dp table is V^2 . The outermost loop runs V times, the middle loop runs V times, and the innermost loop can run up to V times in the worst case, giving a total time complexity of O(V^3) . The other parts of the program have a lower time complexity and do not contribute significantly to the overall time complexity.
+
+Space Complexity : The space complexity of the given  program is O(V^2) , where V is the number of vertices in the graph. This is because the program creates a 2D array dp of size (V+1)xV , which requires O(V^2) space. Additionally, the program creates a vector of edges, which takes up O(E) space, where E is the number of edges in the graph. However, in this particular implementation, the number of edges is not directly stored, and it is not clear whether all edges are actually added to the vector. Therefore, the space complexity is mainly determined by the size of the dp array, which is O(V^2) .

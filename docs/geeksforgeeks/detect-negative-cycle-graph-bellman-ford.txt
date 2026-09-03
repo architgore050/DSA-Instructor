@@ -1,0 +1,780 @@
+Source: https://www.geeksforgeeks.org/dsa/detect-negative-cycle-graph-bellman-ford/
+Title: Detect Negative Cycle in Graph
+Extractor: 2
+
+Given a weighted directed graph containing V vertices numbered from 0 to V - 1 and a list of E directed edges edges[][] , determine whether the graph contains a negative weight cycle or not.
+
+Each edge is represented as: [u, v, w], where there is a directed edge from vertex u to vertex v having the given weight w.
+
+Note: A negative-weight cycle is a cycle in a graph whose edges sum to a negative value.
+
+Examples:
+
+> Input: V = 4, E = 4, edges[][] = [[0, 3, 6], [1, 0, 4], [1, 2, 6], [3, 1, 2]] Output: false Explanation: Cycle 1 -> 0 -> 3 -> 1 has total weight 6 + 4 + 2 = 12, which is positive, so no negative weight cycle exists. Input: V = 4, E = 4, edges[][] = [[1, 0, 4], [3, 1, -2], [1, 2, -6], [2, 3, 5]] Output: true Explanation: There is a cycle 1 -> 2 -> 3 -> 1 with total weight -3, which is negative, so a negative weight cycle exists.
+
+Table of Content
+
+- [Naive Approach] Using Floyd–Warshall - O(V ^ 3) Time and O(V ^ 2) Space
+- [Expected Approach] Using Bellman–Ford - O(V * E) and O(V) Space
+
+### [Naive Approach] Using Floyd–Warshall - O(V ^ 3) Time and O(V ^ 2) Space
+
+> The idea is  to use a distance matrix where dist[u][v] stores the minimum known distance from vertex u to vertex v. Initially: Set dist[i][i] = 0. For every edge [u, v, w], set dist[u][v] to the minimum edge weight between u and v. Set all other distances to infinity. Then apply the Floyd–Warshall algorithm by considering every vertex as an intermediate vertex.
+
+If at any point after computing all shortest paths, dist[i][i] < 0 for any vertex i, it means there exists a path from i back to itself with negative total weight. Hence, the graph contains a negative weight cycle.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <climits>
+using namespace std;
+
+bool isNegativeWeightCycle(int V, vector<vector<int>>& edges) {
+    const long long INF = LLONG_MAX / 4;
+
+    vector<vector<long long>> dist(
+        V, vector<long long>(V, INF)
+    );
+
+    // Distance from every vertex to itself is 0.
+    for (int i = 0; i < V; i++) {
+        dist[i][i] = 0;
+    }
+
+    // Add all directed edges.
+    for (const auto& edge : edges) {
+        int u = edge[0];
+        int v = edge[1];
+        int w = edge[2];
+
+        dist[u][v] = min(dist[u][v], (long long)w);
+    }
+
+    // Apply Floyd-Warshall algorithm.
+    for (int k = 0; k < V; k++) {
+        for (int i = 0; i < V; i++) {
+            if (dist[i][k] == INF) {
+                continue;
+            }
+
+            for (int j = 0; j < V; j++) {
+                if (dist[k][j] == INF) {
+                    continue;
+                }
+
+                dist[i][j] = min(
+                    dist[i][j],
+                    dist[i][k] + dist[k][j]
+                );
+            }
+        }
+    }
+
+    // A negative diagonal value confirms a negative cycle.
+    for (int i = 0; i < V; i++) {
+        if (dist[i][i] < 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int main() {
+    int V1 = 4;
+    vector<vector<int>> edges1 = {
+        {0, 3, 6},
+        {1, 0, 4},
+        {1, 2, 6},
+        {3, 1, 2}
+    };
+
+    cout << (isNegativeWeightCycle(V1, edges1) ?
+             "true" : "false") << "\n";
+
+    int V2 = 4;
+    vector<vector<int>> edges2 = {
+        {1, 0, 4},
+        {3, 1, -2},
+        {1, 2, -6},
+        {2, 3, 5}
+    };
+
+    cout << (isNegativeWeightCycle(V2, edges2) ?
+             "true" : "false") << "\n";
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+    static boolean isNegativeWeightCycle(int V, int[][] edges) {
+        long INF = Long.MAX_VALUE / 4;
+
+        long[][] dist = new long[V][V];
+
+        for (int i = 0; i < V; i++) {
+            Arrays.fill(dist[i], INF);
+            dist[i][i] = 0;
+        }
+
+        // Add all directed edges.
+        for (int[] edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
+            int w = edge[2];
+
+            dist[u][v] = Math.min(dist[u][v], w);
+        }
+
+        // Apply Floyd-Warshall algorithm.
+        for (int k = 0; k < V; k++) {
+            for (int i = 0; i < V; i++) {
+                if (dist[i][k] == INF) {
+                    continue;
+                }
+
+                for (int j = 0; j < V; j++) {
+                    if (dist[k][j] == INF) {
+                        continue;
+                    }
+
+                    dist[i][j] = Math.min(
+                        dist[i][j],
+                        dist[i][k] + dist[k][j]
+                    );
+                }
+            }
+        }
+
+        // A negative diagonal value confirms a negative cycle.
+        for (int i = 0; i < V; i++) {
+            if (dist[i][i] < 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static void main(String[] args) {
+        int V1 = 4;
+        int[][] edges1 = {
+            {0, 3, 6},
+            {1, 0, 4},
+            {1, 2, 6},
+            {3, 1, 2}
+        };
+
+        System.out.println(
+            isNegativeWeightCycle(V1, edges1)
+        );
+
+        int V2 = 4;
+        int[][] edges2 = {
+            {1, 0, 4},
+            {3, 1, -2},
+            {1, 2, -6},
+            {2, 3, 5}
+        };
+
+        System.out.println(
+            isNegativeWeightCycle(V2, edges2)
+        );
+    }
+}
+
+Python
+
+def isNegativeWeightCycle(V: int, edges: list[list[int]]) -> bool:
+    INF = float("inf")
+
+    dist = [[INF] * V for _ in range(V)]
+
+    # Distance from every vertex to itself is 0.
+    for i in range(V):
+        dist[i][i] = 0
+
+    # Add all directed edges.
+    for u, v, w in edges:
+        dist[u][v] = min(dist[u][v], w)
+
+    # Apply Floyd-Warshall algorithm.
+    for k in range(V):
+        for i in range(V):
+            if dist[i][k] == INF:
+                continue
+
+            for j in range(V):
+                if dist[k][j] == INF:
+                    continue
+
+                dist[i][j] = min(
+                    dist[i][j],
+                    dist[i][k] + dist[k][j]
+                )
+
+    # A negative diagonal value confirms a negative cycle.
+    for i in range(V):
+        if dist[i][i] < 0:
+            return True
+
+    return False
+
+if __name__ == "__main__":
+    V1 = 4
+    edges1 = [
+        [0, 3, 6],
+        [1, 0, 4],
+        [1, 2, 6],
+        [3, 1, 2]
+    ]
+
+    print(
+        str(isNegativeWeightCycle(V1, edges1)).lower()
+    )
+
+    V2 = 4
+    edges2 = [
+        [1, 0, 4],
+        [3, 1, -2],
+        [1, 2, -6],
+        [2, 3, 5]
+    ]
+
+    print(
+        str(isNegativeWeightCycle(V2, edges2)).lower()
+    )
+
+C#
+
+using System;
+
+class GFG
+{
+    static bool isNegativeWeightCycle(int V, int[,] edges)
+    {
+        long INF = long.MaxValue / 4;
+
+        long[,] dist = new long[V, V];
+
+        for (int i = 0; i < V; i++)
+        {
+            for (int j = 0; j < V; j++)
+            {
+                dist[i, j] = INF;
+            }
+
+            dist[i, i] = 0;
+        }
+
+        int E = edges.GetLength(0);
+
+        // Add all directed edges.
+        for (int i = 0; i < E; i++)
+        {
+            int u = edges[i, 0];
+            int v = edges[i, 1];
+            int w = edges[i, 2];
+
+            dist[u, v] = Math.Min(dist[u, v], w);
+        }
+
+        // Apply Floyd-Warshall algorithm.
+        for (int k = 0; k < V; k++)
+        {
+            for (int i = 0; i < V; i++)
+            {
+                if (dist[i, k] == INF)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < V; j++)
+                {
+                    if (dist[k, j] == INF)
+                    {
+                        continue;
+                    }
+
+                    dist[i, j] = Math.Min(
+                        dist[i, j],
+                        dist[i, k] + dist[k, j]
+                    );
+                }
+            }
+        }
+
+        // A negative diagonal value confirms a negative cycle.
+        for (int i = 0; i < V; i++)
+        {
+            if (dist[i, i] < 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static void Main()
+    {
+        int V1 = 4;
+        int[,] edges1 =
+        {
+            {0, 3, 6},
+            {1, 0, 4},
+            {1, 2, 6},
+            {3, 1, 2}
+        };
+
+        Console.WriteLine(
+            isNegativeWeightCycle(V1, edges1)
+                .ToString()
+                .ToLower()
+        );
+
+        int V2 = 4;
+        int[,] edges2 =
+        {
+            {1, 0, 4},
+            {3, 1, -2},
+            {1, 2, -6},
+            {2, 3, 5}
+        };
+
+        Console.WriteLine(
+            isNegativeWeightCycle(V2, edges2)
+                .ToString()
+                .ToLower()
+        );
+    }
+}
+
+JavaScript
+
+function isNegativeWeightCycle(V, edges) {
+    const INF = Number.POSITIVE_INFINITY;
+
+    const dist = Array.from(
+        { length: V },
+        () => new Array(V).fill(INF)
+    );
+
+    // Distance from every vertex to itself is 0.
+    for (let i = 0; i < V; i++) {
+        dist[i][i] = 0;
+    }
+
+    // Add all directed edges.
+    for (const [u, v, w] of edges) {
+        dist[u][v] = Math.min(dist[u][v], w);
+    }
+
+    // Apply Floyd-Warshall algorithm.
+    for (let k = 0; k < V; k++) {
+        for (let i = 0; i < V; i++) {
+            if (dist[i][k] === INF) {
+                continue;
+            }
+
+            for (let j = 0; j < V; j++) {
+                if (dist[k][j] === INF) {
+                    continue;
+                }
+
+                dist[i][j] = Math.min(
+                    dist[i][j],
+                    dist[i][k] + dist[k][j]
+                );
+            }
+        }
+    }
+
+    // A negative diagonal value confirms a negative cycle.
+    for (let i = 0; i < V; i++) {
+        if (dist[i][i] < 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Driver Code
+const V1 = 4;
+const edges1 = [
+    [0, 3, 6],
+    [1, 0, 4],
+    [1, 2, 6],
+    [3, 1, 2]
+];
+
+console.log(isNegativeWeightCycle(V1, edges1));
+
+const V2 = 4;
+const edges2 = [
+    [1, 0, 4],
+    [3, 1, -2],
+    [1, 2, -6],
+    [2, 3, 5]
+];
+
+console.log(isNegativeWeightCycle(V2, edges2));
+
+Output
+
+false
+true
+
+### [Expected Approach] Using Bellman–Ford - O(V * E) and O(V) Space
+
+> The idea is to initialize the distance of every vertex as 0. This is equivalent to connecting an imaginary source to every vertex with an edge of weight 0, so negative cycles in disconnected components can also be detected. Relax every edge V - 1 times. For each edge [u, v, w], if: dist[u] + w < dist[v] then update dist[v]. After V - 1 iterations, perform one additional traversal of all edges. If any edge can still be relaxed, the graph contains a negative weight cycle. We can also stop early if an iteration performs no update.
+
+Let us understand with an example: Input: V = 4, E = 4, edges[][] = [[1, 0, 4], [3, 1, -2], [1, 2, -6], [2, 3, 5]]
+
+- Initially, dist = [0, 0, 0, 0].
+- After 1st iteration, dist = [0, -2, -8, -3].
+- After 2nd iteration, dist = [0, -5, -11, -6].
+- After 3rd iteration, dist = [-1, -8, -14, -9].
+- During the final check, 3 -> 1 can still be relaxed because dist[3] - 2 = -11 < -8, so a negative cycle exists and the function returns true.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+bool isNegativeWeightCycle(
+    int V, vector<vector<int>>& edges
+) {
+    vector<int> dist(V, 0);
+
+    // Relax all edges V - 1 times.
+    for (int i = 0; i < V - 1; i++) {
+        bool updated = false;
+
+        for (const auto& edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
+            int w = edge[2];
+
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                updated = true;
+            }
+        }
+
+        // No update means distances have stabilized.
+        if (!updated) {
+            return false;
+        }
+    }
+
+    // Check whether any edge can still be relaxed.
+    for (const auto& edge : edges) {
+        int u = edge[0];
+        int v = edge[1];
+        int w = edge[2];
+
+        if (dist[u] + w < dist[v]) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int main() {
+    int V1 = 4;
+    vector<vector<int>> edges1 = {
+        {0, 3, 6},
+        {1, 0, 4},
+        {1, 2, 6},
+        {3, 1, 2}
+    };
+
+    cout << (isNegativeWeightCycle(V1, edges1) ?
+             "true" : "false") << "\n";
+
+    int V2 = 4;
+    vector<vector<int>> edges2 = {
+        {1, 0, 4},
+        {3, 1, -2},
+        {1, 2, -6},
+        {2, 3, 5}
+    };
+
+    cout << (isNegativeWeightCycle(V2, edges2) ?
+             "true" : "false") << "\n";
+
+    return 0;
+}
+
+Java
+
+class GFG {
+    static boolean isNegativeWeightCycle(
+        int V, int[][] edges
+    ) {
+        int[] dist = new int[V];
+
+        // Relax all edges V - 1 times.
+        for (int i = 0; i < V - 1; i++) {
+            boolean updated = false;
+
+            for (int[] edge : edges) {
+                int u = edge[0];
+                int v = edge[1];
+                int w = edge[2];
+
+                if (dist[u] + w < dist[v]) {
+                    dist[v] = dist[u] + w;
+                    updated = true;
+                }
+            }
+
+            // No update means distances have stabilized.
+            if (!updated) {
+                return false;
+            }
+        }
+
+        // Check whether any edge can still be relaxed.
+        for (int[] edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
+            int w = edge[2];
+
+            if (dist[u] + w < dist[v]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static void main(String[] args) {
+        int V1 = 4;
+        int[][] edges1 = {
+            {0, 3, 6},
+            {1, 0, 4},
+            {1, 2, 6},
+            {3, 1, 2}
+        };
+
+        System.out.println(
+            isNegativeWeightCycle(V1, edges1)
+        );
+
+        int V2 = 4;
+        int[][] edges2 = {
+            {1, 0, 4},
+            {3, 1, -2},
+            {1, 2, -6},
+            {2, 3, 5}
+        };
+
+        System.out.println(
+            isNegativeWeightCycle(V2, edges2)
+        );
+    }
+}
+
+Python
+
+def isNegativeWeightCycle(V: int, edges: list[list[int]]) -> bool:
+    dist = [0] * V
+
+    # Relax all edges V - 1 times.
+    for _ in range(V - 1):
+        updated = False
+
+        for u, v, w in edges:
+            if dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                updated = True
+
+        # No update means distances have stabilized.
+        if not updated:
+            return False
+
+    # Check whether any edge can still be relaxed.
+    for u, v, w in edges:
+        if dist[u] + w < dist[v]:
+            return True
+
+    return False
+
+if __name__ == "__main__":
+    V1 = 4
+    edges1 = [
+        [0, 3, 6],
+        [1, 0, 4],
+        [1, 2, 6],
+        [3, 1, 2]
+    ]
+
+    print(
+        str(isNegativeWeightCycle(V1, edges1)).lower()
+    )
+
+    V2 = 4
+    edges2 = [
+        [1, 0, 4],
+        [3, 1, -2],
+        [1, 2, -6],
+        [2, 3, 5]
+    ]
+
+    print(
+        str(isNegativeWeightCycle(V2, edges2)).lower()
+    )
+
+C#
+
+using System;
+
+class GFG
+{
+    static bool isNegativeWeightCycle(int V, int[,] edges)
+    {
+        int[] dist = new int[V];
+        int E = edges.GetLength(0);
+
+        // Relax all edges V - 1 times.
+        for (int i = 0; i < V - 1; i++)
+        {
+            bool updated = false;
+
+            for (int j = 0; j < E; j++)
+            {
+                int u = edges[j, 0];
+                int v = edges[j, 1];
+                int w = edges[j, 2];
+
+                if (dist[u] + w < dist[v])
+                {
+                    dist[v] = dist[u] + w;
+                    updated = true;
+                }
+            }
+
+            // No update means distances have stabilized.
+            if (!updated)
+            {
+                return false;
+            }
+        }
+
+        // Check whether any edge can still be relaxed.
+        for (int i = 0; i < E; i++)
+        {
+            int u = edges[i, 0];
+            int v = edges[i, 1];
+            int w = edges[i, 2];
+
+            if (dist[u] + w < dist[v])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static void Main()
+    {
+        int V1 = 4;
+        int[,] edges1 =
+        {
+            {0, 3, 6},
+            {1, 0, 4},
+            {1, 2, 6},
+            {3, 1, 2}
+        };
+
+        Console.WriteLine(
+            isNegativeWeightCycle(V1, edges1)
+                .ToString()
+                .ToLower()
+        );
+
+        int V2 = 4;
+        int[,] edges2 =
+        {
+            {1, 0, 4},
+            {3, 1, -2},
+            {1, 2, -6},
+            {2, 3, 5}
+        };
+
+        Console.WriteLine(
+            isNegativeWeightCycle(V2, edges2)
+                .ToString()
+                .ToLower()
+        );
+    }
+}
+
+JavaScript
+
+function isNegativeWeightCycle(V, edges) {
+    const dist = new Array(V).fill(0);
+
+    // Relax all edges V - 1 times.
+    for (let i = 0; i < V - 1; i++) {
+        let updated = false;
+
+        for (const [u, v, w] of edges) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                updated = true;
+            }
+        }
+
+        // No update means distances have stabilized.
+        if (!updated) {
+            return false;
+        }
+    }
+
+    // Check whether any edge can still be relaxed.
+    for (const [u, v, w] of edges) {
+        if (dist[u] + w < dist[v]) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Driver Code
+const V1 = 4;
+const edges1 = [
+    [0, 3, 6],
+    [1, 0, 4],
+    [1, 2, 6],
+    [3, 1, 2]
+];
+
+console.log(isNegativeWeightCycle(V1, edges1));
+
+const V2 = 4;
+const edges2 = [
+    [1, 0, 4],
+    [3, 1, -2],
+    [1, 2, -6],
+    [2, 3, 5]
+];
+
+console.log(isNegativeWeightCycle(V2, edges2));
+
+Output
+
+false
+true

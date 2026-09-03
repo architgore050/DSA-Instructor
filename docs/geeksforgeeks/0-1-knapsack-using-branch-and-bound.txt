@@ -1,0 +1,787 @@
+Source: https://www.geeksforgeeks.org/dsa/0-1-knapsack-using-branch-and-bound/
+Title: 0/1 Knapsack using Branch and Bound
+Extractor: 2
+
+Given two arrays v[] and w[] that represent values and weights associated with n items respectively. Find out the maximum value subset(Maximum Profit) of v[] such that the sum of the weights of this subset is smaller than or equal to Knapsack capacity W .
+
+Note: The constraint here is we can either put an item completely into the bag or cannot put it at all [It is not possible to put a part of an item into the bag.
+
+> Input: N = 3, W = 4, v[] = {1, 2, 3}, w[] = {4, 5, 1} Output: 3 Explanation: There are two items which have weight less than or equal to 4. If we select the item with weight 4, the possible profit is 1. And if we select the item with weight 1, the possible profit is 3. So the maximum possible profit is 3. Note that we cannot put both the items with weight 4 and 1 together as the capacity of the bag is 4. Input: N = 5, W = 10, v[] = {40, 50, 100, 95, 30}, w[] = {2, 3.14, 1.98, 5, 3} Output: 235
+
+## Branch and Bound Algorithm:
+
+> Branch and bound is an algorithm design paradigm which is generally used for solving combinatorial optimization problems. These problems typically exponential in terms of time complexity and may require exploring all possible permutations in worst case. Branch and Bound solve these problems relatively quickly.
+
+Firstly let us explore all approaches for this problem.
+
+### 1. 0/1 Knapsack using Greedy Approach :
+
+> A Greedy approach is to pick the items in decreasing order of value per unit weight. The Greedy approach works only for fractional knapsack problem and may not produce correct result for 0/1 knapsack .
+
+### 2. 0/1 Knapsack using Dynamic Programming (DP) :
+
+> We can use D ynamic P rogramming ( DP ) for 0/1 Knapsack problem . In DP, we use a 2D table of size n x W. The DP Solution doesn't work if item weights are not integers .
+
+### 3. 0/1 Knapsack using Brute Force:
+
+> Since DP solution doesn't always work just like in case of non-integer weight, a solution is to use Brute Force. With n items, there are 2n solutions to be generated, check each to see if they satisfy the constraint, save maximum solution that satisfies constraint. This solution can be expressed as tree.
+
+0/1 Knapsack using Brute Force
+
+### 4. 0/1 Knapsack using Backtracking :
+
+> We can use Backtracking to optimize the Brute Force solution. In the tree representation, we can do DFS of tree. If we reach a point where a solution no longer is feasible, there is no need to continue exploring. In the given example, backtracking would be much more effective if we had even more items or a smaller knapsack capacity.
+
+0/1 Knapsack using Backtracking
+
+### 5. 0/1 Knapsack using Branch and Bound:
+
+> The backtracking based solution works better than brute force by ignoring infeasible solutions. We can do better (than backtracking) if we know a bound on best possible solution subtree rooted with every node. If the best in subtree is worse than current best, we can simply ignore this node and its subtrees. So we compute bound (best solution) for every node and compare the bound with current best solution before exploring the node.
+
+0/1 Knapsack using Branch and Bound
+
+## How to find bound for every node for 0/1 Knapsack?
+
+> The idea is to use the fact that the Greedy approach provides the best solution for Fractional Knapsack problem. To check if a particular node can give us a better solution or not, we compute the optimal solution (through the node) using Greedy approach. If the solution computed by Greedy approach itself is more than the best so far, then we can’t get a better solution through the node.
+
+Follow the steps to implement the above idea:
+
+- Sort all items in decreasing order of ratio of value per unit weight so that an upper bound can be computed using Greedy Approach.
+- Initialize maximum profit, maxProfit = 0 , create an empty queue, Q , and create a dummy node of decision tree and enqueue it to Q . Profit and weight of dummy node are 0 .
+- Do following while Q is not empty. Extract an item from Q . Let the extracted item be u . Compute profit of next level node. If the profit is more than maxProfit , then update maxProfit . Compute bound of next level node. If bound is more than maxProfit , then add next level node to Q . Consider the case when next level node is not considered as part of solution and add a node to queue with level as next, but weight and profit without considering next level nodes.
+
+Below is the implementation of above approach:
+
+C++
+
+// C++ program to solve knapsack problem using
+// branch and bound
+#include <bits/stdc++.h>
+using namespace std;
+
+// Structure for Item which store weight and corresponding
+// value of Item
+struct Item
+{
+    float weight;
+    int value;
+};
+
+// Node structure to store information of decision
+// tree
+struct Node
+{
+    // level --> Level of node in decision tree (or index
+    //             in arr[]
+    // profit --> Profit of nodes on path from root to this
+    //         node (including this node)
+    // bound ---> Upper bound of maximum profit in subtree
+    //         of this node/
+    int level, profit, bound;
+    float weight;
+};
+
+// Comparison function to sort Item according to
+// val/weight ratio
+bool cmp(Item a, Item b)
+{
+    double r1 = (double)a.value / a.weight;
+    double r2 = (double)b.value / b.weight;
+    return r1 > r2;
+}
+
+// Returns bound of profit in subtree rooted with u.
+// This function mainly uses Greedy solution to find
+// an upper bound on maximum profit.
+int bound(Node u, int n, int W, Item arr[])
+{
+    // if weight overcomes the knapsack capacity, return
+    // 0 as expected bound
+    if (u.weight >= W)
+        return 0;
+
+    // initialize bound on profit by current profit
+    int profit_bound = u.profit;
+
+    // start including items from index 1 more to current
+    // item index
+    int j = u.level + 1;
+    int totweight = u.weight;
+
+    // checking index condition and knapsack capacity
+    // condition
+    while ((j < n) && (totweight + arr[j].weight <= W))
+    {
+        totweight += arr[j].weight;
+        profit_bound += arr[j].value;
+        j++;
+    }
+
+    // If k is not n, include last item partially for
+    // upper bound on profit
+    if (j < n)
+        profit_bound += (W - totweight) * arr[j].value /
+                                        arr[j].weight;
+
+    return profit_bound;
+}
+
+// Returns maximum profit we can get with capacity W
+int knapsack(int W, Item arr[], int n)
+{
+    // sorting Item on basis of value per unit
+    // weight.
+    sort(arr, arr + n, cmp);
+
+    // make a queue for traversing the node
+    queue<Node> Q;
+    Node u, v;
+
+    // dummy node at starting
+    u.level = -1;
+    u.profit = u.weight = 0;
+    Q.push(u);
+
+    // One by one extract an item from decision tree
+    // compute profit of all children of extracted item
+    // and keep saving maxProfit
+    int maxProfit = 0;
+    while (!Q.empty())
+    {
+        // Dequeue a node
+        u = Q.front();
+        Q.pop();
+
+        // If it is starting node, assign level 0
+        if (u.level == -1)
+            v.level = 0;
+
+        // If there is nothing on next level
+        if (u.level == n-1)
+            continue;
+
+        // Else if not last node, then increment level,
+        // and compute profit of children nodes.
+        v.level = u.level + 1;
+
+        // Taking current level's item add current
+        // level's weight and value to node u's
+        // weight and value
+        v.weight = u.weight + arr[v.level].weight;
+        v.profit = u.profit + arr[v.level].value;
+
+        // If cumulated weight is less than W and
+        // profit is greater than previous profit,
+        // update maxprofit
+        if (v.weight <= W && v.profit > maxProfit)
+            maxProfit = v.profit;
+
+        // Get the upper bound on profit to decide
+        // whether to add v to Q or not.
+        v.bound = bound(v, n, W, arr);
+
+        // If bound value is greater than profit,
+        // then only push into queue for further
+        // consideration
+        if (v.bound > maxProfit)
+            Q.push(v);
+
+        // Do the same thing, but Without taking
+        // the item in knapsack
+        v.weight = u.weight;
+        v.profit = u.profit;
+        v.bound = bound(v, n, W, arr);
+        if (v.bound > maxProfit)
+            Q.push(v);
+    }
+
+    return maxProfit;
+}
+
+// driver program to test above function
+int main()
+{
+    int W = 10; // Weight of knapsack
+    Item arr[] = {{2, 40}, {3.14, 50}, {1.98, 100},
+                {5, 95}, {3, 30}};
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    cout << "Maximum possible profit = "
+        << knapsack(W, arr, n);
+
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+class Item {
+    float weight;
+    int value;
+
+    Item(float weight, int value) {
+        this.weight = weight;
+        this.value = value;
+    }
+}
+
+class Node {
+    int level, profit, bound;
+    float weight;
+
+    Node(int level, int profit, float weight) {
+        this.level = level;
+        this.profit = profit;
+        this.weight = weight;
+    }
+}
+
+public class KnapsackBranchAndBound {
+    static Comparator<Item> itemComparator = (a, b) -> {
+        double ratio1 = (double) a.value / a.weight;
+        double ratio2 = (double) b.value / b.weight;
+        // Sorting in decreasing order of value per unit weight
+        return Double.compare(ratio2, ratio1);
+    };
+
+    static int bound(Node u, int n, int W, Item[] arr) {
+        if (u.weight >= W)
+            return 0;
+
+        int profitBound = u.profit;
+        int j = u.level + 1;
+        float totalWeight = u.weight;
+
+        while (j < n && totalWeight + arr[j].weight <= W) {
+            totalWeight += arr[j].weight;
+            profitBound += arr[j].value;
+            j++;
+        }
+
+        if (j < n)
+            profitBound += (int) ((W - totalWeight) * arr[j].value / arr[j].weight);
+
+        return profitBound;
+    }
+
+    static int knapsack(int W, Item[] arr, int n) {
+        Arrays.sort(arr, itemComparator);
+        PriorityQueue<Node> priorityQueue =
+        new PriorityQueue<>((a, b) -> Integer.compare(b.bound, a.bound));
+        Node u, v;
+
+        u = new Node(-1, 0, 0);
+        priorityQueue.offer(u);
+
+        int maxProfit = 0;
+
+        while (!priorityQueue.isEmpty()) {
+            u = priorityQueue.poll();
+
+            if (u.level == -1)
+                v = new Node(0, 0, 0);
+            else if (u.level == n - 1)
+                continue;
+            else
+                v = new Node(u.level + 1, u.profit, u.weight);
+
+            v.weight += arr[v.level].weight;
+            v.profit += arr[v.level].value;
+
+            if (v.weight <= W && v.profit > maxProfit)
+                maxProfit = v.profit;
+
+            v.bound = bound(v, n, W, arr);
+
+            if (v.bound > maxProfit)
+                priorityQueue.offer(v);
+
+            v = new Node(u.level + 1, u.profit, u.weight);
+            v.bound = bound(v, n, W, arr);
+
+            if (v.bound > maxProfit)
+                priorityQueue.offer(v);
+        }
+
+        return maxProfit;
+    }
+
+    public static void main(String[] args) {
+        int W = 10;
+        Item[] arr = {
+            new Item(2, 40),
+            new Item(3.14f, 50),
+            new Item(1.98f, 100),
+            new Item(5, 95),
+            new Item(3, 30)
+        };
+        int n = arr.length;
+
+        int maxProfit = knapsack(W, arr, n);
+        System.out.println("Maximum possible profit = " + maxProfit);
+    }
+}
+
+Python
+
+from queue import PriorityQueue
+
+class Item:
+    def __init__(self, weight, value):
+        self.weight = weight
+        self.value = value
+
+class Node:
+    def __init__(self, level, profit, weight):
+        self.level = level      # Level of the node in the decision tree (or index in arr[])
+        self.profit = profit    # Profit of nodes on the path from root to this node (including this node)
+        self.weight = weight    # Total weight at the node
+
+    def __lt__(self, other):
+        return other.weight < self.weight  # Compare based on weight in descending order
+
+def bound(u, n, W, arr):
+    # Calculate the upper bound of profit for a node in the search tree
+    if u.weight >= W:
+        return 0
+
+    profit_bound = u.profit
+    j = u.level + 1
+    total_weight = u.weight
+
+    # Greedily add items to the knapsack until the weight limit is reached
+    while j < n and total_weight + arr[j].weight <= W:
+        total_weight += arr[j].weight
+        profit_bound += arr[j].value
+        j += 1
+
+    # If there are still items left, calculate the fractional contribution of the next item
+    if j < n:
+        profit_bound += int((W - total_weight) * arr[j].value / arr[j].weight)
+
+    return profit_bound
+
+def knapsack(W, arr, n):
+    # Sort items based on value-to-weight ratio in non-ascending order
+    arr.sort(key=lambda x: x.value / x.weight, reverse=True)
+
+    priority_queue = PriorityQueue()
+    u = Node(-1, 0, 0)  # Dummy node at the starting
+    priority_queue.put(u)
+
+    max_profit = 0
+
+    while not priority_queue.empty():
+        u = priority_queue.get()
+
+        if u.level == -1:
+            v = Node(0, 0, 0)  # Starting node
+        elif u.level == n - 1:
+            continue  # Skip if it is the last level (no more items to consider)
+        else:
+            v = Node(u.level + 1, u.profit, u.weight)  # Node without considering the next item
+
+        v.weight += arr[v.level].weight
+        v.profit += arr[v.level].value
+
+        # If the cumulated weight is less than or equal to W and profit is greater than previous profit, update maxProfit
+        if v.weight <= W and v.profit > max_profit:
+            max_profit = v.profit
+
+        v_bound = bound(v, n, W, arr)
+        # If the bound value is greater than current maxProfit, add the node to the priority queue for further consideration
+        if v_bound > max_profit:
+            priority_queue.put(v)
+
+        # Node considering the next item without adding it to the knapsack
+        v = Node(u.level + 1, u.profit, u.weight)
+        v_bound = bound(v, n, W, arr)
+        # If the bound value is greater than current maxProfit, add the node to the priority queue for further consideration
+        if v_bound > max_profit:
+            priority_queue.put(v)
+
+    return max_profit
+
+# Driver program to test the above function
+W = 10
+arr = [
+    Item(2, 40),
+    Item(3.14, 50),
+    Item(1.98, 100),
+    Item(5, 95),
+    Item(3, 30)
+]
+n = len(arr)
+
+max_profit = knapsack(W, arr, n)
+print("Maximum possible profit =", max_profit)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Item
+{
+    public float Weight { get; }
+    public int Value { get; }
+
+    public Item(float weight, int value)
+    {
+        Weight = weight;
+        Value = value;
+    }
+}
+
+class Node
+{
+    public int Level { get; }
+    public int Profit { get; set; }
+    public float Weight { get; set; }
+    public int Bound { get; set; }
+
+    public Node(int level, int profit, float weight)
+    {
+        Level = level;
+        Profit = profit;
+        Weight = weight;
+    }
+}
+
+class KnapsackBranchAndBound
+{
+    static Comparison<Item> itemComparison = (a, b) =>
+    {
+        double ratio1 = (double)a.Value / a.Weight;
+        double ratio2 = (double)b.Value / b.Weight;
+        // Sorting in decreasing order of value per unit weight
+        return ratio2.CompareTo(ratio1);
+    };
+
+    static int Bound(Node u, int n, int W, Item[] arr)
+    {
+        if (u.Weight >= W)
+            return 0;
+
+        int profitBound = u.Profit;
+        int j = u.Level + 1;
+        float totalWeight = u.Weight;
+
+        while (j < n && totalWeight + arr[j].Weight <= W)
+        {
+            totalWeight += arr[j].Weight;
+            profitBound += arr[j].Value;
+            j++;
+        }
+
+        if (j < n)
+            profitBound += (int)((W - totalWeight) * arr[j].Value / arr[j].Weight);
+
+        return profitBound;
+    }
+
+    static int Knapsack(int W, Item[] arr, int n)
+    {
+        Array.Sort(arr, itemComparison);
+        PriorityQueue<Node> priorityQueue =
+            new PriorityQueue<Node>((a, b) => b.Bound.CompareTo(a.Bound));
+        Node u, v;
+
+        u = new Node(-1, 0, 0);
+        priorityQueue.Enqueue(u);
+
+        int maxProfit = 0;
+
+        while (priorityQueue.Count > 0)
+        {
+            u = priorityQueue.Dequeue();
+
+            if (u.Level == -1)
+                v = new Node(0, 0, 0);
+            else if (u.Level == n - 1)
+                continue;
+            else
+                v = new Node(u.Level + 1, u.Profit, u.Weight);
+
+            v.Weight += arr[v.Level].Weight;
+            v.Profit += arr[v.Level].Value;
+
+            if (v.Weight <= W && v.Profit > maxProfit)
+                maxProfit = v.Profit;
+
+            v.Bound = Bound(v, n, W, arr);
+
+            if (v.Bound > maxProfit)
+                priorityQueue.Enqueue(v);
+
+            v = new Node(u.Level + 1, u.Profit, u.Weight);
+            v.Bound = Bound(v, n, W, arr);
+
+            if (v.Bound > maxProfit)
+                priorityQueue.Enqueue(v);
+        }
+
+        return maxProfit;
+    }
+
+    static void Main()
+    {
+        int W = 10;
+        Item[] arr = {
+            new Item(2, 40),
+            new Item(3.14f, 50),
+            new Item(1.98f, 100),
+            new Item(5, 95),
+            new Item(3, 30)
+        };
+        int n = arr.Length;
+
+        int maxProfit = Knapsack(W, arr, n);
+        Console.WriteLine("Maximum possible profit = " + maxProfit);
+    }
+}
+
+class PriorityQueue<T>
+{
+    private List<T> data;
+    private Comparison<T> comparison;
+
+    public PriorityQueue(Comparison<T> comparison)
+    {
+        this.data = new List<T>();
+        this.comparison = comparison;
+    }
+
+    public void Enqueue(T item)
+    {
+        data.Add(item);
+        int childIndex = data.Count - 1;
+        while (childIndex > 0)
+        {
+            int parentIndex = (childIndex - 1) / 2;
+            if (comparison(data[childIndex], data[parentIndex]) > 0)
+            {
+                T tmp = data[childIndex];
+                data[childIndex] = data[parentIndex];
+                data[parentIndex] = tmp;
+            }
+            else
+            {
+                break;
+            }
+            childIndex = parentIndex;
+        }
+    }
+
+    public T Dequeue()
+    {
+        int lastIndex = data.Count - 1;
+        T frontItem = data[0];
+        data[0] = data[lastIndex];
+        data.RemoveAt(lastIndex);
+
+        lastIndex--;
+        int parentIndex = 0;
+        while (true)
+        {
+            int childIndex = parentIndex * 2 + 1;
+            if (childIndex > lastIndex)
+                break;
+
+            int rightChild = childIndex + 1;
+            if (rightChild <= lastIndex && comparison(data[rightChild], data[childIndex]) > 0)
+                childIndex = rightChild;
+
+            if (comparison(data[parentIndex], data[childIndex]) > 0)
+                break;
+
+            T tmp = data[parentIndex];
+            data[parentIndex] = data[childIndex];
+            data[childIndex] = tmp;
+
+            parentIndex = childIndex;
+        }
+
+        return frontItem;
+    }
+
+    public int Count
+    {
+        get { return data.Count; }
+    }
+}
+
+JavaScript
+
+class Item {
+    constructor(weight, value) {
+        this.weight = weight;
+        this.value = value;
+    }
+}
+
+class Node {
+    constructor(level, profit, weight) {
+        this.level = level;
+        this.profit = profit;
+        this.weight = weight;
+        this.bound = 0;
+    }
+}
+
+// Comparator function for sorting items in decreasing order of value per unit weight
+const itemComparator = (a, b) => {
+    const ratio1 = a.value / a.weight;
+    const ratio2 = b.value / b.weight;
+    return ratio2 - ratio1;
+};
+
+function bound(u, n, W, arr) {
+    if (u.weight >= W)
+        return 0;
+
+    let profitBound = u.profit;
+    let j = u.level + 1;
+    let totalWeight = u.weight;
+
+    while (j < n && totalWeight + arr[j].weight <= W) {
+        totalWeight += arr[j].weight;
+        profitBound += arr[j].value;
+        j++;
+    }
+
+    if (j < n)
+        profitBound += Math.floor((W - totalWeight) * arr[j].value / arr[j].weight);
+
+    return profitBound;
+}
+
+function knapsack(W, arr, n) {
+    arr.sort(itemComparator);
+    const priorityQueue = new PriorityQueue((a, b) => b.bound - a.bound);
+    let u, v;
+
+    u = new Node(-1, 0, 0);
+    priorityQueue.enqueue(u);
+
+    let maxProfit = 0;
+
+    while (!priorityQueue.isEmpty()) {
+        u = priorityQueue.dequeue();
+
+        if (u.level === -1)
+            v = new Node(0, 0, 0);
+        else if (u.level === n - 1)
+            continue;
+        else
+            v = new Node(u.level + 1, u.profit, u.weight);
+
+        v.weight += arr[v.level].weight;
+        v.profit += arr[v.level].value;
+
+        if (v.weight <= W && v.profit > maxProfit)
+            maxProfit = v.profit;
+
+        v.bound = bound(v, n, W, arr);
+
+        if (v.bound > maxProfit)
+            priorityQueue.enqueue(v);
+
+        v = new Node(u.level + 1, u.profit, u.weight);
+        v.bound = bound(v, n, W, arr);
+
+        if (v.bound > maxProfit)
+            priorityQueue.enqueue(v);
+    }
+
+    return maxProfit;
+}
+
+// PriorityQueue implementation
+class PriorityQueue {
+    constructor(compareFunction) {
+        this.heap = [];
+        this.compare = compareFunction;
+    }
+
+    enqueue(item) {
+        this.heap.push(item);
+        let i = this.heap.length - 1;
+
+        while (i > 0) {
+            let parent = Math.floor((i - 1) / 2);
+            if (this.compare(this.heap[i], this.heap[parent]) >= 0)
+                break;
+
+            this.swap(i, parent);
+            i = parent;
+        }
+    }
+
+    dequeue() {
+        if (this.isEmpty())
+            throw new Error("Priority queue is empty");
+
+        const root = this.heap[0];
+        const last = this.heap.length - 1;
+
+        this.heap[0] = this.heap[last];
+        this.heap.pop();
+
+        let i = 0;
+        while (true) {
+            const leftChild = 2 * i + 1;
+            const rightChild = 2 * i + 2;
+            let smallest = i;
+
+            if (leftChild < this.heap.length && this.compare(this.heap[leftChild], this.heap[smallest]) < 0)
+                smallest = leftChild;
+
+            if (rightChild < this.heap.length && this.compare(this.heap[rightChild], this.heap[smallest]) < 0)
+                smallest = rightChild;
+
+            if (smallest === i)
+                break;
+
+            this.swap(i, smallest);
+            i = smallest;
+        }
+
+        return root;
+    }
+
+    isEmpty() {
+        return this.heap.length === 0;
+    }
+
+    swap(i, j) {
+        const temp = this.heap[i];
+        this.heap[i] = this.heap[j];
+        this.heap[j] = temp;
+    }
+}
+
+// Driver program to test the above function
+const W = 10;
+const arr = [
+    new Item(2, 40),
+    new Item(3.14, 50),
+    new Item(1.98, 100),
+    new Item(5, 95),
+    new Item(3, 30)
+];
+const n = arr.length;
+
+const maxProfit = knapsack(W, arr, n);
+console.log("Maximum possible profit = " + maxProfit);
+
+Output
+
+Maximum possible profit = 235
+
+Time Complexity: O(2 N ) Auxiliary Space: O(N)
+
+Branch and bound is very useful technique for searching a solution but in worst case, we need to fully calculate the entire tree. At best, we only need to fully calculate one path through the tree and prune the rest of it.

@@ -1,0 +1,530 @@
+Source: https://www.geeksforgeeks.org/dsa/iterative-postorder-traversal/
+Title: Iterative Postorder Traversal | Set 1 (Using Two Stacks)
+Extractor: 2
+
+Given a binary tree , the task is to find the postorder traversal of the tree without using recursion. Examples:
+
+> Input: Output: 4 5 2 3 1 Explanation: Postorder traversal (Left->Right->Root) of the tree is 4 5 2 3 1. Input: Output: 10 7 1 6 10 6 5 8 Explanation: Postorder traversal ( Left->Right->Root ) of the tree is 10 7 1 6 10 6 5 8 .
+
+Approach:
+
+> The idea is to push r everse Postorder traversal to a stack . Once we have the reversed postorder traversal in a stack, we can just pop all items one by one from the stack and print them; this order of printing will be in postorder because of the LIFO property of stacks. Now the question is, how to get reversed postorder elements in a stack - the second stack is used for this purpose. For example, in the following tree, we need to get 1, 3, 7, 6, 2, 5, 4 in a stack. If we take a closer look at this sequence, we can observe that this sequence is very similar to the preorder traversal. The only difference is that the right child is visited before left child, and therefore the sequence is “root right left” instead of “root left right”. So, we can do something like iterative preorder traversal with the following differences: a) Instead of printing an item, we push it to a stack. b) We push the left subtree before the right subtree.
+
+Follow the steps below to solve the problem:
+
+- Push root to first stack.
+- Loop until first stack is not empty Pop a node from first stack and push it to second stack Push left and right children of the popped node to first stack
+- Print contents of second stack
+
+Consider the following tree:
+
+Following are the steps to print Postorder traversal of the above tree using two stacks:
+
+> 1. Push 1 to first stack First stack : 1 Second stack : empty 2. Pop 1 from first stack and push it to second stack. Push left and right children of 1 to first stack First stack : 2, 3 Second stack : 1 3. Pop 3 from first stack and push it to second stack. Push left and right children of 3 to first stack First stack: 2, 6, 7 Second stack: 1, 3 4. Pop 7 from first stack and push it to second stack. First stack: 2, 6 Second stack: 1, 3, 7 5. Pop 6 from first stack and push it to second stack. First stack: 2 Second stack: 1, 3, 7, 6 6. Pop 2 from first stack and push it to second stack. Push left and right children of 2 to first stack First stack: 4, 5 Second stack: 1, 3, 7, 6, 2 7. Pop 5 from first stack and push it to second stack. First stack: 4 Second stack: 1, 3, 7, 6, 2, 5 8. Pop 4 from first stack and push it to second stack. First stack: Empty Second stack: 1, 3, 7, 6, 2, 5, 4 The algorithm stops here since there are no more items in the first stack. Observe that the contents of second stack are in postorder manner. Print them.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ program to o find the postorder
+// traversal using 2 Stacks
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int x) {
+        data = x;
+        left = right = nullptr;
+    }
+};
+
+// Function to do post-order traversal
+// using two stacks iteratively
+vector<int> postOrder(Node* root) {
+    vector<int> result;
+    if (root == nullptr) {
+        return result;
+    }
+
+    // Create two stacks
+    stack<Node*> stk1, stk2;
+
+    // Push root to first stack
+    stk1.push(root);
+    Node* curr;
+
+    // Run while first stack is not empty
+    while (!stk1.empty()) {
+
+        // Pop from s1 and push it to s2
+        curr = stk1.top();
+        stk1.pop();
+        stk2.push(curr);
+
+        // Push left and right children of the
+        // popped node
+        if (curr->left) {
+            stk1.push(curr->left);
+        }
+        if (curr->right) {
+            stk1.push(curr->right);
+        }
+    }
+
+    // Collect all elements from second stack
+    while (!stk2.empty()) {
+        curr = stk2.top();
+        stk2.pop();
+        result.push_back(curr->data);
+    }
+
+    return result;
+}
+
+void printArray(const vector<int>& arr) {
+    for (int data : arr) {
+        cout << data << " ";
+    }
+    cout << endl;
+}
+
+int main() {
+
+    // Representation of input binary tree:
+    //           1
+    //         /   \
+    //        2     3
+    //      /  \
+    //     4    5
+    Node* root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+
+    vector<int> result = postOrder(root);
+
+    printArray(result);
+
+    return 0;
+}
+
+C
+
+// C program to find the postorder
+// traversal using 2 stacks
+#include <stdio.h>
+#include <stdlib.h>
+
+struct Node {
+    int data;
+    struct Node* left;
+    struct Node* right;
+};
+
+// Stack structure for holding nodes
+struct Stack {
+    int top;
+    int capacity;
+    struct Node* array[100];
+};
+
+// Function to create a stack
+struct Stack createStack(int capacity) {
+    struct Stack stack;
+    stack.top = -1;
+    stack.capacity = capacity;
+    return stack;
+}
+
+// Function to check if stack is empty
+int isEmpty(struct Stack* stack) {
+    return stack->top == -1;
+}
+
+// Function to push node onto the stack
+void push(struct Stack* stack, struct Node* node) {
+    stack->array[++stack->top] = node;
+}
+
+// Function to pop node from the stack
+struct Node* pop(struct Stack* stack) {
+    return stack->array[stack->top--];
+}
+
+// Function to perform postorder traversal
+// using two stacks
+void postOrder(struct Node* root) {
+    if (root == NULL) {
+        return;
+    }
+
+    struct Stack stk1 = createStack(100);
+    struct Stack stk2 = createStack(100);
+    struct Node* curr;
+
+    // Push root to first stack
+    push(&stk1, root);
+
+    // Loop while stk1 is not empty
+    while (!isEmpty(&stk1)) {
+
+        // Pop from stk1 and push it to stk2
+        curr = pop(&stk1);
+        push(&stk2, curr);
+
+        // Push left and right children of popped node
+        if (curr->left) {
+            push(&stk1, curr->left);
+        }
+        if (curr->right) {
+            push(&stk1, curr->right);
+        }
+    }
+
+    // Print nodes in stk2 which gives postorder
+    while (!isEmpty(&stk2)) {
+        curr = pop(&stk2);
+        printf("%d ", curr->data);
+    }
+}
+
+struct Node* createNode(int x) {
+    struct Node* node
+      = (struct Node*)malloc(sizeof(struct Node));
+    node->data = x;
+    node->left = node->right = NULL;
+    return node;
+}
+
+int main() {
+
+    // Representation of input binary tree:
+    //           1
+    //         /   \
+    //        2     3
+    //      /  \
+    //     4    5
+    struct Node* root = createNode(1);
+    root->left = createNode(2);
+    root->right = createNode(3);
+    root->left->left = createNode(4);
+    root->left->right = createNode(5);
+
+    postOrder(root);
+
+    return 0;
+}
+
+Java
+
+// Java program to o find the postorder
+// traversal using 2 Stacks
+import java.util.ArrayList;
+import java.util.Stack;
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int x) {
+        data = x;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // Function to do post-order traversal
+    // using two stacks
+    static ArrayList<Integer> postOrder(Node root) {
+        ArrayList<Integer> result = new ArrayList<>();
+        if (root == null) {
+            return result;
+        }
+
+        // Create two stacks
+        Stack<Node> stk1 = new Stack<>();
+        Stack<Node> stk2 = new Stack<>();
+
+        // Push root to first stack
+        stk1.push(root);
+        Node curr;
+
+        // Run while first stack is not empty
+        while (!stk1.isEmpty()) {
+
+            // Pop from stk1 and push it to stk2
+            curr = stk1.pop();
+            stk2.push(curr);
+
+            // Push left and right children of
+            // the popped node
+            if (curr.left != null) {
+                stk1.push(curr.left);
+            }
+            if (curr.right != null) {
+                stk1.push(curr.right);
+            }
+        }
+
+        // Collect all elements from second stack
+        while (!stk2.isEmpty()) {
+            curr = stk2.pop();
+            result.add(curr.data);
+        }
+
+        return result;
+    }
+
+    static void printArray(ArrayList<Integer> arr) {
+        for (int data : arr) {
+            System.out.print(data + " ");
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+
+        // Representation of input binary tree:
+        //           1
+        //         /   \
+        //        2     3
+        //      /  \
+        //     4    5
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+
+        ArrayList<Integer> result = postOrder(root);
+
+        printArray(result);
+    }
+}
+
+Python
+
+# Python program to o find the postorder
+# traversal using 2 Stacks
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.left = None
+        self.right = None
+
+# Function to do post-order traversal
+# using two stacks
+def postOrder(root):
+    result = []
+    if root is None:
+        return result
+
+    # Create two stacks
+    stk1 = []
+    stk2 = []
+
+    # Push root to first stack
+    stk1.append(root)
+
+    # Run while first stack is not empty
+    while stk1:
+
+        # Pop from stk1 and push it to stk2
+        curr = stk1.pop()
+        stk2.append(curr)
+
+        # Push left and right children of
+        # the popped node
+        if curr.left:
+            stk1.append(curr.left)
+        if curr.right:
+            stk1.append(curr.right)
+
+    # Collect all elements from second stack
+    while stk2:
+        curr = stk2.pop()
+        result.append(curr.data)
+
+    return result
+
+def printArray(arr):
+    print(" ".join(map(str, arr)))
+
+if __name__ == "__main__":
+
+    # Representation of input binary tree:
+    #           1
+    #         /   \
+    #        2     3
+    #      /  \
+    #     4    5
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+
+    result = postOrder(root)
+    printArray(result)
+
+C#
+
+// C# program to o find the postorder
+// traversal using 2 Stacks
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int x) {
+        data = x;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // Function to do post-order traversal
+    // using two stacks
+    static List<int> postOrder(Node root) {
+        List<int> result = new List<int>();
+        if (root == null) {
+            return result;
+        }
+
+        // Create two stacks
+        Stack<Node> stk1 = new Stack<Node>();
+        Stack<Node> stk2 = new Stack<Node>();
+
+        // Push root to first stack
+        stk1.Push(root);
+
+        // Run while first stack is not empty
+        while (stk1.Count > 0) {
+
+            // Pop from stk1 and push it to stk2
+            Node curr = stk1.Pop();
+            stk2.Push(curr);
+
+            // Push left and right children of
+            // the popped node
+            if (curr.left != null) {
+                stk1.Push(curr.left);
+            }
+            if (curr.right != null) {
+                stk1.Push(curr.right);
+            }
+        }
+
+        // Collect all elements from second stack
+        while (stk2.Count > 0) {
+            Node curr = stk2.Pop();
+            result.Add(curr.data);
+        }
+
+        return result;
+    }
+
+    static void printArray(List<int> arr) {
+        foreach (int data in arr) {
+            Console.Write(data + " ");
+        }
+        Console.WriteLine();
+    }
+
+    static void Main(string[] args) {
+
+        // Representation of input binary tree:
+        //           1
+        //         /   \
+        //        2     3
+        //      /  \
+        //     4    5
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+
+        List<int> result = postOrder(root);
+        printArray(result);
+    }
+}
+
+JavaScript
+
+// JavaScript program to find the postorder
+// traversal using 2 Stacks
+class Node {
+    constructor(key) {
+        this.key = key;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Function to perform postorder traversal
+// using two stacks
+function postOrder(root) {
+    const ans = [];
+    if (!root) return ans;
+
+    const stk1 = [root];
+    const stk2 = [];
+
+    // Loop while stk1 is not empty
+    while (stk1.length > 0) {
+        const node = stk1.pop();
+
+         // Push node's key to stk2
+        stk2.push(node.key);
+
+        // Push left and right children to stk1
+        if (node.left) stk1.push(node.left);
+        if (node.right) stk1.push(node.right);
+    }
+
+    // Collect nodes from s2 in postorder
+    while (stk2.length > 0) {
+        ans.push(stk2.pop());
+    }
+
+    return ans;
+}
+
+// Representation of input binary tree:
+//           1
+//         /   \
+//        2     3
+//      /  \
+//     4    5
+
+const root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+
+const result = postOrder(root);
+console.log(result.join(' '));
+
+Output
+
+4 5 2 3 1
+
+Time complexity: O(n), since the algorithm processes each node exactly twice (once when pushed to s1 and once when popped from s2), where n is the number of nodes. Auxiliary space: O(n), due to the two stacks, each holding up to n nodes at different points in the traversal.
+
+Realted articles:
+
+- Postorder Traversal of Binary Tree
+- Iterative Postorder Traversal | Set 2 (Using One Stack)
+- Iterative Postorder traversal | Set 3

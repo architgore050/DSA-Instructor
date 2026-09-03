@@ -1,0 +1,494 @@
+Source: https://www.geeksforgeeks.org/dsa/xor-linked-list-a-memory-efficient-doubly-linked-list-set-2/
+Title: XOR Linked List – A Memory Efficient Doubly Linked List | Set 2
+Extractor: 2
+
+In the previous post , we discussed how a Doubly Linked can be created using only one space for the address field with every node. In this post, we will discuss the implementation of a memory-efficient doubly linked list. We will mainly discuss the following two simple functions.
+
+1. A function to insert a new node at the beginning.
+2. A function to traverse the list in a forwarding direction.
+
+In the following code, insert() function inserts a new node at the beginning. We need to change the head pointer of Linked List, that is why a double pointer is used (See this ). Let us first discuss a few things again that have been discussed in the previous post . We store XOR of the next and previous nodes with every node and we call it npx, which is the only address member we have with every node. When we insert a new node at the beginning, npx of the new node will always be XOR of NULL and the current head. And npx of the current head must be changed to XOR of the new node and node next to the current head. printList() traverses the list in a forwarding direction. It prints data values from every node. To traverse the list, we need to get a pointer to the next node at every point. We can get the address of next node by keeping track of the current node and previous node. If we do XOR of curr->npx and prev, we get the address of next node.
+
+Implementation:
+
+C++
+
+/* C++ Implementation of Memory
+efficient Doubly Linked List */
+#include <bits/stdc++.h>
+#include <cinttypes>
+using namespace std;
+
+// Node structure of a memory
+// efficient doubly linked list
+class Node
+{
+    public:
+    int data;
+    Node* npx; /* XOR of next and previous node */
+};
+
+/* returns XORed value of the node addresses */
+Node* XOR (Node *a, Node *b)
+{
+    return reinterpret_cast<Node *>(
+      reinterpret_cast<uintptr_t>(a) ^
+      reinterpret_cast<uintptr_t>(b));
+}
+
+/* Insert a node at the beginning of the
+XORed linked list and makes the newly
+inserted node as head */
+void insert(Node **head_ref, int data)
+{
+    // Allocate memory for new node
+    Node *new_node = new Node();
+    new_node->data = data;
+
+    /* Since new node is being inserted at the
+    beginning, npx of new node will always be
+    XOR of current head and NULL */
+    new_node->npx = *head_ref;
+
+    /* If linked list is not empty, then npx of
+    current head node will be XOR of new node
+    and node next to current head */
+    if (*head_ref != NULL)
+    {
+        // *(head_ref)->npx is XOR of NULL and next.
+        // So if we do XOR of it with NULL, we get next
+        (*head_ref)->npx = XOR(new_node, (*head_ref)->npx);
+    }
+
+    // Change head
+    *head_ref = new_node;
+}
+
+// prints contents of doubly linked
+// list in forward direction
+void printList (Node *head)
+{
+    Node *curr = head;
+    Node *prev = NULL;
+    Node *next;
+
+    cout << "Following are the nodes of Linked List: \n";
+
+    while (curr != NULL)
+    {
+        // print current node
+        cout<<curr->data<<" ";
+
+        // get address of next node: curr->npx is
+        // next^prev, so curr->npx^prev will be
+        // next^prev^prev which is next
+        next = XOR (prev, curr->npx);
+
+        // update prev and curr for next iteration
+        prev = curr;
+        curr = next;
+    }
+}
+
+// Driver code
+int main ()
+{
+    /* Create following Doubly Linked List
+    head-->40<-->30<-->20<-->10 */
+    Node *head = NULL;
+    insert(&head, 10);
+    insert(&head, 20);
+    insert(&head, 30);
+    insert(&head, 40);
+
+    // print the created list
+    printList (head);
+
+    return (0);
+}
+
+// This code is contributed by rathbhupendra
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h> // Include stdint.h for uintptr_t
+
+// Node structure of a memory-efficient doubly linked list
+typedef struct Node {
+    int data;
+    struct Node* npx; // XOR of next and previous node
+} Node;
+
+// XOR function for C (casted pointer XOR)
+Node* XOR(Node* a, Node* b) {
+    return (Node*)((uintptr_t)a ^ (uintptr_t)b);
+}
+
+// Insert a node at the beginning of the XORed linked list
+Node* insert(Node* head_ref, int data) {
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    new_node->data = data;
+    new_node->npx = head_ref;
+
+    if (head_ref != NULL) {
+        head_ref->npx = XOR(new_node, head_ref->npx);
+    }
+
+    return new_node; // Return new node as the updated head
+}
+
+// Print contents of doubly linked list in forward direction
+void printList(Node* head) {
+    Node* curr = head;
+    Node* prev = NULL;
+    Node* next;
+
+    printf("Following are the nodes of Linked List:\n");
+
+    while (curr != NULL) {
+        // Print current node
+        printf("%d ", curr->data);
+
+        // Get address of next node: curr->npx is XOR of prev and next
+        next = XOR(prev, curr->npx);
+
+        // Update prev and curr for next iteration
+        prev = curr;
+        curr = next;
+    }
+
+    printf("\n");
+}
+
+// Driver code
+int main() {
+    /* Create following Doubly Linked List
+       head-->40<-->30<-->20<-->10 */
+    Node* head = NULL;
+    head = insert(head, 10);
+    head = insert(head, 20);
+    head = insert(head, 30);
+    head = insert(head, 40);
+
+    // Print the created list
+    printList(head);
+
+    return 0;
+}
+
+Java
+
+// Node structure of a memory-efficient doubly linked list
+class Node {
+    int data;
+    Node npx; // XORed value of the addresses of previous
+              // and next nodes
+
+    // Constructor
+    public Node(int data)
+    {
+        this.data = data;
+        this.npx = null;
+    }
+}
+
+public class Main {
+    // Returns XORed value of the node addresses
+    static Node XOR(Node a, Node b)
+    {
+        // Converting node addresses to integers and
+        // performing XOR operation
+        return new Node(System.identityHashCode(a)
+                        ^ System.identityHashCode(b));
+    }
+
+    // Insert a node at the beginning of the XORed linked
+    // list and makes the newly inserted node as head
+    static void insert(Node head_ref, int data)
+    {
+        // Allocate memory for new node
+        Node new_node = new Node(data);
+
+        // Since the new node is being inserted at the
+        // beginning, npx of the new node will always be XOR
+        // of current head and NULL
+        new_node.npx = head_ref;
+
+        // If linked list is not empty, then npx of current
+        // head node will be XOR of new node and node next
+        // to current head
+        if (head_ref != null) {
+            // head_ref.npx is XOR of NULL and next.
+            // So if we do XOR of it with NULL, we get next
+            new_node.npx = XOR(new_node, head_ref.npx);
+        }
+
+        // Change head
+        head_ref = new_node;
+    }
+
+    // Prints contents of doubly linked list in forward
+    // direction
+    static void printList(Node head)
+    {
+        System.out.println(
+            "Following are the nodes of Linked List: ");
+
+        Node curr = head;
+        Node prev = null;
+        Node next;
+
+        while (curr != null) {
+            // Print current node
+            System.out.println(curr.data);
+            // Get address of next node: curr.npx is
+            // next^prev, so curr.npx^prev will be
+            // next^prev^prev which is next
+            next = XOR(prev, curr.npx);
+
+            // Update prev and curr for next iteration
+            prev = curr;
+            curr = next;
+        }
+    }
+
+    // Driver code
+    public static void main(String[] args)
+    {
+        Node head = null;
+        insert(head, 10);
+        insert(head, 20);
+        insert(head, 30);
+        insert(head, 40);
+
+        // Print the created list
+        printList(head);
+    }
+}
+
+Python3
+
+# Python3 implementation of Memory
+# efficient Doubly Linked List
+
+# library for providing C
+# compatible data types
+import ctypes
+
+# Node class for memory
+# efficient doubly linked list
+class Node:
+
+    def __init__(self, data):
+
+        self.data = data
+
+        # XOR of next and previous node
+        self.npx = 0
+
+class XorLinkedList:
+
+    def __init__(self):
+
+        self.head = None
+        self.__nodes = []
+
+    # Returns XORed value of the node addresses
+    def XOR(self, a, b):
+
+        return a ^ b
+
+    # Insert a node at the beginning of the
+    # XORed linked list and makes the newly
+    # inserted node as head
+    def insert(self, data):
+
+        # New node
+        node = Node(data)
+
+        # Since new node is being inserted at
+        # the beginning, npx of new node will
+        # always be XOR of current head and NULL
+        node.npx = id(self.head)
+
+        # If linked list is not empty, then
+        # npx of current head node will be
+        # XOR of new node and node next to
+        # current head
+        if self.head is not None:
+
+            # head.npx is XOR of None and next.
+            # So if we do XOR of it with None,
+            # we get next
+            self.head.npx = self.XOR(id(node),
+                                     self.head.npx)
+
+        self.__nodes.append(node)
+
+        # Change head
+        self.head = node
+
+    # Prints contents of doubly linked
+    # list in forward direction
+    def printList(self):
+
+        if self.head != None:
+            prev_id = 0
+            curr = self.head
+            next_id = 1
+
+            print("Following are the nodes "
+                  "of Linked List:")
+
+            while curr is not None:
+
+                # Print current node
+                print(curr.data, end = ' ')
+
+                # Get address of next node: curr.npx is
+                # next^prev, so curr.npx^prev will be
+                # next^prev^prev which is next
+                next_id = self.XOR(prev_id, curr.npx)
+
+                # Update prev and curr for next iteration
+                prev_id = id(curr)
+                curr = self.__type_cast(next_id)
+
+    # Method to return a new instance of type
+    # which points to the same memory block.
+    def __type_cast(self, id):
+
+        return ctypes.cast(id, ctypes.py_object).value
+
+# Driver code
+if __name__ == '__main__':
+
+    obj = XorLinkedList()
+
+    # Create following Doubly Linked List
+    # head-->40<-->30<-->20<-->10
+    obj.insert(10)
+    obj.insert(20)
+    obj.insert(30)
+    obj.insert(40)
+
+    # Print the created list
+    obj.printList()
+
+# This code is contributed by MuskanKalra1
+
+C#
+
+using System;
+
+// Node structure of a doubly linked list
+class Node
+{
+    public int data;
+    public Node prev;
+    public Node next;
+}
+
+class Program
+{
+    // Insert a node at the beginning of the linked list
+    static void Insert(ref Node head_ref, int data)
+    {
+        // Allocate memory for new node
+        Node new_node = new Node();
+        new_node.data = data;
+
+        // Set the next of the new node as the current head
+        new_node.next = head_ref;
+
+        // If the current head is not null, set the previous of the head as the new node
+        if (head_ref != null)
+            head_ref.prev = new_node;
+
+        // Set the new node as the head
+        head_ref = new_node;
+    }
+
+    // Prints the contents of the linked list in forward direction
+    static void PrintList(Node head)
+    {
+        Console.WriteLine("Following are the nodes of Linked List: ");
+
+        while (head != null)
+        {
+            Console.Write(head.data + " ");
+            head = head.next;
+        }
+    }
+
+    // Driver code
+    static void Main(string[] args)
+    {
+        /* Create following Doubly Linked List
+           head-->40<-->30<-->20<-->10 */
+        Node head = null;
+        Insert(ref head, 10);
+        Insert(ref head, 20);
+        Insert(ref head, 30);
+        Insert(ref head, 40);
+
+        // Print the created list
+        PrintList(head);
+
+        // This code is contributed by Shivam Tiwari
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.prev = null;
+        this.next = null;
+    }
+}
+
+// Insert a node at the beginning of the linked list
+function insert(head, data) {
+    let new_node = new Node(data);
+
+    if (head !== null) {
+        new_node.next = head;
+        head.prev = new_node;
+    }
+
+    return new_node; // Return the new node as the updated head
+}
+
+// Print contents of doubly linked list in forward direction
+function printList(head) {
+    let curr = head;
+    let result = "Following are the nodes of Linked List:\n";
+
+    while (curr !== null) {
+        // Print current node
+        result += curr.data + " ";
+        curr = curr.next;
+    }
+
+    console.log(result);
+}
+
+// Driver code
+let head = null;
+head = insert(head, 10);
+head = insert(head, 20);
+head = insert(head, 30);
+head = insert(head, 40);
+
+printList(head);
+
+Output
+
+Following are the nodes of Linked List:
+40 30 20 10
+
+Time Complexity: O(n), Where n is the total number of nodes in the given Doubly Linked List Auxiliary Space: O(1)

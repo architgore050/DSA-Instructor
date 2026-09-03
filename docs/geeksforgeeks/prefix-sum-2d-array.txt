@@ -1,0 +1,733 @@
+Source: https://www.geeksforgeeks.org/dsa/prefix-sum-2d-array/
+Title: Prefix Sum of Matrix (Or 2D Array)
+Extractor: 2
+
+A 2D prefix sum is a technique used to calculate the sum of elements in any submatrix efficiently. It precomputes the sum of elements from the top-left corner to every cell, allowing each submatrix sum query to be answered in O(1) time.
+
+- It extends the concept of prefix sums from 1D arrays to 2D matrices.
+- It uses the inclusion-exclusion principle to avoid repeated calculations.
+
+### Example
+
+Input:
+
+> 1   2   3   4 5   6   7   8 9  10  11  12 13 14  15  16
+
+Prefix sum matrix is:
+
+> 1    3    6    10 6   14   24    36 15  33   54    78 28  60   96   136
+
+Each element of the prefix sum matrix represents the sum of all elements in the rectangle from the top-left corner (0, 0) to that position.
+
+- prefix[0][0] = 1
+- prefix[0][1] = 1 + 2 = 3
+- prefix[0][2] = 1 + 2 + 3 = 6
+- prefix[0][3] = 1 + 2 + 3 + 4 = 10
+- prefix[1][0] = 1 + 5 = 6
+- prefix[1][1] = 1 + 2 + 5 + 6 = 14
+- prefix[1][2] = 1 + 2 + 3 + 5 + 6 + 7 = 24
+- prefix[1][3] = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 = 36
+- prefix[2][0] = 1 + 5 + 9 = 15
+- prefix[2][1] = 1 + 2 + 5 + 6 + 9 + 10 = 33
+- prefix[2][2] = 1 + 2 + 3 + 5 + 6 + 7 + 9 + 10 + 11 = 54
+- prefix[2][3] = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 = 78
+- prefix[3][0] = 1 + 5 + 9 + 13 = 28
+- prefix[3][1] = 1 + 2 + 5 + 6 + 9 + 10 + 13 + 14 = 60
+- prefix[3][2] = 1 + 2 + 3 + 5 + 6 + 7 + 9 + 10 + 11 + 13 + 14 + 15 = 96
+- prefix[3][3] = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15 + 16 = 136
+
+## Approaches to Calculate Prefix Sum of a Matrix
+
+The prefix sum matrix can be constructed using the following approach.
+
+### 1. Constructing the Prefix Sum Matrix
+
+For every cell (i, j), add the current element, the prefix sum from the top, and the prefix sum from the left. The overlapping top-left region is subtracted once.
+
+The prefix sum for any cell can be calculated using:
+
+> prefix[i][j] = arr[i][j] + prefix[i-1][j] + prefix[i][j-1] - prefix[i-1][j-1]
+
+The top and left prefix sums are added, while the top-left prefix sum is subtracted because it is counted twice.
+
+For example, for prefix[1][1]:
+
+> prefix[1][1] = arr[1][1] + prefix[0][1] + prefix[1][0] - prefix[0][0] = 5 + 3 + 5 - 1 = 12
+
+This preprocessing allows us to calculate the sum of any rectangular region of the matrix without traversing all its elements.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<vector<int>> prefixSum2D(
+    const vector<vector<int>>& arr)
+{
+    int n = arr.size();
+    int m = arr[0].size();
+
+    vector<vector<int>> prefix(n, vector<int>(m, 0));
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+
+            prefix[i][j] = arr[i][j];
+
+            if (i > 0)
+                prefix[i][j] += prefix[i - 1][j];
+
+            if (j > 0)
+                prefix[i][j] += prefix[i][j - 1];
+
+            if (i > 0 && j > 0)
+                prefix[i][j] -= prefix[i - 1][j - 1];
+        }
+    }
+
+    return prefix;
+}
+
+int main()
+{
+    vector<vector<int>> arr = {
+        {1, 2, 3, 4},
+        {5, 6, 7, 8},
+        {9, 10, 11, 12},
+        {13, 14, 15, 16}
+    };
+
+    vector<vector<int>> prefix = prefixSum2D(arr);
+
+    for (const auto& row : prefix) {
+        for (int value : row)
+            cout << value << " ";
+        cout << '\n';
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+class GfG {
+
+    public static ArrayList<ArrayList<Integer>> prefixSum2D(int[][] arr) {
+        // number of rows
+        int n = arr.length;
+
+        // number of columns
+        int m = arr[0].length;
+
+        // Initialize prefix with 0s
+        ArrayList<ArrayList<Integer>> prefix = new ArrayList<>();
+
+        for (int i = 0; i < n; i++) {
+            prefix.add(new ArrayList<>());
+            for (int j = 0; j < m; j++) {
+                prefix.get(i).add(0);
+            }
+        }
+
+        // Compute prefix sum matrix
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+
+                // Start with original value
+                int value = arr[i][j];
+
+                // Add value from top cell if it exists
+                if (i > 0) {
+                    value += prefix.get(i - 1).get(j);
+                }
+
+                // Add value from left cell if it exists
+                if (j > 0) {
+                    value += prefix.get(i).get(j - 1);
+                }
+
+                // Subtract overlap from top-left diagonal if it exists
+                if (i > 0 && j > 0) {
+                    value -= prefix.get(i - 1).get(j - 1);
+                }
+
+                prefix.get(i).set(j, value);
+            }
+        }
+
+        return prefix;
+    }
+
+    public static void main(String[] args) {
+        int[][] arr = {
+            {1, 2, 3, 4},
+            {5, 6, 7, 8},
+            {9, 10, 11, 12},
+            {13, 14, 15, 16}
+        };
+
+        ArrayList<ArrayList<Integer>> prefix = prefixSum2D(arr);
+
+        for (ArrayList<Integer> row : prefix) {
+            for (int val : row) {
+                System.out.print(val + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+
+Python
+
+def prefixSum2D(arr):
+    # number of rows
+    n = len(arr)
+
+    # number of columns
+    m = len(arr[0])
+
+    # Initialize prefix with 0s
+    prefix = [[0] * m for _ in range(n)]
+
+    # Compute prefix sum matrix
+    for i in range(n):
+        for j in range(m):
+
+            # Start with original value
+            prefix[i][j] = arr[i][j]
+
+            # Add value from top cell if it exists
+            if i > 0:
+                prefix[i][j] += prefix[i - 1][j]
+
+            # Add value from left cell if it exists
+            if j > 0:
+                prefix[i][j] += prefix[i][j - 1]
+
+            # Subtract overlap from top-left diagonal if it exists
+            if i > 0 and j > 0:
+                prefix[i][j] -= prefix[i - 1][j - 1]
+
+    return prefix
+
+if __name__ == "__main__":
+    arr = [
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12],
+        [13, 14, 15, 16]
+    ]
+
+    prefix = prefixSum2D(arr)
+
+    for row in prefix:
+        print(" ".join(map(str, row)))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG{
+    public static List<List<int>> PrefixSum2D(int[,] arr){
+        // number of rows
+        int n = arr.GetLength(0);
+
+        // number of columns
+        int m = arr.GetLength(1);
+
+        // initialize prefix matrix with 0s
+        List<List<int>> prefix = new List<List<int>>();
+        for (int i = 0; i < n; i++){
+            List<int> row = new List<int>();
+            for (int j = 0; j < m; j++){
+                row.Add(0);
+            }
+            prefix.Add(row);
+        }
+
+        for (int i = 0; i < n; i++){
+            for (int j = 0; j < m; j++){
+                // Start with original value
+                int val = arr[i, j];
+
+                // Add value from top cell if it exists
+                if (i > 0){
+                    val += prefix[i - 1][j];
+                }
+
+                // Add value from left cell if it exists
+                if (j > 0){
+                    val += prefix[i][j - 1];
+                }
+
+                // Subtract overlap from top-left diagonal if it exists
+                if (i > 0 && j > 0){
+                    val -= prefix[i - 1][j - 1];
+                }
+
+                prefix[i][j] = val;
+            }
+        }
+
+        return prefix;
+    }
+
+    static void Main(){
+        int[,] arr = {
+            { 1, 2, 3, 4 },
+            { 5, 6, 7, 8 },
+            { 9, 10, 11, 12 },
+            { 13, 14, 15, 16 }
+        };
+
+        List<List<int>> prefix = PrefixSum2D(arr);
+
+        foreach (var row in prefix){
+            foreach (var val in row){
+                Console.Write(val + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+function prefixSum2D(arr) {
+
+    // number of rows
+    const n = arr.length;
+    // number of columns
+    const m = arr[0].length;
+
+    // initialize prefix matrix with 0s
+    const prefix = Array.from({ length: n }, () => Array(m).fill(0));
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < m; j++) {
+            // Start with original value
+            let val = arr[i][j];
+
+            // Add value from top cell if it exists
+            if (i > 0) {
+                val += prefix[i - 1][j];
+            }
+
+            // Add value from left cell if it exists
+            if (j > 0) {
+                val += prefix[i][j - 1];
+            }
+
+            // Subtract overlap from top-left diagonal if it exists
+            if (i > 0 && j > 0) {
+                val -= prefix[i - 1][j - 1];
+            }
+
+            prefix[i][j] = val;
+        }
+    }
+
+    return prefix;
+}
+
+// Driver Code
+const arr = [
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16]
+];
+
+const prefix = prefixSum2D(arr);
+for (let row of prefix) {
+    console.log(row.join(" "));
+}
+
+Output
+
+1 3 6 10
+6 14 24 36
+15 33 54 78
+28 60 96 136
+
+Explanation
+
+- prefix[i][j] initially stores arr[i][j].
+- The prefix sums from the top and left are added.
+- The top-left region is included twice, so it is subtracted once.
+- This process is repeated for every cell to build the complete prefix sum matrix.
+
+### 2. Using Prefix Sum to Answer Submatrix Sum Queries
+
+Once the prefix sum matrix is constructed, the sum of any submatrix from (r1, c1) to (r2, c2) can be calculated using inclusion-exclusion.
+
+The formula is:
+
+> sum = prefix[r2][c2] - prefix[r1-1][c2] - prefix[r2][c1-1] + prefix[r1-1][c1-1]
+
+When r1 = 0 or c1 = 0, the corresponding prefix value is treated as 0.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<vector<int>> buildPrefix(
+    const vector<vector<int>>& arr)
+{
+    int n = arr.size();
+    int m = arr[0].size();
+
+    vector<vector<int>> prefix(n, vector<int>(m));
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+
+            prefix[i][j] = arr[i][j];
+
+            if (i > 0)
+                prefix[i][j] += prefix[i - 1][j];
+
+            if (j > 0)
+                prefix[i][j] += prefix[i][j - 1];
+
+            if (i > 0 && j > 0)
+                prefix[i][j] -= prefix[i - 1][j - 1];
+        }
+    }
+
+    return prefix;
+}
+
+int submatrixSum(
+    const vector<vector<int>>& prefix,
+    int r1, int c1, int r2, int c2)
+{
+    int sum = prefix[r2][c2];
+
+    if (r1 > 0)
+        sum -= prefix[r1 - 1][c2];
+
+    if (c1 > 0)
+        sum -= prefix[r2][c1 - 1];
+
+    if (r1 > 0 && c1 > 0)
+        sum += prefix[r1 - 1][c1 - 1];
+
+    return sum;
+}
+
+int main()
+{
+    vector<vector<int>> arr = {
+        {1, 2, 3, 4},
+        {5, 6, 7, 8},
+        {9, 10, 11, 12},
+        {13, 14, 15, 16}
+    };
+
+    vector<vector<int>> prefix = buildPrefix(arr);
+
+    // Query: rows 1 to 2, columns 1 to 2
+    cout << submatrixSum(prefix, 1, 1, 2, 2);
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+ class GfG {
+
+    public static ArrayList<Integer> prefixSum2D(int[][] arr, int[][] queries) {
+        int n = arr.length;
+        int m = arr[0].length;
+
+        // Construct prefix sum matrix
+        int[][] prefix = new int[n][m];
+
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+
+                // Start with original value
+                prefix[i][j] = arr[i][j];
+
+                // Add value from top cell if it exists
+                if (i > 0)
+                    prefix[i][j] += prefix[i - 1][j];
+
+                // Add value from left cell if it exists
+                if (j > 0)
+                    prefix[i][j] += prefix[i][j - 1];
+
+                // Subtract overlap from top-left diagonal if it exists
+                if (i > 0 && j > 0)
+                    prefix[i][j] -= prefix[i - 1][j - 1];
+            }
+        }
+
+        // Result list
+        ArrayList<Integer> result = new ArrayList<>();
+
+        // Process each query using inclusion-exclusion
+        for (int i = 0; i < queries.length; i++) {
+            int r1 = queries[i][0];
+            int c1 = queries[i][1];
+            int r2 = queries[i][2];
+            int c2 = queries[i][3];
+
+            int total = prefix[r2][c2];
+
+            if (r1 > 0)
+                total -= prefix[r1 - 1][c2];
+
+            if (c1 > 0)
+                total -= prefix[r2][c1 - 1];
+
+            if (r1 > 0 && c1 > 0)
+                total += prefix[r1 - 1][c1 - 1];
+
+            result.add(total);
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[][] arr = {
+        {1, 2, 3, 4},
+        {5, 6, 7, 8},
+        {9, 10, 11, 12},
+        {13, 14, 15, 16}
+        };
+
+        int[][] queries = {
+            {1, 1, 2, 2}
+        };
+
+        ArrayList<Integer> result = prefixSum2D(arr, queries);
+        for (int sum : result) {
+            System.out.print(sum + " ");
+        }
+        System.out.println();
+    }
+}
+
+Python
+
+def prefixSum2D(mat, queries):
+    rows = len(mat)
+    cols = len(mat[0])
+
+    # create prefix matrix of size (rows+1)x(cols+1)
+    # to simplify boundaries
+    pre = [[0] * (cols + 1) for _ in range(rows + 1)]
+
+    # Build prefix matrix with 1-based indexing
+    for i in range(1, rows + 1):
+        for j in range(1, cols + 1):
+            pre[i][j] = mat[i - 1][j - 1] \
+                        + pre[i - 1][j] \
+                        + pre[i][j - 1] \
+                        - pre[i - 1][j - 1]
+
+    result = []
+
+    # process each query using inclusion-exclusion
+    for q in queries:
+        topRow = q[0] + 1
+        leftCol = q[1] + 1
+        bottomRow = q[2] + 1
+        rightCol = q[3] + 1
+
+        # get total area from (1,1) to (bottomRow, rightCol)
+        total = pre[bottomRow][rightCol]
+
+        # subtract area above the submatrix
+        top = pre[topRow - 1][rightCol]
+
+        # subtract area to the left of the submatrix
+        left = pre[bottomRow][leftCol - 1]
+
+        # add back the overlapping top-left area,
+        # which was subtracted twice
+        overlap = pre[topRow - 1][leftCol - 1]
+
+        # final submatrix sum using inclusion-exclusion
+        result.append(total - top - left + overlap)
+
+    return result
+
+# Driver Code
+if __name__ == "__main__":
+    mat = [
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12],
+        [13, 14, 15, 16]
+    ]
+    queries = [
+        [1, 1, 2, 2]
+    ]
+    result = prefixSum2D(mat, queries)
+    print(" ".join(map(str, result)))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    public static List<int> prefixSum2D(int[,] arr, int[,] queries) {
+        // number of rows
+        int n = arr.GetLength(0);
+        // number of columns
+        int m = arr.GetLength(1);
+
+        // Construct prefix sum matrix using 0-based indexing
+        int[,] prefix = new int[n, m];
+
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                prefix[i, j] = arr[i, j];
+
+                if (i > 0)
+                    prefix[i, j] += prefix[i - 1, j];
+
+                if (j > 0)
+                    prefix[i, j] += prefix[i, j - 1];
+
+                if (i > 0 && j > 0)
+                    prefix[i, j] -= prefix[i - 1, j - 1];
+            }
+        }
+
+        List<int> result = new List<int>();
+        int q = queries.GetLength(0);
+
+        for (int k = 0; k < q; k++) {
+            int r1 = queries[k, 0];
+            int c1 = queries[k, 1];
+            int r2 = queries[k, 2];
+            int c2 = queries[k, 3];
+
+            int total = prefix[r2, c2];
+            int top = (r1 > 0) ? prefix[r1 - 1, c2] : 0;
+            int left = (c1 > 0) ? prefix[r2, c1 - 1] : 0;
+            int overlap = (r1 > 0 && c1 > 0) ? prefix[r1 - 1, c1 - 1] : 0;
+
+            int sum = total - top - left + overlap;
+            result.Add(sum);
+        }
+
+        return result;
+    }
+
+    public static void Main() {
+        int[,] arr = {
+            {1, 2, 3, 4},
+            {5, 6, 7, 8},
+            {9, 10, 11, 12},
+            {13, 14, 15, 16}
+        };
+
+        int[,] queries = {
+            {1, 1, 2, 2}
+        };
+
+        List<int> result = prefixSum2D(arr, queries);
+
+        foreach (int sum in result) {
+            Console.Write(sum + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+function prefixSum2D(mat, queries) {
+    const rows = mat.length;
+    const cols = mat[0].length;
+
+    // create prefix matrix of size (rows+1)x(cols+1)
+    // to simplify boundaries
+    const pre = Array.from({ length: rows + 1 }, () =>
+        new Array(cols + 1).fill(0)
+    );
+
+    // Build prefix matrix with 1-based indexing
+    for (let i = 1; i <= rows; i++) {
+        for (let j = 1; j <= cols; j++) {
+            pre[i][j] = mat[i - 1][j - 1]
+                      + pre[i - 1][j]
+                      + pre[i][j - 1]
+                      - pre[i - 1][j - 1];
+        }
+    }
+
+    const result = [];
+
+    // process each query using inclusion-exclusion
+    for (const q of queries) {
+        const topRow = q[0] + 1;
+        const leftCol = q[1] + 1;
+        const bottomRow = q[2] + 1;
+        const rightCol = q[3] + 1;
+
+        // get total area from (1,1) to (bottomRow, rightCol)
+        const total = pre[bottomRow][rightCol];
+
+        // subtract area above the submatrix
+        const top = pre[topRow - 1][rightCol];
+
+        // subtract area to the left of the submatrix
+        const left = pre[bottomRow][leftCol - 1];
+
+        // add back the overlapping top-left area,
+        // which was subtracted twice
+        const overlap = pre[topRow - 1][leftCol - 1];
+
+        // final submatrix sum using inclusion-exclusion
+        result.push(total - top - left + overlap);
+    }
+
+    return result;
+}
+
+// Driver Code
+const mat = [
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16]
+];
+
+const queries = [
+    [1, 1, 2, 2]
+];
+
+const result = prefixSum2D(mat, queries);
+console.log(result.join(' '));
+
+Output
+
+34
+
+Explanation
+
+For the query (1,1) to (2,2), the required submatrix is:
+
+> 6  7 10 11
+
+Its sum is:
+
+> 6 + 7 + 10 + 11 = 34
+
+The prefix sum formula calculates this directly by adding and subtracting the required regions.

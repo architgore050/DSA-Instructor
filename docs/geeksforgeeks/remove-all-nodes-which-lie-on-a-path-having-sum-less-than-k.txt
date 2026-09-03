@@ -1,0 +1,544 @@
+Source: https://www.geeksforgeeks.org/dsa/remove-all-nodes-which-lie-on-a-path-having-sum-less-than-k/
+Title: Remove all nodes which lie on a path having sum less than k
+Extractor: 2
+
+Given a binary tree and an integer k, prune the tree such that every root-to-leaf path in the resulting tree has a sum greater than or equal to k. Return the root of the pruned tree.
+
+Note: A node may lie on multiple root-to-leaf paths. It should be removed only if all such paths through it have a sum less than k.
+
+Examples:
+
+> Input: root[] = [1, 2, 3, 4, 5, N, 7, 8, 9, N, 12, 10, N, N, N, 13, 14, N, N, N, 11, N, 15], k = 20 Output: [1, 2, 3, 4, 5, N, 7, N, 9, N, 12, 10, N, 13, 14, N, 11, N, 15] Explanation: Root-to-leaf paths with sum < 20 are removed. The path 1-3-6 (sum 10) and 1-2-4-8 (sum 15) are pruned, so nodes 6 and 8 are deleted. Input: root[] = [1, 2, 3, 4, 5, N, 7, 8, 9, N, 12, 10, N, N, N, 13, 14, N, N, N, 11, N, 15], k = 33 Output: [1, 2, N, 4, N, 9, N, N, 14, 15, N] Explanation: Only the path 1-2-4-9-14-15 has a sum of 45, which is the only path with sum >= 33. All other nodes are pruned since none of their paths reach a sum of 33 or more.
+
+### Iterative Post-order Pruning - O(n) Time and O(n) Space
+
+> Each node must know whether its children survive pruning before deciding its own fate, making this a post-order problem. To avoid recursion-depth issues on skewed trees, perform an iterative post-order traversal using two stacks. The first stack builds the traversal order, while the second yields nodes in post-order. Each entry stores the node, its parent, child direction, and remaining required sum. A node is pruned only if it is still a leaf when processed, ensuring no valid path is removed prematurely.
+
+Illustration:
+
+- Take root = [1, 2, 3, 4, 5, N, 7, 8, 9, N, 12, 10, N, N, N, 13, 14, N, N, N, 11, N, 15], k = 20.
+- The first pass pushes every node onto stack s1, tracking the remaining sum needed at each node (k minus the sum of all ancestor values), and each popped node is pushed onto s2 - producing nodes in reverse pre-order, which is the same as post-order when read back.
+- Popping s2 processes nodes leaf-first: node 6 is a leaf with remaining sum 20 - 1 - 3 = 16 needed, but its own value 6 < 16, so it's pruned from its parent 3.
+- Node 8 is a leaf with remaining sum 20 - 1 - 2 - 4 = 13 needed, but its value 8 < 13, so it's pruned from its parent 4.
+- Node 4 is then re-examined: since its only child 8 was just pruned, it is once again a leaf. Its remaining sum needed is 20 - 1 - 2 = 17, and its value 4 < 17, so node 4 itself would also need checking against its remaining children - since node 9's subtree survives (paths through 9 reach sums well above 20), node 4 is not a leaf at this point and is kept.
+- This bottom-up resolution continues until the root is processed, producing the correctly pruned tree.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int val) {
+        data = val;
+        left = right = nullptr;
+    }
+};
+
+Node* pruneTree(Node* root, int k) {
+    if (root == nullptr)
+        return nullptr;
+
+    // build post-order sequence: s1 drains into s2
+    stack<tuple<Node*, Node*, bool, int>> s1;
+    stack<tuple<Node*, Node*, bool, int>> s2;
+
+    s1.push({root, nullptr, false, k});
+
+    while (!s1.empty()) {
+        auto [node, parent, isLeft, remK] = s1.top();
+        s1.pop();
+        s2.push({node, parent, isLeft, remK});
+
+        // subtract current node's value before passing k down
+        if (node->left)
+            s1.push({node->left, node, true, remK - node->data});
+        if (node->right)
+            s1.push({node->right, node, false, remK - node->data});
+    }
+
+    Node* newRoot = root;
+
+    // process children before parent
+    while (!s2.empty()) {
+        auto [node, parent, isLeft, remK] = s2.top();
+        s2.pop();
+
+        // still a leaf here means both children were already pruned
+        if (node->left == nullptr && node->right == nullptr && node->data < remK) {
+            if (parent != nullptr) {
+                if (isLeft)
+                    parent->left = nullptr;
+                else
+                    parent->right = nullptr;
+            } else {
+                newRoot = nullptr;
+            }
+        }
+    }
+
+    return newRoot;
+}
+
+string printTree(Node* root) {
+    vector<string> result;
+    queue<Node*> q;
+    q.push(root);
+
+    while (!q.empty()) {
+        Node* curr = q.front();
+        q.pop();
+
+        if (curr == nullptr) {
+            result.push_back("N");
+        } else {
+            result.push_back(to_string(curr->data));
+            q.push(curr->left);
+            q.push(curr->right);
+        }
+    }
+
+    while (!result.empty() && result.back() == "N")
+        result.pop_back();
+
+    string res = "[";
+    for (int i = 0; i < (int)result.size(); i++) {
+        res += result[i];
+        if (i != (int)result.size() - 1)
+            res += ", ";
+    }
+    res += "]";
+
+    return res;
+}
+
+int main() {
+    Node* root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+    root->right->right = new Node(7);
+    root->left->left->left = new Node(8);
+    root->left->left->right = new Node(9);
+    root->left->right->right = new Node(12);
+    root->right->right->left = new Node(10);
+    root->left->left->right->left = new Node(13);
+    root->left->left->right->right = new Node(14);
+    root->right->right->left->right = new Node(11);
+    root->left->left->right->right->right = new Node(15);
+
+    int k = 20;
+
+    Node* result = pruneTree(root, k);
+
+    cout << printTree(result) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+    static class Node {
+        int data;
+        Node left;
+        Node right;
+
+        Node(int val)
+        {
+            this.data = val;
+            left = right = null;
+        }
+    }
+
+    static class StackEntry {
+        Node node;
+        Node parent;
+        boolean isLeft;
+        int remK;
+
+        StackEntry(Node node, Node parent, boolean isLeft,
+                   int remK)
+        {
+            this.node = node;
+            this.parent = parent;
+            this.isLeft = isLeft;
+            this.remK = remK;
+        }
+    }
+
+    static Node pruneTree(Node root, int k)
+    {
+        if (root == null)
+            return null;
+
+        Deque<StackEntry> s1 = new ArrayDeque<>();
+        Deque<StackEntry> s2 = new ArrayDeque<>();
+
+        s1.push(new StackEntry(root, null, false, k));
+
+        while (!s1.isEmpty()) {
+            StackEntry curr = s1.pop();
+            s2.push(curr);
+
+            if (curr.node.left != null)
+                s1.push(new StackEntry(
+                    curr.node.left, curr.node, true,
+                    curr.remK - curr.node.data));
+            if (curr.node.right != null)
+                s1.push(new StackEntry(
+                    curr.node.right, curr.node, false,
+                    curr.remK - curr.node.data));
+        }
+
+        Node newRoot = root;
+
+        while (!s2.isEmpty()) {
+            StackEntry curr = s2.pop();
+
+            if (curr.node.left == null
+                && curr.node.right == null
+                && curr.node.data < curr.remK) {
+                if (curr.parent != null) {
+                    if (curr.isLeft)
+                        curr.parent.left = null;
+                    else
+                        curr.parent.right = null;
+                }
+                else {
+                    newRoot = null;
+                }
+            }
+        }
+
+        return newRoot;
+    }
+
+    static String printTree(Node root)
+    {
+        List<String> result = new ArrayList<>();
+        Queue<Node> q = new LinkedList<>();
+        q.add(root);
+
+        while (!q.isEmpty()) {
+            Node curr = q.poll();
+            if (curr == null) {
+                result.add("N");
+            }
+            else {
+                result.add(String.valueOf(curr.data));
+                q.add(curr.left);
+                q.add(curr.right);
+            }
+        }
+
+        while (!result.isEmpty()
+               && result.get(result.size() - 1).equals("N"))
+            result.remove(result.size() - 1);
+
+        return "[" + String.join(", ", result) + "]";
+    }
+
+    public static void main(String[] args)
+    {
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.right = new Node(7);
+        root.left.left.left = new Node(8);
+        root.left.left.right = new Node(9);
+        root.left.right.right = new Node(12);
+        root.right.right.left = new Node(10);
+        root.left.left.right.left = new Node(13);
+        root.left.left.right.right = new Node(14);
+        root.right.right.left.right = new Node(11);
+        root.left.left.right.right.right = new Node(15);
+
+        int k = 20;
+
+        Node result = pruneTree(root, k);
+
+        System.out.println(printTree(result));
+    }
+}
+
+Python
+
+class Node:
+    def __init__(self, val):
+        self.data = val
+        self.left = None
+        self.right = None
+
+def prune_tree(root, k):
+    if root is None:
+        return None
+
+    s1 = [(root, None, False, k)]
+    s2 = []
+
+    while s1:
+        node, parent, is_left, rem_k = s1.pop()
+        s2.append((node, parent, is_left, rem_k))
+
+        if node.left:
+            s1.append((node.left, node, True, rem_k - node.data))
+        if node.right:
+            s1.append((node.right, node, False, rem_k - node.data))
+
+    new_root = root
+
+    while s2:
+        node, parent, is_left, rem_k = s2.pop()
+
+        if node.left is None and node.right is None and node.data < rem_k:
+            if parent is not None:
+                if is_left:
+                    parent.left = None
+                else:
+                    parent.right = None
+            else:
+                new_root = None
+
+    return new_root
+
+def print_tree(root):
+    from collections import deque
+    result = []
+    q = deque([root])
+
+    while q:
+        curr = q.popleft()
+        if curr is None:
+            result.append("N")
+        else:
+            result.append(str(curr.data))
+            q.append(curr.left)
+            q.append(curr.right)
+
+    while result and result[-1] == "N":
+        result.pop()
+
+    return "[" + ", ".join(result) + "]"
+
+root = Node(1)
+root.left = Node(2)
+root.right = Node(3)
+root.left.left = Node(4)
+root.left.right = Node(5)
+root.right.right = Node(7)
+root.left.left.left = Node(8)
+root.left.left.right = Node(9)
+root.left.right.right = Node(12)
+root.right.right.left = Node(10)
+root.left.left.right.left = Node(13)
+root.left.left.right.right = Node(14)
+root.right.right.left.right = Node(11)
+root.left.left.right.right.right = Node(15)
+
+k = 20
+result = prune_tree(root, k)
+print(print_tree(result))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int val) {
+        data = val;
+        left = right = null;
+    }
+}
+
+class GfG {
+    static Node PruneTree(Node root, int k) {
+        if (root == null)
+            return null;
+
+        Stack<(Node node, Node parent, bool isLeft, int remK)> s1 = new Stack<(Node, Node, bool, int)>();
+        Stack<(Node node, Node parent, bool isLeft, int remK)> s2 = new Stack<(Node, Node, bool, int)>();
+
+        s1.Push((root, null, false, k));
+
+        while (s1.Count > 0) {
+            var curr = s1.Pop();
+            s2.Push(curr);
+
+            if (curr.node.left != null)
+                s1.Push((curr.node.left, curr.node, true, curr.remK - curr.node.data));
+            if (curr.node.right != null)
+                s1.Push((curr.node.right, curr.node, false, curr.remK - curr.node.data));
+        }
+
+        Node newRoot = root;
+
+        while (s2.Count > 0) {
+            var curr = s2.Pop();
+
+            if (curr.node.left == null && curr.node.right == null && curr.node.data < curr.remK) {
+                if (curr.parent != null) {
+                    if (curr.isLeft)
+                        curr.parent.left = null;
+                    else
+                        curr.parent.right = null;
+                } else {
+                    newRoot = null;
+                }
+            }
+        }
+
+        return newRoot;
+    }
+
+    static string PrintTree(Node root) {
+        List<string> result = new List<string>();
+        Queue<Node> q = new Queue<Node>();
+        q.Enqueue(root);
+
+        while (q.Count > 0) {
+            Node curr = q.Dequeue();
+            if (curr == null) {
+                result.Add("N");
+            } else {
+                result.Add(curr.data.ToString());
+                q.Enqueue(curr.left);
+                q.Enqueue(curr.right);
+            }
+        }
+
+        while (result.Count > 0 && result[result.Count - 1] == "N")
+            result.RemoveAt(result.Count - 1);
+
+        return "[" + string.Join(", ", result) + "]";
+    }
+
+    static void Main() {
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.right = new Node(7);
+        root.left.left.left = new Node(8);
+        root.left.left.right = new Node(9);
+        root.left.right.right = new Node(12);
+        root.right.right.left = new Node(10);
+        root.left.left.right.left = new Node(13);
+        root.left.left.right.right = new Node(14);
+        root.right.right.left.right = new Node(11);
+        root.left.left.right.right.right = new Node(15);
+
+        int k = 20;
+
+        Node result = PruneTree(root, k);
+
+        Console.WriteLine(PrintTree(result));
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(val) {
+        this.data = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+function pruneTree(root, k) {
+    if (root === null)
+        return null;
+
+    const s1 = [[root, null, false, k]];
+    const s2 = [];
+
+    while (s1.length > 0) {
+        const [node, parent, isLeft, remK] = s1.pop();
+        s2.push([node, parent, isLeft, remK]);
+
+        if (node.left)
+            s1.push([node.left, node, true, remK - node.data]);
+        if (node.right)
+            s1.push([node.right, node, false, remK - node.data]);
+    }
+
+    let newRoot = root;
+
+    while (s2.length > 0) {
+        const [node, parent, isLeft, remK] = s2.pop();
+
+        if (node.left === null && node.right === null && node.data < remK) {
+            if (parent !== null) {
+                if (isLeft)
+                    parent.left = null;
+                else
+                    parent.right = null;
+            } else {
+                newRoot = null;
+            }
+        }
+    }
+
+    return newRoot;
+}
+
+function printTree(root) {
+    const result = [];
+    const q = [root];
+
+    while (q.length > 0) {
+        const curr = q.shift();
+        if (curr === null) {
+            result.push("N");
+        } else {
+            result.push(curr.data.toString());
+            q.push(curr.left);
+            q.push(curr.right);
+        }
+    }
+
+    while (result.length > 0 && result[result.length - 1] === "N")
+        result.pop();
+
+    return "[" + result.join(", ") + "]";
+}
+
+const root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+root.right.right = new Node(7);
+root.left.left.left = new Node(8);
+root.left.left.right = new Node(9);
+root.left.right.right = new Node(12);
+root.right.right.left = new Node(10);
+root.left.left.right.left = new Node(13);
+root.left.left.right.right = new Node(14);
+root.right.right.left.right = new Node(11);
+root.left.left.right.right.right = new Node(15);
+
+// driver code
+const k = 20;
+const result = pruneTree(root, k);
+console.log(printTree(result));
+
+Output
+
+[1, 2, 3, 4, 5, N, 7, N, 9, N, 12, 10, N, 13, 14, N, N, N, 11, N, N, N, 15]

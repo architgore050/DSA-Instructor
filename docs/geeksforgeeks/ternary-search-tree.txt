@@ -1,0 +1,721 @@
+Source: https://www.geeksforgeeks.org/dsa/ternary-search-tree/
+Title: Ternary Search Tree
+Extractor: 2
+
+A ternary search tree is a special trie data structure where the child nodes of a standard trie are ordered as a binary search tree.
+
+Representation of ternary search trees: Unlike trie(standard) data structure where each node contains 26 pointers for its children, each node in a ternary search tree contains only 3 pointers: 1. The left pointer points to the node whose value is less than the value in the current node. 2. The equal pointer points to the node whose value is equal to the value in the current node. 3. The right pointer points to the node whose value is greater than the value in the current node. Apart from above three pointers, each node has a field to indicate data(character in case of dictionary) and another field to mark end of a string. So, more or less it is similar to BST which stores data based on some order. However, data in a ternary search tree is distributed over the nodes. e.g. It needs 4 nodes to store the word "Geek".
+
+Below figure shows how exactly the words in a ternary search tree are stored?
+
+One of the advantage of using ternary search trees over tries is that ternary search trees are a more space efficient (involve only three pointers per node as compared to 26 in standard tries). Further, ternary search trees can be used any time a hashtable would be used to store strings. Tries are suitable when there is a proper distribution of words over the alphabets so that spaces are utilized most efficiently. Otherwise ternary search trees are better. Ternary search trees are efficient to use(in terms of space) when the strings to be stored share a common prefix.
+
+Applications of ternary search trees: 1. Ternary search trees are efficient for queries like "Given a word, find the next word in dictionary(near-neighbor lookups)" or "Find all telephone numbers starting with 9342 or "typing few starting characters in a web browser displays all website names with this prefix"(Auto complete feature)". 2. Used in spell checks: Ternary search trees can be used as a dictionary to store all the words. Once the word is typed in an editor, the word can be parallelly searched in the ternary search tree to check for correct spelling.
+
+Implementation: Following is C implementation of ternary search tree. The operations implemented are, search, insert, and traversal.
+
+C++
+
+// C++ program to demonstrate Ternary Search Tree (TST)
+// insert, traverse and search operations
+#include <bits/stdc++.h>
+using namespace std;
+#define MAX 50
+
+// A node of ternary search tree
+struct Node {
+    char data;
+
+    // True if this character is last character of one of
+    // the words
+    unsigned isEndOfString = 1;
+    Node *left, *eq, *right;
+};
+
+// A utility function to create a new ternary search tree
+// node
+Node* newNode(char data)
+{
+    Node* temp = new Node();
+    temp->data = data;
+    temp->isEndOfString = 0;
+    temp->left = temp->eq = temp->right = NULL;
+    return temp;
+}
+
+// Function to insert a new word in a Ternary Search Tree
+void insert(Node** root, char* word)
+{
+    // Base Case: Tree is empty
+    if (!(*root))
+        *root = newNode(*word);
+
+    // If current character of word is smaller than root's
+    // character, then insert this word in left subtree of
+    // root
+    if ((*word) < (*root)->data)
+        insert(&((*root)->left), word);
+
+    // If current character of word is greater than root's
+    // character, then insert this word in right subtree of
+    // root
+    else if ((*word) > (*root)->data)
+        insert(&((*root)->right), word);
+
+    // If current character of word is same as root's
+    // character,
+    else {
+        if (*(word + 1))
+            insert(&((*root)->eq), word + 1);
+
+        // the last character of the word
+        else
+            (*root)->isEndOfString = 1;
+    }
+}
+
+// A recursive function to traverse Ternary Search Tree
+void traverseTSTUtil(Node* root, char* buffer, int depth)
+{
+    if (root) {
+        // First traverse the left subtree
+        traverseTSTUtil(root->left, buffer, depth);
+
+        // Store the character of this node
+        buffer[depth] = root->data;
+        if (root->isEndOfString) {
+            buffer[depth + 1] = '\0';
+            cout << buffer << endl;
+        }
+
+        // Traverse the subtree using equal pointer (middle
+        // subtree)
+        traverseTSTUtil(root->eq, buffer, depth + 1);
+
+        // Finally Traverse the right subtree
+        traverseTSTUtil(root->right, buffer, depth);
+    }
+}
+
+// The main function to traverse a Ternary Search Tree.
+// It mainly uses traverseTSTUtil()
+void traverseTST(struct Node* root)
+{
+    char buffer[MAX];
+    traverseTSTUtil(root, buffer, 0);
+}
+
+// Function to search a given word in TST
+int searchTST(Node* root, char* word)
+{
+    if (!root)
+        return 0;
+
+    if (*word < (root)->data)
+        return searchTST(root->left, word);
+
+    else if (*word > (root)->data)
+        return searchTST(root->right, word);
+
+    else {
+        if (*(word + 1) == '\0')
+            return root->isEndOfString;
+
+        return searchTST(root->eq, word + 1);
+    }
+}
+
+// Driver program to test above functions
+int main()
+{
+    Node* root = NULL;
+    char cat[] = "cat";
+    char cats[] = "cats";
+    char up[] = "up";
+    char bug[] = "bug";
+    char bu[] = "bu";
+    insert(&root, cat);
+    insert(&root, cats);
+    insert(&root, up);
+    insert(&root, bug);
+
+    cout << "Following is traversal of ternary search "
+            "tree\n";
+    traverseTST(root);
+
+    cout << "\nFollowing are search results for cats, bu "
+            "and cat respectively\n";
+    searchTST(root, cats) ? cout << "Found\n"
+                          : cout << "Not Found\n";
+    searchTST(root, bu) ? cout << "Found\n"
+                        : cout << "Not Found\n";
+    searchTST(root, cat) ? cout << "Found\n"
+                         : cout << "Not Found\n";
+
+    return 0;
+}
+
+// This code is contributed by tapeshdua420.
+
+C
+
+// C program to demonstrate Ternary Search Tree (TST)
+// insert, traverse and search operations
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX 50
+
+// A node of ternary search tree
+struct Node {
+    char data;
+
+    // True if this character is last character of one of
+    // the words
+    unsigned isEndOfString : 1;
+
+    struct Node *left, *eq, *right;
+};
+
+// A utility function to create a new ternary search tree
+// node
+struct Node* newNode(char data)
+{
+    struct Node* temp
+        = (struct Node*)malloc(sizeof(struct Node));
+    temp->data = data;
+    temp->isEndOfString = 0;
+    temp->left = temp->eq = temp->right = NULL;
+    return temp;
+}
+
+// Function to insert a new word in a Ternary Search Tree
+void insert(struct Node** root, char* word)
+{
+    // Base Case: Tree is empty
+    if (!(*root))
+        *root = newNode(*word);
+
+    // If current character of word is smaller than root's
+    // character, then insert this word in left subtree of
+    // root
+    if ((*word) < (*root)->data)
+        insert(&((*root)->left), word);
+
+    // If current character of word is greater than root's
+    // character, then insert this word in right subtree of
+    // root
+    else if ((*word) > (*root)->data)
+        insert(&((*root)->right), word);
+
+    // If current character of word is same as root's
+    // character,
+    else {
+        if (*(word + 1))
+            insert(&((*root)->eq), word + 1);
+
+        // the last character of the word
+        else
+            (*root)->isEndOfString = 1;
+    }
+}
+
+// A recursive function to traverse Ternary Search Tree
+void traverseTSTUtil(struct Node* root, char* buffer,
+                     int depth)
+{
+    if (root) {
+        // First traverse the left subtree
+        traverseTSTUtil(root->left, buffer, depth);
+
+        // Store the character of this node
+        buffer[depth] = root->data;
+        if (root->isEndOfString) {
+            buffer[depth + 1] = '\0';
+            printf("%s\n", buffer);
+        }
+
+        // Traverse the subtree using equal pointer (middle
+        // subtree)
+        traverseTSTUtil(root->eq, buffer, depth + 1);
+
+        // Finally Traverse the right subtree
+        traverseTSTUtil(root->right, buffer, depth);
+    }
+}
+
+// The main function to traverse a Ternary Search Tree.
+// It mainly uses traverseTSTUtil()
+void traverseTST(struct Node* root)
+{
+    char buffer[MAX];
+    traverseTSTUtil(root, buffer, 0);
+}
+
+// Function to search a given word in TST
+int searchTST(struct Node* root, char* word)
+{
+    if (!root)
+        return 0;
+
+    if (*word < (root)->data)
+        return searchTST(root->left, word);
+
+    else if (*word > (root)->data)
+        return searchTST(root->right, word);
+
+    else {
+        if (*(word + 1) == '\0')
+            return root->isEndOfString;
+
+        return searchTST(root->eq, word + 1);
+    }
+}
+
+// Driver program to test above functions
+int main()
+{
+    struct Node* root = NULL;
+
+    insert(&root, "cat");
+    insert(&root, "cats");
+    insert(&root, "up");
+    insert(&root, "bug");
+
+    printf(
+        "Following is traversal of ternary search tree\n");
+    traverseTST(root);
+
+    printf("\nFollowing are search results for cats, bu "
+           "and cat respectively\n");
+    searchTST(root, "cats") ? printf("Found\n")
+                            : printf("Not Found\n");
+    searchTST(root, "bu") ? printf("Found\n")
+                          : printf("Not Found\n");
+    searchTST(root, "cat") ? printf("Found\n")
+                           : printf("Not Found\n");
+
+    return 0;
+}
+
+Java
+
+// java code addiiton
+
+import java.io.*;
+import java.util.*;
+
+public class Main {
+    static class Node {
+        char data;
+        boolean isEndOfString;
+        Node left, eq, right;
+
+        public Node(char data)
+        {
+            this.data = data;
+            this.isEndOfString = false;
+            this.left = null;
+            this.eq = null;
+            this.right = null;
+        }
+    }
+
+    public static Node insert(Node root, String word)
+    {
+        if (root == null) {
+            root = new Node(word.charAt(0));
+        }
+        if (word.charAt(0) < root.data) {
+            root.left = insert(root.left, word);
+        }
+        else if (word.charAt(0) > root.data) {
+            root.right = insert(root.right, word);
+        }
+        else {
+            if (word.length() > 1) {
+                root.eq
+                    = insert(root.eq, word.substring(1));
+            }
+            else {
+                root.isEndOfString = true;
+            }
+        }
+        return root;
+    }
+
+    public static void
+    traverseTSTUtil(Node root, char[] buffer, int depth)
+    {
+        if (root != null) {
+            traverseTSTUtil(root.left, buffer, depth);
+            buffer[depth] = root.data;
+            if (root.isEndOfString) {
+                System.out.println(
+                    new String(buffer, 0, depth + 1));
+            }
+            traverseTSTUtil(root.eq, buffer, depth + 1);
+            traverseTSTUtil(root.right, buffer, depth);
+        }
+    }
+
+    public static void traverseTST(Node root)
+    {
+        char[] buffer = new char[50];
+        traverseTSTUtil(root, buffer, 0);
+    }
+
+    public static boolean searchTST(Node root, String word)
+    {
+        if (root == null) {
+            return false;
+        }
+        if (word.charAt(0) < root.data) {
+            return searchTST(root.left, word);
+        }
+        else if (word.charAt(0) > root.data) {
+            return searchTST(root.right, word);
+        }
+        else {
+            if (word.length() > 1) {
+                return searchTST(root.eq,
+                                 word.substring(1));
+            }
+            else {
+                return root.isEndOfString;
+            }
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        Node root = new Node(' ');
+        root = insert(root, "cat");
+        root = insert(root, "cats");
+        root = insert(root, "up");
+        root = insert(root, "bug");
+
+        System.out.println(
+            "Following is traversal of ternary search tree:");
+        traverseTST(root);
+
+        System.out.println(
+            "\nFollowing are search results for 'cats', 'bu', and 'up':");
+        System.out.println(searchTST(root, "cats")
+                               ? "Found"
+                               : "Not Found");
+        System.out.println(
+            searchTST(root, "bu") ? "Found" : "Not Found");
+        System.out.println(
+            searchTST(root, "up") ? "Found" : "Not Found");
+    }
+}
+
+// The code is contributed by Arushi Goel.
+
+Python3
+
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.isEndOfString = False
+        self.left = None
+        self.eq = None
+        self.right = None
+
+def insert(root, word):
+    if not root:
+        root = Node(word[0])
+    if word[0] < root.data:
+        root.left = insert(root.left, word)
+    elif word[0] > root.data:
+        root.right = insert(root.right, word)
+    else:
+        if len(word) > 1:
+            root.eq = insert(root.eq, word[1:])
+        else:
+            root.isEndOfString = True
+    return root
+
+def traverseTSTUtil(root, buffer, depth):
+    if root:
+        traverseTSTUtil(root.left, buffer, depth)
+        buffer[depth] = root.data
+        if root.isEndOfString:
+            print("".join(buffer[:depth+1]))
+        traverseTSTUtil(root.eq, buffer, depth+1)
+        traverseTSTUtil(root.right, buffer, depth)
+
+def traverseTST(root):
+    buffer = [''] * 50
+    traverseTSTUtil(root, buffer, 0)
+
+def searchTST(root, word):
+    if not root:
+        return False
+    if word[0] < root.data:
+        return searchTST(root.left, word)
+    elif word[0] > root.data:
+        return searchTST(root.right, word)
+    else:
+        if len(word) > 1:
+            return searchTST(root.eq, word[1:])
+        else:
+            return root.isEndOfString
+
+root = Node('')
+insert(root, "cat")
+insert(root, "cats")
+insert(root, "up")
+insert(root, "bug")
+
+print("Following is traversal of ternary search tree:")
+traverseTST(root)
+
+print("\nFollowing are search results for 'cats', 'bu', and 'up':")
+print("Found" if searchTST(root, "cats") else "Not Found")
+print("Found" if searchTST(root, "bu") else "Not Found")
+print("Found" if searchTST(root, "up") else "Not Found")
+# This code is contributed by Shivam Tiwari
+
+JavaScript
+
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.isEndOfString = false;
+        this.left = null;
+        this.eq = null;
+        this.right = null;
+    }
+}
+
+function insert(root, word) {
+    if (!root) {
+        root = new Node(word[0]);
+    }
+    if (word[0] < root.data) {
+        root.left = insert(root.left, word);
+    } else if (word[0] > root.data) {
+        root.right = insert(root.right, word);
+    } else {
+        if (word.length > 1) {
+            root.eq = insert(root.eq, word.slice(1));
+        } else {
+            root.isEndOfString = true;
+        }
+    }
+    return root;
+}
+
+function traverseTSTUtil(root, buffer, depth) {
+    if (root) {
+        traverseTSTUtil(root.left, buffer, depth);
+        buffer[depth] = root.data;
+        if (root.isEndOfString) {
+            console.log(buffer.slice(0, depth+1).join(""));
+        }
+        traverseTSTUtil(root.eq, buffer, depth+1);
+        traverseTSTUtil(root.right, buffer, depth);
+    }
+}
+
+function traverseTST(root) {
+    let buffer = new Array(50).fill("");
+    traverseTSTUtil(root, buffer, 0);
+}
+
+function searchTST(root, word) {
+    if (!root) {
+        return false;
+    }
+    if (word[0] < root.data) {
+        return searchTST(root.left, word);
+    } else if (word[0] > root.data) {
+        return searchTST(root.right, word);
+    } else {
+        if (word.length > 1) {
+            return searchTST(root.eq, word.slice(1));
+        } else {
+            return root.isEndOfString;
+        }
+    }
+}
+
+let root = new Node("");
+insert(root, "cat");
+insert(root, "cats");
+insert(root, "up");
+insert(root, "bug");
+
+console.log("Following is traversal of ternary search tree:");
+traverseTST(root);
+
+console.log("\nFollowing are search results for 'cats', 'bu', and 'up':");
+console.log(searchTST(root, "cats") ? "Found" : "Not Found");
+console.log(searchTST(root, "bu") ? "Found" : "Not Found");
+console.log(searchTST(root, "up") ? "Found" : "Not Found");
+
+// This code is contributed by Shivam Tiwari
+
+C#
+
+using System;
+
+public class TernarySearchTree {
+    public class Node {
+        public char data;
+        public bool isEndOfString;
+        public Node left, eq, right;
+
+        public Node(char data)
+        {
+            this.data = data;
+            this.isEndOfString = false;
+            this.left = this.eq = this.right = null;
+        }
+    }
+
+    private Node root;
+
+    public TernarySearchTree() { this.root = null; }
+
+    public void Insert(string word)
+    {
+        if (string.IsNullOrEmpty(word))
+            return;
+
+        this.root = InsertHelper(this.root, word, 0);
+    }
+
+    private Node InsertHelper(Node node, string word,
+                              int index)
+    {
+        if (node == null) {
+            node = new Node(word[index]);
+        }
+
+        if (word[index] < node.data) {
+            node.left
+                = InsertHelper(node.left, word, index);
+        }
+        else if (word[index] > node.data) {
+            node.right
+                = InsertHelper(node.right, word, index);
+        }
+        else {
+            if (index < word.Length - 1) {
+                node.eq = InsertHelper(node.eq, word,
+                                       index + 1);
+            }
+            else {
+                node.isEndOfString = true;
+            }
+        }
+
+        return node;
+    }
+
+    public bool Search(string word)
+    {
+        if (string.IsNullOrEmpty(word))
+            return false;
+
+        return SearchHelper(this.root, word, 0);
+    }
+
+    private bool SearchHelper(Node node, string word,
+                              int index)
+    {
+        if (node == null)
+            return false;
+
+        if (word[index] < node.data) {
+            return SearchHelper(node.left, word, index);
+        }
+        else if (word[index] > node.data) {
+            return SearchHelper(node.right, word, index);
+        }
+        else {
+            if (index == word.Length - 1) {
+                return node.isEndOfString;
+            }
+            else {
+                return SearchHelper(node.eq, word,
+                                    index + 1);
+            }
+        }
+    }
+
+    public void Traverse()
+    {
+        TraverseHelper(this.root, "");
+    }
+
+    private void TraverseHelper(Node node, string buffer)
+    {
+        if (node == null)
+            return;
+
+        TraverseHelper(node.left, buffer);
+
+        buffer += node.data;
+
+        if (node.isEndOfString) {
+            Console.WriteLine(buffer);
+        }
+
+        TraverseHelper(
+            node.eq, buffer.Substring(0, buffer.Length - 1)
+                         + node.data);
+
+        TraverseHelper(
+            node.right,
+            buffer.Substring(0, buffer.Length - 1));
+    }
+}
+
+public class Program {
+    static void Main(string[] args)
+    {
+        TernarySearchTree trie = new TernarySearchTree();
+        trie.Insert("cat");
+        trie.Insert("cats");
+        trie.Insert("up");
+        trie.Insert("bug");
+
+        Console.WriteLine(
+            "Following is traversal of ternary search tree");
+        trie.Traverse();
+
+        Console.WriteLine(
+            "\nFollowing are search results for cats, bu and cat respectively");
+        Console.WriteLine(
+            trie.Search("cats") ? "Found" : "Not Found");
+        Console.WriteLine(trie.Search("bu") ? "Found"
+                                            : "Not Found");
+        Console.WriteLine(trie.Search("cat") ? "Found"
+                                             : "Not Found");
+
+        Console.ReadKey();
+    }
+}
+// This code is contributed By Shivam Tiwari
+
+Output
+
+Following is traversal of ternary search tree
+bug
+cat
+cats
+up
+
+Following are search results for cats, bu and cat respectively
+Found
+Not Found
+Found
+
+Time Complexity: The time complexity of the ternary search tree operations is similar to that of binary search tree. i.e. the insertion, deletion, and search operations take time proportional to the height of the ternary search tree.
+
+Auxiliary Space: O(n), where n is the number of keys in TST.
+
+This article is compiled by Aashish Barnwal and reviewed by GeeksforGeeks team.

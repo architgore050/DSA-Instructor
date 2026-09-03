@@ -1,0 +1,540 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-initial-vertices-traverse-whole-matrix-given-conditions/
+Title: Minimum initial vertices to traverse whole matrix with given conditions
+Extractor: 2
+
+We are given a matrix that contains different values in each cell. Our aim is to find the minimal set of positions in the matrix such that the entire matrix can be traversed starting from the positions in the set. We can traverse the matrix under the below conditions:
+
+- We can move only to those neighbors that contain values less than or equal to the current cell's value. A neighbour of the cell is defined as the cell that shares a side with the given cell.
+
+Examples:
+
+Input : 1 2 3
+        2 3 1
+        1 1 1
+Output : 1 1
+         0 2
+If we start from 1, 1 we can cover 6
+vertices in the order (1, 1) -> (1, 0) -> (2, 0)
+-> (2, 1) -> (2, 2) -> (1, 2). We cannot cover
+the entire matrix with this vertex. Remaining
+vertices can be covered (0, 2) -> (0, 1) -> (0, 0).
+
+Input : 3 3
+        1 1
+Output : 0 1
+If we start from 0, 1, we can traverse
+the entire matrix from this single vertex
+in this order (0, 0) -> (0, 1) -> (1, 1) -> (1, 0).
+Traversing the matrix in this order
+satisfies all the conditions stated above.
+
+From the above examples, we can easily identify that in order to use a minimum number of positions, we have to start from the positions having the highest cell value. Therefore, we pick the positions that contain the highest value in the matrix. We take the vertices having the highest value in a separate array. We perform DFS at every vertex starting from the highest value. If we encounter any unvisited vertex during dfs then we have to include this vertex in our set. When all the cells have been processed, then the set contains the required vertices.
+
+How does this work? We need to visit all vertices and to reach the largest values we must start with them. If the two largest values are not adjacent, then both of them must be picked. If the two largest values are adjacent, then any of them can be picked as moving to equal value neighbors is allowed.
+
+Implementation:
+
+C++
+
+// C++ program to find minimum initial
+// vertices to reach whole matrix.
+#include <bits/stdc++.h>
+using namespace std;
+
+const int MAX = 100;
+
+// (n, m) is current source cell from which
+// we need to do DFS. N and M are total no.
+// of rows and columns.
+void dfs(int n, int m, bool visit[][MAX],
+         int adj[][MAX], int N, int M)
+{
+    // Marking the vertex as visited
+    visit[n][m] = 1;
+
+    // If below neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (n + 1 < N &&
+        adj[n][m] >= adj[n + 1][m] &&
+        !visit[n + 1][m])
+        dfs(n + 1, m, visit, adj, N, M);
+
+    // If right neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (m + 1 < M &&
+        adj[n][m] >= adj[n][m + 1] &&
+        !visit[n][m + 1])
+        dfs(n, m + 1, visit, adj, N, M);
+
+    // If above neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (n - 1 >= 0 &&
+        adj[n][m] >= adj[n - 1][m] &&
+        !visit[n - 1][m])
+        dfs(n - 1, m, visit, adj, N, M);
+
+    // If left neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (m - 1 >= 0 &&
+        adj[n][m] >= adj[n][m - 1] &&
+        !visit[n][m - 1])
+        dfs(n, m - 1, visit, adj, N, M);
+}
+
+void printMinSources(int adj[][MAX], int N, int M)
+{
+    // Storing the cell value and cell indices
+    // in a vector.
+    vector<pair<long int, pair<int, int> > > x;
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < M; j++)
+            x.push_back(make_pair(adj[i][j],
+                        make_pair(i, j)));
+
+    // Sorting the newly created array according
+    // to cell values
+    sort(x.begin(), x.end());
+
+    // Create a visited array for DFS and
+    // initialize it as false.
+    bool visit[N][MAX];
+    memset(visit, false, sizeof(visit));
+
+    // Applying dfs for each vertex with
+    // highest value
+    for (int i = x.size()-1; i >=0 ; i--)
+    {
+        // If the given vertex is not visited
+        // then include it in the set
+        if (!visit[x[i].second.first][x[i].second.second])
+        {
+            cout << x[i].second.first << " "
+                 << x[i].second.second << endl;
+            dfs(x[i].second.first, x[i].second.second,
+               visit, adj, N, M);
+        }
+    }
+}
+
+// Driver code
+int main()
+{
+    int N = 2, M = 2;
+
+    int adj[N][MAX] = {{3, 3},
+                       {1, 1}};
+    printMinSources(adj, N, M);
+    return 0;
+}
+
+Java
+
+// Java program to find minimum initial
+// vertices to reach whole matrix.
+import java.io.*;
+import java.util.*;
+
+class Cell {
+    public int val, i, j;
+    public Cell(int val, int i, int j)
+    {
+        this.val = val;
+        this.i = i;
+        this.j = j;
+    }
+}
+
+class CellComparer implements Comparator<Cell> {
+    public int compare(Cell a, Cell b)
+    {
+        return a.val - b.val;
+    }
+}
+
+public class GFG {
+    static final int MAX = 100;
+
+    // (n, m) is current source cell from which
+    // we need to do DFS. N and M are total no.
+    // of rows and columns.
+    static void dfs(int n, int m, Boolean[][] visit,
+                    int[][] adj, int N, int M)
+    {
+        // Marking the vertex as visited
+        visit[n][m] = true;
+
+        // If below neighbor is valid and has
+        // value less than or equal to current
+        // cell's value
+        if (n + 1 < N && adj[n][m] >= adj[n + 1][m]
+            && !visit[n + 1][m])
+            dfs(n + 1, m, visit, adj, N, M);
+
+        // If right neighbor is valid and has
+        // value less than or equal to current
+        // cell's value
+        if (m + 1 < M && adj[n][m] >= adj[n][m + 1]
+            && !visit[n][m + 1])
+            dfs(n, m + 1, visit, adj, N, M);
+
+        // If above neighbor is valid and has
+        // value less than or equal to current
+        // cell's value
+        if (n - 1 >= 0 && adj[n][m] >= adj[n - 1][m]
+            && !visit[n - 1][m])
+            dfs(n - 1, m, visit, adj, N, M);
+
+        // If left neighbor is valid and has
+        // value less than or equal to current
+        // cell's value
+        if (m - 1 >= 0 && adj[n][m] >= adj[n][m - 1]
+            && !visit[n][m - 1])
+            dfs(n, m - 1, visit, adj, N, M);
+    }
+
+    static void printMinSources(int[][] adj, int N, int M)
+    {
+        // Storing the cell value and cell indices
+        // in a list.
+        LinkedList<Cell> x = new LinkedList<Cell>();
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < M; j++) {
+                x.add(new Cell(adj[i][j], i, j));
+            }
+        }
+
+        // Sorting the newly created array according
+        // to cell values
+        Collections.sort(x, new CellComparer());
+
+        // Create a visited array for DFS and
+        // initialize it as false.
+        Boolean[][] visit = new Boolean[N][MAX];
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < MAX; j++)
+                visit[i][j] = false;
+        }
+
+        // Applying dfs for each vertex with
+        // highest value
+        for (int i = x.size() - 1; i >= 0; i--) {
+            // If the given vertex is not visited
+            // then include it in the set
+            if (!visit[x.get(i).i][x.get(i).j]) {
+                System.out.printf("%d %d\n", x.get(i).i,
+                                  x.get(i).j);
+                dfs(x.get(i).i, x.get(i).j, visit, adj, N,
+                    M);
+            }
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        int N = 2, M = 2;
+        int[][] adj = { { 3, 3 }, { 1, 1 } };
+        printMinSources(adj, N, M);
+    }
+}
+
+// This code is contributed by cavi4762.
+
+Python3
+
+# Python3 program to find minimum initial
+# vertices to reach whole matrix
+MAX = 100
+
+# (n, m) is current source cell from which
+# we need to do DFS. N and M are total no.
+# of rows and columns.
+def dfs(n, m, visit, adj, N, M):
+
+    # Marking the vertex as visited
+    visit[n][m] = 1
+
+    # If below neighbor is valid and has
+    # value less than or equal to current
+    # cell's value
+    if (n + 1 < N and
+        adj[n][m] >= adj[n + 1][m] and
+        not visit[n + 1][m]):
+        dfs(n + 1, m, visit, adj, N, M)
+
+    # If right neighbor is valid and has
+    # value less than or equal to current
+    # cell's value
+    if (m + 1 < M and
+        adj[n][m] >= adj[n][m + 1] and
+        not visit[n][m + 1]):
+        dfs(n, m + 1, visit, adj, N, M)
+
+    # If above neighbor is valid and has
+    # value less than or equal to current
+    # cell's value
+    if (n - 1 >= 0 and
+        adj[n][m] >= adj[n - 1][m] and
+        not visit[n - 1][m]):
+        dfs(n - 1, m, visit, adj, N, M)
+
+    # If left neighbor is valid and has
+    # value less than or equal to current
+    # cell's value
+    if (m - 1 >= 0 and
+        adj[n][m] >= adj[n][m - 1] and
+        not visit[n][m - 1]):
+        dfs(n, m - 1, visit, adj, N, M)
+
+def printMinSources(adj, N, M):
+
+    # Storing the cell value and cell
+    # indices in a vector.
+    x = []
+
+    for i in range(N):
+        for j in range(M):
+            x.append([adj[i][j], [i, j]])
+
+    # Sorting the newly created array according
+    # to cell values
+    x.sort()
+
+    # Create a visited array for DFS and
+    # initialize it as false.
+    visit = [[False for i in range(MAX)]
+                    for i in range(N)]
+
+    # Applying dfs for each vertex with
+    # highest value
+    for i in range(len(x) - 1, -1, -1):
+
+        # If the given vertex is not visited
+        # then include it in the set
+        if (not visit[x[i][1][0]][x[i][1][1]]):
+            print('{} {}'.format(x[i][1][0],
+                                 x[i][1][1]))
+
+            dfs(x[i][1][0],
+                x[i][1][1],
+                visit, adj, N, M)
+
+# Driver code
+if __name__=='__main__':
+
+    N = 2
+    M = 2
+
+    adj = [ [ 3, 3 ], [ 1, 1 ] ]
+
+    printMinSources(adj, N, M)
+
+# This code is contributed by rutvik_56
+
+C#
+
+// C# program to find minimum initial
+// vertices to reach whole matrix.
+using System;
+using System.Collections.Generic;
+
+class GFG {
+  static readonly int MAX = 100;
+
+  // (n, m) is current source cell from which
+  // we need to do DFS. N and M are total no.
+  // of rows and columns.
+  static void dfs(int n, int m, bool[, ] visit,
+                  int[, ] adj, int N, int M)
+  {
+    // Marking the vertex as visited
+    visit[n, m] = true;
+
+    // If below neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (n + 1 < N && adj[n, m] >= adj[n + 1, m]
+        && !visit[n + 1, m])
+      dfs(n + 1, m, visit, adj, N, M);
+
+    // If right neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (m + 1 < M && adj[n, m] >= adj[n, m + 1]
+        && !visit[n, m + 1])
+      dfs(n, m + 1, visit, adj, N, M);
+
+    // If above neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (n - 1 >= 0 && adj[n, m] >= adj[n - 1, m]
+        && !visit[n - 1, m])
+      dfs(n - 1, m, visit, adj, N, M);
+
+    // If left neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (m - 1 >= 0 && adj[n, m] >= adj[n, m - 1]
+        && !visit[n, m - 1])
+      dfs(n, m - 1, visit, adj, N, M);
+  }
+
+  static void printMinSources(int[, ] adj, int N, int M)
+  {
+    // Storing the cell value and cell indices
+    // in a list.
+    List<Tuple<int, Tuple<int, int> > > x
+      = new List<Tuple<int, Tuple<int, int> > >();
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j < M; j++) {
+        x.Add(Tuple.Create(adj[i, j],
+                           Tuple.Create(i, j)));
+      }
+    }
+
+    // Sorting the newly created array according
+    // to cell values
+    x.Sort();
+
+    // Create a visited array for DFS and
+    // initialize it as false.
+    bool[, ] visit = new bool[N, MAX];
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j < MAX; j++)
+        visit[i, j] = false;
+    }
+
+    // Applying dfs for each vertex with
+    // highest value
+    for (int i = x.Count - 1; i >= 0; i--) {
+      // If the given vertex is not visited
+      // then include it in the set
+      if (!visit[x[i].Item2.Item1,
+                 x[i].Item2.Item2]) {
+        Console.WriteLine("{0} {1}",
+                          x[i].Item2.Item1,
+                          x[i].Item2.Item2);
+        dfs(x[i].Item2.Item1, x[i].Item2.Item2,
+            visit, adj, N, M);
+      }
+    }
+  }
+
+  static void Main(string[] args)
+  {
+    int N = 2, M = 2;
+    int[, ] adj = { { 3, 3 }, { 1, 1 } };
+    printMinSources(adj, N, M);
+  }
+}
+
+// This code is contributed by cavi4762.
+
+JavaScript
+
+<script>
+// Javascript program to find minimum initial
+// vertices to reach whole matrix.
+
+var MAX = 100;
+
+// (n, m) is current source cell from which
+// we need to do DFS. N and M are total no.
+// of rows and columns.
+function dfs( n,  m,  visit, adj, N, M)
+{
+    // Marking the vertex as visited
+    visit[n][m] = 1;
+
+    // If below neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (n + 1 < N &&
+        adj[n][m] >= adj[n + 1][m] &&
+        !visit[n + 1][m])
+        dfs(n + 1, m, visit, adj, N, M);
+
+    // If right neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (m + 1 < M &&
+        adj[n][m] >= adj[n][m + 1] &&
+        !visit[n][m + 1])
+        dfs(n, m + 1, visit, adj, N, M);
+
+    // If above neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (n - 1 >= 0 &&
+        adj[n][m] >= adj[n - 1][m] &&
+        !visit[n - 1][m])
+        dfs(n - 1, m, visit, adj, N, M);
+
+    // If left neighbor is valid and has
+    // value less than or equal to current
+    // cell's value
+    if (m - 1 >= 0 &&
+        adj[n][m] >= adj[n][m - 1] &&
+        !visit[n][m - 1])
+        dfs(n, m - 1, visit, adj, N, M);
+}
+
+function printMinSources( adj,  N,  M)
+{
+    // Storing the cell value and cell indices
+    // in a vector.
+    var x = [];
+    for (var i = 0; i < N; i++)
+        for (var j = 0; j < M; j++)
+            x.push([adj[i][j],[i, j]]);
+
+    // Sorting the newly created array according
+    // to cell values
+    x = x.sort();
+
+    // Create a visited array for DFS and
+    // initialize it as false.
+    var visit = new Array(N);
+    for (var i = 0; i < N; i++) {
+        visit[i] = [];
+        for (var j = 0; j < MAX; j++) {
+            visit[i].push(false);
+        }
+    }
+
+    // Applying dfs for each vertex with
+    // highest value
+    for (var i = x.length-1; i >=0 ; i--)
+    {
+        // If the given vertex is not visited
+        // then include it in the set
+        if (!visit[x[i][1][0]][x[i][1][1]])
+        {
+            document.write(x[i][1][0] + " "
+                 + x[i][1][1] + "<br>");
+            dfs(x[i][1][0], x[i][1][1],
+               visit, adj, N, M);
+        }
+    }
+}
+
+// driver code
+var N = 2
+var M = 2
+
+var adj = [ [ 3, 3 ], [ 1, 1 ] ]
+
+printMinSources(adj, N, M)
+// This code contributed by shivani
+</script>
+
+Output
+
+0 1
+
+Time Complexity : O(N*M *log(N*M))
+
+Space Complexity : O(N*M)

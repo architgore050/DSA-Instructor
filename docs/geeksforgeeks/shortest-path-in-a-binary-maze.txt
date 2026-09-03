@@ -1,0 +1,906 @@
+Source: https://www.geeksforgeeks.org/dsa/shortest-path-in-a-binary-maze/
+Title: Shortest Path in a Binary Maze
+Extractor: 2
+
+Given a binary matrix mat[][] of size n × m containing values 0 and 1, and a source cell src[] and destination cell dest[] , find the minimum number of steps required to reach the destination cell from the source cell. From any cell, you can move to its adjacent cells in the up, down, left, and right directions.
+
+- 1 represents a traversable cell.
+- 0 represents a blocked cell that cannot be visited.
+
+If the destination cannot be reached from the source, return -1.
+
+Example:
+
+> Input: mat[][] = {{1, 1, 1, 1},{1, 1, 0, 1},{1, 1, 1, 1},{1, 1, 0, 0},{1, 0, 0, 1}}, src[] = {0, 1}, dest[] = {2, 2} Output: 3 Explanation: From (0,1), the minimum number of steps to reach (2,2) is 3, Input: mat[][] = {{1, 1, 1, 1, 1},{1, 1, 1, 1, 1},{1, 1, 1, 1, 0},{1, 0, 1, 0, 1}}, src[] = {0, 0}, dest[] = {3, 4} Output: -1 Explanation: From (0,0), the destination (3,4) cannot be reached because all possible paths are blocked by 0 cells, so no valid route exists.
+
+Table of Content
+
+- [Naive Approach] Using DFS - O(4^n*m) Time and O(m × n) Space
+- [Expected Approach] Using BFS -  O(n × m) Time and O(n× m) Space
+
+### [Naive Approach] Using DFS - O(4^n*m) Time and O(m × n) Space
+
+> The idea is to start from the source cell and recursively explore all possible paths to reach the destination cell in the binary matrix. From any cell, we can move in four possible directions: up, down, left, and right, as long as the next cell is valid (inside the grid, not blocked, and not already visited in the current path). We maintain a visited matrix to avoid cycles and ensure we do not revisit the same cell in a single path. A global variable minDist is used to store the minimum distance found across all possible paths.
+
+Base Cases:
+
+- If the current cell (x, y) is equal to the destination cell (dx, dy), we update minDist with the minimum of the current distance and return.
+- If the current cell is out of bounds or blocked or already visited, we stop exploring that path.
+
+The recurrence relation will be: dfs(x, y) = dfs(x+1, y) + dfs(x-1, y) + dfs(x, y+1) + dfs(x, y-1)
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <climits>
+using namespace std;
+
+// Stores the minimum distance found from source to destination
+int minDist = INT_MAX;
+
+// Function to check if a cell is safe to visit
+bool isSafe(vector<vector<int>> &mat,
+            vector<vector<bool>> &vis,
+            int x, int y) {
+
+    int n = mat.size();
+    int m = mat[0].size();
+
+    // Check boundary conditions, cell value, and whether already visited
+    return (x >= 0 && x < n &&
+            y >= 0 && y < m &&
+            mat[x][y] == 1 &&
+            !vis[x][y]);
+}
+
+// DFS function to explore all possible paths
+void dfs(vector<vector<int>> &mat,
+         vector<vector<bool>> &vis,
+         int x, int y,
+         int dx, int dy,
+         int dist) {
+
+    // If destination is reached, update minimum distance
+    if (x == dx && y == dy) {
+        minDist = min(minDist, dist);
+        return;
+    }
+
+    // Mark current cell as visited
+    vis[x][y] = true;
+
+    // Possible movements: Up, Down, Left, Right
+    int dirX[] = {-1, 1, 0, 0};
+    int dirY[] = {0, 0, -1, 1};
+
+    // Try all 4 directions
+    for (int i = 0; i < 4; i++) {
+
+        int nx = x + dirX[i];
+        int ny = y + dirY[i];
+
+        // If next move is valid, continue DFS
+        if (isSafe(mat, vis, nx, ny)) {
+            dfs(mat, vis, nx, ny, dx, dy, dist + 1);
+        }
+    }
+
+    // Backtrack: unmark the cell so other paths can use it
+    vis[x][y] = false;
+}
+
+// Wrapper function to calculate shortest path
+int shortestPath(vector<vector<int>> &mat,
+                 vector<int> &src,
+                 vector<int> &dest) {
+
+    int n = mat.size();
+    int m = mat[0].size();
+
+    // If source or destination is blocked, return -1
+    if (mat[src[0]][src[1]] == 0 ||
+        mat[dest[0]][dest[1]] == 0)
+        return -1;
+
+    // Visited matrix to avoid cycles
+    vector<vector<bool>> vis(n, vector<bool>(m, false));
+
+    // Initialize minimum distance
+    minDist = INT_MAX;
+
+    // Start DFS from source cell
+    dfs(mat, vis,
+        src[0], src[1],
+        dest[0], dest[1],
+        0);
+
+    // If no path found, return -1
+    return (minDist == INT_MAX) ? -1 : minDist;
+}
+
+int main() {
+
+    vector<vector<int>> mat = {
+        {1, 1, 1, 1},
+        {1, 1, 0, 1},
+        {1, 1, 1, 1},
+        {1, 1, 0, 0},
+        {1, 0, 0, 1}
+    };
+
+    vector<int> src = {0, 1};
+    vector<int> dest = {2, 2};
+    cout << shortestPath(mat, src, dest);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class Solution {
+
+    // Stores the minimum distance found from source to destination
+    static int minDist = Integer.MAX_VALUE;
+
+    // Function to check if a cell is safe to visit
+    static boolean isSafe(int[][] mat,
+                          boolean[][] vis,
+                          int x, int y) {
+
+        int n = mat.length;
+        int m = mat[0].length;
+
+        // Check boundary conditions, cell value, and whether already visited
+        return (x >= 0 && x < n &&
+                y >= 0 && y < m &&
+                mat[x][y] == 1 &&
+                !vis[x][y]);
+    }
+
+    // DFS function to explore all possible paths
+    static void dfs(int[][] mat,
+                    boolean[][] vis,
+                    int x, int y,
+                    int dx, int dy,
+                    int dist) {
+
+        // If destination is reached, update minimum distance
+        if (x == dx && y == dy) {
+            minDist = Math.min(minDist, dist);
+            return;
+        }
+
+        // Mark current cell as visited
+        vis[x][y] = true;
+
+        // Possible movements: Up, Down, Left, Right
+        int[] dirX = {-1, 1, 0, 0};
+        int[] dirY = {0, 0, -1, 1};
+
+        // Try all 4 directions
+        for (int i = 0; i < 4; i++) {
+
+            int nx = x + dirX[i];
+            int ny = y + dirY[i];
+
+            // If next move is valid, continue DFS
+            if (isSafe(mat, vis, nx, ny)) {
+                dfs(mat, vis, nx, ny, dx, dy, dist + 1);
+            }
+        }
+
+        // Backtrack: unmark the cell so other paths can use it
+        vis[x][y] = false;
+    }
+
+    static int shortestPath(int[][] mat,
+                            int[] src,
+                            int[] dest) {
+
+        int n = mat.length;
+        int m = mat[0].length;
+
+        // If source or destination is blocked, return -1
+        if (mat[src[0]][src[1]] == 0 ||
+            mat[dest[0]][dest[1]] == 0)
+            return -1;
+
+        boolean[][] vis = new boolean[n][m];
+
+        // Initialize minimum distance
+        minDist = Integer.MAX_VALUE;
+
+        // Start DFS from source cell
+        dfs(mat, vis,
+            src[0], src[1],
+            dest[0], dest[1],
+            0);
+
+        // If no path found, return -1
+        return (minDist == Integer.MAX_VALUE) ? -1 : minDist;
+    }
+}
+
+Python
+
+# Stores the minimum distance found from source to destination
+minDist = float('inf')
+
+# Function to check if a cell is safe to visit
+def isSafe(mat, vis, x, y):
+
+    n = len(mat)
+    m = len(mat[0])
+
+    # Check boundary conditions, cell value, and whether already visited
+    return (0 <= x < n and
+            0 <= y < m and
+            mat[x][y] == 1 and
+            not vis[x][y])
+
+# DFS function to explore all possible paths
+def dfs(mat, vis, x, y, dx, dy, dist):
+
+    global minDist
+
+    # If destination is reached, update minimum distance
+    if x == dx and y == dy:
+        minDist = min(minDist, dist)
+        return
+
+    # Mark current cell as visited
+    vis[x][y] = True
+
+    # Possible movements: Up, Down, Left, Right
+    dirX = [-1, 1, 0, 0]
+    dirY = [0, 0, -1, 1]
+
+    # Try all 4 directions
+    for i in range(4):
+
+        nx = x + dirX[i]
+        ny = y + dirY[i]
+
+        # If next move is valid, continue DFS
+        if isSafe(mat, vis, nx, ny):
+            dfs(mat, vis, nx, ny, dx, dy, dist + 1)
+
+    # Backtrack: unmark the cell so other paths can use it
+    vis[x][y] = False
+
+# Wrapper function to calculate shortest path
+def shortestPath(mat, src, dest):
+
+    global minDist
+
+    n = len(mat)
+    m = len(mat[0])
+
+    # If source or destination is blocked
+    if mat[src[0]][src[1]] == 0 or mat[dest[0]][dest[1]] == 0:
+        return -1
+
+    # Visited matrix
+    vis = [[False for _ in range(m)] for _ in range(n)]
+
+    # Initialize minimum distance
+    minDist = float('inf')
+
+    # Start DFS from source cell
+    dfs(mat, vis,
+        src[0], src[1],
+        dest[0], dest[1],
+        0)
+
+    # If no path found
+    return -1 if minDist == float('inf') else minDist
+
+if __name__ == "__main__":
+
+    mat = [
+        [1, 1, 1, 1],
+        [1, 1, 0, 1],
+        [1, 1, 1, 1],
+        [1, 1, 0, 0],
+        [1, 0, 0, 1]
+    ]
+
+    src = [0, 1]
+    dest = [2, 2]
+
+    print(shortestPath(mat, src, dest))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // Stores the minimum distance found from source to destination
+    static int minDist = Int32.MaxValue;
+
+    // Function to check if a cell is safe to visit
+    static bool isSafe(int[][] mat, bool[][] vis, int x, int y) {
+
+        int n = mat.Length;
+        int m = mat[0].Length;
+
+        // Check boundary conditions, cell value, and whether already visited
+        return (x >= 0 && x < n &&
+                y >= 0 && y < m &&
+                mat[x][y] == 1 &&
+                !vis[x][y]);
+    }
+
+    // DFS function to explore all possible paths
+    static void dfs(int[][] mat, bool[][] vis,
+                    int x, int y,
+                    int dx, int dy,
+                    int dist) {
+
+        // If destination is reached, update minimum distance
+        if (x == dx && y == dy) {
+            minDist = Math.Min(minDist, dist);
+            return;
+        }
+
+        // Mark current cell as visited
+        vis[x][y] = true;
+
+        // Possible movements: Up, Down, Left, Right
+        int[] dirX = { -1, 1, 0, 0 };
+        int[] dirY = { 0, 0, -1, 1 };
+
+        // Try all 4 directions
+        for (int i = 0; i < 4; i++) {
+
+            int nx = x + dirX[i];
+            int ny = y + dirY[i];
+
+            // If next move is valid, continue DFS
+            if (isSafe(mat, vis, nx, ny)) {
+                dfs(mat, vis, nx, ny, dx, dy, dist + 1);
+            }
+        }
+
+        // Backtrack: unmark the cell so other paths can use it
+        vis[x][y] = false;
+    }
+
+    static int shortestPath(int[][] mat, int[] src, int[] dest) {
+
+        int n = mat.Length;
+        int m = mat[0].Length;
+
+        // If source or destination is blocked
+        if (mat[src[0]][src[1]] == 0 ||
+            mat[dest[0]][dest[1]] == 0)
+            return -1;
+
+        bool[][] vis = new bool[n][];
+        for (int i = 0; i < n; i++)
+            vis[i] = new bool[m];
+
+        minDist = Int32.MaxValue;
+
+        dfs(mat, vis,
+            src[0], src[1],
+            dest[0], dest[1],
+            0);
+
+        return (minDist == Int32.MaxValue) ? -1 : minDist;
+    }
+
+    // Main
+    static void Main() {
+
+        int[][] mat = new int[][] {
+            new int[] {1,1,1,1},
+            new int[] {1,1,0,1},
+            new int[] {1,1,1,1},
+            new int[] {1,1,0,0},
+            new int[] {1,0,0,1}
+        };
+
+        int[] src = {0, 1};
+        int[] dest = {2, 2};
+
+        Console.WriteLine(shortestPath(mat, src, dest));
+    }
+}
+
+JavaScript
+
+"use strict";
+
+// Stores the minimum distance found from source to destination
+let minDist = Infinity;
+
+// Function to check if a cell is safe to visit
+function isSafe(mat, vis, x, y) {
+
+    let n = mat.length;
+    let m = mat[0].length;
+
+    // Check boundary conditions, cell value, and whether already visited
+    return (x >= 0 && x < n &&
+            y >= 0 && y < m &&
+            mat[x][y] === 1 &&
+            !vis[x][y]);
+}
+
+// DFS function to explore all possible paths
+function dfs(mat, vis, x, y, dx, dy, dist) {
+
+    // If destination is reached, update minimum distance
+    if (x === dx && y === dy) {
+        minDist = Math.min(minDist, dist);
+        return;
+    }
+
+    // Mark current cell as visited
+    vis[x][y] = true;
+
+    // Possible movements: Up, Down, Left, Right
+    let dirX = [-1, 1, 0, 0];
+    let dirY = [0, 0, -1, 1];
+
+    // Try all 4 directions
+    for (let i = 0; i < 4; i++) {
+
+        let nx = x + dirX[i];
+        let ny = y + dirY[i];
+
+        // If next move is valid, continue DFS
+        if (isSafe(mat, vis, nx, ny)) {
+            dfs(mat, vis, nx, ny, dx, dy, dist + 1);
+        }
+    }
+
+    // Backtrack
+    vis[x][y] = false;
+}
+
+// Wrapper function
+function shortestPath(mat, src, dest) {
+
+    let n = mat.length;
+    let m = mat[0].length;
+
+    // If source or destination is blocked
+    if (mat[src[0]][src[1]] === 0 ||
+        mat[dest[0]][dest[1]] === 0)
+        return -1;
+
+    let vis = Array.from({ length: n }, () => Array(m).fill(false));
+
+    minDist = Infinity;
+
+    dfs(mat, vis,
+        src[0], src[1],
+        dest[0], dest[1],
+        0);
+
+    return (minDist === Infinity) ? -1 : minDist;
+}
+
+// Driver code
+
+    let mat = [
+        [1, 1, 1, 1],
+        [1, 1, 0, 1],
+        [1, 1, 1, 1],
+        [1, 1, 0, 0],
+        [1, 0, 0, 1]
+    ];
+
+    let src = [0, 1];
+    let dest = [2, 2];
+
+    console.log(shortestPath(mat, src, dest));
+
+Output
+
+3
+
+### [Expected Approach] Using BFS -  O(n × m) Time and O(n× m) Space
+
+> The idea is to use Breadth First Search (BFS) to find the shortest path in the binary matrix. We start from the source cell and explore all reachable cells level by level using a queue. Each queue element stores the cell coordinates along with the distance from the source. Since BFS explores all nodes at the current distance before moving to the next level, the first time we reach the destination cell, it gives the minimum number of steps. We mark cells as visited (set them to 0) to avoid revisiting and ensure each cell is processed only once.
+
+Base Cases:
+
+- If the source or destination cell is blocked (0), return -1.
+- If the destination is reached during BFS traversal, return the current distance.
+
+C++
+
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+
+int shortestPath(vector<vector<int>> &mat, vector<int> &src, vector<int> &dest)
+{
+
+    int n = mat.size();
+    int m = mat[0].size();
+
+    // Source or destination is blocked
+    if (mat[src[0]][src[1]] == 0 || mat[dest[0]][dest[1]] == 0)
+        return -1;
+
+    // Queue stores {cell, distance from source}
+    queue<pair<pair<int, int>, int>> q;
+
+    q.push({{src[0], src[1]}, 0});
+
+    // Mark source as visited
+    mat[src[0]][src[1]] = 0;
+
+    // Four possible directions
+    int dx[] = {-1, 1, 0, 0};
+    int dy[] = {0, 0, -1, 1};
+
+    while (!q.empty())
+    {
+
+        auto curr = q.front();
+        q.pop();
+
+        int x = curr.first.first;
+        int y = curr.first.second;
+        int dist = curr.second;
+
+        // Destination reached
+        if (x == dest[0] && y == dest[1])
+            return dist;
+
+        // Explore all four adjacent cells
+        for (int i = 0; i < 4; i++)
+        {
+
+            int nx = x + dx[i];
+            int ny = y + dy[i];
+
+            if (nx >= 0 && nx < n && ny >= 0 && ny < m && mat[nx][ny] == 1)
+            {
+
+                // Mark as visited
+                mat[nx][ny] = 0;
+
+                q.push({{nx, ny}, dist + 1});
+            }
+        }
+    }
+
+    // Destination cannot be reached
+    return -1;
+}
+
+int main()
+{
+
+    vector<vector<int>> mat = {{1, 1, 1, 1}, {1, 1, 0, 1}, {1, 1, 1, 1}, {1, 1, 0, 0}, {1, 0, 0, 1}};
+
+    vector<int> src = {0, 1};
+    vector<int> dest = {2, 2};
+    cout << shortestPath(mat, src, dest);
+
+    return 0;
+}
+
+Java
+
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.Arrays;
+
+class GFG {
+
+    int shortestPath(int[][] mat, int[] src, int[] dest)
+    {
+
+        int n = mat.length;
+        int m = mat[0].length;
+
+        // Source or destination is blocked
+        if (mat[src[0]][src[1]] == 0 || mat[dest[0]][dest[1]] == 0)
+            return -1;
+
+        // Queue stores {cell, distance from source}
+        Queue<int[]> q = new LinkedList<>();
+
+        q.add(new int[]{src[0], src[1], 0});
+
+        // Mark source as visited
+        mat[src[0]][src[1]] = 0;
+
+        // Four possible directions
+        int dx[] = {-1, 1, 0, 0};
+        int dy[] = {0, 0, -1, 1};
+
+        while (!q.isEmpty())
+        {
+
+            int[] curr = q.poll();
+
+            int x = curr[0];
+            int y = curr[1];
+            int dist = curr[2];
+
+            // Destination reached
+            if (x == dest[0] && y == dest[1])
+                return dist;
+
+            // Explore all four adjacent cells
+            for (int i = 0; i < 4; i++)
+            {
+
+                int nx = x + dx[i];
+                int ny = y + dy[i];
+
+                if (nx >= 0 && nx < n && ny >= 0 && ny < m && mat[nx][ny] == 1)
+                {
+
+                    // Mark as visited
+                    mat[nx][ny] = 0;
+
+                    q.add(new int[]{nx, ny, dist + 1});
+                }
+            }
+        }
+
+        // Destination cannot be reached
+        return -1;
+    }
+
+    public static void main(String[] args)
+    {
+
+        int[][] mat = {
+            {1, 1, 1, 1},
+            {1, 1, 0, 1},
+            {1, 1, 1, 1},
+            {1, 1, 0, 0},
+            {1, 0, 0, 1}
+        };
+
+        int[] src = {0, 1};
+        int[] dest = {2, 2};
+
+        Solution obj = new Solution();
+        System.out.println(obj.shortestPath(mat, src, dest));
+    }
+}
+
+Python
+
+from collections import deque
+
+def shortestPath(mat, src, dest):
+
+    n = len(mat)
+    m = len(mat[0])
+
+    # Source or destination is blocked
+    if mat[src[0]][src[1]] == 0 or mat[dest[0]][dest[1]] == 0:
+        return -1
+
+    # Queue stores {cell, distance from source}
+    q = deque()
+
+    q.append((src[0], src[1], 0))
+
+    # Mark source as visited
+    mat[src[0]][src[1]] = 0
+
+    # Four possible directions
+    dx = [-1, 1, 0, 0]
+    dy = [0, 0, -1, 1]
+
+    while q:
+
+        x, y, dist = q.popleft()
+
+        # Destination reached
+        if x == dest[0] and y == dest[1]:
+            return dist
+
+        # Explore all four adjacent cells
+        for i in range(4):
+
+            nx = x + dx[i]
+            ny = y + dy[i]
+
+            if 0 <= nx < n and 0 <= ny < m and mat[nx][ny] == 1:
+
+                # Mark as visited
+                mat[nx][ny] = 0
+
+                q.append((nx, ny, dist + 1))
+
+    # Destination cannot be reached
+    return -1
+
+if __name__ == "__main__":
+
+    mat = [
+        [1, 1, 1, 1],
+        [1, 1, 0, 1],
+        [1, 1, 1, 1],
+        [1, 1, 0, 0],
+        [1, 0, 0, 1]
+    ]
+
+    src = [0, 1]
+    dest = [2, 2]
+
+    print(shortestPath(mat, src, dest))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+    public int shortestPath(int[][] mat, int[] src, int[] dest)
+    {
+
+        int n = mat.Length;
+        int m = mat[0].Length;
+
+        // Source or destination is blocked
+        if (mat[src[0]][src[1]] == 0 || mat[dest[0]][dest[1]] == 0)
+            return -1;
+
+        // Queue stores {cell, distance from source}
+        Queue<int[]> q = new Queue<int[]>();
+
+        q.Enqueue(new int[] { src[0], src[1], 0 });
+
+        // Mark source as visited
+        mat[src[0]][src[1]] = 0;
+
+        // Four possible directions
+        int[] dx = { -1, 1, 0, 0 };
+        int[] dy = { 0, 0, -1, 1 };
+
+        while (q.Count > 0)
+        {
+
+            int[] curr = q.Dequeue();
+
+            int x = curr[0];
+            int y = curr[1];
+            int dist = curr[2];
+
+            // Destination reached
+            if (x == dest[0] && y == dest[1])
+                return dist;
+
+            // Explore all four adjacent cells
+            for (int i = 0; i < 4; i++)
+            {
+
+                int nx = x + dx[i];
+                int ny = y + dy[i];
+
+                if (nx >= 0 && nx < n && ny >= 0 && ny < m && mat[nx][ny] == 1)
+                {
+
+                    // Mark as visited
+                    mat[nx][ny] = 0;
+
+                    q.Enqueue(new int[] { nx, ny, dist + 1 });
+                }
+            }
+        }
+
+        // Destination cannot be reached
+        return -1;
+    }
+
+    public static void Main(string[] args)
+    {
+
+        int[][] mat = new int[][] {
+            new int[] {1, 1, 1, 1},
+            new int[] {1, 1, 0, 1},
+            new int[] {1, 1, 1, 1},
+            new int[] {1, 1, 0, 0},
+            new int[] {1, 0, 0, 1}
+        };
+
+        int[] src = { 0, 1 };
+        int[] dest = { 2, 2 };
+
+        Solution obj = new Solution();
+        Console.WriteLine(obj.shortestPath(mat, src, dest));
+    }
+}
+
+JavaScript
+
+function shortestPath(mat, src, dest)
+{
+
+    let n = mat.length;
+    let m = mat[0].length;
+
+    // Source or destination is blocked
+    if (mat[src[0]][src[1]] === 0 || mat[dest[0]][dest[1]] === 0)
+        return -1;
+
+    // Queue stores {cell, distance from source}
+    let q = [];
+
+    q.push([src[0], src[1], 0]);
+
+    // Mark source as visited
+    mat[src[0]][src[1]] = 0;
+
+    // Four possible directions
+    let dx = [-1, 1, 0, 0];
+    let dy = [0, 0, -1, 1];
+
+    while (q.length > 0)
+    {
+
+        let curr = q.shift();
+
+        let x = curr[0];
+        let y = curr[1];
+        let dist = curr[2];
+
+        // Destination reached
+        if (x === dest[0] && y === dest[1])
+            return dist;
+
+        // Explore all four adjacent cells
+        for (let i = 0; i < 4; i++)
+        {
+
+            let nx = x + dx[i];
+            let ny = y + dy[i];
+
+            if (
+                nx >= 0 && nx < n &&
+                ny >= 0 && ny < m &&
+                mat[nx][ny] === 1
+            )
+            {
+
+                // Mark as visited
+                mat[nx][ny] = 0;
+
+                q.push([nx, ny, dist + 1]);
+            }
+        }
+    }
+
+    // Destination cannot be reached
+    return -1;
+}
+
+// Driver code
+let mat = [
+    [1, 1, 1, 1],
+    [1, 1, 0, 1],
+    [1, 1, 1, 1],
+    [1, 1, 0, 0],
+    [1, 0, 0, 1]
+];
+
+let src = [0, 1];
+let dest = [2, 2];
+
+console.log(shortestPath(mat, src, dest));
+
+Output
+
+3

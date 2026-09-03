@@ -1,0 +1,389 @@
+Source: https://www.geeksforgeeks.org/dsa/length-of-longest-subarray-in-which-elements-greater-than-k-are-more-than-elements-not-greater-than-k/
+Title: Longest Subarray with Majority Greater than K
+Extractor: 2
+
+Given an array arr[] and an integer k , Find the length of the longest subarray in which the number of elements greater than k is more than the number of elements less than or equal to k.
+
+Examples:
+
+> Input: arr[] = [1, 2, 3, 4, 1], k = 2 Output: 3 Explanation: The subarray [2, 3, 4] or [3, 4, 1] satisfy the given condition, and there is no subarray of length 4 or 5 which will hold the given condition, so the answer is 3. Input: arr[] = [6, 5, 3, 4], k = 2 Output: 4 Explanation: In the subarray [6, 5, 3, 4], there are 4 elements > 2 and 0 elements <= 2, so it is the longest subarray.
+
+Table of Content
+
+- [Naive Approach] - Iterating over all Subarrays - O(n^2) Time and O(1) Space
+- [Expected Approach] - Using Hashing - O(n) Time and O(n) Space
+
+### [Naive Approach] - Iterating over all Subarrays - O(n 2 ) Time and O(1) Space
+
+> The idea is to iterate over all subarrays while keeping a count of elements greater than k and count of elements smaller than k. For every element greater than k, increment the counter by 1 and for every element less than or equal to k, decrement the counter by 1. The longest subarray having counter > 0 will be the final answer.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std ;
+
+int longestSubarray(vector<int> &arr, int k) {
+    int n = arr.size() ;
+    int res = 0 ;
+
+   // Traverse through all subarrays
+   for (int i = 0; i < n; i++) {
+
+       int cnt = 0;
+       for (int j = i; j < n; j++) {
+           if(arr[j] > k)
+               cnt++;
+           else
+               cnt--;
+
+           // Update result with the maximum length
+           if(cnt > 0)
+               res = max(res, j - i + 1);
+       }
+   }
+   return res ;
+}
+
+int main() {
+	vector<int> arr = {1, 2, 3, 4, 1};
+    int k = 2;
+
+	cout << longestSubarray(arr, k);
+	return 0;
+}
+
+Java
+
+class GfG {
+    static int longestSubarray(int[] arr, int k) {
+        int n = arr.length;
+        int res = 0;
+
+        // Traverse through all subarrays
+        for (int i = 0; i < n; i++) {
+            int cnt = 0;
+            for (int j = i; j < n; j++) {
+                if (arr[j] > k)
+                    cnt++ ;
+                else
+                    cnt-- ;
+
+                // Update result with the maximum length
+                if (cnt > 0)
+                    res = Math.max(res, j - i + 1) ;
+            }
+        }
+        return res ;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 2, 3, 4, 1} ;
+        int k = 2 ;
+
+        System.out.println(longestSubarray(arr, k));
+    }
+}
+
+Python
+
+def longestSubarray(arr, k):
+    n = len(arr)
+    res = 0
+
+    # Traverse through all subarrays
+    for i in range(n):
+        cnt = 0
+        for j in range(i, n):
+            if arr[j] > k:
+                cnt += 1
+            else:
+                cnt -= 1
+
+            # Update result with the maximum length
+            if cnt > 0:
+                res = max(res, j - i + 1)
+
+    return res
+
+if __name__ == "__main__":
+    arr = [1, 2, 3, 4, 1]
+    k = 2
+    print(longestSubarray(arr, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static int longestSubarray(int[] arr, int k) {
+        int n = arr.Length;
+        int res = 0;
+
+        // Traverse through all subarrays
+        for (int i = 0; i < n; i++) {
+            int cnt = 0;
+            for (int j = i; j < n; j++) {
+                if (arr[j] > k)
+                    cnt++;
+                else
+                    cnt--;
+
+                // Update result with the maximum length
+                if (cnt > 0)
+                    res = Math.Max(res, j - i + 1);
+            }
+        }
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = {1, 2, 3, 4, 1};
+        int k = 2;
+
+        Console.WriteLine(longestSubarray(arr, k));
+    }
+}
+
+JavaScript
+
+function longestSubarray(arr, k) {
+    let n = arr.length;
+    let res = 0;
+
+    // Traverse through all subarrays
+    for (let i = 0; i < n; i++) {
+        let cnt = 0;
+        for (let j = i; j < n; j++) {
+            if (arr[j] > k)
+                cnt++;
+            else
+                cnt--;
+
+            // Update result with the maximum length
+            if (cnt > 0)
+                res = Math.max(res, j - i + 1);
+        }
+    }
+    return res;
+}
+
+// Drive Code
+let arr = [1, 2, 3, 4, 1];
+let k = 2;
+console.log(longestSubarray(arr, k));
+
+Output
+
+3
+
+### [Expected Approach] - Using Hashing - O(n) Time and O(n) Space
+
+> Converting all elements greater than k to +1 and all elements less than or equal to k to -1. Now, the problem reduces to finding the length of the longest subarray with a positive sum in this modified array.
+
+How to find the length of longest subarray with sum > 0?
+
+We use sum - 1 in the map to find an earlier prefix where the balance of good ( >k ) vs bad ( <=k ) elements was just one less than the current balance. This ensures that the subarray between that earlier point and the current index has a net positive count of good elements. If the current `sum` is not positive, we can’t directly say the subarray is valid, so we search for a prefix with sum = sum - 1.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+int longestSubarray(vector<int> &arr, int k)
+{
+    int n = arr.size();
+    unordered_map<int, int> mp;
+    int ans = 0, sum = 0;
+
+    for (int i = 0; i < n; ++i)
+    {
+        // Treat elements <= k as -1, elements > k as +1
+        if (arr[i] <= k) sum-- ;
+        else sum++ ;
+
+        // If overall sum is positive, entire prefix is valid
+        if (sum > 0) ans = i + 1;
+        else
+        {
+            // Check if there was a prefix with sum = current_sum - 1
+            if (mp.find(sum - 1) != mp.end()) {
+                ans = max(ans, i - mp[sum - 1]);
+            }
+        }
+
+        // Store the first occurrence of each prefix sum
+        if (mp.find(sum) == mp.end()) {
+            mp[sum] = i;
+        }
+    }
+
+    return ans;
+}
+
+int main() {
+    vector<int> arr = {1, 2, 3, 4, 1};
+    int k = 2;
+
+    cout << longestSubarray(arr, k);
+}
+
+Java
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class GfG {
+    static int longestSubarray(int[] arr, int k) {
+        int n = arr.length;
+        Map<Integer, Integer> mp = new HashMap<>();
+        int ans = 0, sum = 0;
+
+        for (int i = 0; i < n; i++) {
+            // Treat elements <= k as -1, > k as +1
+            if (arr[i] <= k) sum--;
+            else sum++;
+
+            // If sum is positive, entire prefix is valid
+            if (sum > 0) ans = i + 1;
+            else {
+                // Look for prefix sum = sum - 1
+                if (mp.containsKey(sum - 1)) {
+                    ans = Math.max(ans, i - mp.get(sum - 1));
+                }
+            }
+
+            // Store first occurrence of this sum
+            if (!mp.containsKey(sum)) {
+                mp.put(sum, i);
+            }
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 2, 3, 4, 1};
+        int k = 2;
+        System.out.println(longestSubarray(arr, k));
+    }
+}
+
+Python
+
+def longestSubarray(arr, k):
+    n = len(arr)
+    mp = {}
+    ans = 0
+    sum = 0
+
+    for i in range(n):
+        # Treat elements <= k as -1, > k as +1
+        if arr[i] <= k:
+            sum -= 1
+        else:
+            sum += 1
+
+        # If sum is positive, prefix is valid
+        if sum > 0:
+            ans = i + 1
+        else:
+            # Check if prefix sum sum-1 occurred before
+            if (sum - 1) in mp:
+                ans = max(ans, i - mp[sum - 1])
+
+        # Store first occurrence of this sum
+        if sum not in mp:
+            mp[sum] = i
+
+    return ans
+
+if __name__ == "__main__":
+    arr = [1, 2, 3, 4, 1]
+    k = 2
+    print(longestSubarray(arr, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static int longestSubarray(int[] arr, int k) {
+        int n = arr.Length;
+        Dictionary<int, int> mp = new Dictionary<int, int>();
+        int ans = 0, sum = 0;
+
+        for (int i = 0; i < n; i++) {
+
+            // Treat elements <= k as -1, > k as +1
+            if (arr[i] <= k) sum--;
+            else sum++;
+
+            // If sum is positive, entire prefix is valid
+            if (sum > 0) ans = i + 1;
+            else {
+
+                // Look for prefix sum = sum - 1
+                if (mp.ContainsKey(sum - 1)) {
+                    ans = Math.Max(ans, i - mp[sum - 1]);
+                }
+            }
+
+            // Store first occurrence of this sum
+            if (!mp.ContainsKey(sum)) {
+                mp[sum] = i;
+            }
+        }
+
+        return ans;
+    }
+
+    static void Main(string[] args) {
+        int[] arr = {1, 2, 3, 4, 1};
+        int k = 2;
+        Console.WriteLine(longestSubarray(arr, k));
+    }
+}
+
+JavaScript
+
+function longestSubarray(arr, k) {
+    const n = arr.length;
+    const mp = new Map();
+    let ans = 0, sum = 0;
+
+    for (let i = 0; i < n; i++) {
+        // Treat elements <= k as -1, > k as +1
+        if (arr[i] <= k) sum--;
+        else sum++;
+
+        // If sum is positive, prefix is valid
+        if (sum > 0) ans = i + 1;
+        else {
+            // Check for prefix sum = sum - 1
+            if (mp.has(sum - 1)) {
+                ans = Math.max(ans, i - mp.get(sum - 1));
+            }
+        }
+
+        // Store first occurrence of this sum
+        if (!mp.has(sum)) {
+            mp.set(sum, i);
+        }
+    }
+
+    return ans;
+}
+
+// Driver Code
+const arr = [1, 2, 3, 4, 1];
+const k = 2;
+console.log(longestSubarray(arr, k));
+
+Output
+
+3

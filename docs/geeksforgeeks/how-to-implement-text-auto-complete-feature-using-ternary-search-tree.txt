@@ -1,0 +1,962 @@
+Source: https://www.geeksforgeeks.org/dsa/how-to-implement-text-auto-complete-feature-using-ternary-search-tree/
+Title: How to implement text Auto-complete feature using Ternary Search Tree
+Extractor: 2
+
+Given a set of strings S and a string patt the task is to autocomplete the string patt to strings from S that have patt as a prefix, using a Ternary Search Tree . If no string matches the given prefix, print "None" . Examples:
+
+> Input: S = {"wallstreet", "geeksforgeeks", "wallmart", "walmart", "waldomort", "word"], patt = "wall" Output: wallstreet wallmart Explanation: Only two strings {"wallstreet", "wallmart"} from S matches with the given pattern "wall". Input: S = {"word", "wallstreet", "wall", "wallmart", "walmart", "waldo", "won"}, patt = "geeks" Output: None Explanation: Since none of word of set matches with pattern so empty list will be printed.
+
+Trie Approach: Please refer this article to learn about the implementation using Trie data structure . Ternary Search Tree Approach Follow the steps below to solve the problem:
+
+- Insert all the characters of the strings in S into the Ternary Search Tree based on the following conditions: If the character to be inserted is smaller than current node value, traverse the left subtree. If the character to be inserted is greater than current node value, traverse the right subtree to. If the character to be inserted is same as that of the current node value, traverse the equal subtree if it is not the end of the word. If so, mark the node as the end of the word.
+- Follow a similar approach for extracting suggestions.
+- Traverse the tree to search the given prefix patt following a similar traversal technique as mentioned above.
+- If the given prefix is not found, print "None".
+- If the given prefix is found, traverse the tree from the node where the prefix ends. Traverse the left subtree and generate suggestions followed by the right and equal subtrees from every node .
+- Every time a node is encountered which has the endofWord variable set, it denotes that a suggestion has been obtained. Insert that suggestion into words .
+- Return words after generating all possible suggestions.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ Program to generate
+// autocompleted texts from
+// a given prefix using a
+// Ternary Search Tree
+#include <bits/stdc++.h>
+using namespace std;
+
+// Define the Node of the
+// tree
+struct Node {
+
+    // Store the character
+    // of a string
+    char data;
+    // Store the end of
+    // word
+    int end;
+    // Left Subtree
+    struct Node* left;
+
+    // Equal Subtree
+    struct Node* eq;
+
+    // Right Subtree
+    struct Node* right;
+};
+
+// Function to create a Node
+Node* createNode(char newData)
+{
+    struct Node* newNode = new Node();
+    newNode->data = newData;
+    newNode->end = 0;
+    newNode->left = NULL;
+    newNode->eq = NULL;
+    newNode->right = NULL;
+    return newNode;
+}
+
+// Function to insert a word
+// in the tree
+void insert(Node** root,
+            string word,
+            int pos = 0)
+{
+
+    // Base case
+    if (!(*root))
+        *root = createNode(word[pos]);
+
+    // If the current character is
+    // less than root's data, then
+    // it is inserted in the
+    // left subtree
+
+    if ((*root)->data > word[pos])
+        insert(&((*root)->left), word,
+            pos);
+
+    // If current character is
+    // more than root's data, then
+    // it is inserted in the right
+    // subtree
+
+    else if ((*root)->data < word[pos])
+        insert(&((*root)->right), word,
+            pos);
+
+    // If current character is same
+    // as that of the root's data
+
+    else {
+        // If it is the end of word
+
+        if (pos + 1 == word.size())
+            // Mark it as the
+            // end of word
+            (*root)->end = 1;
+
+        // If it is not the end of
+        // the string, then the
+        // current character is
+        // inserted in the equal subtree
+
+        else
+            insert(&((*root)->eq), word, pos + 1);
+    }
+}
+
+// Function to traverse the ternary search tree
+void traverse(Node* root,
+            vector<string>& ret,
+            char* buff,
+            int depth = 0)
+{
+    // Base case
+    if (!root)
+        return;
+    // The left subtree is
+    // traversed first
+    traverse(root->left, ret,
+            buff, depth);
+
+    // Store the current character
+    buff[depth] = root->data;
+
+    // If the end of the string
+    // is detected, store it in
+    // the final ans
+    if (root->end) {
+        buff[depth + 1] = '\0';
+        ret.push_back(string(buff));
+    }
+
+    // Traverse the equal subtree
+    traverse(root->eq, ret,
+            buff, depth + 1);
+
+    // Traverse the right subtree
+    traverse(root->right, ret,
+            buff, depth);
+}
+
+// Utility function to find
+// all the words
+vector<string> util(Node* root,
+                    string pattern)
+{
+    // Stores the words
+    // to suggest
+    char buffer[1001];
+
+    vector<string> ret;
+
+    traverse(root, ret, buffer);
+
+    if (root->end == 1)
+        ret.push_back(pattern);
+    return ret;
+}
+
+// Function to autocomplete
+// based on the given prefix
+// and return the suggestions
+vector<string> autocomplete(Node* root,
+                            string pattern)
+{
+    vector<string> words;
+    int pos = 0;
+
+    // If pattern is empty
+    // return an empty list
+    if (pattern.empty())
+        return words;
+
+    // Iterating over the characters
+    // of the pattern and find it's
+    // corresponding node in the tree
+
+    while (root && pos < pattern.length()) {
+
+        // If current character is smaller
+        if (root->data > pattern[pos])
+            // Search the left subtree
+            root = root->left;
+
+        // current character is greater
+        else if (root->data < pattern[pos])
+            // Search right subtree
+            root = root->right;
+
+        // If current character is equal
+        else if (root->data == pattern[pos]) {
+
+            // Search equal subtree
+            // since character is found, move to the next character in the pattern
+            root = root->eq;
+            pos++;
+        }
+
+        // If not found
+        else
+            return words;
+
+    }
+
+    // Search for all the words
+    // from the current node
+    words = util(root, pattern);
+
+    return words;
+}
+
+// Function to print
+// suggested words
+
+void print(vector<string> sugg,
+        string pat)
+{
+    for (int i = 0; i < sugg.size();
+        i++)
+        cout << pat << sugg[i].c_str()
+            << "\n";
+}
+
+// Driver Code
+int main()
+{
+    vector<string> S
+        = { "wallstreet", "geeksforgeeks",
+            "wallmart", "walmart",
+            "waldormort", "word" };
+
+    Node* tree = NULL;
+
+    // Insert the words in the
+    // Ternary Search Tree
+    for (string str : S)
+        insert(&tree, str);
+
+    string pat = "wall";
+
+    vector<string> sugg
+        = autocomplete(tree, pat);
+
+    if (sugg.size() == 0)
+        cout << "None";
+
+    else
+        print(sugg, pat);
+
+    return 0;
+}
+
+Python3
+
+# Python Program to generate
+# autocompleted texts from
+# a given prefix using a
+# Ternary Search Tree
+
+# Define the Node of the
+# tree
+class Node:
+
+    # Store the character
+    # of a string
+    def __init__(self, newData):
+        self.data = newData
+        # Store the end of
+        # word
+        self.end = 0
+        # Left Subtree
+        self.left = None
+
+        # Equal Subtree
+        self.eq = None
+
+        # Right Subtree
+        self.right = None
+
+# Function to create a Node
+# Function to create a Node
+def createNode(newData):
+    newNode = Node(newData)
+    newNode.end = 0
+    newNode.left = None
+    newNode.eq = None
+    newNode.right = None
+    return newNode
+
+# Function to insert a word
+# in the tree
+def insert(root, word, pos = 0):
+
+    # Base case
+    if not root:
+        root = createNode(word[pos])
+
+    # If the current character is
+    # less than root's data, then
+    # it is inserted in the
+    # left subtree
+    if root.data > word[pos]:
+        root.left = insert(root.left, word, pos)
+
+    # If current character is
+    # more than root's data, then
+    # it is inserted in the right
+    # subtree
+    elif root.data < word[pos]:
+        root.right = insert(root.right, word, pos)
+
+    # If current character is same
+    # as that of the root's data
+    else:
+        # If it is the end of word
+        if pos + 1 == len(word):
+            # Mark it as the
+            # end of word
+            root.end = 1
+        # If it is not the end of
+        # the string, then the
+        # current character is
+        # inserted in the equal subtree
+        else:
+            root.eq = insert(root.eq, word, pos + 1)
+    return root
+
+# Function to traverse the ternary search tree
+def traverse(root, ret, buff, depth = 0):
+
+    # Base case
+    if not root:
+        return
+
+    # The left subtree is
+    # traversed first
+    traverse(root.left, ret, buff, depth)
+
+    # Store the current character
+    buff[depth] = root.data
+
+    # If the end of the string
+    # is detected, store it in
+    # the final ans
+    if root.end:
+        buff[depth + 1] = '\0'
+        ret.append("".join(buff[:depth + 1]))
+
+    # Traverse the equal subtree
+    traverse(root.eq, ret, buff, depth + 1)
+
+    # Traverse the right subtree
+    traverse(root.right, ret, buff, depth)
+
+# Utility function to find
+# all the words
+def util(root, pattern):
+
+    # Stores the words
+    # to suggest
+    buffer = [None] * 1001
+
+    ret = []
+
+    traverse(root, ret, buffer)
+
+    if root.end == 1:
+        ret.append(pattern)
+    return ret
+
+# Function to autocomplete
+# based on the given prefix
+# and return the suggestions
+def autocomplete(root, pattern):
+    words = []
+    pos = 0
+
+    # If pattern is empty
+    # return an empty list
+    if not pattern:
+        return words
+
+    # Iterating over the characters
+    # of the pattern and find it's
+    # corresponding node in the tree
+    while root and pos < len(pattern):
+        # If current character is smaller
+        if root.data > pattern[pos]:
+            # Search the left subtree
+            root = root.left
+
+        # current character is greater
+        elif root.data < pattern[pos]:
+            # Search right subtree
+            root = root.right
+
+        # If current character is equal
+        elif root.data == pattern[pos]:
+            # Search equal subtree
+            # since character is found, move to the next character in the pattern
+            root = root.eq
+            pos += 1
+
+        # If not found
+        else:
+            return words
+
+    # Search for all the words
+    # from the current node
+    words = util(root, pattern)
+
+    return words
+
+# Function to print
+# suggested words
+def print_suggestions(sugg, pat):
+    for sug in sugg:
+        print(pat + sug)
+
+# Driver Code
+if __name__ == '__main__':
+    S = ['wallstreet', 'geeksforgeeks', 'wallmart', 'walmart', 'waldormort', 'word']
+    tree = None
+
+    # Insert the words in the
+    # Ternary Search Tree
+    for str in S:
+        tree = insert(tree, str)
+
+    pat = 'wall'
+    sugg = autocomplete(tree, pat)
+
+    if not sugg:
+        print('None')
+    else:
+        print_suggestions(sugg, pat)
+
+# This code is contributed by Utkarsh Kumar
+
+C#
+
+// C# Program to generate
+// autocompleted texts from
+// a given prefix using a
+// Ternary Search Tree
+
+using System;
+using System.Collections.Generic;
+
+namespace TernarySearchTree {
+public class TernarySearchTree {
+    // Define the Node of the
+    // tree
+    private class Node {
+        public char Value
+        {
+            get;
+            set;
+        }
+        // Store the end of
+        // word
+        public bool IsEndOfWord
+        {
+            get;
+            set;
+        }
+        // Left Subtree
+        public Node Left
+        {
+            get;
+            set;
+        }
+        // Equal Subtree
+        public Node Middle
+        {
+            get;
+            set;
+        }
+        // Right Subtree
+        public Node Right
+        {
+            get;
+            set;
+        }
+    }
+
+    private Node _root;
+
+    public void Insert(string word)
+    {
+        _root = Insert(_root, word, 0);
+    }
+
+    // Function to insert a word
+    // in the tree
+    private Node Insert(Node node, string word, int index)
+    {
+        // Base case
+        if (node == null) {
+            node = new Node{ Value = word[index] };
+        }
+        // If the current character is
+        // less than root's data, then
+        // it is inserted in the
+        // left subtree
+        if (word[index] < node.Value) {
+            node.Left = Insert(node.Left, word, index);
+        }
+        // If current character is
+        // more than root's data, then
+        // it is inserted in the right
+        // subtree
+        else if (word[index] > node.Value) {
+            node.Right = Insert(node.Right, word, index);
+        }
+        else {
+            if (index < word.Length - 1) {
+                node.Middle
+                    = Insert(node.Middle, word, index + 1);
+            }
+            else {
+                node.IsEndOfWord = true;
+            }
+        }
+
+        return node;
+    }
+
+    public List<string> AutoComplete(string prefix)
+    {
+        var results = new List<string>();
+        var node = FindNode(prefix);
+        // Base case
+        if (node != null) {
+            if (node.IsEndOfWord) {
+                results.Add(prefix);
+            }
+
+            Traverse(node.Middle, prefix, results);
+        }
+
+        return results;
+    }
+
+    private Node FindNode(string prefix)
+    {
+        var node = _root;
+        var index = 0;
+
+        while (node != null && index < prefix.Length) {
+            if (prefix[index] < node.Value) {
+                node = node.Left;
+            }
+            else if (prefix[index] > node.Value) {
+                node = node.Right;
+            }
+            else {
+                index++;
+
+                if (index < prefix.Length) {
+                    node = node.Middle;
+                }
+            }
+        }
+
+        return node;
+    }
+    // Traversing
+    private void Traverse(Node node, string prefix,
+                          List<string> results)
+    {
+        if (node != null) {
+            Traverse(node.Left, prefix, results);
+
+            var newPrefix = prefix + node.Value;
+
+            if (node.IsEndOfWord) {
+                results.Add(newPrefix);
+            }
+
+            Traverse(node.Middle, newPrefix, results);
+            Traverse(node.Right, prefix, results);
+        }
+    }
+}
+// Driver Code
+class Program {
+    static void Main(string[] args)
+    {
+        // Insert the words in the
+        // Ternary Search Tree
+        var t = new TernarySearchTree();
+        t.Insert("wallstreet");
+        t.Insert("geeksforgeeks");
+        t.Insert("wallmart");
+        t.Insert("walmart");
+        t.Insert("waldormort");
+        t.Insert("word");
+
+        var results = t.AutoComplete("wall");
+        foreach(var r in results) { Console.WriteLine(r); }
+    }
+}
+}
+// Code is contributed by Narasinga Nikhil
+
+JavaScript
+
+// JavaScript Program for the above approach
+
+// Define the Node of the tree
+class Node
+{
+
+  // Store the character of a string
+  constructor(newData)
+  {
+    this.data = newData;
+
+    // Store the end of word
+    this.end = 0;
+
+    // Left Subtree
+    this.left = null;
+
+    // Equal Subtree
+    this.eq = null;
+
+    // Right Subtree
+    this.right = null;
+  }
+}
+
+// Function to create a Node
+function createNode(newData) {
+  const newNode = new Node(newData);
+  newNode.end = 0;
+  newNode.left = null;
+  newNode.eq = null;
+  newNode.right = null;
+  return newNode;
+}
+
+// Function to insert a word in the tree
+function insert(root, word, pos = 0)
+{
+
+  // Base case
+  if (!root) {
+    root = createNode(word[pos]);
+  }
+
+  // If the current character is less than root's data,
+  // then it is inserted in the left subtree
+  if (root.data > word[pos]) {
+    root.left = insert(root.left, word, pos);
+  }
+
+  // If current character is more than root's data,
+  // then it is inserted in the right subtree
+  else if (root.data < word[pos]) {
+    root.right = insert(root.right, word, pos);
+  }
+
+  // If current character is same as that of the root's data
+  else
+  {
+
+    // If it is the end of word
+    if (pos + 1 === word.length)
+    {
+
+      // Mark it as the end of word
+      root.end = 1;
+    }
+
+    // If it is not the end of the string, then the
+    // current character is inserted in the equal subtree
+    else {
+      root.eq = insert(root.eq, word, pos + 1);
+    }
+  }
+  return root;
+}
+
+// Function to traverse the ternary search tree
+function traverse(root, ret, buff, depth = 0) {
+  // Base case
+  if (!root) {
+    return;
+  }
+
+  // The left subtree is traversed first
+  traverse(root.left, ret, buff, depth);
+
+  // Store the current character
+  buff[depth] = root.data;
+
+  // If the end of the string is detected, store it in the final ans
+  if (root.end) {
+    buff[depth + 1] = '\0';
+    ret.push(buff.slice(0, depth + 1).join(""));
+  }
+
+  // Traverse the equal subtree
+  traverse(root.eq, ret, buff, depth + 1);
+
+  // Traverse the right subtree
+  traverse(root.right, ret, buff, depth);
+}
+
+// Utility function to find all the words
+function util(root, pattern)
+{
+
+  // Stores the words to suggest
+  const buffer = Array.from({ length: 1001 }, () => null);
+  const ret = [];
+  traverse(root, ret, buffer);
+  if (root.end === 1) {
+    ret.push(pattern);
+  }
+  return ret;
+}
+
+// Function to autocomplete
+// based on the given prefix
+// and return the suggestions
+function autocomplete(root, pattern) {
+  let words = [];
+  let pos = 0;
+
+  // If pattern is empty
+  // return an empty list
+  if (!pattern) {
+    return words;
+  }
+
+  // Iterating over the characters
+  // of the pattern and find it's
+  // corresponding node in the tree
+  while (root && pos < pattern.length)
+  {
+
+    // If current character is smaller
+    if (root.data > pattern[pos])
+    {
+
+      // Search the left subtree
+      root = root.left;
+    }
+
+    // current character is greater
+    else if (root.data < pattern[pos])
+    {
+
+      // Search right subtree
+      root = root.right;
+    }
+
+    // If current character is equal
+    else if (root.data === pattern[pos])
+    {
+
+      // Search equal subtree
+      // since character is found, move to
+      // the next character in the pattern
+      root = root.eq;
+      pos += 1;
+    }
+    // If not found
+    else {
+      return words;
+    }
+  }
+
+  // Search for all the words
+  // from the current node
+  words = util(root, pattern);
+
+  return words;
+}
+
+// Function to print
+// suggested words
+function printSuggestions(sugg, pat) {
+    for (let sug of sugg) {
+        console.log(pat + sug);
+    }
+}
+
+// Driver Code
+let S = ['wallstreet', 'geeksforgeeks', 'wallmart', 'walmart', 'waldormort', 'word'];
+let tree = null;
+
+// Insert the words in the
+// Ternary Search Tree
+for (let str of S) {
+    tree = insert(tree, str);
+}
+
+let pat = 'wall';
+let sugg = autocomplete(tree, pat);
+
+if (!sugg) {
+    console.log('None');
+} else {
+    printSuggestions(sugg, pat);
+}
+
+// This code is contributed by codebraxnzt
+
+Java
+
+// java Program to generate
+// autocompleted texts from
+// a given prefix using a
+// Ternary Search Tree
+
+// The TSTNode class defines the nodes of the tree.
+class TSTNode {
+    char data;
+    boolean isEndOfWord;
+    TSTNode left, middle, right;
+
+    public TSTNode(char data)
+    {
+        this.data = data;
+        this.isEndOfWord = false;
+        this.left = null;
+        this.middle = null;
+        this.right = null;
+    }
+}
+
+// The TernarySearchTree class defines the tree itself
+class TernarySearchTree {
+    TSTNode root;
+
+    public TernarySearchTree() { this.root = null; }
+
+    public void insert(String word)
+    {
+        root = insert(root, word.toCharArray(), 0);
+    }
+
+    // The insert() method inserts a given string into the
+    // tree recursively.
+    private TSTNode insert(TSTNode node, char[] word,
+                           int index)
+    {
+        if (node == null) {
+            node = new TSTNode(word[index]);
+        }
+
+        if (word[index] < node.data) {
+            node.left = insert(node.left, word, index);
+        }
+        else if (word[index] > node.data) {
+            node.right = insert(node.right, word, index);
+        }
+        else {
+            if (index + 1 < word.length) {
+                node.middle
+                    = insert(node.middle, word, index + 1);
+            }
+            else {
+                node.isEndOfWord = true;
+            }
+        }
+        return node;
+    }
+
+    public void autoComplete(String prefix)
+    {
+        TSTNode node = searchPrefix(prefix);
+        if (node == null) {
+            System.out.println(
+                "No words found with given prefix");
+            return;
+        }
+
+        if (node.isEndOfWord) {
+            System.out.println(prefix);
+        }
+
+        traverse(node.middle, new StringBuilder(prefix));
+    }
+    // The searchPrefix() method searches for a given prefix
+    // in the tree.
+    private TSTNode searchPrefix(String prefix)
+    {
+        TSTNode node = root;
+        int i = 0;
+        while (node != null && i < prefix.length()) {
+            if (prefix.charAt(i) < node.data) {
+                node = node.left;
+            }
+            else if (prefix.charAt(i) > node.data) {
+                node = node.right;
+            }
+            else {
+                i++;
+                if (i == prefix.length()) {
+                    return node;
+                }
+                node = node.middle;
+            }
+        }
+        return node;
+    }
+
+    private void traverse(TSTNode node,
+                          StringBuilder prefix)
+    {
+        if (node == null) {
+            return;
+        }
+
+        traverse(node.left, prefix);
+
+        if (node.isEndOfWord) {
+            System.out.println(prefix.toString()
+                               + node.data);
+        }
+
+        traverse(node.middle, prefix.append(node.data));
+        prefix.deleteCharAt(prefix.length() - 1);
+
+        traverse(node.right, prefix);
+    }
+}
+// Driver code
+public class Main {
+    public static void main(String[] args)
+    {
+        String[] words
+            = { "wallstreet", "geeksforgeeks", "wallmart",
+                "walmart",    "waldomort",     "word" };
+        String prefix = "wall";
+
+        TernarySearchTree tst = new TernarySearchTree();
+        for (String word : words) {
+            tst.insert(word);
+        }
+
+        System.out.println("Words with prefix " + prefix
+                           + " are:");
+        tst.autoComplete(prefix);
+    }
+}
+
+Output
+
+wallmart
+wallstreet
+
+Time Complexity: O(L* log N) where L is length of longest word. The space is proportional to the length of the string to be stored. Auxiliary Space: O(N)

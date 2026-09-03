@@ -1,0 +1,529 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-cost-to-process-m-tasks-where-switching-costs/
+Title: Minimum cost to process m tasks where switching costs
+Extractor: 2
+
+Given an array of integers arr[] of size m , representing the different type of tasks that need to be processed. We need to find the minimum processing cost required to assign these tasks to n processor cores.
+
+- Each core can process one task at a time.
+- Assigning a task to a core incurs a cost of 1 if the task type is different from the task currently being processed by that core. If the core is already running the same type of task, the cost is 0.
+- Initially, all cores are free , so the first task assigned to each core costs 1.
+- A core continues processing its current task until a new task is assigned.
+
+Example:
+
+> Input: n = 3, arr = [ 1, 2, 1, 3, 4, 1 ] Output: 4 Explanation: Following are the states and cost required after each task: There are 3 cores — A, B, and C. Assign task 1 to any core (A) → cost 1 unit. States: A - 1, B - None, C - None. Assign task 2 to another core (B) → cost 1 unit. States: A - 1, B - 2, C - None. Assign task 1 again to core A → cost 0 (same task type). States: A - 1, B - 2, C - None. Assign task 3 to the free core (C) → cost 1 unit. States: A - 1, B - 2, C - 3. All cores are now occupied. Assign task 4 to core B, replacing task 2 → cost 1 unit. States: A - 1, B - 4, C - 3. Finally, assign task 1 to core A again → cost 0 (same task type). States: A - 1, B - 4, C - 3. Total cost: 1 + 1 + 0 + 1 + 1 + 0 = 4 units . Input: n = 2, arr = [ 1, 2, 1, 3, 2, 1 ] Output: 4 Explanation: Following are the states and cost required after each task: There are 2 cores — A and B. Assign task 1 to any core (A) → cost 1 unit. States: A - 1, B - None. Assign task 2 to the other core (B) → cost 1 unit. States: A - 1, B - 2. Assign task 1 again to core A → cost 0 (same task type). States: A - 1, B - 2. Assign task 3 to core A, replacing task 1 → cost 1 unit. States: A - 3, B - 2. Assign task 2 again to core B → cost 0 (same task type). States: A - 3, B - 2. Finally, assign task 1 to core A, replacing task 3 → cost 1 unit. States: A - 1, B - 2. Total cost: 1 + 1 + 0 + 1 + 0 + 1 = 4 units .
+
+Approach:
+
+> The idea is to manage which tasks are running on the cores at any given time. The main goal is to process each task while reducing unnecessary core switches, using a greedy approach to decide which task to stop when all cores are occupied.
+
+The problem can be divided into two main cases:
+
+1. If the same type of task is already running in one of the cores: Assign the incoming task to that core — cost = 0 .
+2. If the same type of task is not running in any core: Sub-case 1: If a core is free, assign the task to it — cost = 1 . Sub-case 2: If all cores are occupied: Check if there is any running task that will never appear again — replace it. If all running tasks will reappear later, replace the task that will reoccur last — cost = 1 .
+
+Follow the below given steps to solve the problem:
+
+- Create a 2D array freq[][] of size m * m to store the future frequency of each task at every index.
+- Initialize freqArr[] to track task frequencies from the last position, and fill freq[][] by iterating from the second last task to the first.
+- Use an isRunning[] array to check which tasks are currently running on cores.
+- Track the total cost with a cost variable and count occupied cores with count .
+- Iterate through each task: If the task is already running, continue — cost = 0 . If a core is free, assign the task — cost = 1 . If all cores are occupied: Check for a running task that will never reoccur — replace it and cost = 1 . If all running tasks reoccur, find the one that appears farthest in the future — replace it and cost = 1 .
+- Update isRunning[] after each task assignment.
+
+Below is given the implementation:
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to find the minimum cost
+// required to run m tasks on n cores
+int minCost(int n, vector<int> &arr) {
+    int m = arr.size();
+
+    // to store the frequency of each
+    // task after the current position.
+    vector<vector<int>> freq(m);
+
+    // to store the frequency from last
+    vector<int> freqArr(m + 1, 0);
+    freq[m - 1] = freqArr;
+
+    // fill the freq array from last to first
+    for(int i = m - 2; i >= 0; i--) {
+
+        // add the frequency of the next task
+        freqArr[arr[i + 1]] += 1;
+        freq[i] = freqArr;
+    }
+
+    // to store if task is running
+    vector<int> isRunning(m + 1, 0);
+
+    // to store the total cost
+    int cost = 0;
+
+    // to store the count of occupied cores
+    int count = 0;
+
+    for(int i = 0; i < m; i++) {
+
+        // if task is already running,
+        // continue to the next task
+        if(isRunning[arr[i]]) {
+            continue;
+        }
+
+        // if task is not running, and
+        // there is a free core, use it
+        // and increment the cost
+        else if(count < n) {
+            isRunning[arr[i]] = 1;
+            count++;
+            cost++;
+        }
+
+        // if all cores are occupied
+        else {
+
+            // check if there is a task that is
+            // running and will not occur in future
+            bool flag = false;
+            for(int j = 1; j <= m; j++) {
+                if(isRunning[j] && freq[i][j] == 0) {
+
+                    // stop the task and start the
+                    // current task in that core
+                    isRunning[j] = 0;
+                    isRunning[arr[i]] = 1;
+                    cost++;
+                    flag = true;
+                    break;
+                }
+            }
+
+            // if there is no such task is found
+            if(!flag) {
+
+                // find the farthest position where one of
+                // the currently running tasks will happen
+                int ind = m;
+                for(int j = m - 1; j > i; j--) {
+                    if(isRunning[arr[j]]) {
+                        ind = j;
+                        break;
+                    }
+                }
+
+                // stop that task and start the
+                // current task in that core
+                isRunning[arr[ind]] = 0;
+                isRunning[arr[i]] = 1;
+                cost++;
+            }
+        }
+    }
+    return cost;
+}
+
+int main() {
+    vector<int> arr = {1, 2, 1, 3, 4, 1};
+    int n = 3;
+    cout << minCost(n, arr);
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+    // Function to find the minimum cost
+    // required to run m tasks on n cores
+    static int minCost(int n, int[] arr) {
+        int m = arr.length;
+
+        // to store the frequency of each
+        // task after the current position.
+        int[][] freq = new int[m][m + 1];
+
+        // to store the frequency from last
+        int[] freqArr = new int[m + 1];
+        freq[m - 1] = freqArr.clone();
+
+        // fill the freq array from last to first
+        for (int i = m - 2; i >= 0; i--) {
+
+            // add the frequency of the next task
+            freqArr[arr[i + 1]] += 1;
+            freq[i] = freqArr.clone();
+        }
+
+        // to store if task is running
+        int[] isRunning = new int[m + 1];
+
+        // to store the total cost
+        int cost = 0;
+
+        // to store the count of occupied cores
+        int count = 0;
+
+        for (int i = 0; i < m; i++) {
+
+            // if task is already running,
+            // continue to the next task
+            if (isRunning[arr[i]] == 1) {
+                continue;
+            }
+
+            // if task is not running, and
+            // there is a free core, use it
+            // and increment the cost
+            else if (count < n) {
+                isRunning[arr[i]] = 1;
+                count++;
+                cost++;
+            }
+
+            // if all cores are occupied
+            else {
+
+                // check if there is a task that is
+                // running and will not occur in future
+                boolean flag = false;
+                for (int j = 1; j <= m; j++) {
+                    if (isRunning[j] == 1 && freq[i][j] == 0) {
+
+                        // stop the task and start the
+                        // current task in that core
+                        isRunning[j] = 0;
+                        isRunning[arr[i]] = 1;
+                        cost++;
+                        flag = true;
+                        break;
+                    }
+                }
+
+                // if there is no such task is found
+                if (!flag) {
+
+                    // find the farthest position where one of
+                    // the currently running tasks will happen
+                    int ind = m;
+                    for (int j = m - 1; j > i; j--) {
+                        if (isRunning[arr[j]] == 1) {
+                            ind = j;
+                            break;
+                        }
+                    }
+
+                    // stop that task and start the
+                    // current task in that core
+                    isRunning[arr[ind]] = 0;
+                    isRunning[arr[i]] = 1;
+                    cost++;
+                }
+            }
+        }
+        return cost;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 2, 1, 3, 4, 1};
+        int n = 3;
+        System.out.println(minCost(n, arr));
+    }
+}
+
+Python
+
+# Function to find the minimum cost
+# required to run m tasks on n cores
+def minCost(n, arr):
+    m = len(arr)
+
+    # to store the frequency of each
+    # task after the current position.
+    freq = [[0] * (m + 1) for _ in range(m)]
+
+    # to store the frequency from last
+    freqArr = [0] * (m + 1)
+    freq[m - 1] = freqArr[:]
+
+    # fill the freq array from last to first
+    for i in range(m - 2, -1, -1):
+
+        # add the frequency of the next task
+        freqArr[arr[i + 1]] += 1
+        freq[i] = freqArr[:]
+
+    # to store if task is running
+    isRunning = [0] * (m + 1)
+
+    # to store the total cost
+    cost = 0
+
+    # to store the count of occupied cores
+    count = 0
+
+    for i in range(m):
+
+        # if task is already running,
+        # continue to the next task
+        if isRunning[arr[i]]:
+            continue
+
+        # if task is not running, and
+        # there is a free core, use it
+        # and increment the cost
+        elif count < n:
+            isRunning[arr[i]] = 1
+            count += 1
+            cost += 1
+
+        # if all cores are occupied
+        else:
+
+            # check if there is a task that is
+            # running and will not occur in future
+            flag = False
+            for j in range(1, m + 1):
+                if isRunning[j] and freq[i][j] == 0:
+
+                    # stop the task and start the
+                    # current task in that core
+                    isRunning[j] = 0
+                    isRunning[arr[i]] = 1
+                    cost += 1
+                    flag = True
+                    break
+
+            # if there is no such task is found
+            if not flag:
+
+                # find the farthest position where one of
+                # the currently running tasks will happen
+                ind = m
+                for j in range(m - 1, i, -1):
+                    if isRunning[arr[j]]:
+                        ind = j
+                        break
+
+                # stop that task and start the
+                # current task in that core
+                isRunning[arr[ind]] = 0
+                isRunning[arr[i]] = 1
+                cost += 1
+
+    return cost
+
+if __name__ == "__main__":
+    arr = [1, 2, 1, 3, 4, 1]
+    n = 3
+    print(minCost(n, arr))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to find the minimum cost
+    // required to run m tasks on n cores
+    static int minCost(int n, List<int> arr) {
+        int m = arr.Count;
+
+        // to store the frequency of each
+        // task after the current position.
+        List<int[]> freq = new List<int[]>();
+
+        // to store the frequency from last
+        int[] freqArr = new int[m + 1];
+        freq.Add((int[])freqArr.Clone());
+
+        // fill the freq array from last to first
+        for (int i = m - 2; i >= 0; i--) {
+            freqArr[arr[i + 1]] += 1;
+            freq.Insert(0, (int[])freqArr.Clone());
+        }
+
+        // to store if task is running
+        int[] isRunning = new int[m + 1];
+
+        // to store the total cost
+        int cost = 0;
+
+        // to store the count of occupied cores
+        int count = 0;
+
+        for (int i = 0; i < m; i++) {
+
+            // if task is already running,
+            // continue to the next task
+            if (isRunning[arr[i]] == 1) {
+                continue;
+            }
+
+            // if task is not running, and
+            // there is a free core, use it
+            // and increment the cost
+            else if (count < n) {
+                isRunning[arr[i]] = 1;
+                count++;
+                cost++;
+            }
+
+            // if all cores are occupied
+            else {
+
+                // check if there is a task that is
+                // running and will not occur in future
+                bool flag = false;
+                for (int j = 1; j <= m; j++) {
+                    if (isRunning[j] == 1 && freq[i][j] == 0) {
+
+                        // stop the task and start the
+                        // current task in that core
+                        isRunning[j] = 0;
+                        isRunning[arr[i]] = 1;
+                        cost++;
+                        flag = true;
+                        break;
+                    }
+                }
+
+                // if there is no such task is found
+                if (!flag) {
+
+                    // find the farthest position where one of
+                    // the currently running tasks will happen
+                    int ind = m;
+                    for (int j = m - 1; j > i; j--) {
+                        if (isRunning[arr[j]] == 1) {
+                            ind = j;
+                            break;
+                        }
+                    }
+
+                    // stop that task and start the
+                    // current task in that core
+                    isRunning[arr[ind]] = 0;
+                    isRunning[arr[i]] = 1;
+                    cost++;
+                }
+            }
+        }
+        return cost;
+    }
+
+    static void Main() {
+        List<int> arr = new List<int> {1, 2, 1, 3, 4, 1};
+        int n = 3;
+        Console.WriteLine(minCost(n, arr));
+    }
+}
+
+JavaScript
+
+// Function to find the minimum cost
+// required to run m tasks on n cores.
+function minCost(n, arr) {
+    let m = arr.length;
+
+    // to store the frequency of each
+    // task after the current position.
+    let freq = new Array(m);
+
+    // to store the frequency from last
+    let freqArr = new Array(m + 1).fill(0);
+    freq[m - 1] = freqArr.slice();
+
+    // fill the freq array from last to first
+    for (let i = m - 2; i >= 0; i--) {
+        freqArr[arr[i + 1]] += 1;
+        freq[i] = freqArr.slice();
+    }
+
+    // to store if task is running
+    let isRunning = new Array(m + 1).fill(0);
+
+    // to store the total cost
+    let cost = 0;
+
+    // to store the count of occupied cores
+    let count = 0;
+
+    for (let i = 0; i < m; i++) {
+
+        // if task is already running,
+        // continue to the next task
+        if (isRunning[arr[i]] !== 0) {
+            continue;
+        }
+
+        // if task is not running, and
+        // there is a free core, use it
+        // and increment the cost
+        else if (count < n) {
+            isRunning[arr[i]] = 1;
+            count++;
+            cost++;
+        }
+
+        // if all cores are occupied
+        else {
+
+            // check if there is a task that is
+            // running and will not occur in future
+            let flag = false;
+            for (let j = 1; j <= m; j++) {
+                if (isRunning[j] !== 0 && freq[i][j] === 0) {
+
+                    // stop the task and start the
+                    // current task in that core
+                    isRunning[j] = 0;
+                    isRunning[arr[i]] = 1;
+                    cost++;
+                    flag = true;
+                    break;
+                }
+            }
+
+            // if there is no such task is found
+            if (!flag) {
+
+                // find the farthest position where one of
+                // the currently running tasks will happen
+                let ind = m;
+                for (let j = m - 1; j > i; j--) {
+                    if (isRunning[arr[j]] !== 0) {
+                        ind = j;
+                        break;
+                    }
+                }
+
+                // stop that task and start the
+                // current task in that core
+                isRunning[arr[ind]] = 0;
+                isRunning[arr[i]] = 1;
+                cost++;
+            }
+        }
+    }
+    return cost;
+}
+
+// Driver Code
+let arr = [1, 2, 1, 3, 4, 1];
+let n = 3;
+console.log(minCost(n, arr));
+
+Output
+
+4
+
+Time Complexity: O(m ^ 2), in the worst case, we are required to iterate through all the tasks for each of the m tasks, thus the overall time complexity will be O(m * m). Space Complexity: O(m ^ 2), to create the 2d array freq[][] of order m * m.

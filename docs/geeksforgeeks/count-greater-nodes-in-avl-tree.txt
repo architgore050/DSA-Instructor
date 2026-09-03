@@ -1,0 +1,1705 @@
+Source: https://www.geeksforgeeks.org/dsa/count-greater-nodes-in-avl-tree/
+Title: Count greater nodes in AVL tree
+Extractor: 2
+
+In this article we will see that how to calculate number of elements which are greater than given value in AVL tree . Examples:
+
+Input : x = 5
+        Root of below AVL tree
+           9
+          /  \
+         1    10
+        /  \     \
+       0    5     11
+      /    /  \
+     -1   2    6
+Output : 4
+
+Explanation: there are 4 values which are
+greater than 5 in AVL tree which are 6, 9,
+10 and 11.
+
+Prerequisites :
+
+- Insertion in AVL tree
+- Deletion in AVL tree
+
+1. We maintain an extra field ' desc ' for storing the number of descendant nodes for every node. Like for above example node having value 5 has a desc field value equal to 2.
+2. for calculating the number of nodes which are greater than given value we simply traverse the tree. While traversing three cases can occur: Case- x(given value) is greater than the value of current node. So, we go to the right child of the current node. Case- x is lesser than the value of current node. we increase the current count by number of successors of the right child of the current node and then again add two to the current count(one for the current node and one for the right child.). In this step first, we make sure that right child exists or not. Then we move to left child of current node. Case- x is equal to the value of current node. In this case we add the value of desc field of right child of current node to current count and then add one to it (for counting right child). Also in this case we see that right child exists or not. Calculating values of desc field
+
+- Insertion - When we insert a node we increment one to child field of every predecessor of the new node. In the leftRotate and rightRotate functions we make appropriate changes in the value of child fields of nodes.
+- Deletion - When we delete a node then we decrement one from every predecessor node of deleted node. Again, In the leftRotate and rightRotate functions we make appropriate changes in the value of child fields of nodes.
+
+Implementation:
+
+C
+
+// C program to find number of elements
+// greater than a given value in AVL
+#include <stdio.h>
+#include <stdlib.h>
+struct Node {
+    int key;
+    struct Node* left, *right;
+    int height;
+    int desc;
+};
+
+int height(struct Node* N)
+{
+    if (N == NULL)
+        return 0;
+    return N->height;
+}
+
+// A utility function to get maximum
+// of two integers
+int max(int a, int b)
+{
+    return (a > b) ? a : b;
+}
+
+struct Node* newNode(int key)
+{
+    struct Node* node = (struct Node*)
+                    malloc(sizeof(struct Node));
+    node->key = key;
+    node->left = NULL;
+    node->right = NULL;
+    node->height = 1; // initially added at leaf
+    node->desc = 0;
+    return (node);
+}
+
+// A utility function to right rotate subtree
+// rooted with y
+struct Node* rightRotate(struct Node* y)
+{
+    struct Node* x = y->left;
+    struct Node* T2 = x->right;
+
+    // Perform rotation
+    x->right = y;
+    y->left = T2;
+
+    // Update heights
+    y->height = max(height(y->left), height(y->right)) + 1;
+    x->height = max(height(x->left), height(x->right)) + 1;
+
+    // calculate the number of children of x and y
+    // which are changed due to rotation.
+    int val = (T2 != NULL) ? T2->desc : -1;
+    y->desc = y->desc - (x->desc + 1) + (val + 1);
+    x->desc = x->desc - (val + 1) + (y->desc + 1);
+
+    return x;
+}
+
+// A utility function to left rotate subtree rooted
+// with x
+struct Node* leftRotate(struct Node* x)
+{
+    struct Node* y = x->right;
+    struct Node* T2 = y->left;
+
+    // Perform rotation
+    y->left = x;
+    x->right = T2;
+
+    // Update heights
+    x->height = max(height(x->left), height(x->right)) + 1;
+    y->height = max(height(y->left), height(y->right)) + 1;
+
+    // calculate the number of children of x and y
+    // which are changed due to rotation.
+    int val = (T2 != NULL) ? T2->desc : -1;
+    x->desc = x->desc - (y->desc + 1) + (val + 1);
+    y->desc = y->desc - (val + 1) + (x->desc + 1);
+
+    return y;
+}
+
+// Get Balance factor of node N
+int getBalance(struct Node* N)
+{
+    if (N == NULL)
+        return 0;
+    return height(N->left) - height(N->right);
+}
+
+struct Node* insert(struct Node* node, int key)
+{
+    /* 1. Perform the normal BST rotation */
+    if (node == NULL)
+        return (newNode(key));
+
+    if (key < node->key) {
+        node->left = insert(node->left, key);
+        node->desc++;
+    }
+
+    else if (key > node->key) {
+        node->right = insert(node->right, key);
+        node->desc++;
+    }
+
+    else // Equal keys not allowed
+        return node;
+
+    /* 2. Update height of this ancestor node */
+    node->height = 1 + max(height(node->left),
+                        height(node->right));
+
+    /* 3. Get the balance factor of this ancestor
+        node to check whether this node became
+        unbalanced */
+    int balance = getBalance(node);
+
+    // If node becomes unbalanced, 4 cases arise
+
+    // Left Left Case
+    if (balance > 1 && key < node->left->key)
+        return rightRotate(node);
+
+    // Right Right Case
+    if (balance < -1 && key > node->right->key)
+        return leftRotate(node);
+
+    // Left Right Case
+    if (balance > 1 && key > node->left->key) {
+        node->left = leftRotate(node->left);
+        return rightRotate(node);
+    }
+
+    // Right Left Case
+    if (balance < -1 && key < node->right->key) {
+        node->right = rightRotate(node->right);
+        return leftRotate(node);
+    }
+
+    /* return the (unchanged) node pointer */
+    return node;
+}
+
+/* Given a non-empty binary search tree, return the
+node with minimum key value found in that tree.
+Note that the entire tree does not need to be
+searched. */
+struct Node* minValueNode(struct Node* node)
+{
+    struct Node* current = node;
+
+    /* loop down to find the leftmost leaf */
+    while (current->left != NULL)
+        current = current->left;
+
+    return current;
+}
+
+// Recursive function to delete a node with given key
+// from subtree with given root. It returns root of
+// the modified subtree.
+struct Node* deleteNode(struct Node* root, int key)
+{
+    // STEP 1: PERFORM STANDARD BST DELETE
+
+    if (root == NULL)
+        return root;
+
+    // If the key to be deleted is smaller than the
+    // root's key, then it lies in left subtree
+    if (key < root->key) {
+        root->left = deleteNode(root->left, key);
+        root->desc = root->desc - 1;
+    }
+
+    // If the key to be deleted is greater than the
+    // root's key, then it lies in right subtree
+    else if (key > root->key) {
+        root->right = deleteNode(root->right, key);
+        root->desc = root->desc - 1;
+    }
+
+    // if key is same as root's key, then This is
+    // the node to be deleted
+    else {
+        // node with only one child or no child
+        if ((root->left == NULL) || (root->right == NULL)) {
+
+            struct Node* temp = root->left ?
+                                root->left : root->right;
+
+            // No child case
+            if (temp == NULL) {
+                temp = root;
+                root = NULL;
+                free(temp);
+
+            }
+            else // One child case
+            {
+                *root = *temp; // Copy the contents of
+                            // the non-empty child
+                free(temp);
+            }
+        } else {
+            // node with two children: Get the inorder
+            // successor (smallest in the right subtree)
+            struct Node* temp = minValueNode(root->right);
+
+            // Copy the inorder successor's data to this node
+            root->key = temp->key;
+
+            // Delete the inorder successor
+            root->right = deleteNode(root->right, temp->key);
+            root->desc = root->desc - 1;
+        }
+    }
+
+    // If the tree had only one node then return
+    if (root == NULL)
+        return root;
+
+    // STEP 2: UPDATE HEIGHT OF THE CURRENT NODE
+    root->height = 1 + max(height(root->left),
+                        height(root->right));
+
+    // STEP 3: GET THE BALANCE FACTOR OF THIS NODE (to
+    // check whether this node became unbalanced)
+    int balance = getBalance(root);
+
+    // If this node becomes unbalanced, 4 cases arise
+
+    // Left Left Case
+    if (balance > 1 && getBalance(root->left) >= 0)
+        return rightRotate(root);
+
+    // Left Right Case
+    if (balance > 1 && getBalance(root->left) < 0) {
+        root->left = leftRotate(root->left);
+        return rightRotate(root);
+    }
+
+    // Right Right Case
+    if (balance < -1 && getBalance(root->right) <= 0)
+        return leftRotate(root);
+
+    // Right Left Case
+    if (balance < -1 && getBalance(root->right) > 0) {
+        root->right = rightRotate(root->right);
+        return leftRotate(root);
+    }
+
+    return root;
+}
+
+// A utility function to print preorder traversal of
+// the tree.
+void preOrder(struct Node* root)
+{
+    if (root != NULL) {
+        printf("%d ", root->key);
+        preOrder(root->left);
+        preOrder(root->right);
+    }
+}
+
+// Returns count of
+int CountGreater(struct Node* root, int x)
+{
+    int res = 0;
+
+    // Search for x. While searching, keep
+    // updating res if x is greater than
+    // current node.
+    while (root != NULL) {
+
+        int desc = (root->right != NULL) ?
+                root->right->desc : -1;
+
+        if (root->key > x) {
+            res = res + desc + 1 + 1;
+            root = root->left;
+        } else if (root->key < x)
+            root = root->right;
+        else {
+            res = res + desc + 1;
+            break;
+        }
+    }
+    return res;
+}
+
+/* Driver program to test above function*/
+int main()
+{
+    struct Node* root = NULL;
+    root = insert(root, 9);
+    root = insert(root, 5);
+    root = insert(root, 10);
+    root = insert(root, 0);
+    root = insert(root, 6);
+    root = insert(root, 11);
+    root = insert(root, -1);
+    root = insert(root, 1);
+    root = insert(root, 2);
+
+    /* The constructed AVL Tree would be
+        9
+        / \
+        1 10
+    / \     \
+    0 5     11
+    / / \
+    -1 2 6 */
+
+    printf("Preorder traversal of the constructed AVL "
+        "tree is \n");
+    preOrder(root);
+    printf("\nNumber of elements greater than 9 are %d",
+        CountGreater(root, 9));
+
+    root = deleteNode(root, 10);
+
+    /* The AVL Tree after deletion of 10
+        1
+        / \
+        0 9
+    / / \
+    -1 5 11
+        / \
+        2 6 */
+
+    printf("\nPreorder traversal after deletion of 10 \n");
+    preOrder(root);
+    printf("\nNumber of elements greater than 9 are %d",
+        CountGreater(root, 9));
+    return 0;
+}
+
+C++
+
+// C++ program to find number of elements
+// greater than a given value in AVL
+#include <bits/stdc++.h>
+using namespace std;
+struct Node {
+    int key;
+    struct Node *left, *right;
+    int height;
+    int desc;
+};
+
+int height(struct Node* N)
+{
+    if (N == NULL)
+        return 0;
+    return N->height;
+}
+
+// A utility function to get maximum
+// of two integers
+int max(int a, int b) { return (a > b) ? a : b; }
+
+struct Node* newNode(int key)
+{
+    struct Node* node
+        = (struct Node*)malloc(sizeof(struct Node));
+    node->key = key;
+    node->left = NULL;
+    node->right = NULL;
+    node->height = 1; // initially added at leaf
+    node->desc = 0;
+    return (node);
+}
+
+// A utility function to right rotate subtree
+// rooted with y
+struct Node* rightRotate(struct Node* y)
+{
+    struct Node* x = y->left;
+    struct Node* T2 = x->right;
+
+    // Perform rotation
+    x->right = y;
+    y->left = T2;
+
+    // Update heights
+    y->height = max(height(y->left), height(y->right)) + 1;
+    x->height = max(height(x->left), height(x->right)) + 1;
+
+    // calculate the number of children of x and y
+    // which are changed due to rotation.
+    int val = (T2 != NULL) ? T2->desc : -1;
+    y->desc = y->desc - (x->desc + 1) + (val + 1);
+    x->desc = x->desc - (val + 1) + (y->desc + 1);
+
+    return x;
+}
+
+// A utility function to left rotate subtree rooted
+// with x
+struct Node* leftRotate(struct Node* x)
+{
+    struct Node* y = x->right;
+    struct Node* T2 = y->left;
+
+    // Perform rotation
+    y->left = x;
+    x->right = T2;
+
+    // Update heights
+    x->height = max(height(x->left), height(x->right)) + 1;
+    y->height = max(height(y->left), height(y->right)) + 1;
+
+    // calculate the number of children of x and y
+    // which are changed due to rotation.
+    int val = (T2 != NULL) ? T2->desc : -1;
+    x->desc = x->desc - (y->desc + 1) + (val + 1);
+    y->desc = y->desc - (val + 1) + (x->desc + 1);
+
+    return y;
+}
+
+// Get Balance factor of node N
+int getBalance(struct Node* N)
+{
+    if (N == NULL)
+        return 0;
+    return height(N->left) - height(N->right);
+}
+
+struct Node* insert(struct Node* node, int key)
+{
+    /* 1. Perform the normal BST rotation */
+    if (node == NULL)
+        return (newNode(key));
+
+    if (key < node->key) {
+        node->left = insert(node->left, key);
+        node->desc++;
+    }
+
+    else if (key > node->key) {
+        node->right = insert(node->right, key);
+        node->desc++;
+    }
+
+    else // Equal keys not allowed
+        return node;
+
+    /* 2. Update height of this ancestor node */
+    node->height
+        = 1 + max(height(node->left), height(node->right));
+
+    /* 3. Get the balance factor of this ancestor
+            node to check whether this node became
+            unbalanced */
+    int balance = getBalance(node);
+
+    // If node becomes unbalanced, 4 cases arise
+
+    // Left Left Case
+    if (balance > 1 && key < node->left->key)
+        return rightRotate(node);
+
+    // Right Right Case
+    if (balance < -1 && key > node->right->key)
+        return leftRotate(node);
+
+    // Left Right Case
+    if (balance > 1 && key > node->left->key) {
+        node->left = leftRotate(node->left);
+        return rightRotate(node);
+    }
+    /* return the (unchanged) node pointer */
+    return node;
+}
+
+/* Given a non-empty binary search tree, return the
+node with minimum key value found in that tree.
+Note that the entire tree does not need to be
+searched. */
+struct Node* minValueNode(struct Node* node)
+{
+    struct Node* current = node;
+
+    /* loop down to find the leftmost leaf */
+    while (current->left != NULL)
+        current = current->left;
+
+    return current;
+}
+
+// Recursive function to delete a node with given key
+// from subtree with given root. It returns root of
+// the modified subtree.
+struct Node* deleteNode(struct Node* root, int key)
+{
+    // STEP 1: PERFORM STANDARD BST DELETE
+
+    if (root == NULL)
+        return root;
+
+    // If the key to be deleted is smaller than the
+    // root's key, then it lies in left subtree
+    if (key < root->key) {
+        root->left = deleteNode(root->left, key);
+        root->desc = root->desc - 1;
+    }
+
+    // If the key to be deleted is greater than the
+    // root's key, then it lies in right subtree
+    else if (key > root->key) {
+        root->right = deleteNode(root->right, key);
+        root->desc = root->desc - 1;
+    }
+
+    // if key is same as root's key, then This is
+    // the node to be deleted
+    else {
+        // node with only one child or no child
+        if ((root->left == NULL) || (root->right == NULL)) {
+
+            struct Node* temp
+                = root->left ? root->left : root->right;
+
+            // No child case
+            if (temp == NULL) {
+                temp = root;
+                root = NULL;
+                free(temp);
+            }
+            else // One child case
+            {
+                *root = *temp; // Copy the contents of
+                               // the non-empty child
+                free(temp);
+            }
+        }
+        else {
+            // node with two children: Get the inorder
+            // successor (smallest in the right subtree)
+            struct Node* temp = minValueNode(root->right);
+
+            // Copy the inorder successor's data to this
+            // node
+            root->key = temp->key;
+
+            // Delete the inorder successor
+            root->right
+                = deleteNode(root->right, temp->key);
+            root->desc = root->desc - 1;
+        }
+    }
+
+    // If the tree had only one node then return
+    if (root == NULL)
+        return root;
+
+    // STEP 2: UPDATE HEIGHT OF THE CURRENT NODE
+    root->height
+        = 1 + max(height(root->left), height(root->right));
+
+    // STEP 3: GET THE BALANCE FACTOR OF THIS NODE (to
+    // check whether this node became unbalanced)
+    int balance = getBalance(root);
+
+    // If this node becomes unbalanced, 4 cases arise
+
+    // Left Left Case
+    if (balance > 1 && getBalance(root->left) >= 0)
+        return rightRotate(root);
+
+    // Left Right Case
+    if (balance > 1 && getBalance(root->left) < 0) {
+        root->left = leftRotate(root->left);
+        return rightRotate(root);
+    }
+
+    // Right Right Case
+    if (balance < -1 && getBalance(root->right) <= 0)
+        return leftRotate(root);
+
+    // Right Left Case
+    if (balance < -1 && getBalance(root->right) > 0) {
+        root->right = rightRotate(root->right);
+        return leftRotate(root);
+    }
+
+    return root;
+}
+
+// A utility function to print preorder traversal of
+// the tree.
+void preOrder(struct Node* root)
+{
+    if (root != NULL) {
+        printf("%d ", root->key);
+        preOrder(root->left);
+        preOrder(root->right);
+    }
+}
+
+// Returns count of
+int CountGreater(struct Node* root, int x)
+{
+    int res = 0;
+
+    // Search for x. While searching, keep
+    // updating res if x is greater than
+    // current node.
+    while (root != NULL) {
+
+        int desc = (root->right != NULL) ? root->right->desc
+                                         : -1;
+
+        if (root->key > x) {
+            res = res + desc + 1 + 1;
+            root = root->left;
+        }
+        else if (root->key < x)
+            root = root->right;
+        else {
+            res = res + desc + 1;
+            break;
+        }
+    }
+    return res;
+}
+
+/* Driver program to test above function*/
+int main()
+{
+    struct Node* root = NULL;
+    root = insert(root, 9);
+    root = insert(root, 5);
+    root = insert(root, 10);
+    root = insert(root, 0);
+    root = insert(root, 6);
+    root = insert(root, 11);
+    root = insert(root, -1);
+    root = insert(root, 1);
+    root = insert(root, 2);
+
+    /* The constructed AVL Tree would be
+        9
+        / \
+        1 10
+    / \     \
+    0 5     11
+    / / \
+    -1 2 6 */
+
+    cout << "Preorder traversal of the constructed AVL "
+            "tree is \n";
+    preOrder(root);
+    cout << "\nNumber of elements greater than 9 are ",
+        cout << CountGreater(root, 9);
+
+    root = deleteNode(root, 10);
+
+    /* The AVL Tree after deletion of 10
+        1
+        / \
+        0 9
+    / / \
+    -1 5 11
+        / \
+        2 6 */
+
+    cout << "\nPreorder traversal after deletion of 10"
+         << endl;
+    preOrder(root);
+    cout << "\nNumber of elements greater than 9 are ";
+    cout << CountGreater(root, 9);
+    return 0;
+}
+
+//This code is contributed by NarasingaNikhil
+
+C#
+
+using System;
+
+public class Node {
+    public int key;
+    public Node left, right;
+    public int height;
+    public int desc;
+
+    public Node(int key) {
+        this.key = key;
+        left = null;
+        right = null;
+        height = 1;
+        desc = 0;
+    }
+}
+
+public class Program {
+    public static int height(Node N)
+    {
+        if (N == null)
+            return 0;
+        return N.height;
+    }
+    public static int max(int a, int b) {
+        return (a > b) ? a : b;
+    }
+
+    public static Node newNode(int key) {
+        Node node = new Node(key);
+        return node;
+    }
+    public static Node rightRotate(Node y) {
+        Node x = y.left;
+        Node T2 = x.right;
+
+        x.right = y;
+        y.left = T2;
+        y.height = max(height(y.left), height(y.right)) + 1;
+        x.height = max(height(x.left), height(x.right)) + 1;
+        int val = (T2 != null) ? T2.desc : -1;
+        y.desc = y.desc - (x.desc + 1) + (val + 1);
+        x.desc = x.desc - (val + 1) + (y.desc + 1);
+
+        return x;
+    }
+    public static Node leftRotate(Node x) {
+        Node y = x.right;
+        Node T2 = y.left;
+        y.left = x;
+        x.right = T2;
+        x.height = max(height(x.left), height(x.right)) + 1;
+        y.height = max(height(y.left), height(y.right)) + 1;
+        int val = (T2 != null) ? T2.desc : -1;
+        x.desc = x.desc - (y.desc + 1) + (val + 1);
+        y.desc = y.desc - (val + 1) + (x.desc + 1);
+
+        return y;
+    }
+    public static int getBalance(Node N) {
+        if (N == null)
+            return 0;
+        return height(N.left) - height(N.right);
+    }
+
+    public static Node insert(Node node, int key) {
+        if (node == null)
+            return (newNode(key));
+
+        if (key < node.key) {
+            node.left = insert(node.left, key);
+            node.desc++;
+        }
+
+        else if (key > node.key) {
+            node.right = insert(node.right, key);
+            node.desc++;
+        }
+
+        else
+            return node;
+        node.height
+            = 1 + max(height(node.left), height(node.right));
+
+        int balance = getBalance(node);
+        if (balance > 1 && key < node.left.key)
+            return rightRotate(node);
+        if (balance < -1 && key > node.right.key)
+            return leftRotate(node);
+        if (balance > 1 && key > node.left.key) {
+            node.left = leftRotate(node.left);
+            return rightRotate(node);
+        }
+        return node;
+    }
+
+    public static Node minValueNode(Node node) {
+        Node current = node;
+        while (current.left != null)
+            current = current.left;
+
+        return current;
+    }
+    public static Node deleteNode(Node root, int key) {
+
+        if (root == null)
+            return root;
+        if (key < root.key) {
+            root.left = deleteNode(root.left, key);
+            root.desc = root.desc - 1;
+        }
+        else if (key > root.key) {
+            root.right = deleteNode(root.right, key);
+            root.desc = root.desc - 1;
+        }
+        else {
+            if ((root.left == null) || (root.right == null))
+            {
+
+                Node temp
+                    = root.left ?? root.right;
+                if (temp == null) {
+                    temp = root;
+                    root = null;
+                }
+                else
+                {
+                    root = temp;
+                }
+            }
+            else {
+                Node temp = minValueNode(root.right);
+                root.key = temp.key;
+                root.right
+                    = deleteNode(root.right, temp.key);
+                root.desc = root.desc - 1;
+            }
+        }
+        if (root == null)
+            return root;
+        root.height
+            = 1 + max(height(root.left), height(root.right));
+        int balance = getBalance(root);
+        if (balance > 1 && getBalance(root.left) >= 0)
+            return rightRotate(root);
+        if (balance > 1 && getBalance(root.left) < 0) {
+            root.left = leftRotate(root.left);
+            return rightRotate(root);
+        }
+        if (balance < -1 && getBalance(root.right) <= 0)
+            return leftRotate(root);
+        if (balance < -1 && getBalance(root.right) > 0) {
+            root.right = rightRotate(root.right);
+            return leftRotate(root);
+        }
+
+        return root;
+    }
+    public static void preOrder(Node root) {
+        if (root != null) {
+            Console.Write("{0} ", root.key);
+            preOrder(root.left);
+            preOrder(root.right);
+        }
+    }
+    public static int CountGreater(Node root, int x) {
+        int res = 0;
+        while (root != null) {
+
+            int desc = (root.right != null) ? root.right.desc
+                                            : -1;
+
+            if (root.key > x) {
+                res = res + desc + 1 + 1;
+                root = root.left;
+            }
+            else if (root.key < x)
+                root = root.right;
+            else {
+                res = res + desc + 1;
+                break;
+            }
+        }
+        return res;
+    }
+
+    public static void Main() {
+        Node root = null;
+        root = insert(root, 9);
+        root = insert(root, 5);
+        root = insert(root, 10);
+        root = insert(root, 0);
+        root = insert(root, 6);
+        root = insert(root, 11);
+        root = insert(root, -1);
+        root = insert(root, 1);
+        root = insert(root, 2);
+
+       /* The constructed AVL Tree would be
+        9
+        / \
+        1 10
+    / \     \
+    0 5     11
+    / / \
+    -1 2 6 */
+
+        Console.WriteLine("Preorder traversal of the constructed AVL " +
+            "tree is");
+        preOrder(root);
+        Console.WriteLine("\nNumber of elements greater than 9 are {0}",
+            CountGreater(root, 9));
+
+        root = deleteNode(root, 10);
+       /* The AVL Tree after deletion of 10
+        1
+        / \
+        0 9
+    / / \
+    -1 5 11
+        / \
+        2 6 */
+        Console.WriteLine("\nPreorder traversal after deletion of 10");
+        preOrder(root);
+        Console.WriteLine("\nNumber of elements greater than 9 are {0}",
+            CountGreater(root, 9));
+    }
+}
+
+//This code is contributed by NarasingaNikhil
+
+Python
+
+# C++ program to find number of elements
+# greater than a given value in AVL
+
+# Python code
+
+class Node:
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+        self.height = 1
+        self.desc = 0
+
+def height(N):
+    if N is None:
+        return 0
+    return N.height
+
+# A utility function to get maximum of two integers
+
+def max(a, b):
+    if a > b:
+        return a
+    return b
+
+def newNode(key):
+    node = Node(key)
+    node.left = None
+    node.right = None
+    node.height = 1  # initially added at leaf
+    node.desc = 0
+    return node
+
+ # A utility function to right rotate subtree rooted with y
+
+def rightRotate(y):
+    x = y.left
+    T2 = x.right
+    # Perform rotation
+    x.right = y
+    y.left = T2
+
+    # Update heights
+    y.height = max(height(y.left), height(y.right)) + 1
+    x.height = max(height(x.left), height(x.right)) + 1
+    # calculate the number of children of x and y
+    # which are changed due to rotation.
+    val = -1
+    if T2 is not None:
+        val = T2.desc
+    y.desc = y.desc - (x.desc + 1) + (val + 1)
+    x.desc = x.desc - (val + 1) + (y.desc + 1)
+
+    return x
+    # A utility function to left rotate subtree rooted with x
+
+def leftRotate(x):
+    y = x.right
+    T2 = y.left
+    # Perform rotation
+    y.left = x
+    x.right = T2
+    # Update heights
+    x.height = max(height(x.left), height(x.right)) + 1
+    y.height = max(height(y.left), height(y.right)) + 1
+    # calculate the number of children of x and y
+    # which are changed due to rotation.
+    val = -1
+    if T2 is not None:
+        val = T2.desc
+    x.desc = x.desc - (y.desc + 1) + (val + 1)
+    y.desc = y.desc - (val + 1) + (x.desc + 1)
+
+    return y
+    # Get Balance factor of node N
+
+def getBalance(N):
+    if N is None:
+        return 0
+    return height(N.left) - height(N.right)
+
+def insert(root, key):
+    # 1. Perform the normal BST rotation
+    if root is None:
+        return newNode(key)
+
+    if key < root.key:
+        root.left = insert(root.left, key)
+        root.desc += 1
+
+    elif key > root.key:
+        root.right = insert(root.right, key)
+        root.desc += 1
+
+    else:  # Equal keys not allowed
+        return root
+    # 2. Update height of this ancestor node
+    root.height = max(height(root.left), height(root.right)) + 1
+# 3. Get the balance factor of this ancestor node to check whether this node became unbalanced
+    balance = getBalance(root)
+    # If node becomes unbalanced, 4 cases arise Left Left Case
+    if balance > 1 and key < root.left.key:
+        return rightRotate(root)
+    # Right Right Case
+    if balance < -1 and key > root.right.key:
+        return leftRotate(root)
+    # Left Right Case
+    if balance > 1 and key > root.left.key:
+        root.left = leftRotate(root.left)
+        return rightRotate(root)
+    # return the (unchanged) node pointer
+    return root
+
+    # Given a non-empty binary search tree, return the
+# node with minimum key value found in that tree.
+# Note that the entire tree does not need to be searched
+
+def minValueNode(node):
+    current = node
+    # loop down to find the leftmost leaf
+    while current.left is not None:
+        current = current.left
+
+    return current
+# Recursive function to delete a node with given key
+# from subtree with given root. It returns root of
+# the modified subtree.
+
+def deleteNode(root, key):
+    if root is None:
+        return root
+
+    if key < root.key:
+        root.left = deleteNode(root.left, key)
+        root.desc -= 1
+
+    elif key > root.key:
+        root.right = deleteNode(root.right, key)
+        root.desc -= 1
+
+    else:
+        if root.left is None:
+            temp = root.right
+            root = None
+            return temp
+
+        elif root.right is None:
+            temp = root.left
+            root = None
+            return temp
+
+        temp = minValueNode(root.right)
+        root.key = temp.key
+        root.right = deleteNode(root.right, temp.key)
+        root.desc -= 1
+
+    if root is None:
+        return root
+
+    root.height = max(height(root.left), height(root.right)) + 1
+
+    balance = getBalance(root)
+
+    if balance > 1 and getBalance(root.left) >= 0:
+        return rightRotate(root)
+
+    if balance > 1 and getBalance(root.left) < 0:
+        root.left = leftRotate(root.left)
+        return rightRotate(root)
+
+    if balance < -1 and getBalance(root.right) <= 0:
+        return leftRotate(root)
+
+    if balance < -1 and getBalance(root.right) > 0:
+        root.right = rightRotate(root.right)
+        return leftRotate(root)
+
+    return root
+
+def preOrder(root):
+    if root is not None:
+        print(root.key)
+        preOrder(root.left)
+        preOrder(root.right)
+
+def CountGreater(root, x):
+    res = 0
+
+    while root is not None:
+        desc = -1
+        if root.right is not None:
+            desc = root.right.desc
+
+        if root.key > x:
+            res = res + desc + 1 + 1
+            root = root.left
+        elif root.key < x:
+            root = root.right
+        else:
+            res = res + desc + 1
+            break
+
+    return res
+
+    # Driver program to test above function
+root = None
+root = insert(root, 9)
+root = insert(root, 5)
+root = insert(root, 10)
+root = insert(root, 0)
+root = insert(root, 6)
+root = insert(root, 11)
+root = insert(root, -1)
+root = insert(root, 1)
+root = insert(root, 2)
+# The constructed AVL Tree would be
+#     9
+#    / \
+#     1 10
+#    / \     \
+#    0 5     11
+#    / / \
+#  -1  2  6
+print("Preorder traversal of the constructed AVL tree is")
+preOrder(root)
+
+print("Number of elements greater than 9 are")
+print(CountGreater(root, 9))
+
+root = deleteNode(root, 10)
+
+# The AVL Tree after deletion of 10
+#        1
+#      0 9
+#     / / \
+#   -1 5 11
+#        / \
+#        2 6
+
+print("Preorder traversal after deletion of 10")
+preOrder(root)
+print('Number of elements greater than 9 are')
+print(CountGreater(root, 9))
+
+# This code is contributed by NarasingaNikhil
+
+Java
+
+// java program to find number of elements
+// greater than a given value in AVL
+class Node {
+    int val, height;
+    Node left, right;
+
+    Node(int val)
+    {
+        this.val = val;
+        this.height = 1;
+    }
+}
+
+class AVLTree {
+    Node root;
+
+    int getHeight(Node node)
+    {
+        if (node == null)
+            return 0;
+        return node.height;
+    }
+    // checking balance factor
+    int getBalance(Node node)
+    {
+        if (node == null)
+            return 0;
+        return getHeight(node.left) - getHeight(node.right);
+    }
+    // RR Right rotate
+    Node rightRotate(Node y)
+    {
+        Node x = y.left;
+        Node T2 = x.right;
+
+        x.right = y;
+        y.left = T2;
+
+        y.height = Math.max(getHeight(y.left),
+                            getHeight(y.right))
+                   + 1;
+        x.height = Math.max(getHeight(x.left),
+                            getHeight(x.right))
+                   + 1;
+
+        return x;
+    }
+    // ll leftrotate
+    Node leftRotate(Node x)
+    {
+        Node y = x.right;
+        Node T2 = y.left;
+
+        y.left = x;
+        x.right = T2;
+
+        x.height = Math.max(getHeight(x.left),
+                            getHeight(x.right))
+                   + 1;
+        y.height = Math.max(getHeight(y.left),
+                            getHeight(y.right))
+                   + 1;
+
+        return y;
+    }
+    // inserting
+    Node insert(Node node, int val)
+    {
+        if (node == null)
+            return new Node(val);
+
+        if (val < node.val) {
+            node.left = insert(node.left, val);
+        }
+        else if (val > node.val) {
+            node.right = insert(node.right, val);
+        }
+        else {
+            return node;
+        }
+
+        node.height = Math.max(getHeight(node.left),
+                               getHeight(node.right))
+                      + 1;
+
+        int balance = getBalance(node);
+
+        if (balance > 1 && val < node.left.val) {
+            return rightRotate(node);
+        }
+
+        if (balance < -1 && val > node.right.val) {
+            return leftRotate(node);
+        }
+
+        if (balance > 1 && val > node.left.val) {
+            node.left = leftRotate(node.left);
+            return rightRotate(node);
+        }
+
+        if (balance < -1 && val < node.right.val) {
+            node.right = rightRotate(node.right);
+            return leftRotate(node);
+        }
+
+        return node;
+    }
+
+    Node minValueNode(Node node)
+    {
+        Node current = node;
+        while (current.left != null) {
+            current = current.left;
+        }
+        return current;
+    }
+    // deleting a node
+    Node delete(Node node, int val)
+    {
+        if (node == null)
+            return node;
+
+        if (val < node.val) {
+            node.left = delete(node.left, val);
+        }
+        else if (val > node.val) {
+            node.right = delete(node.right, val);
+        }
+        else {
+            if (node.left == null || node.right == null) {
+                Node temp = null;
+                if (temp == node.left) {
+                    temp = node.right;
+                }
+                else {
+                    temp = node.left;
+                }
+                if (temp == null) {
+                    temp = node;
+                    node = null;
+                }
+                else {
+                    node = temp;
+                }
+            }
+            else {
+                Node temp = minValueNode(node.right);
+                node.val = temp.val;
+                node.right = delete(node.right, temp.val);
+            }
+        }
+
+        if (node == null)
+            return node;
+        node.height = Math.max(getHeight(node.left),
+                               getHeight(node.right))
+                      + 1;
+
+        int balance = getBalance(node);
+
+        if (balance > 1 && getBalance(node.left) >= 0) {
+            return rightRotate(node);
+        }
+
+        if (balance > 1 && getBalance(node.left) < 0) {
+            node.left = leftRotate(node.left);
+            return rightRotate(node);
+        }
+
+        if (balance < -1 && getBalance(node.right) <= 0) {
+            return leftRotate(node);
+        }
+
+        if (balance < -1 && getBalance(node.right) > 0) {
+            node.right = rightRotate(node.right);
+            return leftRotate(node);
+        }
+
+        return node;
+    }
+
+    void preOrder(Node node)
+    {
+        if (node == null)
+            return;
+        System.out.print(node.val + " ");
+        preOrder(node.left);
+        preOrder(node.right);
+    }
+    // The countGreaterNodes method takes a node and a value
+    // as input and returns
+    // the number of nodes
+    // greater than the given value in the subtree rooted at
+    // the input node
+    int countGreaterNodes(Node node, int val)
+    {
+        if (node == null)
+            return 0;
+        int count = countGreaterNodes(node.left, val)
+                    + countGreaterNodes(node.right, val);
+        if (node.val > val)
+            count++;
+        return count;
+    }
+}
+
+// driver code
+public class Main {
+    public static void main(String[] args)
+    {
+        AVLTree tree = new AVLTree();
+
+        tree.root = tree.insert(tree.root, 9);
+        tree.root = tree.insert(tree.root, 5);
+        tree.root = tree.insert(tree.root, 10);
+        tree.root = tree.insert(tree.root, 0);
+        tree.root = tree.insert(tree.root, 6);
+        tree.root = tree.insert(tree.root, 11);
+        tree.root = tree.insert(tree.root, -1);
+        tree.root = tree.insert(tree.root, 1);
+        tree.root = tree.insert(tree.root, 2);
+        /* The constructed AVL Tree would be
+        9
+        / \
+        1 10
+    / \     \
+    0 5     11
+    / / \
+    -1 2 6 */
+
+        System.out.print(
+            "Preorder traversal of the constructed AVL tree is \n");
+        tree.preOrder(tree.root);
+        System.out.println();
+
+        int countBefore
+            = tree.countGreaterNodes(tree.root, 9);
+        System.out.println(
+            "Number of elements greater than 9 are "
+            + countBefore);
+
+        tree.root = tree.delete(tree.root, 10);
+        /* The AVL Tree after deletion of 10
+        1
+        / \
+        0 9
+    / / \
+    -1 5 11
+        / \
+        2 6 */
+
+        System.out.print(
+            "Preorder traversal after deletion of 10 \n");
+        tree.preOrder(tree.root);
+        System.out.println();
+
+        int countAfter
+            = tree.countGreaterNodes(tree.root, 9);
+        System.out.println(
+            "Number of elements greater than 9 are "
+            + countAfter);
+    }
+}
+
+// This code is contributed by NarasingaNikhil
+
+JavaScript
+
+class Node {
+  constructor(value) {
+    this.value = value;
+    this.left = null;
+    this.right = null;
+    this.height = 1;
+  }
+}
+
+class AVLTree {
+  constructor() {
+    this.root = null;
+  }
+
+  // helper function to get height of the node
+  getHeight(node) {
+    if (!node) return 0;
+    return node.height;
+  }
+
+  // helper function to get the balance factor of the node
+  getBalance(node) {
+    if (!node) return 0;
+    return this.getHeight(node.left) - this.getHeight(node.right);
+  }
+
+  // helper function to perform left rotation at the given node
+  leftRotate(node) {
+    const rightChild = node.right;
+    const leftOfRightChild = rightChild.left;
+
+    // Perform rotation
+    rightChild.left = node;
+    node.right = leftOfRightChild;
+
+    // Update heights
+    node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
+    rightChild.height = Math.max(this.getHeight(rightChild.left), this.getHeight(rightChild.right)) + 1;
+
+    // Return new root
+    return rightChild;
+  }
+
+  // helper function to perform right rotation at the given node
+  rightRotate(node) {
+    const leftChild = node.left;
+    const rightOfLeftChild = leftChild.right;
+
+    // Perform rotation
+    leftChild.right = node;
+    node.left = rightOfLeftChild;
+
+    // Update heights
+    node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
+    leftChild.height = Math.max(this.getHeight(leftChild.left), this.getHeight(leftChild.right)) + 1;
+
+    // Return new root
+    return leftChild;
+  }
+
+  // helper function to insert the value in the AVL tree
+  insert(node, value) {
+    // perform normal BST insertion
+    if (!node) return new Node(value);
+
+    if (value < node.value) node.left = this.insert(node.left, value);
+    else node.right = this.insert(node.right, value);
+
+    // update height of the ancestor node
+    node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
+
+    // check the balance factor and rotate if required
+    const balance = this.getBalance(node);
+
+    if (balance > 1 && value < node.left.value) {
+      // left-left case
+      return this.rightRotate(node);
+    }
+
+    if (balance > 1 && value > node.left.value) {
+      // left-right case
+      node.left = this.leftRotate(node.left);
+      return this.rightRotate(node);
+    }
+
+    if (balance < -1 && value > node.right.value) {
+      // right-right case
+      return this.leftRotate(node);
+    }
+
+    if (balance < -1 && value < node.right.value) {
+      // right-left case
+      node.right = this.rightRotate(node.right);
+      return this.leftRotate(node);
+    }
+
+    return node;
+  }
+
+  // helper function to delete the node with the given value from the AVL tree
+  delete(node, value) {
+    // perform normal BST deletion
+    if (!node) return null;
+
+    if (value < node.value) node.left = this.delete(node.left, value);
+    else if (value > node.value) node.right = this.delete(node.right, value);
+    else {
+      // node to be deleted found
+      if (!node.left && !node.right) {
+        // no child case
+        node = null;
+      } else if (!node.left || !node.right  ) {
+    // one child case
+    node = node.left || node.right;
+  } else {
+    // two child case
+    // find the inorder successor of the node to be deleted
+    let temp = node.right;
+    while (temp.left) temp = temp.left;
+
+    // copy the inorder successor's value to the node to be deleted
+    node.value = temp.value;
+
+    // delete the inorder successor
+    node.right = this.delete(node.right, temp.value);
+  }
+}
+
+// if the tree had only one node
+if (!node) return node;
+
+// update height of the current node
+node.height = Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
+
+// check the balance factor and rotate if required
+const balance = this.getBalance(node);
+
+if (balance > 1 && this.getBalance(node.left) >= 0) {
+  // left-left case
+  return this.rightRotate(node);
+}
+
+if (balance > 1 && this.getBalance(node.left) < 0) {
+  // left-right case
+  node.left = this.leftRotate(node.left);
+  return this.rightRotate(node);
+}
+
+if (balance < -1 && this.getBalance(node.right) <= 0) {
+  // right-right case
+  return this.leftRotate(node);
+}
+
+if (balance < -1 && this.getBalance(node.right) > 0) {
+  // right-left case
+  node.right = this.rightRotate(node.right);
+  return this.leftRotate(node);
+}
+
+return node;
+}
+
+// helper function to traverse the AVL tree in preorder and count nodes greater than a given value
+preorderCountGreater(node, value, count) {
+if (!node) return count;
+if (node.value > value) count++;
+
+count = this.preorderCountGreater(node.left, value, count);
+count = this.preorderCountGreater(node.right, value, count);
+
+return count;
+}
+
+// public function to insert the value in the AVL tree
+insertValue(value) {
+this.root = this.insert(this.root, value);
+}
+
+// public function to delete the node with the given value from the AVL tree
+deleteValue(value) {
+this.root = this.delete(this.root, value);
+}
+
+// public function to count nodes greater than a given value in the AVL tree
+countGreaterNodes(value) {
+return this.preorderCountGreater(this.root, value, 0);
+}
+
+// public function to traverse the AVL tree in preorder and return the result as a string
+preorderTraversal() {
+let result = "";
+const preorder = (node) => {
+if (!node) return;
+result += node.value + " ";
+preorder(node.left);
+preorder(node.right);
+};
+preorder(this.root);
+return result.trim();
+}
+}
+
+// create the AVL tree and insert the given values
+const tree = new AVLTree();
+[9, 5, 10, 0, 6, 11, -1, 1, 2].forEach((value) => tree.insertValue(value));
+
+// print the preorder traversal of the AVL tree
+console.log("Preorder traversal of the constructed AVL tree is", tree.preorderTraversal());
+
+// count nodes greater than 9 in the AVL tree
+const count1 = tree.countGreaterNodes(9);
+console.log("Number of elements greater than 9 are", count1);
+
+// delete 10 from the AVL tree
+tree.deleteValue(10);
+
+// print the preorder traversal of the AVL tree after deleting 10
+console.log("Preorder traversal after deletion of 10 \n",tree.preorderTraversal());
+
+// count nodes greater than 9 in the AVL tree after deleting 10
+const count2 = tree.countGreaterNodes(9);
+console.log("Number of elements greater than 9 are", count2);
+//This code is contributed by NarasingaNikhil
+
+Output
+
+Preorder traversal of the constructed AVL tree is
+9 1 0 -1 5 2 6 10 11
+Number of elements greater than 9 are 2
+Preorder traversal after deletion of 10
+1 0 -1 9 5 2 6 11
+Number of elements greater than 9 are 1
+
+Time Complexity: Time complexity of CountGreater function is O(log(n)) where n is number of nodes in avl tree, as we are basically searching for the given number in avl which takes O(log(n)) time.

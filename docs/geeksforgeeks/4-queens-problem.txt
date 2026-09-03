@@ -1,0 +1,569 @@
+Source: https://www.geeksforgeeks.org/dsa/4-queens-problem/
+Title: 4 Queens Problem
+Extractor: 2
+
+The 4 Queens Problem consists in placing four queens on a 4 x 4 chessboard so that no two queens attack each other. That is, no two queens are allowed to be placed on the same row , the same column or the same diagonal .
+
+We are going to look for the solution for n=4 on a 4 x 4 chessboard in this article.
+
+## 4 Queens Problem using Backtracking Algorithm :
+
+> Place each queen one by one in different rows, starting from the topmost row. While placing a queen in a row, check for clashes with already placed queens. For any column, if there is no clash then mark this row and column as part of the solution by placing the queen. In case, if no safe cell found due to clashes, then backtrack (i.e, undo the placement of recent queen) and return false.
+
+### Illustration of 4 Queens Solution:
+
+Step 0: Initialize a 4x4 board.
+
+Step 1:
+
+- Put our first Queen ( Q1 ) in the (0,0) cell .
+- ' x ' represents the cells which is not safe i.e. they are under attack by the Queen ( Q1 ).
+- After this move to the next row [ 0 -> 1 ].
+
+Step 2:
+
+- Put our next Queen ( Q2 ) in the (1,2) cell .
+- After this move to the next row [ 1 -> 2 ].
+
+Step 3:
+
+- At row 2 there is no cell which are safe to place Queen ( Q3 ) .
+- So, backtrack and remove queen Q2 queen from cell ( 1, 2 ) .
+
+Step 4:
+
+- There is still a safe cell in the row 1 i.e. cell ( 1, 3 ).
+- Put Queen ( Q2 ) at cell ( 1, 3).
+
+Step 5:
+
+- Put queen ( Q3 ) at cell ( 2, 1 ).
+
+Step 6:
+
+- There is no any cell to place Queen ( Q4 ) at row 3.
+- Backtrack and remove Queen ( Q3 ) from row 2.
+- Again there is no other safe cell in row 2, So backtrack again and remove queen ( Q2 ) from row 1.
+- Queen ( Q1 ) will be remove from cell (0,0) and move to next safe cell i.e. (0 , 1) .
+
+Step 7:
+
+- Place Queen Q1 at cell (0 , 1), and move to next row.
+
+Step 8:
+
+- Place Queen Q2 at cell (1 , 3) , and move to next row.
+
+Step 9:
+
+- Place Queen Q3 at cell (2 , 0) , and move to next row.
+
+Step 10:
+
+- Place Queen Q4 at cell (3 , 2) , and move to next row.
+- This is one possible configuration of solution
+
+Follow the steps below to implement the idea:
+
+- Make a recursive function that takes the state of the board and the current row number as its parameter.
+- Start in the topmost row.
+- If all queens are placed, return true
+- For every row. Do the following for each column in current row. If the queen can be placed safely in this column Then mark this [row, column] as part of the solution and recursively check if placing queen here leads to a solution. If placing the queen in [row, column] leads to a solution, return true . If placing queen doesn’t lead to a solution then unmark this [row, column] and track back and try other columns.
+- If all columns have been tried and nothing worked, return false to trigger backtracking.
+
+Below is the implementation of the above Backtracking solution:
+
+C++
+
+// C++ program to solve N Queen Problem using backtracking
+
+#include <bits/stdc++.h>
+using namespace std;
+#define N 4
+
+// ld is an array where its indices indicate row-col+N-1
+// (N-1) is for shifting the difference to store negative
+// indices
+int ld[30] = { 0 };
+
+// rd is an array where its indices indicate row+col
+// and used to check whether a queen can be placed on
+// right diagonal or not
+int rd[30] = { 0 };
+
+// Column array where its indices indicates column and
+// used to check whether a queen can be placed in that
+// row or not*/
+int cl[30] = { 0 };
+
+// A utility function to print solution
+void printSolution(int board[N][N])
+{
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++)
+            cout << " " << (board[i][j]==1?'Q':'.') << " ";
+        cout << endl;
+    }
+}
+
+// A recursive utility function to solve N
+// Queen problem
+bool solveNQUtil(int board[N][N], int col)
+{
+    // Base case: If all queens are placed
+    // then return true
+    if (col >= N)
+        return true;
+
+    // Consider this column and try placing
+    // this queen in all rows one by one
+    for (int i = 0; i < N; i++) {
+
+        // Check if the queen can be placed on
+        // board[i][col]
+
+        // To check if a queen can be placed on
+        // board[row][col].We just need to check
+        // ld[row-col+n-1] and rd[row+coln] where
+        // ld and rd are for left and right
+        // diagonal respectively
+        if ((ld[i - col + N - 1] != 1 && rd[i + col] != 1)
+            && cl[i] != 1) {
+
+            // Place this queen in board[i][col]
+            board[i][col] = 1;
+            ld[i - col + N - 1] = rd[i + col] = cl[i] = 1;
+
+            // Recur to place rest of the queens
+            if (solveNQUtil(board, col + 1))
+                return true;
+
+            // If placing queen in board[i][col]
+            // doesn't lead to a solution, then
+            // remove queen from board[i][col]
+            board[i][col] = 0; // BACKTRACK
+            ld[i - col + N - 1] = rd[i + col] = cl[i] = 0;
+        }
+    }
+
+    // If the queen cannot be placed in any row in
+    // this column col then return false
+    return false;
+}
+
+// This function solves the N Queen problem using
+// Backtracking. It mainly uses solveNQUtil() to
+// solve the problem. It returns false if queens
+// cannot be placed, otherwise, return true and
+// prints placement of queens in the form of 1s.
+// Please note that there may be more than one
+// solutions, this function prints one of the
+// feasible solutions.
+bool solveNQ()
+{
+    int board[N][N] = { { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 } };
+
+    if (solveNQUtil(board, 0) == false) {
+        cout << "Solution does not exist";
+        return false;
+    }
+
+    printSolution(board);
+    return true;
+}
+
+// Driver program to test above function
+int main()
+{
+    solveNQ();
+    return 0;
+}
+
+// This code is contributed by Aditya Kumar (adityakumar129)
+
+Java
+
+// Java program to solve N Queen Problem using backtracking
+
+import java.util.*;
+
+class GFG {
+    static int N = 4;
+
+    // ld is an array where its indices indicate row-col+N-1
+    // (N-1) is for shifting the difference to store
+    // negative indices
+    static int[] ld = new int[30];
+
+    // rd is an array where its indices indicate row+col
+    // and used to check whether a queen can be placed on
+    // right diagonal or not
+    static int[] rd = new int[30];
+
+    // Column array where its indices indicates column and
+    // used to check whether a queen can be placed in that
+    // row or not
+    static int[] cl = new int[30];
+
+    // A utility function to print solution
+    static void printSolution(int board[][])
+    {
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++)
+              if(board[i][j]==1)
+                System.out.printf(" Q ");
+                else
+                System.out.printf(" . ");
+            System.out.printf("\n");
+        }
+    }
+
+    // A recursive utility function to solve N
+    // Queen problem
+    static boolean solveNQUtil(int board[][], int col)
+    {
+        // Base case: If all queens are placed
+        // then return true
+        if (col >= N)
+            return true;
+
+        // Consider this column and try placing
+        // this queen in all rows one by one
+        for (int i = 0; i < N; i++) {
+            // Check if the queen can be placed on
+            // board[i][col]
+
+            // To check if a queen can be placed on
+            // board[row][col].We just need to check
+            // ld[row-col+n-1] and rd[row+coln] where
+            // ld and rd are for left and right
+            // diagonal respectively
+            if ((ld[i - col + N - 1] != 1
+                && rd[i + col] != 1)
+                && cl[i] != 1) {
+                // Place this queen in board[i][col]
+                board[i][col] = 1;
+                ld[i - col + N - 1] = rd[i + col] = cl[i]
+                    = 1;
+
+                // Recur to place rest of the queens
+                if (solveNQUtil(board, col + 1))
+                    return true;
+
+                // If placing queen in board[i][col]
+                // doesn't lead to a solution, then
+                // remove queen from board[i][col]
+                board[i][col] = 0; // BACKTRACK
+                ld[i - col + N - 1] = rd[i + col] = cl[i]
+                    = 0;
+            }
+        }
+
+        // If the queen cannot be placed in any row in
+        // this column col then return false
+        return false;
+    }
+
+    // This function solves the N Queen problem using
+    // Backtracking. It mainly uses solveNQUtil() to
+    // solve the problem. It returns false if queens
+    // cannot be placed, otherwise, return true and
+    // prints placement of queens in the form of 1s.
+    // Please note that there may be more than one
+    // solutions, this function prints one of the
+    // feasible solutions.
+    static boolean solveNQ()
+    {
+        int board[][] = { { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 } };
+
+        if (solveNQUtil(board, 0) == false) {
+            System.out.printf("Solution does not exist");
+            return false;
+        }
+
+        printSolution(board);
+        return true;
+    }
+
+    // Driver Code
+    public static void main(String[] args)
+    {
+        solveNQ();
+    }
+}
+
+// This code is contributed by Princi Singh
+
+Python3
+
+N = 4
+
+# ld is an array where its indices indicate row-col+N-1
+ld = [0] * 30
+
+# rd is an array where its indices indicate row+col
+rd = [0] * 30
+
+# Column array where its indices indicate column
+cl = [0] * 30
+
+# A utility function to print solution
+
+def printSolution(board):
+    for i in range(N):
+        for j in range(N):
+            print(" Q " if board[i][j] == 1 else " . ", end="")
+        print()
+
+# A recursive utility function to solve N Queen problem
+
+def solveNQUtil(board, col):
+    # Base case: If all queens are placed, return true
+    if col >= N:
+        return True
+
+    # Consider this column and try placing this queen in all rows one by one
+    for i in range(N):
+        # Check if the queen can be placed on board[i][col]
+        if (ld[i - col + N - 1] != 1 and rd[i + col] != 1) and cl[i] != 1:
+            # Place this queen in board[i][col]
+            board[i][col] = 1
+            ld[i - col + N - 1] = rd[i + col] = cl[i] = 1
+
+            # Recur to place the rest of the queens
+            if solveNQUtil(board, col + 1):
+                return True
+
+            # If placing the queen in board[i][col] doesn't lead to a solution, backtrack
+            board[i][col] = 0  # BACKTRACK
+            ld[i - col + N - 1] = rd[i + col] = cl[i] = 0
+
+    # If the queen cannot be placed in any row in this column col, return false
+    return False
+
+# This function solves the N Queen problem using Backtracking.
+# It mainly uses solveNQUtil() to solve the problem.
+# It returns false if queens cannot be placed, otherwise,
+# returns true and prints placement of queens in the form of 1s.
+# Please note that there may be more than one solution;
+# this function prints one of the feasible solutions.
+
+def solveNQ():
+    board = [[0 for _ in range(N)] for _ in range(N)]
+
+    if not solveNQUtil(board, 0):
+        print("Solution does not exist")
+        return False
+
+    printSolution(board)
+    return True
+
+# Driver program to test above function
+if __name__ == "__main__":
+    solveNQ()
+
+C#
+
+// C# program to solve N Queen Problem using backtracking
+
+using System;
+
+class GFG {
+    static int N = 4;
+
+    // ld is an array where its indices indicate row-col+N-1
+    // (N-1) is for shifting the difference to store
+    // negative indices
+    static int[] ld = new int[30];
+
+    // rd is an array where its indices indicate row+col
+    // and used to check whether a queen can be placed on
+    // right diagonal or not
+    static int[] rd = new int[30];
+
+    // Column array where its indices indicates column and
+    // used to check whether a queen can be placed in that
+    // row or not
+    static int[] cl = new int[30];
+
+    // A utility function to print solution
+    static void printSolution(int[, ] board)
+    {
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++)
+              if(board[i,j]==1){
+                Console.Write(" Q ");
+              }else{
+                Console.Write(" . ");
+              }
+            Console.Write("\n");
+        }
+    }
+
+    // A recursive utility function to solve N
+    // Queen problem
+    static bool solveNQUtil(int[, ] board, int col)
+    {
+        // Base case: If all queens are placed
+        // then return true
+        if (col >= N)
+            return true;
+
+        // Consider this column and try placing
+        // this queen in all rows one by one
+        for (int i = 0; i < N; i++) {
+            // Check if the queen can be placed on
+            // board[i,col]
+
+            // To check if a queen can be placed on
+            // board[row,col].We just need to check
+            // ld[row-col+n-1] and rd[row+coln] where
+            // ld and rd are for left and right
+            // diagonal respectively
+            if ((ld[i - col + N - 1] != 1
+                && rd[i + col] != 1)
+                && cl[i] != 1) {
+                // Place this queen in board[i,col]
+                board[i, col] = 1;
+                ld[i - col + N - 1] = rd[i + col] = cl[i]
+                    = 1;
+
+                // Recur to place rest of the queens
+                if (solveNQUtil(board, col + 1))
+                    return true;
+
+                // If placing queen in board[i,col]
+                // doesn't lead to a solution, then
+                // remove queen from board[i,col]
+                board[i, col] = 0; // BACKTRACK
+                ld[i - col + N - 1] = rd[i + col] = cl[i]
+                    = 0;
+            }
+        }
+
+        // If the queen cannot be placed in any row in
+        // this column col then return false
+        return false;
+    }
+
+    // This function solves the N Queen problem using
+    // Backtracking. It mainly uses solveNQUtil() to
+    // solve the problem. It returns false if queens
+    // cannot be placed, otherwise, return true and
+    // prints placement of queens in the form of 1s.
+    // Please note that there may be more than one
+    // solutions, this function prints one of the
+    // feasible solutions.
+    static bool solveNQ()
+    {
+        int[, ] board = { { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 },
+                        { 0, 0, 0, 0 } };
+
+        if (solveNQUtil(board, 0) == false) {
+            Console.Write("Solution does not exist");
+            return false;
+        }
+
+        printSolution(board);
+        return true;
+    }
+
+    // Driver Code
+    public static void Main(String[] args)
+    {
+        solveNQ();
+    }
+}
+
+// This code is contributed by Rajput-Ji
+
+JavaScript
+
+const N = 4;
+
+// ld is an array where its indices indicate row-col+N-1
+const ld = new Array(30).fill(0);
+
+// rd is an array where its indices indicate row+col
+const rd = new Array(30).fill(0);
+
+// Column array where its indices indicate column
+const cl = new Array(30).fill(0);
+
+// A utility function to print solution
+function printSolution(board) {
+    for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+            process.stdout.write(board[i][j] === 1 ? ' Q ' : ' . ');
+        }
+        console.log();
+    }
+}
+
+// A recursive utility function to solve N Queen problem
+function solveNQUtil(board, col) {
+    // Base case: If all queens are placed, return true
+    if (col >= N) {
+        return true;
+    }
+
+    // Consider this column and try placing this queen in all rows one by one
+    for (let i = 0; i < N; i++) {
+        // Check if the queen can be placed on board[i][col]
+        if (ld[i - col + N - 1] !== 1 && rd[i + col] !== 1 && cl[i] !== 1) {
+            // Place this queen in board[i][col]
+            board[i][col] = 1;
+            ld[i - col + N - 1] = rd[i + col] = cl[i] = 1;
+
+            // Recur to place the rest of the queens
+            if (solveNQUtil(board, col + 1)) {
+                return true;
+            }
+
+            // If placing the queen in board[i][col] doesn't lead to a solution, backtrack
+            board[i][col] = 0; // BACKTRACK
+            ld[i - col + N - 1] = rd[i + col] = cl[i] = 0;
+        }
+    }
+
+    // If the queen cannot be placed in any row in this column col, return false
+    return false;
+}
+
+// This function solves the N Queen problem using Backtracking.
+// It mainly uses solveNQUtil() to solve the problem.
+// It returns false if queens cannot be placed, otherwise,
+// returns true and prints placement of queens in the form of 1s.
+// Please note that there may be more than one solution;
+// this function prints one of the feasible solutions.
+function solveNQ() {
+    const board = new Array(N).fill(0).map(() => new Array(N).fill(0));
+
+    if (!solveNQUtil(board, 0)) {
+        console.log("Solution does not exist");
+        return false;
+    }
+
+    printSolution(board);
+    return true;
+}
+
+// Driver program to test above function
+solveNQ();
+
+Output
+
+.  .  Q  .
+Q  .  .  .
+.  .  .  Q
+.  Q  .  .
+
+Time Complexity: O(N!) Auxiliary Space: O(N)

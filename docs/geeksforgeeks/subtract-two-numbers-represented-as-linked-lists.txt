@@ -1,0 +1,1790 @@
+Source: https://www.geeksforgeeks.org/dsa/subtract-two-numbers-represented-as-linked-lists/
+Title: Subtract Two Numbers represented as Linked Lists
+Extractor: 2
+
+You are given two linked lists representing two large positive numbers . The linked lists represent these two numbers, subtract the smaller number from the larger one and return the head of the linked list representing the result.
+
+The linked list does not contain leading zeros, except for the number zero itself.
+
+Examples:
+
+> Input: l1 = 1 -> 0 -> 0 -> NULL,  l2 = 1 -> NULL Output: 9->9->NULL Explanation: Number represented as lists are 100 and 1, so 100 - 1 is 99 Input: l1 = 7-> 8 -> 6 -> NULL,  l2 = 7 -> 8 -> 9 NULL Output: 3->NULL Explanation: Number represented as lists are 786 and  789, so 789 - 786 is 3,  as the smaller value is subtracted from the larger one.
+
+Table of Content
+
+- Using Recursion - O(m + n) Time and O(max(m, n)) Auxiliary Space
+- Reversing Both Linked Lists - O(m + n) Time and O(max(m, n)) Space
+
+#### Using Recursion - O(m + n) Time and O(max(m, n)) Auxiliary Space
+
+> We subtract two numbers represented as linked lists where digits are stored in forward order. Since subtraction naturally happens from the rightmost digit, we use recursion to reach the end of the lists and perform subtraction while backtracking. Before that, we equalize their sizes by padding zeros. During subtraction, we handle borrow just like in manual subtraction and finally remove leading zeros.
+
+- Find sizes and pad zeros to make both linked lists equal
+- Ensure subtraction is always (larger − smaller)
+- Use recursion to reach the last node (for right-to-left processing)
+- During backtracking, subtract digits and handle borrow
+- If needed, add 10 to current digit and set borrow
+- Create and link result nodes, then remove leading zeros
+
+C++
+
+#include <iostream>
+using namespace std;
+
+// Definition of Linked List Node
+struct Node
+{
+    int data;
+    Node *next;
+
+    Node(int val)
+    {
+        data = val;
+        next = NULL;
+    }
+};
+
+// Get length of linked list
+int getLength(Node *head)
+{
+    int len = 0;
+    while (head != NULL)
+    {
+        len++;
+        head = head->next;
+    }
+    return len;
+}
+
+// Add leading zeros to make lists equal length
+Node *padZeros(Node *head, int count)
+{
+    while (count--)
+    {
+        Node *newNode = new Node(0);
+        newNode->next = head;
+        head = newNode;
+    }
+    return head;
+}
+
+// Compare two lists (returns true if head1 >= head2)
+bool isGreaterOrEqual(Node *head1, Node *head2)
+{
+    while (head1 != NULL && head2 != NULL)
+    {
+        if (head1->data != head2->data)
+            return head1->data > head2->data;
+        head1 = head1->next;
+        head2 = head2->next;
+    }
+    return true;
+}
+
+// Remove leading zeros from result
+Node *removeLeadingZeros(Node *head)
+{
+    while (head->next != NULL && head->data == 0)
+    {
+        head = head->next;
+    }
+    return head;
+}
+
+// Recursive subtraction helper
+Node *subtractHelper(Node *head1, Node *head2, int &borrow)
+{
+    if (head1 == NULL && head2 == NULL)
+        return NULL;
+
+    Node *nextNode = subtractHelper(head1->next, head2->next, borrow);
+
+    int d1 = head1->data;
+    int d2 = head2->data;
+
+    // Handle borrow
+    if (borrow == 1)
+    {
+        d1 -= 1;
+        borrow = 0;
+    }
+
+    if (d1 < d2)
+    {
+        d1 += 10;
+        borrow = 1;
+    }
+
+    int sub = d1 - d2;
+
+    Node *current = new Node(sub);
+    current->next = nextNode;
+
+    return current;
+}
+
+Node *subLinkedList(Node *head1, Node *head2)
+{
+    int len1 = getLength(head1);
+    int len2 = getLength(head2);
+
+    // Step 1: Make lengths equal
+    if (len1 < len2)
+        head1 = padZeros(head1, len2 - len1);
+    else if (len2 < len1)
+        head2 = padZeros(head2, len1 - len2);
+
+    // Step 2: Ensure head1 >= head2
+    if (!isGreaterOrEqual(head1, head2))
+        swap(head1, head2);
+
+    // Step 3: Perform subtraction
+    int borrow = 0;
+    Node *result = subtractHelper(head1, head2, borrow);
+
+    // Step 4: Remove leading zeros
+    return removeLeadingZeros(result);
+}
+
+// Driver code
+int main()
+{
+    Node *num1 = new Node(1);
+    num1->next = new Node(0);
+    num1->next->next = new Node(0);
+
+    Node *num2 = new Node(1);
+
+    Node *res = subLinkedList(num1, num2);
+
+    while (res != NULL)
+    {
+        cout << res->data << " ";
+        res = res->next;
+    }
+    cout << endl;
+
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+
+// Definition of Linked List Node
+struct Node
+{
+    int data;
+    struct Node *next;
+};
+
+// Constructor equivalent
+struct Node* newNode(int val)
+{
+    struct Node* node = (struct Node*)malloc(sizeof(struct Node));
+    node->data = val;
+    node->next = NULL;
+    return node;
+}
+
+// Get length of linked list
+int getLength(struct Node *head)
+{
+    int len = 0;
+    while (head != NULL)
+    {
+        len++;
+        head = head->next;
+    }
+    return len;
+}
+
+// Add leading zeros to make lists equal length
+struct Node *padZeros(struct Node *head, int count)
+{
+    while (count--)
+    {
+        struct Node *newNodeVar = newNode(0);
+        newNodeVar->next = head;
+        head = newNodeVar;
+    }
+    return head;
+}
+
+// Compare two lists (returns true if head1 >= head2)
+int isGreaterOrEqual(struct Node *head1, struct Node *head2)
+{
+    while (head1 != NULL && head2 != NULL)
+    {
+        if (head1->data != head2->data)
+            return head1->data > head2->data;
+        head1 = head1->next;
+        head2 = head2->next;
+    }
+    return 1;
+}
+
+// Remove leading zeros from result
+struct Node *removeLeadingZeros(struct Node *head)
+{
+    while (head->next != NULL && head->data == 0)
+    {
+        head = head->next;
+    }
+    return head;
+}
+
+// Recursive subtraction helper
+struct Node *subtractHelper(struct Node *head1, struct Node *head2, int *borrow)
+{
+    if (head1 == NULL && head2 == NULL)
+        return NULL;
+
+    struct Node *nextNode = subtractHelper(head1->next, head2->next, borrow);
+
+    int d1 = head1->data;
+    int d2 = head2->data;
+    int sub = 0;
+
+    // If u have taken borrow for next digit
+    // u have to reduce current digit by 1
+    if (*borrow == 1)
+    {
+        d1 = d1 - 1;
+        *borrow = 0;
+    }
+
+    // If d1 < d2 then borrow 1 from previous digit
+    if (d1 < d2)
+    {
+        d1 += 10;
+        *borrow = 1;
+    }
+
+    sub = d1 - d2;
+
+    struct Node *current = newNode(sub);
+    current->next = nextNode;
+
+    return current;
+}
+
+// Main subtraction function
+struct Node *subLinkedList(struct Node *head1, struct Node *head2)
+{
+    int len1 = getLength(head1);
+    int len2 = getLength(head2);
+
+    // Step 1: Make lengths equal
+    if (len1 < len2)
+    {
+        head1 = padZeros(head1, len2 - len1);
+    }
+    else if (len2 < len1)
+    {
+        head2 = padZeros(head2, len1 - len2);
+    }
+
+    // Step 2: Ensure head1 >= head2
+    if (!isGreaterOrEqual(head1, head2))
+    {
+        struct Node *temp = head1;
+        head1 = head2;
+        head2 = temp;
+    }
+
+    // Step 3: Perform subtraction
+    int borrow = 0;
+    struct Node *result = subtractHelper(head1, head2, &borrow);
+    result = removeLeadingZeros(result);
+    return result;
+}
+
+// Print linked list
+void printList(struct Node *head)
+{
+    while (head != NULL)
+    {
+        printf("%d ", head->data);
+        head = head->next;
+    }
+    printf("\n");
+}
+
+// Driver code
+int main()
+{
+    struct Node *num1 = newNode(1);
+    num1->next = newNode(0);
+    num1->next->next = newNode(0);
+
+    struct Node *num2 = newNode(1);
+
+    struct Node *result = subLinkedList(num1, num2);
+    printList(result);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+// Definition of Linked List Node
+class Node {
+    int data;
+    Node next;
+
+    Node(int val) {
+        data = val;
+        next = null;
+    }
+}
+
+class GFG {
+
+    // Get length of linked list
+    static int getLength(Node head) {
+        int len = 0;
+        while (head != null) {
+            len++;
+            head = head.next;
+        }
+        return len;
+    }
+
+    // Add leading zeros to make lists equal length
+    static Node padZeros(Node head, int count) {
+        while (count-- > 0) {
+            Node newNode = new Node(0);
+            newNode.next = head;
+            head = newNode;
+        }
+        return head;
+    }
+
+    // Compare two lists (returns true if head1 >= head2)
+    static boolean isGreaterOrEqual(Node head1, Node head2) {
+        while (head1 != null && head2 != null) {
+            if (head1.data != head2.data)
+                return head1.data > head2.data;
+            head1 = head1.next;
+            head2 = head2.next;
+        }
+        return true; // equal case
+    }
+
+    // function to remove leading zeros from result
+    static Node removeLeadingZeros(Node head) {
+        while (head.next != null && head.data == 0) {
+            head = head.next;
+        }
+        return head;
+    }
+
+    // Recursive subtraction helper
+    static Node subtractHelper(Node head1, Node head2, int[] borrow) {
+        if (head1 == null && head2 == null)
+            return null;
+
+        Node nextNode = subtractHelper(head1.next, head2.next, borrow);
+
+        int d1 = head1.data;
+        int d2 = head2.data;
+        int sub = 0;
+
+        // If u have taken borrow for next digit
+        // u have to reduce current digit by 1
+        if (borrow[0] == 1) {
+            d1 = d1 - 1;
+            borrow[0] = 0;
+        }
+
+        // If d1 < d2 then borrow 1 from previous digit
+        if (d1 < d2) {
+            d1 += 10;
+            borrow[0] = 1;
+        }
+
+        sub = d1 - d2;
+
+        Node current = new Node(sub);
+        current.next = nextNode;
+
+        return current;
+    }
+
+    // Main subtraction function
+    static Node subLinkedList(Node head1, Node head2) {
+        int len1 = getLength(head1);
+        int len2 = getLength(head2);
+
+        // Step 1: Make lengths equal
+        if (len1 < len2) {
+            head1 = padZeros(head1, len2 - len1);
+        } else if (len2 < len1) {
+            head2 = padZeros(head2, len1 - len2);
+        }
+
+        // Step 2: Ensure head1 >= head2
+        if (!isGreaterOrEqual(head1, head2)) {
+            Node temp = head1;
+            head1 = head2;
+            head2 = temp;
+        }
+
+        // Step 3: Perform subtraction
+        int[] borrow = new int[1];
+        Node result = subtractHelper(head1, head2, borrow);
+        result = removeLeadingZeros(result);
+        return result;
+    }
+
+    // Print linked list
+    static void printList(Node head) {
+        while (head != null) {
+            System.out.print(head.data + " ");
+            head = head.next;
+        }
+        System.out.println();
+    }
+
+    // Driver code
+    public static void main(String[] args) {
+
+        Node num1 = new Node(1);
+        num1.next = new Node(0);
+        num1.next.next = new Node(0);
+
+        Node num2 = new Node(1);
+
+        Node result = subLinkedList(num1, num2);
+        printList(result);
+    }
+}
+
+Python
+
+# Definition of Linked List Node
+class Node:
+    def __init__(self, val):
+        self.data = val
+        self.next = None
+
+class GFG:
+
+    # Get length of linked list
+    def getLength(self, head):
+        length = 0
+        while head != None:
+            length += 1
+            head = head.next
+        return length
+
+    # Add leading zeros to make lists equal length
+    def padZeros(self, head, count):
+        while count:
+            newNode = Node(0)
+            newNode.next = head
+            head = newNode
+            count -= 1
+        return head
+
+    # Compare two lists (returns true if head1 >= head2)
+    def isGreaterOrEqual(self, head1, head2):
+        while head1 != None and head2 != None:
+            if head1.data != head2.data:
+                return head1.data > head2.data
+            head1 = head1.next
+            head2 = head2.next
+        return True  # equal case
+
+    # function to remove leading zeros from result
+    def removeLeadingZeros(self, head):
+        while head.next != None and head.data == 0:
+            head = head.next
+        return head
+
+    # Recursive subtraction helper
+    def subtractHelper(self, head1, head2, borrow):
+        if head1 == None and head2 == None:
+            return None
+
+        nextNode = self.subtractHelper(head1.next, head2.next, borrow)
+
+        d1 = head1.data
+        d2 = head2.data
+        sub = 0
+
+        # If u have taken borrow for next digit
+        # u have to reduce current digit by 1
+        if borrow[0] == 1:
+            d1 = d1 - 1
+            borrow[0] = 0
+
+        # If d1 < d2 then borrow 1 from previous digit
+        if d1 < d2:
+            d1 += 10
+            borrow[0] = 1
+
+        sub = d1 - d2
+
+        current = Node(sub)
+        current.next = nextNode
+
+        return current
+
+    # Main subtraction function
+    def subLinkedList(self, head1, head2):
+        len1 = self.getLength(head1)
+        len2 = self.getLength(head2)
+
+        # Step 1: Make lengths equal
+        if len1 < len2:
+            head1 = self.padZeros(head1, len2 - len1)
+        elif len2 < len1:
+            head2 = self.padZeros(head2, len1 - len2)
+
+        # Step 2: Ensure head1 >= head2
+        if not self.isGreaterOrEqual(head1, head2):
+            head1, head2 = head2, head1
+
+        # Step 3: Perform subtraction
+        borrow = [0]
+        result = self.subtractHelper(head1, head2, borrow)
+
+        result = self.removeLeadingZeros(result)
+        return result
+
+# Print linked list
+def printList(head):
+    while head != None:
+        print(head.data, end=" ")
+        head = head.next
+    print()
+
+# Driver code
+num1 = Node(1)
+num1.next = Node(0)
+num1.next.next = Node(0)
+
+num2 = Node(1)
+
+gfg = GFG()
+result = gfg.subLinkedList(num1, num2)
+
+printList(result)
+
+C#
+
+using System;
+
+// Definition of Linked List Node
+class Node {
+    public int data;
+    public Node next;
+
+    public Node(int val) {
+        data = val;
+        next = null;
+    }
+}
+
+class GFG {
+
+    // Get length of linked list
+    static int getLength(Node head) {
+        int len = 0;
+        while (head != null) {
+            len++;
+            head = head.next;
+        }
+        return len;
+    }
+
+    // Add leading zeros to make lists equal length
+    static Node padZeros(Node head, int count) {
+        while (count-- > 0) {
+            Node newNode = new Node(0);
+            newNode.next = head;
+            head = newNode;
+        }
+        return head;
+    }
+
+    // Compare two lists (returns true if head1 >= head2)
+    static bool isGreaterOrEqual(Node head1, Node head2) {
+        while (head1 != null && head2 != null) {
+            if (head1.data != head2.data)
+                return head1.data > head2.data;
+            head1 = head1.next;
+            head2 = head2.next;
+        }
+        return true; // equal case
+    }
+
+    // function to remove leading zeros from result
+    static Node removeLeadingZeros(Node head) {
+        while (head.next != null && head.data == 0) {
+            head = head.next;
+        }
+        return head;
+    }
+
+    // Recursive subtraction helper
+    static Node subtractHelper(Node head1, Node head2, ref int borrow) {
+        if (head1 == null && head2 == null)
+            return null;
+
+        Node nextNode = subtractHelper(head1.next, head2.next, ref borrow);
+
+        int d1 = head1.data;
+        int d2 = head2.data;
+        int sub = 0;
+
+        // If u have taken borrow for next digit
+        // u have to reduce current digit by 1
+        if (borrow == 1) {
+            d1 = d1 - 1;
+            borrow = 0;
+        }
+
+        // If d1 < d2 then borrow 1 from previous digit
+        if (d1 < d2) {
+            d1 += 10;
+            borrow = 1;
+        }
+
+        sub = d1 - d2;
+
+        Node current = new Node(sub);
+        current.next = nextNode;
+
+        return current;
+    }
+
+    // Main subtraction function
+    static Node subLinkedList(Node head1, Node head2) {
+        int len1 = getLength(head1);
+        int len2 = getLength(head2);
+
+        // Step 1: Make lengths equal
+        if (len1 < len2) {
+            head1 = padZeros(head1, len2 - len1);
+        } else if (len2 < len1) {
+            head2 = padZeros(head2, len1 - len2);
+        }
+
+        // Step 2: Ensure head1 >= head2
+        if (!isGreaterOrEqual(head1, head2)) {
+            Node temp = head1;
+            head1 = head2;
+            head2 = temp;
+        }
+
+        // Step 3: Perform subtraction
+        int borrow = 0;
+        Node result = subtractHelper(head1, head2, ref borrow);
+        result = removeLeadingZeros(result);
+        return result;
+    }
+
+    // Print linked list
+    static void printList(Node head) {
+        while (head != null) {
+            Console.Write(head.data + " ");
+            head = head.next;
+        }
+        Console.WriteLine();
+    }
+
+    // Driver code
+    static void Main() {
+
+        Node num1 = new Node(1);
+        num1.next = new Node(0);
+        num1.next.next = new Node(0);
+
+        Node num2 = new Node(1);
+
+        Node result = subLinkedList(num1, num2);
+        printList(result);
+    }
+}
+
+JavaScript
+
+// Definition of Linked List Node
+class Node {
+    constructor(val) {
+        this.data = val;
+        this.next = null;
+    }
+}
+
+class Solution {
+
+    // Get length of linked list
+    getLength(head) {
+        let len = 0;
+        while (head != null) {
+            len++;
+            head = head.next;
+        }
+        return len;
+    }
+
+    // Add leading zeros to make lists equal length
+    padZeros(head, count) {
+        while (count--) {
+            let newNode = new Node(0);
+            newNode.next = head;
+            head = newNode;
+        }
+        return head;
+    }
+
+    // Compare two lists (returns true if head1 >= head2)
+    isGreaterOrEqual(head1, head2) {
+        while (head1 != null && head2 != null) {
+            if (head1.data != head2.data)
+                return head1.data > head2.data;
+            head1 = head1.next;
+            head2 = head2.next;
+        }
+        return true; // equal case
+    }
+
+    // function to remove leading zeros from result
+    removeLeadingZeros(head) {
+        while (head.next != null && head.data == 0) {
+            head = head.next;
+        }
+        return head;
+    }
+
+    // Recursive subtraction helper
+    subtractHelper(head1, head2, borrow) {
+        if (head1 == null && head2 == null)
+            return null;
+
+        let nextNode = this.subtractHelper(head1.next, head2.next, borrow);
+
+        let d1 = head1.data;
+        let d2 = head2.data;
+        let sub = 0;
+
+        // If u have taken borrow for next digit
+        // u have to reduce current digit by 1
+        if (borrow.value == 1) {
+            d1 = d1 - 1;
+            borrow.value = 0;
+        }
+
+        // If d1 < d2 then borrow 1 from previous digit
+        if (d1 < d2) {
+            d1 += 10;
+            borrow.value = 1;
+        }
+
+        sub = d1 - d2;
+
+        let current = new Node(sub);
+        current.next = nextNode;
+
+        return current;
+    }
+
+    // Main subtraction function
+    subLinkedList(head1, head2) {
+        let len1 = this.getLength(head1);
+        let len2 = this.getLength(head2);
+
+        // Step 1: Make lengths equal
+        if (len1 < len2) {
+            head1 = this.padZeros(head1, len2 - len1);
+        } else if (len2 < len1) {
+            head2 = this.padZeros(head2, len1 - len2);
+        }
+
+        // Step 2: Ensure head1 >= head2
+        if (!this.isGreaterOrEqual(head1, head2)) {
+            let temp = head1;
+            head1 = head2;
+            head2 = temp;
+        }
+
+        // Step 3: Perform subtraction
+        let borrow = { value: 0 };
+        let result = this.subtractHelper(head1, head2, borrow);
+
+        result = this.removeLeadingZeros(result);
+        return result;
+    }
+}
+
+// Print linked list
+function printList(head) {
+    let res = '';
+    while (head != null) {
+        res += head.data + " ";
+        head = head.next;
+    }
+    console.log(res.trim());
+}
+
+// Driver code
+let num1 = new Node(1);
+num1.next = new Node(0);
+num1.next.next = new Node(0);
+
+let num2 = new Node(1);
+
+let solution = new Solution();
+let result = solution.subLinkedList(num1, num2);
+
+printList(result);
+
+Output
+
+9 9
+
+#### Reversing Both Linked Lists - O(m + n) Time and O(max(m, n)) Space
+
+> In this approach, we reverse both linked lists so that subtraction can be done from the least significant digit (just like normal subtraction). Then we traverse both lists together, subtract digits while handling borrow, and build the result list. Finally, we reverse the result back and remove any leading zeros.
+
+- Reverse both linked lists so subtraction starts from least significant digits
+- Initialize pointers for both lists and a borrow variable (initially 0)
+- Traverse both lists together, subtract digits while adjusting for borrow
+- If current digit is smaller, add 10 and set borrow for next step
+- Create new nodes with the subtraction result and append to result list
+- Reverse the result list and remove leading zeros before returning
+
+Below is the implementation of the above approach:
+
+C++
+
+#include <iostream>
+using namespace std;
+
+struct Node
+{
+    int data;
+    Node *next;
+    Node(int val)
+    {
+        data = val;
+        next = NULL;
+    }
+};
+
+// Get length of linked list
+int getLength(Node *head)
+{
+    int len = 0;
+    while (head != NULL)
+    {
+        len++;
+        head = head->next;
+    }
+    return len;
+}
+
+// Compare two lists (returns true if head1 > head2)
+bool compareNode(Node* head1, Node* head2) {
+    // Find length of the lists
+    int len1 = getLength(head1);
+    int len2 = getLength(head2);
+
+    // Compare lengths
+    if (len1 > len2) return true;
+    if (len2 > len1) return false;
+
+    // Same length then compare digit by digit
+    while (head1 && head2) {
+        if (head1->data > head2->data) return true;
+        if (head1->data < head2->data) return false;
+        head1 = head1->next;
+        head2 = head2->next;
+    }
+
+    return false;
+}
+
+// Reverse linked list
+Node *reverseList(Node *head)
+{
+    Node *prev = NULL;
+    Node *curr = head;
+
+    while (curr != NULL)
+    {
+        Node *next = curr->next;
+        curr->next = prev;
+        prev = curr;
+        curr = next;
+    }
+    return prev;
+}
+
+// Remove leading zeros
+Node *removeLeadingZeros(Node *head)
+{
+    while (head != NULL && head->next != NULL && head->data == 0)
+        head = head->next;
+    return head;
+}
+
+Node *subLinkedList(Node *head1, Node *head2)
+{
+    // Compare two lists and swap if needed
+    // Ensure head1 >= head2
+    if(compareNode(head1, head2) == false){
+        swap(head1, head2);
+    }
+    // Reverse both lists
+    Node* l1 = reverseList(head1);
+    Node* l2 = reverseList(head2);
+
+    Node *result = NULL;
+    Node *tail = NULL;
+
+    int borrow = 0;
+
+    while (l1 != NULL)
+    {
+        int d1 = l1->data - borrow;
+        int d2 = (l2 != NULL) ? l2->data : 0;
+
+        if (d1 < d2)
+        {
+            d1 += 10;
+            borrow = 1;
+        }
+        else
+        {
+            borrow = 0;
+        }
+
+        int sub = d1 - d2;
+
+        Node *newNode = new Node(sub);
+
+        if (result == NULL)
+        {
+            result = tail = newNode;
+        }
+        else
+        {
+            tail->next = newNode;
+            tail = newNode;
+        }
+
+        l1 = l1->next;
+        if (l2)
+            l2 = l2->next;
+    }
+
+    // Reverse result
+    result = reverseList(result);
+
+    // Remove leading zeros
+    result = removeLeadingZeros(result);
+
+    return result;
+}
+
+// Print list
+void printList(Node *head)
+{
+    while (head != NULL)
+    {
+        cout << head->data << " ";
+        head = head->next;
+    }
+    cout << endl;
+}
+
+// Main function
+int main()
+{
+    Node *num1 = new Node(1);
+    num1->next = new Node(0);
+    num1->next->next = new Node(0);
+
+    Node *num2 = new Node(1);
+
+    Node *result = subLinkedList(num1, num2);
+
+    // Print result
+    printList(result);
+
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+
+struct Node
+{
+    int data;
+    struct Node *next;
+};
+
+// Constructor equivalent
+struct Node *newNode(int val)
+{
+    struct Node *node = (struct Node *)malloc(sizeof(struct Node));
+    node->data = val;
+    node->next = NULL;
+    return node;
+}
+
+// Get length of linked list
+int getLength(struct Node *head)
+{
+    int len = 0;
+    while (head != NULL)
+    {
+        len++;
+        head = head->next;
+    }
+    return len;
+}
+
+// Compare two lists (returns true if head1 > head2)
+int compareNode(struct Node* head1, struct Node* head2) {
+    // Find length of the lists
+    int len1 = getLength(head1);
+    int len2 = getLength(head2);
+
+    // Compare lengths
+    if (len1 > len2) return 1;
+    if (len2 > len1) return 0;
+
+    // Same length then compare digit by digit
+    while (head1 && head2) {
+        if (head1->data > head2->data) return 1;
+        if (head1->data < head2->data) return 0;
+        head1 = head1->next;
+        head2 = head2->next;
+    }
+
+    return 1;
+}
+
+// Reverse linked list
+struct Node *reverseList(struct Node *head)
+{
+    struct Node *prev = NULL;
+    struct Node *curr = head;
+
+    while (curr != NULL)
+    {
+        struct Node *next = curr->next;
+        curr->next = prev;
+        prev = curr;
+        curr = next;
+    }
+    return prev;
+}
+
+// Remove leading zeros
+struct Node *removeLeadingZeros(struct Node *head)
+{
+    while (head != NULL && head->next != NULL && head->data == 0)
+        head = head->next;
+    return head;
+}
+
+// Subtracting two lists
+struct Node *subLinkedList(struct Node *head1, struct Node *head2)
+{
+    // Compare two lists and swap if needed
+    // Ensure head1 >= head2
+    if(compareNode(head1, head2) == 0){
+        struct Node* temp = head1;
+        head1 = head2;
+        head2 = temp;
+    }
+
+    // Reverse both lists
+    struct Node* l1 = reverseList(head1);
+    struct Node* l2 = reverseList(head2);
+
+    struct Node *result = NULL;
+    struct Node *tail = NULL;
+
+    int borrow = 0;
+
+    while (l1 != NULL)
+    {
+        int d1 = l1->data - borrow;
+        int d2 = (l2 != NULL) ? l2->data : 0;
+
+        if (d1 < d2)
+        {
+            d1 += 10;
+            borrow = 1;
+        }
+        else
+        {
+            borrow = 0;
+        }
+
+        int sub = d1 - d2;
+
+        struct Node *newNodeVar = newNode(sub);
+
+        if (result == NULL)
+        {
+            result = tail = newNodeVar;
+        }
+        else
+        {
+            tail->next = newNodeVar;
+            tail = newNodeVar;
+        }
+
+        l1 = l1->next;
+        if (l2)
+            l2 = l2->next;
+    }
+
+    // Reverse result
+    result = reverseList(result);
+
+    // Remove leading zeros
+    result = removeLeadingZeros(result);
+
+    return result;
+}
+
+// Print list
+void printList(struct Node *head)
+{
+    while (head != NULL)
+    {
+        printf("%d ", head->data);
+        head = head->next;
+    }
+    printf("\n");
+}
+
+// Main function
+int main()
+{
+    struct Node *num1 = newNode(1);
+    num1->next = newNode(0);
+    num1->next->next = newNode(0);
+
+    struct Node *num2 = newNode(1);
+
+    struct Node *result = subLinkedList(num1, num2);
+
+    printList(result);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+// Definition of Linked List Node
+class Node {
+    int data;
+    Node next;
+
+    Node(int val) {
+        data = val;
+        next = null;
+    }
+}
+
+class GFG {
+
+    // Get length of the linked lists
+    static int getLength(Node head) {
+        int len = 0;
+        while (head != null) {
+            len++;
+            head = head.next;
+        }
+        return len;
+    }
+
+    // Compare two lists (returns true if head1 > head2)
+    static boolean compareNode(Node head1, Node head2) {
+
+        // Find length of the linked lists
+        int len1 = getLength(head1);
+        int len2 = getLength(head2);
+
+        // Compare length
+        if (len1 > len2) return true;
+        if (len2 > len1) return false;
+
+        // Same length then compare digit by digit
+        while (head1 != null && head2 != null) {
+            if (head1.data > head2.data) return true;
+            if (head1.data < head2.data) return false;
+            head1 = head1.next;
+            head2 = head2.next;
+        }
+
+        return false;
+    }
+
+    // Reverse linked list
+    static Node reverseList(Node head)
+    {
+        Node prev = null;
+        Node curr = head;
+
+        while (curr != null)
+        {
+            Node next = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+        return prev;
+    }
+
+    // Remove leading zeros
+    static Node removeLeadingZeros(Node head)
+    {
+        while (head != null && head.next != null && head.data == 0)
+            head = head.next;
+        return head;
+    }
+
+    // Subtracting two lists
+    static Node subLinkedList(Node head1, Node head2)
+    {
+        // Compare lists and swap if needed
+        // Ensure head1 >= head2
+        if(compareNode(head1, head2) == false){
+            Node temp = head1;
+            head1 = head2;
+            head2 = temp;
+        }
+        // Reverse both lists
+        Node l1 = reverseList(head1);
+        Node l2 = reverseList(head2);
+
+        Node result = null;
+        Node tail = null;
+
+        int borrow = 0;
+
+        while (l1 != null)
+        {
+            int d1 = l1.data - borrow;
+            int d2 = (l2 != null) ? l2.data : 0;
+
+            if (d1 < d2)
+            {
+                d1 += 10;
+                borrow = 1;
+            }
+            else
+            {
+                borrow = 0;
+            }
+
+            int sub = d1 - d2;
+
+            Node newNode = new Node(sub);
+
+            if (result == null)
+            {
+                result = tail = newNode;
+            }
+            else
+            {
+                tail.next = newNode;
+                tail = newNode;
+            }
+
+            l1 = l1.next;
+            if (l2 != null)
+                l2 = l2.next;
+        }
+
+        // Reverse result
+        result = reverseList(result);
+
+        // Remove leading zeros
+        result = removeLeadingZeros(result);
+
+        return result;
+    }
+
+    // Print list
+    static void printList(Node head)
+    {
+        while (head != null)
+        {
+            System.out.print(head.data + " ");
+            head = head.next;
+        }
+        System.out.println();
+    }
+
+    // Driver code
+    public static void main(String[] args)
+    {
+        Node num1 = new Node(1);
+        num1.next = new Node(0);
+        num1.next.next = new Node(0);
+
+        Node num2 = new Node(1);
+
+        Node result = subLinkedList(num1, num2);
+
+        printList(result);
+    }
+}
+
+Python
+
+class Node:
+    def __init__(self, val):
+        self.data = val
+        self.next = None
+
+class GFG:
+
+    # Get length of the linked lists
+    def getLength(self, head):
+        length = 0
+        while head:
+            length += 1
+            head = head.next
+        return length
+
+    # Compare two lists (returns True if head1 > head2)
+    def compareNode(self, head1, head2):
+
+        # Find length of the linked lists
+        len1 = self.getLength(head1)
+        len2 = self.getLength(head2)
+
+        # Compare lengths
+        if len1 > len2:
+            return True
+        if len2 > len1:
+            return False
+
+        # Same length then compare digit by digit
+        while head1 and head2:
+            if head1.data > head2.data:
+                return True
+            if head1.data < head2.data:
+                return False
+            head1 = head1.next
+            head2 = head2.next
+
+        return False
+
+    # Reverse linked list
+    def reverseList(self, head):
+        prev = None
+        curr = head
+
+        while curr != None:
+            nxt = curr.next
+            curr.next = prev
+            prev = curr
+            curr = nxt
+        return prev
+
+    # Remove leading zeros
+    def removeLeadingZeros(self, head):
+        while head != None and head.next != None and head.data == 0:
+            head = head.next
+        return head
+
+    # Subtracting two lists
+    def subLinkedList(self, head1, head2):
+
+        # Compare lists and swap if needed
+        # Ensure head1 >= head2
+        if not self.compareNode(head1, head2):
+            head1, head2 = head2, head1
+
+        # Reverse both lists
+        l1 = self.reverseList(head1)
+        l2 = self.reverseList(head2)
+
+        result = None
+        tail = None
+
+        borrow = 0
+
+        while l1 != None:
+            d1 = l1.data - borrow
+            d2 = l2.data if l2 != None else 0
+
+            if d1 < d2:
+                d1 += 10
+                borrow = 1
+            else:
+                borrow = 0
+
+            sub = d1 - d2
+
+            newNode = Node(sub)
+
+            if result == None:
+                result = tail = newNode
+            else:
+                tail.next = newNode
+                tail = newNode
+
+            l1 = l1.next
+            if l2:
+                l2 = l2.next
+
+        # Reverse result
+        result = self.reverseList(result)
+
+        # Remove leading zeros
+        result = self.removeLeadingZeros(result)
+
+        return result
+
+# Print list
+def printList(head):
+    while head != None:
+        print(head.data, end=" ")
+        head = head.next
+    print()
+
+# Driver code
+num1 = Node(1)
+num1.next = Node(0)
+num1.next.next = Node(0)
+
+num2 = Node(1)
+
+gfg = GFG()
+result = gfg.subLinkedList(num1, num2)
+
+printList(result)
+
+C#
+
+using System;
+
+// Definition of Linked List Node
+class Node
+{
+    public int data;
+    public Node next;
+
+    public Node(int val)
+    {
+        data = val;
+        next = null;
+    }
+}
+
+class GFG
+{
+    // Get length of the linked lists
+    static int getLength(Node head) {
+        int len = 0;
+        while (head != null) {
+            len++;
+            head = head.next;
+        }
+        return len;
+    }
+
+    // Compare two lists (returns true if head1 > head2)
+    static bool compareNode(Node head1, Node head2) {
+
+        // Find length of the linked lists
+        int len1 = getLength(head1);
+        int len2 = getLength(head2);
+
+        // Compare lengths
+        if (len1 > len2) return true;
+        if (len2 > len1) return false;
+
+        // Same length then compare digit by digit
+        while (head1 != null && head2 != null) {
+            if (head1.data > head2.data) return true;
+            if (head1.data < head2.data) return false;
+            head1 = head1.next;
+            head2 = head2.next;
+        }
+
+        return false;
+    }
+
+    // Reverse linked list
+    static Node reverseList(Node head)
+    {
+        Node prev = null;
+        Node curr = head;
+
+        while (curr != null)
+        {
+            Node next = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+        return prev;
+    }
+
+    // Remove leading zeros
+    static Node removeLeadingZeros(Node head)
+    {
+        while (head != null && head.next != null && head.data == 0)
+            head = head.next;
+        return head;
+    }
+
+    // Subtracting two lists
+    static Node subLinkedList(Node head1, Node head2)
+    {
+        // Compare lists and swap if needed
+        // Ensure head1 >= head2
+        if(compareNode(head1, head2) == false){
+            Node temp = head1;
+            head1 = head2;
+            head2 = temp;
+        }
+
+        // Reverse both lists
+        Node l1 = reverseList(head1);
+        Node l2 = reverseList(head2);
+
+        Node result = null;
+        Node tail = null;
+
+        int borrow = 0;
+
+        while (l1 != null)
+        {
+            int d1 = l1.data - borrow;
+            int d2 = (l2 != null) ? l2.data : 0;
+
+            if (d1 < d2)
+            {
+                d1 += 10;
+                borrow = 1;
+            }
+            else
+            {
+                borrow = 0;
+            }
+
+            int sub = d1 - d2;
+
+            Node newNode = new Node(sub);
+
+            if (result == null)
+            {
+                result = tail = newNode;
+            }
+            else
+            {
+                tail.next = newNode;
+                tail = newNode;
+            }
+
+            l1 = l1.next;
+            if (l2 != null)
+                l2 = l2.next;
+        }
+
+        // Reverse result
+        result = reverseList(result);
+
+        // Remove leading zeros
+        result = removeLeadingZeros(result);
+
+        return result;
+    }
+
+    // Print list
+    static void printList(Node head)
+    {
+        while (head != null)
+        {
+            Console.Write(head.data + " ");
+            head = head.next;
+        }
+        Console.WriteLine();
+    }
+
+    // Driver code
+    static void Main()
+    {
+        Node num1 = new Node(1);
+        num1.next = new Node(0);
+        num1.next.next = new Node(0);
+
+        Node num2 = new Node(1);
+
+        Node result = subLinkedList(num1, num2);
+
+        printList(result);
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(val) {
+        this.data = val;
+        this.next = null;
+    }
+}
+
+class GFG {
+
+    // Get length of the linked lists
+    getLength(head) {
+        let len = 0;
+        while (head !== null) {
+            len++;
+            head = head.next;
+        }
+        return len;
+    }
+
+    // Compare two lists (returns true if head1 > head2)
+    compareNode(head1, head2) {
+
+        // Find length of the linked lists
+        let len1 = this.getLength(head1);
+        let len2 = this.getLength(head2);
+
+        // Compare lengths
+        if (len1 > len2) return true;
+        if (len2 > len1) return false;
+
+        // Same length then compare digit by digit
+        while (head1 !== null && head2 !== null) {
+            if (head1.data > head2.data) return true;
+            if (head1.data < head2.data) return false;
+            head1 = head1.next;
+            head2 = head2.next;
+        }
+
+        return false;
+    }
+
+    // Reverse linked list
+    reverseList(head) {
+        let prev = null;
+        let curr = head;
+
+        while (curr != null) {
+            let next = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+        return prev;
+    }
+
+    // Remove leading zeros
+    removeLeadingZeros(head) {
+        while (head != null && head.next != null && head.data == 0)
+            head = head.next;
+        return head;
+    }
+
+    // Subtracting two lists
+    subLinkedList(head1, head2) {
+
+        // Compare lists and swap if needed
+        // Ensure head1 >= head2
+        if (!this.compareNode(head1, head2)) {
+            let temp = head1;
+            head1 = head2;
+            head2 = temp;
+        }
+
+        // Reverse both lists
+        let l1 = this.reverseList(head1);
+        let l2 = this.reverseList(head2);
+
+        let result = null;
+        let tail = null;
+
+        let borrow = 0;
+
+        while (l1 != null) {
+            let d1 = l1.data - borrow;
+            let d2 = (l2 != null) ? l2.data : 0;
+
+            if (d1 < d2) {
+                d1 += 10;
+                borrow = 1;
+            } else {
+                borrow = 0;
+            }
+
+            let sub = d1 - d2;
+
+            let newNode = new Node(sub);
+
+            if (result == null) {
+                result = tail = newNode;
+            } else {
+                tail.next = newNode;
+                tail = newNode;
+            }
+
+            l1 = l1.next;
+            if (l2)
+                l2 = l2.next;
+        }
+
+        // Reverse result
+        result = this.reverseList(result);
+
+        // Remove leading zeros
+        result = this.removeLeadingZeros(result);
+
+        return result;
+    }
+}
+
+// Print list
+function printList(head) {
+    let res = '';
+    while (head != null) {
+        res += head.data + " ";
+        head = head.next;
+    }
+    console.log(res.trim());
+}
+
+// Driver code
+let num1 = new Node(1);
+num1.next = new Node(0);
+num1.next.next = new Node(0);
+
+let num2 = new Node(1);
+
+let gfg = new GFG();
+let result = gfg.subLinkedList(num1, num2);
+
+printList(result);
+
+Output
+
+9 9

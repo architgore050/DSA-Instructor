@@ -1,0 +1,1243 @@
+Source: https://www.geeksforgeeks.org/dsa/a-program-to-check-if-strings-are-rotations-of-each-other/
+Title: Check if Strings Are Rotations of Each Other
+Extractor: 2
+
+Given two strings s1 and s2 of equal length, determine whether s2 is a rotation of s1. A string is said to be a rotation of another if it can be obtained by shifting some leading characters of the original string to its end without changing the order of characters.
+
+Examples:
+
+> Input: s1 = "abcd", s2 = "cdab" Output: true Explanation: After 2 right rotations, s1 will become equal to s2. Input: s1 = "aab", s2 = "aba" Output: true Explanation: After 1 left rotation, s1 will become equal to s2. Input: s1 = "abcd", s2 = "acbd" Output: false Explanation: Strings are not rotations of each other.
+
+Table of Content
+
+- [Naive Approach] Generating all rotations - O(n^2) Time and O(1) Space
+- [Expected Approach] Using KMP Algorithm - O(n) Time and O(n) Space
+- [Alternate Approach] Using Rolling Hashing - O(n) Time and O(n) Space
+
+### [Naive Approach] Generating all rotations - O(n^2) Time and O(1) Space
+
+> The idea is to generate all possible rotations of the first string and check if any of these rotations match the second string. If any rotation matches, the two strings are rotations of each other, otherwise they are not.
+
+C++
+
+#include <iostream>
+using namespace std;
+
+bool areRotations(string &s1, string &s2) {
+    int n = s1.size();
+
+  	// generate and check all possible rotations of s1
+    for (int i = 0; i < n; ++i) {
+
+      	// if current rotation is equal to s2 return true
+        if (s1 == s2)
+            return true;
+
+      	// right rotate s1
+        char last = s1.back();
+        s1.pop_back();
+        s1 = last + s1;
+    }
+    return false;
+}
+
+int main() {
+    string s1 = "aab";
+    string s2 = "aba";
+
+    cout << (areRotations(s1, s2) ? "true" : "false");
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+
+bool areRotations(char s1[], char s2[]) {
+    int n = strlen(s1);
+
+    // generate and check all possible rotations of s1
+    for (int i = 0; i < n; ++i) {
+
+        // if current rotation is equal to s2 return true
+        if (strcmp(s1, s2) == 0)
+            return true;
+
+        // Right rotate s1
+        char last = s1[n-1];
+        for (int j = n-1; j > 0; j--) {
+            s1[j] = s1[j-1];
+        }
+        s1[0] = last;
+    }
+    return false;
+}
+
+int main() {
+    char s1[] = "aab";
+    char s2[] = "aba";
+
+    printf("%s", areRotations(s1, s2) ? "true" : "false");
+    return 0;
+}
+
+Java
+
+class GfG {
+        static boolean areRotations(String s1, String s2) {
+        int n = s1.length();
+
+        // generate and check all possible rotations of s1
+        for (int i = 0; i < n; ++i) {
+
+            // if current rotation is equal to s2 return true
+            if (s1.equals(s2)) {
+                return true;
+            }
+
+            // Right rotate s1
+            char last = s1.charAt(s1.length() - 1);
+            s1 = last + s1.substring(0, s1.length() - 1);
+        }
+        return false;
+    }
+
+    public static void main(String[] args) {
+        String s1 = "aab";
+        String s2 = "aba";
+
+        System.out.println(areRotations(s1, s2));
+    }
+}
+
+Python
+
+def areRotations(s1, s2):
+    n = len(s1)
+
+    # generate and check all possible rotations of s1
+    for _ in range(n):
+
+        # if current rotation is equal to s2 return true
+        if s1 == s2:
+            return True
+
+        # Right rotate s1
+        s1 = s1[-1] + s1[:-1]
+
+    return False
+
+if __name__ == "__main__":
+    s1 = "aab"
+    s2 = "aba"
+
+    print("true" if areRotations(s1, s2) else "false")
+
+C#
+
+using System;
+
+class GfG {
+
+    static bool areRotations(string s1, string s2) {
+        int n = s1.Length;
+
+        // generate and check all possible rotations of s1
+        for (int i = 0; i < n; ++i) {
+
+            // if current rotation is equal to s2 return true
+            if (s1 == s2) {
+                return true;
+            }
+
+            // Right rotate s1
+            char last = s1[s1.Length - 1];
+            s1 = last + s1.Substring(0, s1.Length - 1);
+        }
+        return false;
+    }
+
+    static void Main() {
+        string s1 = "aab";
+        string s2 = "aba";
+
+        Console.WriteLine(areRotations(s1, s2) ? "true" : "false");
+    }
+}
+
+JavaScript
+
+function areRotations(s1, s2) {
+    let n = s1.length;
+
+    // generate and check all possible rotations of s1
+    for (let i = 0; i < n; i++) {
+
+        // if current rotation is equal to s2 return true
+        if (s1 === s2) {
+            return true;
+        }
+
+        // Right rotate s1
+        let last = s1[s1.length - 1];
+        s1 = last + s1.slice(0, s1.length - 1);
+    }
+    return false;
+}
+
+// Driver Code
+let s1 = "aab";
+let s2 = "aba";
+
+console.log(areRotations(s1, s2) ? "true" : "false");
+
+Output
+
+true
+
+### [Expected Approach] Using KMP Algorithm - O(n) Time and O(n) Space
+
+> The idea is that when a string is concatenated with itself, all possible rotations of the string will naturally appear as substrings within this concatenated string. To determine if another string is a rotation of the first, we can use KMP Algorithm to check if the second string exists as a substring in the concatenated form of the first string.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<int> computeLPSArray(string& pat) {
+  	int n = pat.size();
+  	vector<int> lps(n);
+
+    // length of the previous longest prefix suffix
+    int len = 0;
+
+    // lps[0] is always 0
+    lps[0] = 0;
+
+    // loop calculates lps[i] for i = 1 to n-1
+    int i = 1;
+    while (i < n) {
+
+        // if the characters match, increment len
+        // and extend the matching prefix
+        if (pat[i] == pat[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        }
+
+        // if there is a mismatch
+        else {
+
+            // if len is not zero, update len to
+            // last known prefix length
+            if (len != 0) {
+                len = lps[len - 1];
+            }
+
+            // no prefix matches, set lps[i] = 0
+            // and move to the next character
+            else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+  	return lps;
+}
+
+// function to check if s1 and s2 are rotations of each other
+bool areRotations(string &s1, string &s2) {
+  	string txt = s1 + s1;
+  	string pat = s2;
+
+  	// search the pattern string s2 in the concatenation string
+  	int n = txt.length();
+    int m = pat.length();
+
+    // create lps[] that will hold the longest prefix suffix
+    // values for pattern
+    vector<int> lps = computeLPSArray(pat);
+
+    int i = 0;
+    int j = 0;
+    while (i < n) {
+        if (pat[j] == txt[i]) {
+            j++;
+            i++;
+        }
+
+        if (j == m) {
+            return true;
+        }
+
+        // mismatch after j matches
+        else if (i < n && pat[j] != txt[i]) {
+
+            // do not match lps[0..lps[j-1]] characters,
+            // they will match anyway
+            if (j != 0)
+                j = lps[j - 1];
+            else
+                i = i + 1;
+        }
+    }
+    return false;
+}
+
+int main() {
+    string s1 = "aab";
+  	string s2 = "aba";
+    cout << (areRotations(s1, s2) ? "true" : "false");
+}
+
+C
+
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+
+int* computeLPSArray(char* pat) {
+    int n = strlen(pat);
+    int* lps = (int*)malloc(n * sizeof(int));
+
+    // length of the previous longest prefix suffix
+    int len = 0;
+
+    // lps[0] is always 0
+    lps[0] = 0;
+
+    // loop calculates lps[i] for i = 1 to n-1
+    int i = 1;
+    while (i < n) {
+
+        // if the characters match, increment len
+        // and extend the matching prefix
+        if (pat[i] == pat[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        }
+
+        // if there is a mismatch
+        else {
+
+            // if len is not zero, update len to
+            // last known prefix length
+            if (len != 0) {
+                len = lps[len - 1];
+            }
+
+            // no prefix matches, set lps[i] = 0
+            // and move to the next character
+            else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
+}
+
+// function to check if s1 and s2 are rotations of each other
+bool areRotations(char *s1, char *s2) {
+    char* txt = (char*)malloc(strlen(s1) * 2 + 1);
+    strcpy(txt, s1);
+    strcat(txt, s1);
+
+    char* pat = s2;
+
+    // search the pattern string s2 in the concatenated string
+    int n = strlen(txt);
+    int m = strlen(pat);
+
+    // Create lps[] that will hold the longest prefix suffix
+    // values for pattern
+    int* lps = computeLPSArray(pat);
+
+    int i = 0;
+    int j = 0;
+    while (i < n) {
+        if (pat[j] == txt[i]) {
+            j++;
+            i++;
+        }
+
+        if (j == m) {
+            return true;
+        }
+
+        // mismatch after j matches
+        else if (i < n && pat[j] != txt[i]) {
+
+            // do not match lps[0..lps[j-1]] characters,
+            // they will match anyway
+            if (j != 0)
+                j = lps[j - 1];
+            else
+                i = i + 1;
+        }
+    }
+    return false;
+}
+
+int main() {
+    char s1[] = "aab";
+    char s2[] = "aba";
+    printf("%s", (areRotations(s1, s2) ? "true" : "false"));
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+class GfG {
+
+    static int[] computeLPSArray(String pat) {
+        int n = pat.length();
+        int[] lps = new int[n];
+
+        // length of the previous longest prefix suffix
+        int len = 0;
+
+        // lps[0] is always 0
+        lps[0] = 0;
+
+        // loop calculates lps[i] for i = 1 to n-1
+        int i = 1;
+        while (i < n) {
+
+            // if the characters match, increment len
+            // and extend the matching prefix
+            if (pat.charAt(i) == pat.charAt(len)) {
+                len++;
+                lps[i] = len;
+                i++;
+            }
+
+            // if there is a mismatch
+            else {
+
+                // if len is not zero, update len to
+                // last known prefix length
+                if (len != 0) {
+                    len = lps[len - 1];
+                }
+
+                // no prefix matches, set lps[i] = 0
+                // and move to the next character
+                else {
+                    lps[i] = 0;
+                    i++;
+                }
+            }
+        }
+        return lps;
+    }
+
+    // function to check if s1 and s2 are rotations of each other
+    static boolean areRotations(String s1, String s2) {
+        String txt = s1 + s1;
+        String pat = s2;
+
+        // search the pattern string s2 in the concatenation string
+        int n = txt.length();
+        int m = pat.length();
+
+        // create lps[] that will hold the longest prefix suffix
+        // values for pattern
+        int[] lps = computeLPSArray(pat);
+
+        int i = 0;
+        int j = 0;
+        while (i < n) {
+            if (pat.charAt(j) == txt.charAt(i)) {
+                j++;
+                i++;
+            }
+
+            if (j == m) {
+                return true;
+            }
+
+            // mismatch after j matches
+            else if (i < n && pat.charAt(j) != txt.charAt(i)) {
+
+                // do not match lps[0..lps[j-1]] characters,
+                // they will match anyway
+                if (j != 0)
+                    j = lps[j - 1];
+                else
+                    i = i + 1;
+            }
+        }
+        return false;
+    }
+
+    public static void main(String[] args) {
+        String s1 = "aab";
+        String s2 = "aba";
+        System.out.println(areRotations(s1, s2) ? "true" : "false");
+    }
+}
+
+Python
+
+def computeLPSArray(pat):
+    n = len(pat)
+    lps = [0] * n
+
+    # length of the previous longest prefix suffix
+    patLen = 0
+
+    # lps[0] is always 0
+    lps[0] = 0
+
+    # loop calculates lps[i] for i = 1 to n-1
+    i = 1
+    while i < n:
+
+        # if the characters match, increment len
+        # and extend the matching prefix
+        if pat[i] == pat[patLen]:
+            patLen += 1
+            lps[i] = patLen
+            i += 1
+
+        # If there is a mismatch
+        else:
+
+            # If len is not zero, update len to
+            # last known prefix length
+            if patLen != 0:
+                patLen = lps[patLen - 1]
+            # No prefix matches, set lps[i] = 0
+            # and move to the next character
+            else:
+                lps[i] = 0
+                i += 1
+    return lps
+
+# function to check if s1 and s2 are rotations of each other
+def areRotations(s1, s2):
+    txt = s1 + s1
+    pat = s2
+
+    # search the pattern string s2 in the concatenation string
+    n = len(txt)
+    m = len(pat)
+
+    # create lps[] that will hold the longest prefix suffix
+    # values for pattern
+    lps = computeLPSArray(pat)
+
+    i = 0
+    j = 0
+    while i < n:
+        if pat[j] == txt[i]:
+            j += 1
+            i += 1
+
+        if j == m:
+            return True
+
+        # mismatch after j matches
+        elif i < n and pat[j] != txt[i]:
+
+            # do not match lps[0..lps[j-1]] characters,
+            # they will match anyway
+            if j != 0:
+                j = lps[j - 1]
+            else:
+                i += 1
+    return False
+
+if __name__ == "__main__":
+    s1 = "aab"
+    s2 = "aba"
+    print("true" if areRotations(s1, s2) else "false")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static int[] computeLPSArray(string pat) {
+        int n = pat.Length;
+        int[] lps = new int[n];
+
+        // Length of the previous longest prefix suffix
+        int len = 0;
+
+        // lps[0] is always 0
+        lps[0] = 0;
+
+        // loop calculates lps[i] for i = 1 to n-1
+        int i = 1;
+        while (i < n) {
+
+            // if the characters match, increment len
+            // and extend the matching prefix
+            if (pat[i] == pat[len]) {
+                len++;
+                lps[i] = len;
+                i++;
+            }
+
+            // if there is a mismatch
+            else {
+
+                // if len is not zero, update len to
+                // last known prefix length
+                if (len != 0) {
+                    len = lps[len - 1];
+                }
+
+                // No prefix matches, set lps[i] = 0
+                // and move to the next character
+                else {
+                    lps[i] = 0;
+                    i++;
+                }
+            }
+        }
+        return lps;
+    }
+
+    // function to check if s1 and s2 are rotations of each other
+    static bool areRotations(string s1, string s2) {
+        string txt = s1 + s1;
+        string pat = s2;
+
+        // search the pattern string s2 in the concatenation string
+        int n = txt.Length;
+        int m = pat.Length;
+
+        // create lps[] that will hold the longest prefix suffix
+        // values for pattern
+        int[] lps = computeLPSArray(pat);
+
+        int i = 0;
+        int j = 0;
+        while (i < n) {
+            if (pat[j] == txt[i]) {
+                j++;
+                i++;
+            }
+
+            if (j == m)  {
+                return true;
+            }
+
+            // mismatch after j matches
+            else if (i < n && pat[j] != txt[i]) {
+
+                // do not match lps[0..lps[j-1]] characters,
+                // they will match anyway
+                if (j != 0)
+                    j = lps[j - 1];
+                else
+                    i++;
+            }
+        }
+        return false;
+    }
+
+    static void Main() {
+        string s1 = "aab";
+        string s2 = "aba";
+        Console.WriteLine(areRotations(s1, s2) ? "true" : "false");
+    }
+}
+
+JavaScript
+
+function computeLPSArray(pat) {
+    let n = pat.length;
+    let lps = new Array(n).fill(0);
+
+    // length of the previous longest prefix suffix
+    let len = 0;
+
+    // lps[0] is always 0
+    lps[0] = 0;
+
+    // loop calculates lps[i] for i = 1 to n-1
+    let i = 1;
+    while (i < n) {
+
+        // if the characters match, increment len
+        // and extend the matching prefix
+        if (pat[i] === pat[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        }
+
+        // if there is a mismatch
+        else {
+
+            // if len is not zero, update len to
+            // last known prefix length
+            if (len !== 0) {
+                len = lps[len - 1];
+            }
+
+            // no prefix matches, set lps[i] = 0
+            // and move to the next character
+            else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
+}
+
+// function to check if s1 and s2 are rotations of each other
+function areRotations(s1, s2) {
+    let txt = s1 + s1;
+    let pat = s2;
+
+    // search the pattern string s2 in the concatenation string
+    let n = txt.length;
+    let m = pat.length;
+
+    // create lps[] that will hold the longest prefix suffix
+    // values for pattern
+    let lps = computeLPSArray(pat);
+
+    let i = 0;
+    let j = 0;
+    while (i < n) {
+        if (pat[j] === txt[i]) {
+            j++;
+            i++;
+        }
+
+        if (j === m) {
+            return true;
+        }
+
+        // mismatch after j matches
+        else if (i < n && pat[j] !== txt[i]) {
+
+            // do not match lps[0..lps[j-1]] characters,
+            // they will match anyway
+            if (j !== 0)
+                j = lps[j - 1];
+            else
+                i++;
+        }
+    }
+    return false;
+}
+
+// Driver Code
+const s1 = "aab";
+const s2 = "aba";
+console.log(areRotations(s1, s2) ? "true" : "false");
+
+Output
+
+true
+
+### [Alternate Approach] Using Rabin Karp Rolling Hash - O(n) Time and O(n) Space
+
+> The idea is that when a string is concatenated with itself, all possible rotations of the string will naturally appear as substrings within this concatenated string. To do this efficiently, we use Rolling Hash (with double hashing) to compute hashes of all substrings of length n in s1 + s1, and compare them with the hash of s2.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+class RollingHash {
+public:
+    const int mod = 1e9 + 7;
+    const int base1 = 31;
+    const int base2 = 37;
+
+    int length;
+    string input;
+
+    // preHash[i] = hash of input[0..i-1]
+    vector<vector<int>> preHash;
+
+    // power[i] = base^i for both hash bases
+    vector<vector<int>> power;
+
+    // constructor
+    RollingHash(string& str) {
+        input = str;
+        length = input.size();
+        preHash.assign(length + 1, vector<int>(2, 0));
+        power.assign(length + 1, vector<int>(2, 1));
+        buildHashes();
+    }
+
+    int add(int a, int b) {
+        return (a + b) % mod;
+    }
+
+    int subtract(int a, int b) {
+        return (a - b + mod) % mod;
+    }
+
+    int multiply(int a, int b) {
+        return (1LL * a * b) % mod;
+    }
+
+    void buildHashes() {
+        for (int i = 0; i < length; i++) {
+            preHash[i + 1][0] =
+                add(multiply(preHash[i][0], base1), input[i]);
+            preHash[i + 1][1] =
+                add(multiply(preHash[i][1], base2), input[i]);
+
+            power[i + 1][0] = multiply(power[i][0], base1);
+            power[i + 1][1] = multiply(power[i][1], base2);
+        }
+    }
+
+    // returns hash of substring input[left..right-1]
+    vector<int> getHash(int left, int right) {
+        vector<int> result(2);
+        for (int b = 0; b < 2; ++b) {
+            result[b] = subtract(preHash[right][b],
+                multiply(preHash[left][b], power[right - left][b]));
+        }
+        return result;
+    }
+};
+
+// function to check if s2 is a rotation of s1
+bool areRotations(string &s1, string &s2) {
+
+    // concatenate s1 with itself to include
+    // all possible rotations
+    string concat = s1 + s1;
+    int n = s1.length();
+
+    // build rolling hash for the concatenated
+    // string and s2
+    RollingHash rhConcat(concat);
+    RollingHash rhS2(s2);
+
+    // compute the full hash of s2
+    vector<int> targetHash = rhS2.getHash(0, n);
+
+    // slide a window of size n over concat
+    // and compare hashes
+    for (int i = 0; i <= concat.length() - n; i++) {
+
+        // get hash of substring concat[i...i+n-1]
+        vector<int> subHash = rhConcat.getHash(i, i + n);
+
+        // if hashes match, s2 is a rotation of s1
+        if (subHash == targetHash)
+            return true;
+    }
+
+    // no matching rotation found
+    return false;
+}
+
+int main() {
+
+    string s1 = "aab";
+    string s2 = "aba";
+
+    if (areRotations(s1, s2)) {
+        cout << "true";
+    } else {
+        cout << "false";
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+    static class RollingHash {
+        final int mod = 1000000007;
+        final int base1 = 31;
+        final int base2 = 37;
+
+        int length;
+        String input;
+
+        // preHash[i] = hash of input[0..i-1]
+        int[][] preHash;
+
+        // power[i] = base^i for both hash bases
+        int[][] power;
+
+        RollingHash(String str) {
+            input = str;
+            length = str.length();
+            preHash = new int[length + 1][2];
+            power = new int[length + 1][2];
+            power[0][0] = power[0][1] = 1;
+            buildHashes();
+        }
+
+        int add(int a, int b) {
+            return (a + b) % mod;
+        }
+
+        int subtract(int a, int b) {
+            return (a - b + mod) % mod;
+        }
+
+        int multiply(int a, int b) {
+            return (int)((1L * a * b) % mod);
+        }
+
+        void buildHashes() {
+            for (int i = 0; i < length; i++) {
+                preHash[i + 1][0] =
+                    add(multiply(preHash[i][0], base1), input.charAt(i));
+                preHash[i + 1][1] =
+                    add(multiply(preHash[i][1], base2), input.charAt(i));
+
+                power[i + 1][0] = multiply(power[i][0], base1);
+                power[i + 1][1] = multiply(power[i][1], base2);
+            }
+        }
+
+        // returns hash of substring input[left..right-1]
+        int[] getHash(int left, int right) {
+            int[] result = new int[2];
+            for (int b = 0; b < 2; b++) {
+                result[b] = subtract(preHash[right][b],
+                    multiply(preHash[left][b], power[right - left][b]));
+            }
+            return result;
+        }
+    }
+
+    // function to check if s2 is a rotation of s1
+    public static boolean areRotations(String s1, String s2) {
+
+        // concatenate s1 with itself to include
+        // all possible rotations
+        String concat = s1 + s1;
+        int n = s1.length();
+
+        // build rolling hash for the concatenated
+        // string and s2
+        RollingHash rhConcat = new RollingHash(concat);
+        RollingHash rhS2 = new RollingHash(s2);
+
+        // compute the full hash of s2
+        int[] targetHash = rhS2.getHash(0, n);
+
+        // slide a window of size n over concat
+        // and compare hashes
+        for (int i = 0; i <= concat.length() - n; i++) {
+            // get hash of substring concat[i...i+n-1]
+            int[] subHash = rhConcat.getHash(i, i + n);
+            if (subHash[0] == targetHash[0] && subHash[1] == targetHash[1])
+                return true;
+        }
+
+        // no matching rotation found
+        return false;
+    }
+
+    public static void main(String[] args) {
+        String s1 = "aab";
+        String s2 = "aba";
+
+        if (areRotations(s1, s2)) {
+            System.out.println("true");
+        } else {
+            System.out.println("false");
+        }
+    }
+}
+
+Python
+
+# constants
+mod = 10**9 + 7
+base1 = 31
+base2 = 37
+
+def add(a, b):
+    return (a + b) % mod
+
+def subtract(a, b):
+    return (a - b + mod) % mod
+
+def multiply(a, b):
+    return (a * b) % mod
+
+# builds prefix hashes and powers
+def buildHashes(s):
+    n = len(s)
+    preHash = [[0, 0] for _ in range(n + 1)]
+    power = [[1, 1] for _ in range(n + 1)]
+
+    for i in range(n):
+        preHash[i + 1][0] = \
+            add(multiply(preHash[i][0], base1), ord(s[i]))
+        preHash[i + 1][1] = \
+            add(multiply(preHash[i][1], base2), ord(s[i]))
+
+        power[i + 1][0] = multiply(power[i][0], base1)
+        power[i + 1][1] = multiply(power[i][1], base2)
+
+    return preHash, power
+
+# returns hash of s[left..right-1]
+def getHash(preHash, power, left, right):
+    return [
+        subtract(preHash[right][b],
+            multiply(preHash[left][b], power[right - left][b]))
+        for b in range(2)
+    ]
+
+# function to check if s2 is a rotation of s1
+def areRotations(s1, s2):
+    if len(s1) != len(s2):
+        return False
+
+    # concatenate s1 with itself to include
+    # all possible rotations
+    concat = s1 + s1
+    n = len(s1)
+
+    # build rolling hash for the concatenated
+    # string and s2
+    preHashConcat, powerConcat = buildHashes(concat)
+    preHashS2, powerS2 = buildHashes(s2)
+
+    # compute the full hash of s2
+    targetHash = getHash(preHashS2, powerS2, 0, n)
+
+    # slide a window of size n over concat
+    # and compare hashes
+    for i in range(len(concat) - n + 1):
+        # get hash of substring concat[i...i+n-1]
+        subHash = getHash(preHashConcat, powerConcat, i, i + n)
+        if subHash == targetHash:
+            return True
+
+    # no matching rotation found
+    return False
+
+if __name__ == "__main__":
+    s1 = "aab"
+    s2 = "aba"
+    if areRotations(s1, s2):
+        print("true")
+    else:
+        print("false")
+
+C#
+
+using System;
+
+class GfG {
+    class RollingHash {
+        readonly int mod = 1000000007;
+        readonly int base1 = 31;
+        readonly int base2 = 37;
+
+        int length;
+        string input;
+
+        // preHash[i] = hash of input[0..i-1]
+        int[,] preHash;
+
+        // power[i] = base^i for both hash bases
+        int[,] power;
+
+        public RollingHash(string str) {
+            input = str;
+            length = input.Length;
+            preHash = new int[length + 1, 2];
+            power = new int[length + 1, 2];
+            power[0, 0] = power[0, 1] = 1;
+            buildHashes();
+        }
+
+        int add(int a, int b) {
+            return (a + b) % mod;
+        }
+
+        int subtract(int a, int b) {
+            return (a - b + mod) % mod;
+        }
+
+        int multiply(int a, int b) {
+            return (int)((1L * a * b) % mod);
+        }
+
+        void buildHashes() {
+            for (int i = 0; i < length; i++) {
+                preHash[i + 1, 0] = add(multiply(preHash[i, 0], base1), input[i]);
+                preHash[i + 1, 1] = add(multiply(preHash[i, 1], base2), input[i]);
+
+                power[i + 1, 0] = multiply(power[i, 0], base1);
+                power[i + 1, 1] = multiply(power[i, 1], base2);
+            }
+        }
+
+        // returns hash of substring input[left..right-1]
+        public int[] getHash(int left, int right) {
+            int[] result = new int[2];
+            for (int b = 0; b < 2; ++b) {
+                result[b] = subtract(preHash[right, b],
+                    multiply(preHash[left, b], power[right - left, b]));
+            }
+            return result;
+        }
+    }
+
+    // function to check if s2 is a rotation of s1
+    static bool areRotations(string s1, string s2) {
+
+        // concatenate s1 with itself to include
+        // all possible rotations
+        string concat = s1 + s1;
+        int n = s1.Length;
+
+        // build rolling hash for the concatenated
+        // string and s2
+        RollingHash rhConcat = new RollingHash(concat);
+        RollingHash rhS2 = new RollingHash(s2);
+
+        // compute the full hash of s2
+        int[] targetHash = rhS2.getHash(0, n);
+
+        // slide a window of size n over concat
+        // and compare hashes
+        for (int i = 0; i <= concat.Length - n; i++) {
+            // get hash of substring concat[i...i+n-1]
+            int[] subHash = rhConcat.getHash(i, i + n);
+            if (subHash[0] == targetHash[0] && subHash[1] == targetHash[1])
+                return true;
+        }
+
+        // no matching rotation found
+        return false;
+    }
+
+    static void Main() {
+        string s1 = "aab";
+        string s2 = "aba";
+
+        if (areRotations(s1, s2)) {
+            Console.WriteLine("true");
+        } else {
+            Console.WriteLine("false");
+        }
+    }
+}
+
+JavaScript
+
+class RollingHash {
+    constructor(str) {
+        this.mod = 1e9 + 7;
+        this.base1 = 31;
+        this.base2 = 37;
+
+        this.input = str;
+        this.length = str.length;
+
+        // preHash[i] = hash of input[0..i-1]
+        this.preHash = Array.from({ length: this.length + 1 }, () => [0, 0]);
+
+        // power[i] = base^i for both hash bases
+        this.power = Array.from({ length: this.length + 1 }, () => [1, 1]);
+
+        this.buildHashes();
+    }
+
+    add(a, b) {
+        return (a + b) % this.mod;
+    }
+
+    subtract(a, b) {
+        return (a - b + this.mod) % this.mod;
+    }
+
+    multiply(a, b) {
+        return (a * b) % this.mod;
+    }
+
+    buildHashes() {
+        for (let i = 0; i < this.length; i++) {
+            this.preHash[i + 1][0] =
+                this.add(this.multiply(this.preHash[i][0], this.base1),
+                        this.input.charCodeAt(i));
+            this.preHash[i + 1][1] =
+                this.add(this.multiply(this.preHash[i][1], this.base2),
+                        this.input.charCodeAt(i));
+
+            this.power[i + 1][0] = this.multiply(this.power[i][0], this.base1);
+            this.power[i + 1][1] = this.multiply(this.power[i][1], this.base2);
+        }
+    }
+
+    // returns hash of substring input[left..right-1]
+    getHash(left, right) {
+        return [0, 1].map(b =>
+            this.subtract(this.preHash[right][b],
+                this.multiply(this.preHash[left][b], this.power[right - left][b]))
+        );
+    }
+}
+
+// function to check if s2 is a rotation of s1
+function areRotations(s1, s2) {
+
+    // concatenate s1 with itself to include
+    // all possible rotations
+    const concat = s1 + s1;
+    const n = s1.length;
+
+    // build rolling hash for the concatenated
+    // string and s2
+    const rhConcat = new RollingHash(concat);
+    const rhS2 = new RollingHash(s2);
+
+    // compute the full hash of s2
+    const targetHash = rhS2.getHash(0, n);
+
+    // slide a window of size n over concat
+    // and compare hashes
+    for (let i = 0; i <= concat.length - n; i++) {
+        // get hash of substring concat[i...i+n-1]
+        const subHash = rhConcat.getHash(i, i + n);
+        if (subHash[0] === targetHash[0] && subHash[1] === targetHash[1]) {
+            return true;
+        }
+    }
+
+    // no matching rotation found
+    return false;
+}
+
+// Driver code
+const s1 = "aab";
+const s2 = "aba";
+console.log(areRotations(s1, s2) ? "true" : "false");
+
+Output
+
+true

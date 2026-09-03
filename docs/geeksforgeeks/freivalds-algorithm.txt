@@ -1,0 +1,531 @@
+Source: https://www.geeksforgeeks.org/dsa/freivalds-algorithm/
+Title: Freivald’s Algorithm to check if a matrix is product of two
+Extractor: 2
+
+Given three matrices A, B and C, find if C is a product of A and B. Examples:
+
+Input : A = 1 1
+            1 1
+        B = 1 1
+            1 1
+        C = 2  2
+             2 2
+Output : Yes
+C = A x B
+
+Input : A = 1 1 1
+            1 1 1
+            1 1 1
+        B = 1 1 1
+            1 1 1
+            1 1 1
+        C = 3 3 3
+            3 1 2
+            3 3 3
+Output : No
+
+A simple solution is to find product of A and B and then check if product is equal to C or not. A possible time complexity of this method is O(n 2.8874 ) using Stression's matrix multiplication .
+
+Freivalds' algorithm is a probabilistic randomized algorithm that works in time O(n 2 ) with high probability. In O(kn 2 ) time the algorithm can verify a matrix product with probability of failure less than 2 -k . Since the output is not always correct, it is a Monte Carlo randomized algorithm .
+
+> Steps : Generate an n × 1 random 0/1 vector r? . Compute P? = A × (Br)? - Cr? . Return true if P? = ( 0, 0, …, 0 ) T , return false otherwise.
+
+The idea is based on the fact that if C is actually a product, then value of A × (Br)? - Cr? will always be 0. If the value is non-zero, then C can not be a product. The error condition is that the value may be 0 even when C is not a product.
+
+Below is the implementation of the above approach:
+
+C++
+
+// CPP code to implement Freivald’s Algorithm
+#include <bits/stdc++.h>
+using namespace std;
+
+#define N 2
+
+// Function to check if ABx = Cx
+int freivald(int a[][N], int b[][N], int c[][N])
+{
+    // Generate a random vector
+    bool r[N];
+    for (int i = 0; i < N; i++)
+        r[i] = random() % 2;
+
+    // Now compute B*r for evaluating
+    // expression A * (B*r) - (C*r)
+    int br[N] = { 0 };
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            br[i] = br[i] + b[i][j] * r[j];
+
+    // Now compute C*r for evaluating
+    // expression A * (B*r) - (C*r)
+    int cr[N] = { 0 };
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            cr[i] = cr[i] + c[i][j] * r[j];
+
+    // Now compute A* (B*r) for evaluating
+    // expression A * (B*r) - (C*r)
+    int axbr[N] = { 0 };
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            axbr[i] = axbr[i] + a[i][j] * br[j];
+
+    // Finally check if value of expression
+    // A * (B*r) - (C*r) is 0 or not
+    for (int i = 0; i < N; i++)
+        if (axbr[i] - cr[i] != 0)
+            false;
+
+    return true;
+}
+
+// Runs k iterations Freivald. The value
+// of k determines accuracy. Higher value
+// means higher accuracy.
+bool isProduct(int a[][N], int b[][N],
+               int c[][N], int k)
+{
+    for (int i=0; i<k; i++)
+        if (freivald(a, b, c) == false)
+            return false;
+    return true;
+}
+
+// Driver code
+int main()
+{
+    int a[N][N] = { { 1, 1 }, { 1, 1 } };
+    int b[N][N] = { { 1, 1 }, { 1, 1 } };
+    int c[N][N] = { { 2, 2 }, { 2, 2 } };
+    int k = 2;
+    if (isProduct(a, b, c, k))
+        printf("Yes");
+    else
+        printf("No");
+    return 0;
+}
+
+Java
+
+// Java code to implement
+// Freivald's Algorithm
+import java.io.*;
+import java.util.*;
+import java.math.*;
+
+class GFG {
+    static int N = 2;
+
+    // Function to check if ABx = Cx
+    static boolean freivald(int a[][], int b[][],
+                                       int c[][])
+    {
+        // Generate a random vector
+        int r[] = new int[N];
+        for (int i = 0; i < N; i++)
+        r[i] = (int)(Math.random()) % 2;
+
+        // Now compute B*r for evaluating
+        // expression A * (B*r) - (C*r)
+        int br[] = new int[N];
+        Arrays.fill(br, 0);
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                br[i] = br[i] + b[i][j] * r[j];
+
+        // Now compute C*r for evaluating
+        // expression A * (B*r) - (C*r)
+        int cr[] = new int[N];
+        Arrays.fill(cr, 0);
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                cr[i] = cr[i] + c[i][j] * r[j];
+
+        // Now compute A* (B*r) for evaluating
+        // expression A * (B*r) - (C*r)
+        int axbr[] = new int[N];
+        Arrays.fill(axbr, 0);
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                axbr[i] = axbr[i] + a[i][j] * br[j];
+
+        // Finally check if value of expression
+        // A * (B*r) - (C*r) is 0 or not
+        for (int i = 0; i < N; i++)
+            if (axbr[i] - cr[i] != 0)
+                return false;
+
+        return true;
+    }
+
+    // Runs k iterations Freivald. The value
+    // of k determines accuracy. Higher value
+    // means higher accuracy.
+    static boolean isProduct(int a[][], int b[][],
+                                 int c[][], int k)
+    {
+        for (int i = 0; i < k; i++)
+            if (freivald(a, b, c) == false)
+                return false;
+        return true;
+    }
+
+    // Driver code
+    public static void main(String args[])
+    {
+        int a[][] = { { 1, 1 }, { 1, 1 } };
+        int b[][] = { { 1, 1 }, { 1, 1 } };
+        int c[][] = { { 2, 2 }, { 2, 2 } };
+        int k = 2;
+        if (isProduct(a, b, c, k))
+            System.out.println("Yes");
+        else
+            System.out.println("No");
+    }
+}
+
+/*This code is contributed by Nikita Tiwari.*/
+
+Python3
+
+# Python3 code to implement Freivald’s Algorithm
+import random
+N = 2
+
+# Function to check if ABx = Cx
+def freivald(a, b, c) :
+
+    # Generate a random vector
+    r = [0] * N
+
+    for i in range(0, N) :
+        r[i] = (int)(random.randrange(509090009) % 2)
+
+    # Now compute B*r for evaluating
+    # expression A * (B*r) - (C*r)
+    br = [0] * N
+
+    for i in range(0, N) :
+        for j in range(0, N) :
+            br[i] = br[i] + b[i][j] * r[j]
+
+    # Now compute C*r for evaluating
+    # expression A * (B*r) - (C*r)
+    cr = [0] * N
+    for i in range(0, N) :
+        for j in range(0, N) :
+            cr[i] = cr[i] + c[i][j] * r[j]
+
+    # Now compute A* (B*r) for evaluating
+    # expression A * (B*r) - (C*r)
+    axbr = [0] * N
+    for i in range(0, N) :
+        for j in range(0, N) :
+            axbr[i] = axbr[i] + a[i][j] * br[j]
+
+    # Finally check if value of expression
+    # A * (B*r) - (C*r) is 0 or not
+    for i in range(0, N) :
+        if (axbr[i] - cr[i] != 0) :
+            return False
+
+    return True
+
+# Runs k iterations Freivald. The value
+# of k determines accuracy. Higher value
+# means higher accuracy.
+def isProduct(a, b, c, k) :
+
+    for i in range(0, k) :
+        if (freivald(a, b, c) == False) :
+            return False
+    return True
+
+# Driver code
+a = [ [ 1, 1 ], [ 1, 1 ] ]
+b = [ [ 1, 1 ], [ 1, 1 ] ]
+c = [ [ 2, 2 ], [ 2, 2 ] ]
+k = 2
+
+if (isProduct(a, b, c, k)) :
+    print("Yes")
+else :
+    print("No")
+
+# This code is contributed by Nikita Tiwari
+
+C#
+
+// C# code to implement
+// Freivald's Algorithm
+using System;
+
+class GFG
+{
+    static int N = 2;
+
+    // Function to check
+    // if ABx = Cx
+    static bool freivald(int [,]a,
+                         int [,]b,
+                         int [,]c)
+    {
+        // Generate a
+        // random vector
+        Random rand = new Random();
+        int []r = new int[N];
+
+        for (int i = 0; i < N; i++)
+        r[i] = (int)(rand.Next()) % 2;
+
+        // Now compute B*r for
+        // evaluating expression
+        // A * (B*r) - (C*r)
+        int []br = new int[N];
+
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                br[i] = br[i] +
+                        b[i, j] * r[j];
+
+        // Now compute C*r for
+        // evaluating expression
+        // A * (B*r) - (C*r)
+        int []cr = new int[N];
+
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                cr[i] = cr[i] +
+                        c[i, j] * r[j];
+
+        // Now compute A* (B*r) for
+        // evaluating expression
+        // A * (B*r) - (C*r)
+        int []axbr = new int[N];
+
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                axbr[i] = axbr[i] +
+                          a[i, j] * br[j];
+
+        // Finally check if value
+        // of expression A * (B*r) -
+        // (C*r) is 0 or not
+        for (int i = 0; i < N; i++)
+            if (axbr[i] - cr[i] != 0)
+                return false;
+
+        return true;
+    }
+
+    // Runs k iterations Freivald.
+    // The value of k determines
+    // accuracy. Higher value
+    // means higher accuracy.
+    static bool isProduct(int [,]a, int [,]b,
+                          int [,]c, int k)
+    {
+        for (int i = 0; i < k; i++)
+            if (freivald(a, b, c) == false)
+                return false;
+        return true;
+    }
+
+    // Driver code
+    static void Main()
+    {
+        int [,]a = new int[,]{ { 1, 1 },
+                               { 1, 1 }};
+        int [,]b = new int[,]{ { 1, 1 },
+                               { 1, 1 }};
+        int [,]c = new int[,]{ { 2, 2 },
+                               { 2, 2 }};
+        int k = 2;
+        if (isProduct(a, b, c, k))
+            Console.WriteLine("Yes");
+        else
+            Console.WriteLine("No");
+    }
+}
+// This code is contributed
+// by Manish Shaw(manishshaw1)
+
+PHP
+
+<?php
+// PHP code to implement
+// Freivald’s Algorithm
+$N = 2;
+
+// Function to check
+// if ABx = Cx
+function freivald($a, $b, $c)
+{
+    global $N;
+
+    // Generate a
+    // random vector
+    $r = array();
+    $br = array();
+    $cr = array();
+    $axbr = array();
+
+    for ($i = 0; $i < $N; $i++)
+    {
+        $r[$i] = mt_rand() % 2;
+        $br[$i] = 0;
+        $cr[$i] = 0;
+        $axbr[$i] = 0;
+    }
+
+    // Now compute B*r for
+    // evaluating expression
+    // A * (B*r) - (C*r)
+    for ($i = 0; $i < $N; $i++)
+    {
+        for ($j = 0; $j < $N; $j++)
+            $br[$i] = $br[$i] +
+                      $b[$i][$j] *
+                      $r[$j];
+    }
+
+    // Now compute C*r for
+    // evaluating expression
+    // A * (B*r) - (C*r)
+    for ($i = 0; $i < $N; $i++)
+    {
+        for ($j = 0; $j < $N; $j++)
+            $cr[$i] = $cr[$i] +
+                      $c[$i][$j] *
+                      $r[$j];
+    }
+
+    // Now compute A* (B*r) for
+    // evaluating expression
+    // A * (B*r) - (C*r)
+    for ($i = 0; $i < $N; $i++)
+    {
+        for ($j = 0; $j < $N; $j++)
+            $axbr[$i] = $axbr[$i] +
+                        $a[$i][$j] *
+                        $br[$j];
+    }
+
+    // Finally check if value
+    // of expression A * (B*r) -
+    // (C*r) is 0 or not
+    for ($i = 0; $i < $N; $i++)
+        if ($axbr[$i] - $cr[$i] != 0)
+            return false;
+
+    return true;
+}
+
+// Runs k iterations Freivald.
+// The value of k determines
+// accuracy. Higher value
+// means higher accuracy.
+function isProduct($a, $b, $c, $k)
+{
+    for ($i = 0; $i < $k; $i++)
+        if (freivald($a,
+                     $b, $c) == false)
+            return false;
+    return true;
+}
+
+// Driver code
+$a = array(array(1, 1),
+           array(1, 1));
+$b = array(array(1, 1),
+           array(1, 1));
+$c = array(array(2, 2),
+           array(2, 2));
+$k = 2;
+if (isProduct($a, $b,
+              $c, $k))
+    echo ("Yes");
+else
+    echo ("No");
+
+// This code is contributed
+// by Manish Shaw(manishshaw1)
+?>
+
+JavaScript
+
+<script>
+
+    // JavaScript code to implement Freivald’s Algorithm
+    let N = 2;
+
+    // Function to check if ABx = Cx
+    function freivald(a,b,c)
+    {
+        // Generate a random vector
+        let r = new Array(N);
+        for (let i = 0; i < N; i++)
+            r[i] = Math.random() % 2;
+
+        // Now compute B*r for evaluating
+        // expression A * (B*r) - (C*r)
+        let br = new Array(N);
+        br.fill(0);
+        for (let i = 0; i < N; i++)
+            for (let j = 0; j < N; j++)
+                br[i] = br[i] + b[i][j] * r[j];
+
+        // Now compute C*r for evaluating
+        // expression A * (B*r) - (C*r)
+        let cr = new Array(N);
+        cr.fill(0);
+        for (let i = 0; i < N; i++)
+            for (let j = 0; j < N; j++)
+                cr[i] = cr[i] + c[i][j] * r[j];
+
+        // Now compute A* (B*r) for evaluating
+        // expression A * (B*r) - (C*r)
+        let axbr = new Array(N);
+        axbr.fill(0);
+        for (let i = 0; i < N; i++)
+            for (let j = 0; j < N; j++)
+                axbr[i] = axbr[i] + a[i][j] * br[j];
+
+        // Finally check if value of expression
+        // A * (B*r) - (C*r) is 0 or not
+        for (let i = 0; i < N; i++)
+            if (axbr[i] - cr[i] != 0)
+                false;
+
+        return true;
+    }
+
+    // Runs k iterations Freivald. The value
+    // of k determines accuracy. Higher value
+    // means higher accuracy.
+    function isProduct(a,b,c,k)
+    {
+        for (let i=0; i<k; i++)
+            if (freivald(a, b, c) == false)
+                return false;
+        return true;
+    }
+
+    // Driver code
+    let a = [[ 1, 1 ], [ 1, 1 ]];
+    let b = [[ 1, 1 ], [ 1, 1 ]];
+    let c = [[ 2, 2 ], [ 2, 2 ]];
+    let k = 2;
+    if (isProduct(a, b, c, k))
+        document.write("Yes");
+    else
+        document.write("No");
+
+</script>
+
+Output:
+
+Yes
+
+Time Complexity: O(N ^ 2) Auxiliary Space: O(N )

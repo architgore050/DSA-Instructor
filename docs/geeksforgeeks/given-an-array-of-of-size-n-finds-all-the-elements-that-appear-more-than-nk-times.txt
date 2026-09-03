@@ -1,0 +1,651 @@
+Source: https://www.geeksforgeeks.org/dsa/given-an-array-of-of-size-n-finds-all-the-elements-that-appear-more-than-nk-times/
+Title: Count Frequent Elements
+Extractor: 2
+
+Given an array arr[] of size n and an integer k, determine the number of elements that appear more than n/k times in the array.
+
+Examples:
+
+> Input: arr[ ] = [3, 4, 2, 2, 1, 2, 3, 3], k = 4 Output: 2 Explanation: The elements 2 and 3 each occur 3 times, which is more than n/k = 2. Input: arr[ ] = [9, 10, 7, 9, 2, 9, 10], k = 3 Output: 1 Explanation: Both 2 and 3 appear 2 times in the array, which is more than n/k.
+
+Table of Content
+
+- [Expected Approach] Use Hashing - O(n) Time and O(n) Space
+- [Expected Approach for Small K] - Moore's Voting Algorithm - O(n*k) Time and O(k) Space
+- Using Built-In Counter in Python
+
+### [Expected Approach] Use Hashing - O(n) Time and O(n) Space
+
+> The idea is to pick all elements one by one. For every picked element, count its occurrences by traversing the array, if count becomes more than n/k, then print the element.
+
+- First, make a frequency map of all the elements in the array
+- Then traverse the map and check the frequency of every element
+- If the frequency is greater than n/k then print the element.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+int countOccurence(vector<int> &arr, int k)
+{
+    // compute array size and frequency threshold
+    int n = arr.size();
+    int x = n / k;
+
+    // store frequency of each element
+    unordered_map<int, int> freq;
+    for (int num : arr)
+        freq[num]++;
+
+    // count elements whose frequency exceeds n/k
+    int count = 0;
+    for (auto &p : freq)
+        if (p.second > x)
+            count++;
+
+    // return the final count
+    return count;
+}
+
+int main()
+{
+    vector<int> arr = {3, 4, 2, 2, 1, 2, 3, 3};
+    int k = 4;
+    cout << countOccurence(arr, k);
+    return 0;
+}
+
+Java
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class GFG {
+
+    static int countOccurence(int[] arr, int k) {
+        // compute array size and frequency threshold
+        int n = arr.length;
+        int x = n / k;
+
+        // store frequency of each element
+        HashMap<Integer, Integer> freq = new HashMap<>();
+        for (int num : arr)
+            freq.put(num, freq.getOrDefault(num, 0) + 1);
+
+        // count elements whose frequency exceeds n/k
+        int count = 0;
+        for (Map.Entry<Integer, Integer> e : freq.entrySet())
+            if (e.getValue() > x)
+                count++;
+
+        // return the final count
+        return count;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {3, 4, 2, 2, 1, 2, 3, 3};
+        int k = 4;
+        System.out.println(countOccurence(arr, k));
+    }
+}
+
+Python
+
+def countOccurence(arr, k):
+    # compute array size and frequency threshold
+    n = len(arr)
+    x = n // k
+
+    # store frequency of each element
+    freq = {}
+    for num in arr:
+        freq[num] = freq.get(num, 0) + 1
+
+    # count elements whose frequency exceeds n/k
+    count = 0
+    for val in freq.values():
+        if val > x:
+            count += 1
+
+    # return the final count
+    return count
+
+if __name__ == "__main__":
+  arr = [3, 4, 2, 2, 1, 2, 3, 3]
+  k = 4
+  print(countOccurence(arr, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+    static int countOccurence(int[] arr, int k){
+        // compute array size and frequency threshold
+        int n = arr.Length;
+        int x = n / k;
+
+        // store frequency of each element
+        Dictionary<int, int> freq = new Dictionary<int, int>();
+        foreach (int num in arr){
+            if (freq.ContainsKey(num))
+                freq[num]++;
+            else
+                freq[num] = 1;
+        }
+
+        // count elements whose frequency exceeds n/k
+        int count = 0;
+        foreach (var p in freq)
+            if (p.Value > x)
+                count++;
+
+        // return the final count
+        return count;
+    }
+
+    static void Main(){
+        int[] arr = {3, 4, 2, 2, 1, 2, 3, 3};
+        int k = 4;
+        Console.WriteLine(countOccurence(arr, k));
+    }
+}
+
+JavaScript
+
+function countOccurence(arr, k) {
+    // compute array size and frequency threshold
+    const n = arr.length;
+    const x = Math.floor(n / k);
+
+    // store frequency of each element
+    const freq = {};
+    for (let num of arr)
+        freq[num] = (freq[num] || 0) + 1;
+
+    // count elements whose frequency exceeds n/k
+    let count = 0;
+    for (let key in freq)
+        if (freq[key] > x)
+            count++;
+
+    // return the final count
+    return count;
+}
+
+// Driver Code
+const arr = [3, 4, 2, 2, 1, 2, 3, 3];
+const k = 4;
+console.log(countOccurence(arr, k));
+
+Output
+
+2
+
+### [Expected Approach for Small K] - Moore's Voting Algorithm - O(n*k) Time and O(k) Space
+
+> The idea is to apply Moore's Voting algorithm , as there can be at max k - 1 elements present in the array which appears more than n/k times so their will be k - 1 candidates. When we encounter an element which is one of our candidates then increment the count else decrement the count.
+
+- Create a temporary array of size (k - 1) to store potential candidates and their counts. Any element occurring more than n/k times must be among these candidates.
+- Traverse the input array and update the temporary array by increasing/decreasing counts or adding/removing candidates as needed.
+- After the traversal, the temporary array contains the final (k - 1) potential candidates.
+- Iterate through these candidates and count their actual frequencies in the input array. Count the candidates whose frequency is greater than n/k.
+
+Let us understand with an example: Consider: arr[] = [3, 1, 2, 2, 2, 1, 4, 3, 3] , k = 4
+
+- k = 4, so maintain 3 candidate slots, initially empty.
+- Process 3, 1, 2: Add all three as candidates with count 1.
+- Process 2, 2, 1: Increment the counts of 2 and 1.
+- Process 4: No empty slot, so decrement the count of all candidates.
+- Process 3, 3: Reinsert 3 into the empty slot and increment its count.
+- Final candidates are 3, 1, 2.
+- Verify their actual frequencies: 3 occurs 3 times, 1 occurs 2 times, and 2 occurs 3 times. Since n/k = 2, the elements occurring more than 2 times are 2 and 3. Hence, the answer is 2.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int countOccurence(vector<int> &arr, int k)
+{
+    int n = arr.size();
+    int x = n / k;
+
+    // k must be greater than 1 to find elements > n/k
+    if (k < 2)
+        return 0;
+
+    /* Step 1: Create a temporary array of size k-1 using std::pair.
+       temp[i].first = element
+       temp[i].second = count */
+    vector<pair<int, int>> temp(k - 1, {-1, 0});
+
+    /* Step 2: Process all elements of input array */
+    for (int i = 0; i < n; i++)
+    {
+        int j;
+
+        /* If arr[i] is already present in temp[],
+        increment count */
+        for (j = 0; j < k - 1; j++)
+        {
+            if (temp[j].first == arr[i])
+            {
+                temp[j].second += 1;
+                break;
+            }
+        }
+
+        /* If arr[i] is not present in temp[] */
+        if (j == k - 1)
+        {
+            int l;
+
+            /* If there is a position available,
+            place arr[i] and set count to 1 */
+            for (l = 0; l < k - 1; l++)
+            {
+                if (temp[l].second == 0)
+                {
+                    temp[l].first = arr[i];
+                    temp[l].second = 1;
+                    break;
+                }
+            }
+
+            /* If all positions are filled,
+            decrease count of every element by 1 */
+            if (l == k - 1)
+                for (l = 0; l < k - 1; l++)
+                    temp[l].second -= 1;
+        }
+    }
+
+    /* Step 3: Check actual counts of potential candidates */
+    int count = 0;
+    for (int i = 0; i < k - 1; i++)
+    {
+        int ac = 0; // actual count
+        for (int j = 0; j < n; j++)
+        {
+            if (arr[j] == temp[i].first)
+                ac++;
+        }
+
+        // count elements whose frequency exceeds n/k
+        if (ac > x)
+            count++;
+    }
+
+    return count;
+}
+
+int main()
+{
+    vector<int> arr = {3, 4, 2, 2, 1, 2, 3, 3};
+    int k = 4;
+    cout << countOccurence(arr, k);
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+public class Main {
+    public static int countOccurence(int[] arr, int k) {
+        // compute array size and frequency threshold
+        int n = arr.length;
+        int x = n / k;
+
+        // k must be greater than 1 to find elements > n/k
+        if (k < 2)
+            return 0;
+
+        /* Step 1: Create a temporary array of size k-1.
+           temp[i][0] = element (replaces .first)
+           temp[i][1] = count (replaces .second) */
+        int[][] temp = new int[k - 1][2];
+        for (int i = 0; i < k - 1; i++) {
+            temp[i][0] = -1;
+            temp[i][1] = 0;
+        }
+
+        /* Step 2: Process all elements of input array */
+        for (int i = 0; i < n; i++) {
+            int j;
+
+            /* If arr[i] is already present in temp[],
+            increment count */
+            for (j = 0; j < k - 1; j++) {
+                if (temp[j][0] == arr[i]) {
+                    temp[j][1] += 1;
+                    break;
+                }
+            }
+
+            /* If arr[i] is not present in temp[] */
+            if (j == k - 1) {
+                int l;
+
+                /* If there is a position available,
+                place arr[i] and set count to 1 */
+                for (l = 0; l < k - 1; l++) {
+                    if (temp[l][1] == 0) {
+                        temp[l][0] = arr[i];
+                        temp[l][1] = 1;
+                        break;
+                    }
+                }
+
+                /* If all positions are filled,
+                decrease count of every element by 1 */
+                if (l == k - 1) {
+                    for (l = 0; l < k - 1; l++) {
+                        temp[l][1] -= 1;
+                    }
+                }
+            }
+        }
+
+        /* Step 3: Check actual counts of potential candidates */
+        int count = 0;
+        for (int i = 0; i < k - 1; i++) {
+            int ac = 0; // actual count
+            for (int j = 0; j < n; j++) {
+                if (arr[j] == temp[i][0])
+                    ac++;
+            }
+
+            // count elements whose frequency exceeds n/k
+            if (ac > x)
+                count++;
+        }
+
+        return count;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {3, 4, 2, 2, 1, 2, 3, 3};
+        int k = 4;
+        System.out.println(countOccurence(arr, k));
+    }
+}
+
+Python
+
+def countOccurence(arr, k):
+    # compute array size and frequency threshold
+    n = len(arr)
+    x = n // k
+
+    # k must be greater than 1 to find elements > n/k
+    if k < 2:
+        return 0
+
+    # Step 1: Create a temporary array of size k-1.
+    # temp[i][0] = element (replaces .first)
+    # temp[i][1] = count (replaces .second)
+    temp = [[-1, 0] for _ in range(k - 1)]
+
+    # Step 2: Process all elements of input array
+    for i in range(n):
+        j = 0
+
+        # If arr[i] is already present in temp[], increment count
+        while j < k - 1:
+            if temp[j][0] == arr[i]:
+                temp[j][1] += 1
+                break
+            j += 1
+
+        # If arr[i] is not present in temp[]
+        if j == k - 1:
+            l = 0
+
+            # If there is a position available,
+            # place arr[i] and set count to 1
+            while l < k - 1:
+                if temp[l][1] == 0:
+                    temp[l][0] = arr[i]
+                    temp[l][1] = 1
+                    break
+                l += 1
+
+            # If all positions are filled,
+            # decrease count of every element by 1
+            if l == k - 1:
+                for l in range(k - 1):
+                    temp[l][1] -= 1
+
+    # Step 3: Check actual counts of potential candidates
+    count = 0
+    for i in range(k - 1):
+        ac = 0 # actual count
+        for j in range(n):
+            if arr[j] == temp[i][0]:
+                ac += 1
+
+        # count elements whose frequency exceeds n/k
+        if ac > x:
+            count += 1
+    return count
+
+if __name__ == "__main__":
+    arr = [3, 4, 2, 2, 1, 2, 3, 3]
+    k = 4
+    print(countOccurence(arr, k))
+
+C#
+
+using System;
+
+class GFG
+{
+    static int countOccurence(int[] arr, int k)
+    {
+        // compute array size and frequency threshold
+        int n = arr.Length;
+        int x = n / k;
+
+        // k must be greater than 1 to find elements > n/k
+        if (k < 2)
+            return 0;
+
+        /* Step 1: Create a temporary array of size k-1 using C# ValueTuples.
+           temp[i].first = element
+           temp[i].second = count */
+        var temp = new (int first, int second)[k - 1];
+        for (int i = 0; i < k - 1; i++)
+        {
+            temp[i] = (-1, 0);
+        }
+
+        /* Step 2: Process all elements of input array */
+        for (int i = 0; i < n; i++)
+        {
+            int j;
+
+            /* If arr[i] is already present in temp[], increment count */
+            for (j = 0; j < k - 1; j++)
+            {
+                if (temp[j].first == arr[i])
+                {
+                    temp[j].second += 1;
+                    break;
+                }
+            }
+
+            /* If arr[i] is not present in temp[] */
+            if (j == k - 1)
+            {
+                int l;
+
+                /* If there is a position available,
+                place arr[i] and set count to 1 */
+                for (l = 0; l < k - 1; l++)
+                {
+                    if (temp[l].second == 0)
+                    {
+                        temp[l].first = arr[i];
+                        temp[l].second = 1;
+                        break;
+                    }
+                }
+
+                /* If all positions are filled,
+                decrease count of every element by 1 */
+                if (l == k - 1)
+                    for (l = 0; l < k - 1; l++)
+                        temp[l].second -= 1;
+            }
+        }
+
+        /* Step 3: Check actual counts of potential candidates */
+        int count = 0;
+        for (int i = 0; i < k - 1; i++)
+        {
+            int ac = 0; // actual count
+            for (int j = 0; j < n; j++)
+            {
+                if (arr[j] == temp[i].first)
+                    ac++;
+            }
+
+            // count elements whose frequency exceeds n/k
+            if (ac > x)
+                count++;
+        }
+
+        // return the final count
+        return count;
+    }
+
+    static void Main()
+    {
+        int[] arr = { 3, 4, 2, 2, 1, 2, 3, 3 };
+        int k = 4;
+        Console.WriteLine(countOccurence(arr, k));
+    }
+}
+
+JavaScript
+
+function countOccurence(arr, k) {
+    // compute array size and frequency threshold
+    let n = arr.length;
+    let x = Math.floor(n / k);
+
+    // k must be greater than 1 to find elements > n/k
+    if (k < 2)
+        return 0;
+
+    /* Step 1: Create a temporary array of size k-1 using JS objects.
+       temp[i].first = element
+       temp[i].second = count */
+    let temp = Array.from({ length: k - 1 }, () => ({ first: -1, second: 0 }));
+
+    /* Step 2: Process all elements of input array */
+    for (let i = 0; i < n; i++) {
+        let j;
+
+        /* If arr[i] is already present in temp[], increment count */
+        for (j = 0; j < k - 1; j++) {
+            if (temp[j].first === arr[i]) {
+                temp[j].second += 1;
+                break;
+            }
+        }
+
+        /* If arr[i] is not present in temp[] */
+        if (j === k - 1) {
+            let l;
+
+            /* If there is a position available,
+            place arr[i] and set count to 1 */
+            for (l = 0; l < k - 1; l++) {
+                if (temp[l].second === 0) {
+                    temp[l].first = arr[i];
+                    temp[l].second = 1;
+                    break;
+                }
+            }
+
+            /* If all positions are filled,
+            decrease count of every element by 1 */
+            if (l === k - 1) {
+                for (l = 0; l < k - 1; l++) {
+                    temp[l].second -= 1;
+                }
+            }
+        }
+    }
+
+    /* Step 3: Check actual counts of potential candidates */
+    let count = 0;
+    for (let i = 0; i < k - 1; i++) {
+        let ac = 0; // actual count
+        for (let j = 0; j < n; j++) {
+            if (arr[j] === temp[i].first)
+                ac++;
+        }
+
+        // count elements whose frequency exceeds n/k
+        if (ac > x)
+            count++;
+    }
+
+    return count;
+}
+
+// Driver code
+let arr = [3, 4, 2, 2, 1, 2, 3, 3];
+let k = 4;
+console.log(countOccurence(arr, k));
+
+Output
+
+2
+
+### Using Built-In Counter in Python
+
+This approach is same the first approach but here in python there is a counter() that calculates the frequency array.
+
+- Count the frequencies of every element using Counter() function.
+- Traverse the frequency array and print all the elements which occur at more than n/k times.
+
+Python
+
+from collections import Counter
+
+def countOccurence(arr, k):
+    # compute array size and frequency threshold
+    n = len(arr)
+    x = n // k
+
+    # store frequency of each element
+    freq = Counter(arr)
+
+    # count elements whose frequency exceeds n/k
+    count = 0
+    for num in freq:
+        if freq[num] > x:
+            count += 1
+
+    # return the final count
+    return count
+
+if __name__ == '__main__':
+    arr = [3, 4, 2, 2, 1, 2, 3, 3]
+    k = 4
+    print(countOccurence(arr, k))
+
+Output
+
+2

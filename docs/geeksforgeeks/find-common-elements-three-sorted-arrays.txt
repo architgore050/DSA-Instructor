@@ -1,0 +1,645 @@
+Source: https://www.geeksforgeeks.org/dsa/find-common-elements-three-sorted-arrays/
+Title: Common in 3 Sorted Arrays
+Extractor: 2
+
+Given three sorted arrays in non-decreasing order, find all common elements in non-decreasing order across these arrays. If there are no such elements return an empty array.
+
+Note: In case of duplicate common elements, include each element only once in the result.
+
+Examples:
+
+> Input : a[] = [1, 5, 10, 20, 30], b[] = [5, 13, 15, 20], c[] = [5, 20] Output : 5 20 Explanation: 5 and 20 are common in all the arrays. I nput: a[] = [1, 2, 3, 4, 5], b[] = [6, 7], c[] = [8, 9, 10] Output: [] Explanation: There are no common elements in a, b and c. Input : a[] = [2, 5, 10, 30], b[] = [5, 20, 34], c[] = [5, 13, 19] Output : 5 Explanation: 5 is common in all the arrays.
+
+Table of Content
+
+- [Naive Approach] Using Hash Map or Dictionary
+- [Expected Approach] Using three pointers - O(n1 + n2 + n3) Time and O(1) Space
+
+### [Naive Approach] Using Hash Map or Dictionary
+
+> The idea is to use a Hash Map to track elements common across all three arrays while avoiding duplicates. Each element is marked step-by-step to identify those present in all arrays, and the final result is sorted to maintain non-decreasing order.
+
+Dry run for a[] = [1, 5, 10, 20, 30], b[] = [5, 13, 15, 20], c[] = [5, 20]:
+
+1. Process array a, store unique elements as key and value as 1, count = {1:1, 5:1, 10:1, 20:1, 30:1}
+2. Process array b, update only common elements 5 and 20 from 1 to 2, count = {1:1, 5:2, 10:1, 20:2, 30:1}
+3. Process array c, update only common elements 5 and 20 from 2 to 3, count = {1:1, 5:3, 10:1, 20:3, 30:1}
+4. Collect elements with value = 3, common = [5, 20]
+5. Sort the result, common = [5, 20]
+
+Final output, 5 20
+
+Important Points:
+
+- We can also use a Self Balancing BST (like Tree Map) which maintains elements in sorted order automatically.
+- However, in languages like Python and JavaScript, there is no built-in Self Balancing BST, so we use a Hash Map or Dictionary for processing and then sort the result at the end.
+
+C++
+
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+vector<int> commonElements(vector<int>& a,
+                vector<int>& b, vector<int>& c)
+{
+    unordered_map<int, int> count;
+
+    // Process arr1 (store only unique elements)
+    for (int i = 0; i < a.size(); i++) {
+        if (i == 0 || a[i] != a[i - 1])
+            count[a[i]] = 1;
+    }
+
+    // Process arr2
+    for (int i = 0; i < b.size(); i++) {
+        if (i == 0 || b[i] != b[i - 1]) {
+            if (count[b[i]] == 1)
+                count[b[i]] = 2;
+        }
+    }
+
+    // Process arr3
+    for (int i = 0; i < c.size(); i++) {
+        if (i == 0 || c[i] != c[i - 1]) {
+            if (count[c[i]] == 2)
+                count[c[i]] = 3;
+        }
+    }
+
+    // Collect common elements
+    vector<int> common;
+    for (auto &p : count) {
+        if (p.second == 3)
+            common.push_back(p.first);
+    }
+
+    // Sort result
+    sort(common.begin(), common.end());
+
+    return common;
+}
+
+int main()
+{
+    vector<int> a = {1, 5, 10, 20, 30};
+    vector<int> b = {5, 13, 15, 20};
+    vector<int> c = {5, 20};
+
+    vector<int> common = commonElements(a, b, c);
+
+    if (common.empty())
+        cout << "[]" << endl;
+    else
+        for (int ele : common)
+            cout << ele << " ";
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Collections;
+
+class GfG {
+
+    public static ArrayList<Integer>
+        commonElements(int[] a, int[] b, int[] c)
+    {
+        // Hash Map
+        Map<Integer, Integer> count = new HashMap<>();
+
+        // Process arr1 (store only unique elements)
+        for (int i = 0; i < a.length; i++) {
+            if (i == 0 || a[i] != a[i - 1])
+                count.put(a[i], 1);
+        }
+
+        // Process arr2
+        for (int i = 0; i < b.length; i++) {
+            if (i == 0 || b[i] != b[i - 1]) {
+                if (count.getOrDefault(b[i], 0) == 1)
+                    count.put(b[i], 2);
+            }
+        }
+
+        // Process arr3
+        for (int i = 0; i < c.length; i++) {
+            if (i == 0 || c[i] != c[i - 1]) {
+                if (count.getOrDefault(c[i], 0) == 2)
+                    count.put(c[i], 3);
+            }
+        }
+
+        // Collect common elements
+        ArrayList<Integer> common = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : count.entrySet()) {
+            if (entry.getValue() == 3)
+                common.add(entry.getKey());
+        }
+
+        // Sort result
+        Collections.sort(common);
+
+        return common;
+    }
+
+    public static void main(String[] args) {
+        int[] a = {1, 5, 10, 20, 30};
+        int[] b = {5, 13, 15, 20};
+        int[] c = {5, 20};
+
+        ArrayList<Integer> common = commonElements(a, b, c);
+
+        if (common.isEmpty())
+            System.out.println("[]");
+        else
+            for (int ele : common)
+                System.out.print(ele + " ");
+    }
+}
+
+Python
+
+def commonElements(a, b, c):
+
+    # Hash Map
+    count = {}
+
+    # Process arr1 (store only unique elements)
+    for i in range(len(a)):
+        if i == 0 or a[i] != a[i - 1]:
+            count[a[i]] = 1
+
+    # Process arr2
+    for i in range(len(b)):
+        if i == 0 or b[i] != b[i - 1]:
+            if count.get(b[i], 0) == 1:
+                count[b[i]] = 2
+
+    # Process arr3
+    for i in range(len(c)):
+        if i == 0 or c[i] != c[i - 1]:
+            if count.get(c[i], 0) == 2:
+                count[c[i]] = 3
+
+    # Collect common elements
+    common = []
+    for key, value in count.items():
+        if value == 3:
+            common.append(key)
+
+    # Sort result
+    common.sort()
+
+    return common
+
+if __name__ == "__main__":
+    a = [1, 5, 10, 20, 30]
+    b = [5, 13, 15, 20]
+    c = [5, 20]
+
+    common = commonElements(a, b, c)
+
+    if len(common) == 0:
+        print("[]")
+    else:
+        print(*common)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG
+{
+    static List<int> commonElements(int[] a,
+                            int[] b, int[] c)
+    {
+        // Hash Map
+        Dictionary<int, int> count = new
+                            Dictionary<int, int>();
+
+        // Process arr1 (store only unique elements)
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (i == 0 || a[i] != a[i - 1])
+                count[a[i]] = 1;
+        }
+
+        // Process arr2
+        for (int i = 0; i < b.Length; i++)
+        {
+            if (i == 0 || b[i] != b[i - 1])
+            {
+                if (count.ContainsKey(b[i]) &&
+                                count[b[i]] == 1){
+                    count[b[i]] = 2;
+                }
+            }
+        }
+
+        // Process arr3
+        for (int i = 0; i < c.Length; i++)
+        {
+            if (i == 0 || c[i] != c[i - 1])
+            {
+                if (count.ContainsKey(c[i]) &&
+                                count[c[i]] == 2){
+                    count[c[i]] = 3;
+                }
+            }
+        }
+
+        // Collect common elements
+        List<int> common = new List<int>();
+        foreach (var pair in count)
+        {
+            if (pair.Value == 3)
+                common.Add(pair.Key);
+        }
+
+        // Sort result
+        common.Sort();
+
+        return common;
+    }
+
+    static void Main()
+    {
+        int[] a = { 1, 5, 10, 20, 30 };
+        int[] b = { 5, 13, 15, 20 };
+        int[] c = { 5, 20 };
+
+        List<int> common = commonElements(a, b, c);
+
+        if (common.Count == 0)
+            Console.WriteLine("[]");
+        else
+            Console.WriteLine(string.Join(" ", common));
+    }
+}
+
+JavaScript
+
+function commonElements(a, b, c) {
+
+    // Hash Map
+    let count = new Map();
+
+    // Process arr1 (store only unique elements)
+    for (let i = 0; i < a.length; i++) {
+        if (i === 0 || a[i] !== a[i - 1])
+            count.set(a[i], 1);
+    }
+
+    // Process arr2
+    for (let i = 0; i < b.length; i++) {
+        if (i === 0 || b[i] !== b[i - 1]) {
+            if (count.get(b[i]) === 1)
+                count.set(b[i], 2);
+        }
+    }
+
+    // Process arr3
+    for (let i = 0; i < c.length; i++) {
+        if (i === 0 || c[i] !== c[i - 1]) {
+            if (count.get(c[i]) === 2)
+                count.set(c[i], 3);
+        }
+    }
+
+    // Collect common elements
+    let common = [];
+    for (let [key, value] of count) {
+        if (value === 3)
+            common.push(key);
+    }
+
+    // Sort result
+    common.sort((x, y) => x - y);
+
+    return common;
+}
+
+// Driver code
+let a = [1, 5, 10, 20, 30];
+let b = [5, 13, 15, 20];
+let c = [5, 20];
+
+let common = commonElements(a, b, c);
+
+if (common.length === 0)
+    console.log("[]");
+else
+    console.log(...common);
+
+Output
+
+5 20
+
+Time Complexity: O((n1 + n2 + n3) + K log K), because we traverse all arrays once and sort K common elements. Auxiliary Space: O(n1), because the hash map stores elements from the first array.
+
+### [Expected Approach] Using three pointers - O(n1 + n2 + n3) Time and O(1) Space
+
+> We can efficiently find common elements in three sorted arrays using the three-pointer technique, eliminating the need for merging or intersecting the arrays.
+
+Since the arrays are sorted in non-decreasing order, the smallest element among the three pointers at any moment will always be the smallest in the merged arrays. Leveraging this property, we can optimize our approach as follows:
+
+- Initialize three pointers, one for each array.
+- Compare the current elements at each pointer.
+- If they are equal, it's a common element, store it and move all three pointers forward.
+- Otherwise, move only the pointer pointing to the smallest element.
+- Repeat the process until at least one array is fully traversed.
+
+Working of Three pointers approach:
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<int> commonElements(vector<int> &a,
+                    vector<int> &b, vector<int> &c)
+{
+    int i = 0, j = 0, k = 0;
+    int n1 = a.size(), n2 = b.size(), n3 = c.size();
+    vector<int> common;
+
+    // Traverse all three arrays using three pointers
+    while (i < n1 && j < n2 && k < n3){
+
+        // If all elements are equal, it's a common element
+        if (a[i] == b[j] && b[j] == c[k]){
+            common.push_back(a[i]);
+            i++;
+            j++;
+            k++;
+
+            // Skip duplicates in all arrays
+            while (i < n1 && a[i] == a[i - 1])
+                i++;
+            while (j < n2 && b[j] == b[j - 1])
+                j++;
+            while (k < n3 && c[k] == c[k - 1])
+                k++;
+        }
+
+        // Move the pointer with the smallest value
+        else if (a[i] < b[j])
+            i++;
+        else if (b[j] < c[k])
+            j++;
+        else
+            k++;
+    }
+
+    return common;
+}
+
+int main()
+{
+    vector<int> a = {1, 5, 10, 20, 30};
+    vector<int> b = {5, 13, 15, 20};
+    vector<int> c = {5, 20};
+
+    vector<int> common = commonElements(a, b, c);
+    if (common.size() == 0)
+        cout << "[]";
+    for (int ele : common)
+    {
+        cout << ele << " ";
+    }
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+public class GfG {
+
+    static ArrayList<Integer>
+                commonElements(int[] a, int[] b, int[] c)
+    {
+        int i = 0, j = 0, k = 0;
+        int n1 = a.length, n2 = b.length, n3 = c.length;
+        ArrayList<Integer> common = new ArrayList<>();
+
+        // Traverse all three arrays using three pointers
+        while (i < n1 && j < n2 && k < n3){
+
+            // If all elements are equal, it's a common element
+            if (a[i] == b[j] && b[j] == c[k]){
+                common.add(a[i]);
+                i++;
+                j++;
+                k++;
+
+                // Skip duplicates in all arrays
+                while (i < n1 && a[i] == a[i - 1])
+                    i++;
+                while (j < n2 && b[j] == b[j - 1])
+                    j++;
+                while (k < n3 && c[k] == c[k - 1])
+                    k++;
+            }
+
+            // Move the pointer with the smallest value
+            else if (a[i] < b[j])
+                i++;
+            else if (b[j] < c[k])
+                j++;
+            else
+                k++;
+        }
+
+        return common;
+    }
+
+    public static void main(String[] args)
+    {
+        int[] a = { 1, 5, 10, 20, 30 };
+        int[] b = { 5, 13, 15, 20 };
+        int[] c = { 5, 20 };
+
+        ArrayList<Integer> common = commonElements(a, b, c);
+
+        if (common.size() == 0)
+            System.out.print("[]");
+
+        for (int i = 0; i < common.size(); i++)
+            System.out.print(common.get(i) + " ");
+    }
+}
+
+Python
+
+def commonElements(a, b, c):
+    i, j, k = 0, 0, 0
+    n1, n2, n3 = len(a), len(b), len(c)
+    common = []
+
+    # Traverse all three arrays using three pointers
+    while i < n1 and j < n2 and k < n3:
+
+        # If all elements are equal, it's a common element
+        if a[i] == b[j] and b[j] == c[k]:
+            common.append(a[i])
+            i += 1
+            j += 1
+            k += 1
+
+            # Skip duplicates in all arrays
+            while i < n1 and a[i] == a[i - 1]:
+                i += 1
+            while j < n2 and b[j] == b[j - 1]:
+                j += 1
+            while k < n3 and c[k] == c[k - 1]:
+                k += 1
+
+        # Move the pointer with the smallest value
+        elif a[i] < b[j]:
+            i += 1
+        elif b[j] < c[k]:
+            j += 1
+        else:
+            k += 1
+
+    return common
+
+if __name__ == "__main__":
+    a = [1, 5, 10, 20, 30]
+    b = [5, 13, 15, 20]
+    c = [5, 20]
+
+    common = commonElements(a, b, c)
+
+    if len(common) == 0:
+        print("[]")
+
+    for ele in common:
+        print(ele, end=" ")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static List<int> commonElements(int[] a,
+                                int[] b, int[] c)
+    {
+        int i = 0, j = 0, k = 0;
+        int n1 = a.Length, n2 = b.Length,
+            n3 = c.Length;
+        List<int> common = new List<int>();
+
+        // Traverse all three arrays using three pointers
+        while (i < n1 && j < n2 && k < n3){
+
+            // If all elements are equal
+            // it's a common element
+            if (a[i] == b[j] && b[j] == c[k]){
+                common.Add(a[i]);
+                i++;
+                j++;
+                k++;
+
+                // Skip duplicates in all arrays
+                while (i < n1 && a[i] == a[i - 1])
+                    i++;
+                while (j < n2 && b[j] == b[j - 1])
+                    j++;
+                while (k < n3 && c[k] == c[k - 1])
+                    k++;
+            }
+
+            // Move the pointer with the smallest value
+            else if (a[i] < b[j])
+                i++;
+            else if (b[j] < c[k])
+                j++;
+            else
+                k++;
+        }
+
+        return common;
+    }
+
+    static void Main()
+    {
+        int[] a = { 1, 5, 10, 20, 30 };
+        int[] b = { 5, 13, 15, 20 };
+        int[] c = { 5, 20 };
+
+        List<int> common = commonElements(a, b, c);
+
+        if (common.Count == 0)
+            Console.Write("[]");
+
+        Console.WriteLine(string.Join(" ", common));
+    }
+}
+
+JavaScript
+
+function commonElements(a, b, c)
+{
+    let i = 0, j = 0, k = 0;
+    let n1 = a.length, n2 = b.length, n3 = c.length;
+    let common = [];
+
+    // Traverse all three arrays using three pointers
+    while (i < n1 && j < n2 && k < n3){
+
+        // If all elements are equal, it's a common element
+        if (a[i] === b[j] && b[j] === c[k]){
+            common.push(a[i]);
+            i++;
+            j++;
+            k++;
+
+            // Skip duplicates in all arrays
+            while (i < n1 && a[i] === a[i - 1])
+                i++;
+            while (j < n2 && b[j] === b[j - 1])
+                j++;
+            while (k < n3 && c[k] === c[k - 1])
+                k++;
+        }
+
+        // Move the pointer with the smallest value
+        else if (a[i] < b[j])
+            i++;
+        else if (b[j] < c[k])
+            j++;
+        else
+            k++;
+    }
+
+    return common;
+}
+
+// Driver code
+let a = [1, 5, 10, 20, 30];
+let b = [5, 13, 15, 20];
+let c = [5, 20];
+
+let common = commonElements(a, b, c);
+
+if (common.length == 0)
+    console.log("[]");
+
+console.log(common.join(" "));
+
+Output
+
+5 20

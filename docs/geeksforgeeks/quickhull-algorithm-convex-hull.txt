@@ -1,0 +1,592 @@
+Source: https://www.geeksforgeeks.org/dsa/quickhull-algorithm-convex-hull/
+Title: Quickhull Algorithm for Convex Hull
+Extractor: 2
+
+Given a set of points, a Convex hull is the smallest convex polygon containing all the given points.
+
+Input : points[] = {{0, 3}, {1, 1}, {2, 2}, {4, 4},                    {0, 0}, {1, 2}, {3, 1}, {3, 3}};Output :  The points in convex hull are:          (0, 0) (0, 3) (3, 1) (4, 4)Input : points[] = {{0, 3}, {1, 1}Output : Not PossibleThere must be at least three points to form a hull.Input  : points[] = {(0, 0), (0, 4), (-4, 0), (5, 0),                      (0, -6), (1, 0)};Output : (-4, 0), (5, 0), (0, -6), (0, 4)
+
+We have discussed following algorithms for Convex Hull problem. Convex Hull | Set 1 (Jarvis’s Algorithm or Wrapping) Convex Hull | Set 2 (Graham Scan) The QuickHull algorithm is a Divide and Conquer algorithm similar to QuickSort . Let a[0...n-1] be the input array of points. Following are the steps for finding the convex hull of these points.
+
+1. Find the point with minimum x-coordinate lets say, min_x and similarly the point with maximum x-coordinate, max_x.
+2. Make a line joining these two points, say L . This line will divide the whole set into two parts. Take both the parts one by one and proceed further.
+3. For a part, find the point P with maximum distance from the line L. P forms a triangle with the points min_x, max_x. It is clear that the points residing inside this triangle can never be the part of convex hull.
+4. The above step divides the problem into two sub-problems (solved recursively). Now the line joining the points P and min_x and the line joining the points P and max_x are new lines and the points residing outside the triangle is the set of points. Repeat point no. 3 till there no point left with the line. Add the end points of this point to the convex hull.
+
+Below is C++ implementation of above idea. The implementation uses set to store points so that points can be printed in sorted order. A point is represented as a pair .
+
+CPP
+
+// C++ program to implement Quick Hull algorithm
+// to find convex hull.
+#include<bits/stdc++.h>
+using namespace std;
+
+// iPair is integer pairs
+#define iPair pair<int, int>
+
+// Stores the result (points of convex hull)
+set<iPair> hull;
+
+// Returns the side of point p with respect to line
+// joining points p1 and p2.
+int findSide(iPair p1, iPair p2, iPair p)
+{
+    int val = (p.second - p1.second) * (p2.first - p1.first) -
+            (p2.second - p1.second) * (p.first - p1.first);
+
+    if (val > 0)
+        return 1;
+    if (val < 0)
+        return -1;
+    return 0;
+}
+
+// returns a value proportional to the distance
+// between the point p and the line joining the
+// points p1 and p2
+int lineDist(iPair p1, iPair p2, iPair p)
+{
+    return abs ((p.second - p1.second) * (p2.first - p1.first) -
+            (p2.second - p1.second) * (p.first - p1.first));
+}
+
+// End points of line L are p1 and p2. side can have value
+// 1 or -1 specifying each of the parts made by the line L
+void quickHull(iPair a[], int n, iPair p1, iPair p2, int side)
+{
+    int ind = -1;
+    int max_dist = 0;
+
+    // finding the point with maximum distance
+    // from L and also on the specified side of L.
+    for (int i=0; i<n; i++)
+    {
+        int temp = lineDist(p1, p2, a[i]);
+        if (findSide(p1, p2, a[i]) == side && temp > max_dist)
+        {
+            ind = i;
+            max_dist = temp;
+        }
+    }
+
+    // If no point is found, add the end points
+    // of L to the convex hull.
+    if (ind == -1)
+    {
+        hull.insert(p1);
+        hull.insert(p2);
+        return;
+    }
+
+    // Recur for the two parts divided by a[ind]
+    quickHull(a, n, a[ind], p1, -findSide(a[ind], p1, p2));
+    quickHull(a, n, a[ind], p2, -findSide(a[ind], p2, p1));
+}
+
+void printHull(iPair a[], int n)
+{
+    // a[i].second -> y-coordinate of the ith point
+    if (n < 3)
+    {
+        cout << "Convex hull not possible\n";
+        return;
+    }
+
+    // Finding the point with minimum and
+    // maximum x-coordinate
+    int min_x = 0, max_x = 0;
+    for (int i=1; i<n; i++)
+    {
+        if (a[i].first < a[min_x].first)
+            min_x = i;
+        if (a[i].first > a[max_x].first)
+            max_x = i;
+    }
+
+    // Recursively find convex hull points on
+    // one side of line joining a[min_x] and
+    // a[max_x]
+    quickHull(a, n, a[min_x], a[max_x], 1);
+
+    // Recursively find convex hull points on
+    // other side of line joining a[min_x] and
+    // a[max_x]
+    quickHull(a, n, a[min_x], a[max_x], -1);
+
+    cout << "The points in Convex Hull are:\n";
+    while (!hull.empty())
+    {
+        cout << "(" <<( *hull.begin()).first << ", "
+            << (*hull.begin()).second << ") ";
+        hull.erase(hull.begin());
+    }
+}
+
+// Driver code
+int main()
+{
+    iPair a[] = {{0, 3}, {1, 1}, {2, 2}, {4, 4},
+            {0, 0}, {1, 2}, {3, 1}, {3, 3}};
+    int n = sizeof(a)/sizeof(a[0]);
+    printHull(a, n);
+    return 0;
+}
+
+Java
+
+/*package whatever //do not write package name here */
+
+import java.io.*;
+
+class GFG {
+    public static void main (String[] args) {
+
+          int a[][] = {{0, 3}, {1, 1}, {2, 2}, {4, 4},
+               {0, 0}, {1, 2}, {3, 1}, {3, 3}};
+         int[][]  ans = FindConvexHull(a);
+        System.out.println("The points in Convex Hull are: ");
+        for (int i = 0; i < ans.length; i++)
+            System.out.print("(" + ans[i][0] + ","+ ans [i][1]+ ") ");
+
+    }
+
+  public static int[][] FindConvexHull(int[][] points_list)
+    {
+        int n=  points_list.length;
+        int small = 0;
+        for(int i=1;i<n;i++){
+            if( points_list[i][1] <  points_list[small][1])
+            small = i;
+        }
+        if(n == 1)
+         return new int[][]{{-1, -1}};
+         int t[] = points_list[small];
+          points_list[small] =  points_list[0];
+           points_list[0] = t;
+           quickSort( points_list, 1, n-1, true);
+           int stack[] = new int[n];
+           int p=1;
+           stack[0] = 0;
+           stack[1]=n-1;
+           for(int i=n-2;i>0;i--){
+               long prod = -1;
+               while(prod <= 0 && p>0){
+                   int p1[] =  points_list[stack[p]];
+                    int p2[] =  points_list[stack[p-1]];
+                    long y1 = p1[1]-p2[1];
+                    long x1 = p1[0]-p2[0];
+                    long x2 =  points_list[i][0]-p1[0];
+                    long y2 = points_list[i][1]-p1[1];
+                    prod = x1 * y2 - x2 * y1;
+
+                    if(prod <= 0){
+                        p--;
+                    }
+               }
+               p++;
+               stack[p] = i;
+           }
+           if(p+1 <=2 )
+           return new int[][]{{-1, -1}};
+
+           int ans[][] = new int[p+1][2];
+           for(int i=p;i>=0;i--){
+               ans[i] = points_list[stack[i]];
+           }
+           quickSort(ans,0,p,false);
+           return ans;
+    }
+    public static void quickSort(int arr[][],int low, int end,boolean flag){
+        if(low >= end)
+          return;
+          int p = -1;
+          if(flag)
+          p = partition(arr, low, end);
+          else p = part(arr,low,end);
+          quickSort(arr, low, p-1, flag);
+          quickSort(arr, p+1,end, flag);
+    }
+    private static int part(int arr[][], int low, int end){
+        int p=low;
+        for(int i=low+1;i <= end;i++){
+            if((arr[i][0] < arr[p][0]) || (arr[i][0] == arr[p][0] && arr[i][1]< arr[p][1])){
+                low++;
+                int t[] = arr[low];
+                arr[low] = arr[i];
+                arr[i] = t;
+            }
+        }
+        int t[] = arr[low];
+        arr[low] = arr[p];
+        arr[p]=t;
+        return low;
+    }
+     private static int partition(int arr[][], int low, int end){
+         int p = low;
+         double a1 = angle(arr[low], arr[0]);
+         for(int i=low+1;i <= end;i++){
+             double a2 = angle(arr[i],arr[0]);
+             if(a1 < a2){
+                 low++;
+                 int t[] = arr[low];
+                 arr[low] = arr[i];
+                 arr[i] = t;
+             }
+         }
+         int t[] = arr[low];
+         arr[low] = arr[p];
+         arr[p] = t;
+         return low;
+     }
+     private static double angle(int p1[], int p2[]){
+         double x=p1[0]-p2[0];
+         double y = p1[1] - p2[1];
+         return -(x/Math.sqrt(x*x + y*y));
+     }
+
+}
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public static class GFG {
+    static HashSet<List<int> > hull
+        = new HashSet<List<int> >();
+    // Stores the result (points of convex hull)
+
+    // Returns the side of point p with respect to line
+    // joining points p1 and p2.
+    public static int findSide(List<int> p1, List<int> p2,
+                               List<int> p)
+    {
+        int val = (p[1] - p1[1]) * (p2[0] - p1[0])
+                  - (p2[1] - p1[1]) * (p[0] - p1[0]);
+
+        if (val > 0) {
+            return 1;
+        }
+        if (val < 0) {
+            return -1;
+        }
+        return 0;
+    }
+
+    // returns a value proportional to the distance
+    // between the point p and the line joining the
+    // points p1 and p2
+    public static int lineDist(List<int> p1, List<int> p2,
+                               List<int> p)
+    {
+        return Math.Abs((p[1] - p1[1]) * (p2[0] - p1[0])
+                        - (p2[1] - p1[1]) * (p[0] - p1[0]));
+    }
+
+    // End points of line L are p1 and p2. side can have
+    // value 1 or -1 specifying each of the parts made by
+    // the line L
+    public static void quickHull(List<List<int> > a, int n,
+                                 List<int> p1, List<int> p2,
+                                 int side)
+    {
+        int ind = -1;
+        int max_dist = 0;
+
+        // finding the point with maximum distance
+        // from L and also on the specified side of L.
+        for (int i = 0; i < n; i++) {
+            int temp = lineDist(p1, p2, a[i]);
+            if (findSide(p1, p2, a[i]) == side
+                && temp > max_dist) {
+                ind = i;
+                max_dist = temp;
+            }
+        }
+
+        // If no point is found, add the end points
+        // of L to the convex hull.
+        if (ind == -1) {
+            hull.Add(p1);
+            hull.Add(p2);
+            return;
+        }
+
+        // Recur for the two parts divided by a[ind]
+        quickHull(a, n, a[ind], p1,
+                  -findSide(a[ind], p1, p2));
+        quickHull(a, n, a[ind], p2,
+                  -findSide(a[ind], p2, p1));
+    }
+
+    public static void printHull(List<List<int> > a, int n)
+    {
+        // a[i].second -> y-coordinate of the ith point
+        if (n < 3) {
+            Console.Write("Convex hull not possible\n");
+            return;
+        }
+
+        // Finding the point with minimum and
+        // maximum x-coordinate
+        int min_x = 0;
+        int max_x = 0;
+        for (int i = 1; i < n; i++) {
+            if (a[i][0] < a[min_x][0]) {
+                min_x = i;
+            }
+            if (a[i][0] > a[max_x][0]) {
+                max_x = i;
+            }
+        }
+
+        // Recursively find convex hull points on
+        // one side of line joining a[min_x] and
+        // a[max_x]
+        quickHull(a, n, a[min_x], a[max_x], 1);
+        quickHull(a, n, a[min_x], a[max_x], -1);
+
+        Console.Write("The points in Convex Hull are:\n");
+        foreach(var item in hull)
+        {
+            Console.WriteLine(item[0] + " " + item[1]);
+        }
+    }
+
+    // Driver code
+    public static void Main()
+    {
+        // the set of points in the convex hull
+        List<List<int> > a = new List<List<int> >();
+        {
+            a.Add(new List<int>() { 0, 3 });
+            a.Add(new List<int>() { 1, 1 });
+            a.Add(new List<int>() { 2, 2 });
+            a.Add(new List<int>() { 4, 4 });
+            a.Add(new List<int>() { 0, 0 });
+            a.Add(new List<int>() { 1, 2 });
+            a.Add(new List<int>() { 3, 1 });
+            a.Add(new List<int>() { 3, 3 });
+        };
+
+        int n = a.Count;
+        printHull(a, n);
+    }
+}
+// The code is contributed by Aarti_Rathi
+
+JavaScript
+
+// JavaScript program to implement Quick Hull algorithm
+// to find convex hull.
+
+// Stores the result (points of convex hull)
+let hull = new Set();
+
+// Returns the side of point p with respect to line
+// joining points p1 and p2.
+function findSide(p1, p2, p)
+{
+    let val = (p[1] - p1[1]) * (p2[0] - p1[0]) -
+            (p2[1] - p1[1]) * (p[0] - p1[0]);
+
+    if (val > 0)
+        return 1;
+    if (val < 0)
+        return -1;
+    return 0;
+}
+
+// returns a value proportional to the distance
+// between the point p and the line joining the
+// points p1 and p2
+function lineDist(p1, p2, p)
+{
+    return Math.abs ((p[1] - p1[1]) * (p2[0] - p1[0]) -
+            (p2[1] - p1[1]) * (p[0] - p1[0]));
+}
+
+// End points of line L are p1 and p2. side can have value
+// 1 or -1 specifying each of the parts made by the line L
+function quickHull(a, n, p1, p2, side)
+{
+    let ind = -1;
+    let max_dist = 0;
+
+    // finding the point with maximum distance
+    // from L and also on the specified side of L.
+    for (let i=0; i<n; i++)
+    {
+        let temp = lineDist(p1, p2, a[i]);
+        if ((findSide(p1, p2, a[i]) == side) && (temp > max_dist))
+        {
+            ind = i;
+            max_dist = temp;
+        }
+    }
+
+    // If no point is found, add the end points
+    // of L to the convex hull.
+    if (ind == -1)
+    {
+        hull.add(p1);
+        hull.add(p2);
+        return;
+    }
+
+    // Recur for the two parts divided by a[ind]
+    quickHull(a, n, a[ind], p1, -findSide(a[ind], p1, p2));
+    quickHull(a, n, a[ind], p2, -findSide(a[ind], p2, p1));
+}
+
+function printHull(a, n)
+{
+    // a[i].second -> y-coordinate of the ith point
+    if (n < 3)
+    {
+        console.log("Convex hull not possible");
+        return;
+    }
+
+    // Finding the point with minimum and
+    // maximum x-coordinate
+    let min_x = 0, max_x = 0;
+    for (let i=1; i<n; i++)
+    {
+        if (a[i][0] < a[min_x][0])
+            min_x = i;
+        if (a[i][0] > a[max_x][0])
+            max_x = i;
+    }
+
+    // Recursively find convex hull points on
+    // one side of line joining a[min_x] and
+    // a[max_x]
+    quickHull(a, n, a[min_x], a[max_x], 1);
+
+    // Recursively find convex hull points on
+    // other side of line joining a[min_x] and
+    // a[max_x]
+    quickHull(a, n, a[min_x], a[max_x], -1);
+
+    console.log("The points in Convex Hull are:");
+
+    hull.forEach(element =>{
+        console.log("(", element[0], ", ", element[1], ") ");
+    })
+}
+
+// Driver code
+{
+    let a = [[0, 3], [1, 1], [2, 2], [4, 4],
+            [0, 0], [1, 2], [3, 1], [3, 3]];
+    let n = a.length;
+    printHull(a, n);
+}
+
+// The code is contributed by Nidhi goel
+
+Python3
+
+# python program to implement Quick Hull algorithm
+# to find convex hull.
+
+# Stores the result (points of convex hull)
+hull = set()
+
+# Returns the side of point p with respect to line
+# joining points p1 and p2.
+def findSide(p1, p2, p):
+    val = (p[1] - p1[1]) * (p2[0] - p1[0]) - (p2[1] - p1[1]) * (p[0] - p1[0])
+
+    if val > 0:
+        return 1
+    if val < 0:
+        return -1
+    return 0
+
+# returns a value proportional to the distance
+# between the point p and the line joining the
+# points p1 and p2
+def lineDist(p1, p2, p):
+    return abs((p[1] - p1[1]) * (p2[0] - p1[0]) -
+            (p2[1] - p1[1]) * (p[0] - p1[0]))
+
+# End points of line L are p1 and p2. side can have value
+# 1 or -1 specifying each of the parts made by the line L
+def quickHull(a, n, p1, p2, side):
+
+    ind = -1
+    max_dist = 0
+
+    # finding the point with maximum distance
+    # from L and also on the specified side of L.
+    for i in range(n):
+        temp = lineDist(p1, p2, a[i])
+
+        if (findSide(p1, p2, a[i]) == side) and (temp > max_dist):
+            ind = i
+            max_dist = temp
+
+    # If no point is found, add the end points
+    # of L to the convex hull.
+    if ind == -1:
+        hull.add("$".join(map(str, p1)))
+        hull.add("$".join(map(str, p2)))
+        return
+
+    # Recur for the two parts divided by a[ind]
+    quickHull(a, n, a[ind], p1, -findSide(a[ind], p1, p2))
+    quickHull(a, n, a[ind], p2, -findSide(a[ind], p2, p1))
+
+def printHull(a, n):
+    # a[i].second -> y-coordinate of the ith point
+    if (n < 3):
+        print("Convex hull not possible")
+        return
+
+    # Finding the point with minimum and
+    # maximum x-coordinate
+    min_x = 0
+    max_x = 0
+    for i in range(1, n):
+        if a[i][0] < a[min_x][0]:
+            min_x = i
+        if a[i][0] > a[max_x][0]:
+            max_x = i
+
+    # Recursively find convex hull points on
+    # one side of line joining a[min_x] and
+    # a[max_x]
+    quickHull(a, n, a[min_x], a[max_x], 1)
+
+    # Recursively find convex hull points on
+    # other side of line joining a[min_x] and
+    # a[max_x]
+    quickHull(a, n, a[min_x], a[max_x], -1)
+
+    print("The points in Convex Hull are:")
+
+    for element in hull:
+        x = element.split("$")
+        print("(", x[0], ",", x[1], ") ", end = " ")
+
+# Driver code
+a = [[0, 3], [1, 1], [2, 2], [4, 4],
+     [0, 0], [1, 2], [3, 1], [3, 3]]
+n = len(a)
+printHull(a, n)
+
+# The code is contributed by Nidhi goel
+
+Output
+
+The points in Convex Hull are:
+(0, 0) (0, 3) (3, 1) (4, 4)
+
+Time Complexity: The analysis is similar to Quick Sort. On average, we get time complexity as O(n Log n), but in worst case, it can become O(n 2 )
+
+space complexity : O(n)
+
+If you like GeeksforGeeks and would like to contribute, you can also write an article using write.geeksforgeeks.org or mail your article to review-team@geeksforgeeks.org. See your article appearing on the GeeksforGeeks main page and help other Geeks. Please write comments if you find anything incorrect, or you want to share more information about the topic discussed above.

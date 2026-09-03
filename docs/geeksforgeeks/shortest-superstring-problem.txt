@@ -1,0 +1,1696 @@
+Source: https://www.geeksforgeeks.org/dsa/shortest-superstring-problem/
+Title: Shortest Superstring Problem
+Extractor: 2
+
+Given a set of n strings arr[], find the smallest string that contains each string in the given set as substring. We may assume that no string in arr[] is substring of another string. Examples:
+
+> Input: arr[] = {"geeks", "quiz", "for"} Output: geeksquizfor Explanation: "geeksquizfor" contains all the three strings of arr[]: " geeks quizfor" contains "geeks". "geeks quiz for" contains "quiz". " geeksquiz for " contains "for". Input: arr[] = {"catg", "ctaagt", "gcta", "ttca", "atgcatc"} Output: gctaagttcatgcatc Explanation: "gctaagtt catg catc" contains "catg". "g ctaagt tcatgcatc" contains " ctaagt ". " gcta agttcatgcatc" contains " gcta ". "gctaag ttca tgcatc" contains "ttca". "gctaagttc atgcatc " contains "atgcatc".
+
+Shortest Superstring Greedy Approximate Algorithm
+
+Shortest Superstring Problem is a NP Hard problem. A solution that always finds shortest superstring takes exponential time. Below is an Approximate Greedy algorithm.
+
+Let arr[] be given set of strings.1) Create an auxiliary array of strings, temp[].  Copy contents   of arr[] to temp[]2) While temp[] contains more than one strings     a) Find the most overlapping string pair in temp[]. Let this        pair be 'a' and 'b'.      b) Replace 'a' and 'b' with the string obtained after combining        them.3) The only string left in temp[] is the result, return it.
+
+Two strings are overlapping if prefix of one string is same suffix of other string or vice versa. The maximum overlap mean length of the matching prefix and suffix is maximum.
+
+Working of above Algorithm:
+
+arr[] = {"catgc", "ctaagt", "gcta", "ttca", "atgcatc"}Initialize:temp[] = {"catgc", "ctaagt", "gcta", "ttca", "atgcatc"}The most overlapping strings are "catgc" and "atgcatc"(Suffix of length 4 of "catgc" is same as prefix of "atgcatc")Replace two strings with "catgcatc", we gettemp[] = {"catgcatc", "ctaagt", "gcta", "ttca"}The most overlapping strings are "ctaagt" and "gcta"(Prefix of length 3 of "ctaagt" is same as suffix of "gcta")Replace two strings with "gctaagt", we gettemp[] = {"catgcatc", "gctaagt", "ttca"}The most overlapping strings are "catgcatc" and "ttca"(Prefix of length 2 of "catgcatc" as suffix of "ttca")Replace two strings with "ttcatgcatc", we gettemp[] = {"ttcatgcatc", "gctaagt"}Now there are only two strings in temp[], after combingthe two in optimal way, we get tem[] = {"gctaagttcatgcatc"}Since temp[] has only one string now, return it.
+
+Below is the implementation of the above algorithm.
+
+C++
+
+// C++ program to find shortest
+// superstring using Greedy
+// Approximate Algorithm
+#include <bits/stdc++.h>
+using namespace std;
+
+// Utility function to calculate
+// minimum of two numbers
+int min(int a, int b)
+{
+    return (a < b) ? a : b;
+}
+
+// Function to calculate maximum
+// overlap in two given strings
+int findOverlappingPair(string str1,
+                     string str2, string &str)
+{
+
+    // Max will store maximum
+    // overlap i.e maximum
+    // length of the matching
+    // prefix and suffix
+    int max = INT_MIN;
+    int len1 = str1.length();
+    int len2 = str2.length();
+
+    // Check suffix of str1 matches
+    // with prefix of str2
+    for (int i = 1; i <=
+                      min(len1, len2); i++)
+    {
+
+        // Compare last i characters
+        // in str1 with first i
+        // characters in str2
+        if (str1.compare(len1-i, i, str2,
+                                 0, i) == 0)
+        {
+            if (max < i)
+            {
+                // Update max and str
+                max = i;
+                str = str1 + str2.substr(i);
+            }
+        }
+    }
+
+    // Check prefix of str1 matches
+    // with suffix of str2
+    for (int i = 1; i <=
+                        min(len1, len2); i++)
+    {
+
+        // compare first i characters
+        // in str1 with last i
+        // characters in str2
+        if (str1.compare(0, i, str2,
+                              len2-i, i) == 0)
+        {
+            if (max < i)
+            {
+
+                // Update max and str
+                max = i;
+                str = str2 + str1.substr(i);
+            }
+        }
+    }
+
+    return max;
+}
+
+// Function to calculate
+// smallest string that contains
+// each string in the given
+// set as substring.
+string findShortestSuperstring(string arr[],
+                                    int len)
+{
+
+    // Run len-1 times to
+    // consider every pair
+    while(len != 1)
+    {
+
+        // To store  maximum overlap
+        int max = INT_MIN;
+
+        // To store array index of strings
+        int l, r;
+
+        // Involved in maximum overlap
+        string resStr;
+
+        // Maximum overlap
+        for (int i = 0; i < len; i++)
+        {
+            for (int j = i + 1; j < len; j++)
+            {
+                string str;
+
+                // res will store maximum
+                // length of the matching
+                // prefix and suffix str is
+                // passed by reference and
+                // will store the resultant
+                // string after maximum
+                // overlap of arr[i] and arr[j],
+                // if any.
+                int res = findOverlappingPair(arr[i],
+                                         arr[j], str);
+
+                // check for maximum overlap
+                if (max < res)
+                {
+                    max = res;
+                    resStr.assign(str);
+                    l = i, r = j;
+                }
+            }
+        }
+
+        // Ignore last element in next cycle
+        len--;
+
+        // If no overlap, append arr[len] to arr[0]
+        if (max == INT_MIN)
+            arr[0] += arr[len];
+        else
+        {
+
+            // Copy resultant string to index l
+            arr[l] = resStr;
+
+            // Copy string at last index to index r
+            arr[r] = arr[len];
+        }
+    }
+    return arr[0];
+}
+
+// Driver program
+int main()
+{
+    string arr[] = {"catgc", "ctaagt",
+                    "gcta", "ttca", "atgcatc"};
+    int len = sizeof(arr)/sizeof(arr[0]);
+
+    // Function Call
+    cout << "The Shortest Superstring is "
+         << findShortestSuperstring(arr, len);
+
+    return 0;
+}
+// This code is contributed by Aditya Goel
+
+Java
+
+// Java program to find shortest
+// superstring using Greedy
+// Approximate Algorithm
+import java.io.*;
+import java.util.*;
+
+class GFG
+{
+
+    static String str;
+
+    // Utility function to calculate
+    // minimum of two numbers
+    static int min(int a, int b)
+    {
+        return (a < b) ? a : b;
+    }
+
+    // Function to calculate maximum
+    // overlap in two given strings
+    static int findOverlappingPair(String str1,
+                                   String str2)
+    {
+
+        // max will store maximum
+        // overlap i.e maximum
+        // length of the matching
+        // prefix and suffix
+        int max = Integer.MIN_VALUE;
+        int len1 = str1.length();
+        int len2 = str2.length();
+
+        // check suffix of str1 matches
+        // with prefix of str2
+        for (int i = 1; i <=
+                            min(len1, len2); i++)
+        {
+
+            // compare last i characters
+            // in str1 with first i
+            // characters in str2
+            if (str1.substring(len1 - i).compareTo(
+                        str2.substring(0, i)) == 0)
+            {
+                if (max < i)
+                {
+
+                    // Update max and str
+                    max = i;
+                    str = str1 + str2.substring(i);
+                }
+            }
+        }
+
+        // check prefix of str1 matches
+        // with suffix of str2
+        for (int i = 1; i <=
+                           min(len1, len2); i++)
+        {
+
+            // compare first i characters
+            // in str1 with last i
+            // characters in str2
+            if (str1.substring(0, i).compareTo(
+                      str2.substring(len2 - i)) == 0)
+            {
+                if (max < i)
+                {
+
+                    // update max and str
+                    max = i;
+                    str = str2 + str1.substring(i);
+                }
+            }
+        }
+
+        return max;
+    }
+
+    // Function to calculate smallest
+    // string that contains
+    // each string in the given set as substring.
+    static String findShortestSuperstring(
+                          String arr[], int len)
+    {
+
+        // run len-1 times to consider every pair
+        while (len != 1)
+        {
+
+            // To store maximum overlap
+            int max = Integer.MIN_VALUE;
+
+            // To store array index of strings
+            // involved in maximum overlap
+            int l = 0, r = 0;
+
+            // to store resultant string after
+            // maximum overlap
+            String resStr = "";
+
+            for (int i = 0; i < len; i++)
+            {
+                for (int j = i + 1; j < len; j++)
+                {
+
+                    // res will store maximum
+                    // length of the matching
+                    // prefix and suffix str is
+                    // passed by reference and
+                    // will store the resultant
+                    // string after maximum
+                    // overlap of arr[i] and arr[j],
+                    // if any.
+                    int res = findOverlappingPair
+                                  (arr[i], arr[j]);
+
+                    // Check for maximum overlap
+                    if (max < res)
+                    {
+                        max = res;
+                        resStr = str;
+                        l = i;
+                        r = j;
+                    }
+                }
+            }
+
+            // Ignore last element in next cycle
+            len--;
+
+            // If no overlap,
+            // append arr[len] to arr[0]
+            if (max == Integer.MIN_VALUE)
+                arr[0] += arr[len];
+            else
+            {
+
+                // Copy resultant string
+                // to index l
+                arr[l] = resStr;
+
+                // Copy string at last index
+                // to index r
+                arr[r] = arr[len];
+            }
+        }
+        return arr[0];
+    }
+
+    // Driver Code
+    public static void main(String[] args)
+    {
+        String[] arr = { "catgc", "ctaagt",
+                      "gcta", "ttca", "atgcatc" };
+        int len = arr.length;
+
+        System.out.println("The Shortest Superstring is " +
+                        findShortestSuperstring(arr, len));
+    }
+}
+
+// This code is contributed by
+// sanjeev2552
+
+C#
+
+// C# program to find shortest
+// superstring using Greedy
+// Approximate Algorithm
+using System;
+
+class GFG
+{
+
+    static String str;
+
+    // Utility function to calculate
+    // minimum of two numbers
+    static int min(int a, int b)
+    {
+        return (a < b) ? a : b;
+    }
+
+    // Function to calculate maximum
+    // overlap in two given strings
+    static int findOverlappingPair(String str1,
+                                   String str2)
+    {
+
+        // max will store maximum
+        // overlap i.e maximum
+        // length of the matching
+        // prefix and suffix
+        int max = Int32.MinValue;
+        int len1 = str1.Length;
+        int len2 = str2.Length;
+
+        // check suffix of str1 matches
+        // with prefix of str2
+        for (int i = 1; i <=
+                            min(len1, len2); i++)
+        {
+
+            // compare last i characters
+            // in str1 with first i
+            // characters in str2
+            if (str1.Substring(len1 - i).CompareTo(
+                        str2.Substring(0, i)) == 0)
+            {
+                if (max < i)
+                {
+
+                    // Update max and str
+                    max = i;
+                    str = str1 + str2.Substring(i);
+                }
+            }
+        }
+
+        // check prefix of str1 matches
+        // with suffix of str2
+        for (int i = 1; i <=
+                           min(len1, len2); i++)
+        {
+
+            // compare first i characters
+            // in str1 with last i
+            // characters in str2
+            if (str1.Substring(0, i).CompareTo(
+                      str2.Substring(len2 - i)) == 0)
+            {
+                if (max < i)
+                {
+
+                    // update max and str
+                    max = i;
+                    str = str2 + str1.Substring(i);
+                }
+            }
+        }
+
+        return max;
+    }
+
+    // Function to calculate smallest
+    // string that contains
+    // each string in the given set as substring.
+    static String findShortestSuperstring(String []arr, int len)
+    {
+
+        // run len-1 times to consider every pair
+        while (len != 1)
+        {
+
+            // To store maximum overlap
+            int max = Int32.MinValue;
+
+            // To store array index of strings
+            // involved in maximum overlap
+            int l = 0, r = 0;
+
+            // to store resultant string after
+            // maximum overlap
+            String resStr = "";
+
+            for (int i = 0; i < len; i++)
+            {
+                for (int j = i + 1; j < len; j++)
+                {
+
+                    // res will store maximum
+                    // length of the matching
+                    // prefix and suffix str is
+                    // passed by reference and
+                    // will store the resultant
+                    // string after maximum
+                    // overlap of arr[i] and arr[j],
+                    // if any.
+                    int res = findOverlappingPair
+                                  (arr[i], arr[j]);
+
+                    // Check for maximum overlap
+                    if (max < res)
+                    {
+                        max = res;
+                        resStr = str;
+                        l = i;
+                        r = j;
+                    }
+                }
+            }
+
+            // Ignore last element in next cycle
+            len--;
+
+            // If no overlap,
+            // append arr[len] to arr[0]
+            if (max == Int32.MinValue)
+                arr[0] += arr[len];
+            else
+            {
+
+                // Copy resultant string
+                // to index l
+                arr[l] = resStr;
+
+                // Copy string at last index
+                // to index r
+                arr[r] = arr[len];
+            }
+        }
+        return arr[0];
+    }
+
+    // Driver Code
+    public static void Main(String[] args)
+    {
+        String[] arr = { "catgc", "ctaagt",
+                      "gcta", "ttca", "atgcatc" };
+        int len = arr.Length;
+
+        Console.Write("The Shortest Superstring is " +
+                        findShortestSuperstring(arr, len));
+    }
+}
+
+// This code is contributed by shivanisinghss2110
+
+JavaScript
+
+function min(a, b) {
+    return (a < b) ? a : b;
+}
+
+function findOverlappingPair(str1, str2) {
+    let max = Number.MIN_SAFE_INTEGER;
+    let len1 = str1.length;
+    let len2 = str2.length;
+    let str = "";
+
+    for (let i = 1; i <= min(len1, len2); i++) {
+        if (str1.substring(len1 - i) === str2.substring(0, i)) {
+            if (max < i) {
+                max = i;
+                str = str1 + str2.substring(i);
+            }
+        }
+    }
+
+    for (let i = 1; i <= min(len1, len2); i++) {
+        if (str1.substring(0, i) === str2.substring(len2 - i)) {
+            if (max < i) {
+                max = i;
+                str = str2 + str1.substring(i);
+            }
+        }
+    }
+
+    return { max: max, str: str };
+}
+
+function findShortestSuperstring(arr) {
+    let len = arr.length;
+
+    while (len !== 1) {
+        let max = Number.MIN_SAFE_INTEGER;
+        let l = 0, r = 0;
+        let resStr = "";
+
+        for (let i = 0; i < len; i++) {
+            for (let j = i + 1; j < len; j++) {
+                let { max: res, str } = findOverlappingPair(arr[i], arr[j]);
+                if (max < res) {
+                    max = res;
+                    resStr = str;
+                    l = i;
+                    r = j;
+                }
+            }
+        }
+
+        len--;
+
+        if (max === Number.MIN_SAFE_INTEGER) {
+            arr[0] += arr[len];
+        } else {
+            arr[l] = resStr;
+            arr[r] = arr[len];
+        }
+    }
+
+    return arr[0];
+}
+
+let arr = ["catgc", "ctaagt", "gcta", "ttca", "atgcatc"];
+console.log("The Shortest Superstring is " + findShortestSuperstring(arr));
+
+Python3
+
+# python code for the above approach
+import sys
+
+# Utility function to calculate
+# minimum of two numbers
+def minimum(a, b):
+    return a if a < b else b
+
+# Function to calculate maximum
+# overlap in two given strings
+def findOverlappingPair(str1, str2):
+    # Max will store maximum
+    # overlap i.e maximum
+    # length of the matching
+    # prefix and suffix
+    max_len = -sys.maxsize
+    len1 = len(str1)
+    len2 = len(str2)
+    str_ = ""
+
+    # Check suffix of str1 matches
+    # with prefix of str2
+    for i in range(1, minimum(len1, len2)+1):
+        # Compare last i characters
+        # in str1 with first i
+        # characters in str2
+        if str1[len1-i:] == str2[:i]:
+            if max_len < i:
+                # Update max and str_
+                max_len = i
+                str_ = str1 + str2[i:]
+
+    # Check prefix of str1 matches
+    # with suffix of str2
+    for i in range(1, minimum(len1, len2)+1):
+        # compare first i characters
+        # in str1 with last i
+        # characters in str2
+        if str1[:i] == str2[len2-i:]:
+            if max_len < i:
+                # Update max and str_
+                max_len = i
+                str_ = str2 + str1[i:]
+
+    return max_len, str_
+
+# Function to calculate
+# smallest string that contains
+# each string in the given
+# set as substring.
+def findShortestSuperstring(arr, n):
+    # Run n-1 times to
+    # consider every pair
+    while n != 1:
+        # To store  maximum overlap
+        max_len = -sys.maxsize
+        # To store array index of strings
+        l, r = 0, 0
+        # Involved in maximum overlap
+        res_str = ""
+
+        # Maximum overlap
+        for i in range(n):
+            for j in range(i+1, n):
+                str_ = ""
+                # res will store maximum
+                # length of the matching
+                # prefix and suffix str is
+                # passed by reference and
+                # will store the resultant
+                # string after maximum
+                # overlap of arr[i] and arr[j],
+                # if any.
+                res, str_ = findOverlappingPair(arr[i], arr[j])
+
+                # check for maximum overlap
+                if max_len < res:
+                    max_len = res
+                    res_str = str_
+                    l, r = i, j
+
+        # Ignore last element in next cycle
+        n -= 1
+
+        # If no overlap, append arr[n-1] to arr[0]
+        if max_len == -sys.maxsize:
+            arr[0] += arr[n]
+        else:
+            # Copy resultant string to index l
+            arr[l] = res_str
+            # Copy string at last index to index r
+            arr[r] = arr[n]
+
+    return arr[0]
+
+# Driver program
+if __name__ == "__main__":
+    arr = ["catgc", "ctaagt", "gcta", "ttca", "atgcatc"]
+    n = len(arr)
+
+    # Function Call
+    print("The Shortest Superstring is", findShortestSuperstring(arr, n))
+
+# this code is contributed by bhardwajji
+
+Output
+
+The Shortest Superstring is gctaagttcatgcatc
+
+The time complexity of this algorithm is O(n^3 * m), where n is the number of strings in the input array and m is the maximum length of any string in the array. This is because the main loop runs n-1 times and the findOverlappingPair function takes O(m) time, and it is called n^2 times.
+
+The space complexity is O(n * m), which is the space required to store the input array and the result string.
+
+Performance of above algorithm:
+
+The above Greedy Algorithm is proved to be 4 approximate (i.e., length of the superstring generated by this algorithm is never beyond 4 times the shortest possible superstring). This algorithm is conjectured to 2 approximate (nobody has found case where it generates more than twice the worst). Conjectured worst case example is {ab k , b k c, b k+1 }. For example {"abb", "bbc", "bbb"}, the above algorithm may generate "abbcbbb" (if "abb" and "bbc" are picked as first pair), but the actual shortest superstring is "abbbc". Here ratio is 7/5, but for large k, ration approaches 2.
+
+Another Approach:
+
+By "greedy approach" I mean: each time we merge the two strings with a maximum length of overlap, remove them from the string array, and put the merged string into the string array.
+
+Then the problem becomes to: find the shortest path in this graph which visits every node exactly once. This is a Travelling Salesman Problem.
+
+Apply Travelling Salesman Problem DP solution. Remember to record the path.
+
+Below is the implementation of the above approach:
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to calculate the overlap between two strings
+int calcOverlap(string a, string b) {
+    for (int i = 1; i < a.length(); i++) {
+        if (b.find(a.substr(i)) == 0) {
+            return b.length() - a.length() + i;
+        }
+    }
+    return b.length();
+}
+
+// Function to calculate the shortest superstring
+string shortestSuperstring(vector<string> A) {
+    int n = A.size();
+    vector<vector<int>> graph(n, vector<int>(n));
+
+    // Build the graph
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            graph[i][j] = calcOverlap(A[i], A[j]);
+            graph[j][i] = calcOverlap(A[j], A[i]);
+        }
+    }
+
+    // Create dp and path arrays
+    vector<vector<int>> dp(1 << n, vector<int>(n));
+    vector<vector<int>> path(1 << n, vector<int>(n));
+    int last = -1, minVal = INT_MAX;
+
+    // Start TSP DP
+    for (int i = 1; i < (1 << n); i++) {
+        fill(dp[i].begin(), dp[i].end(), INT_MAX);
+        for (int j = 0; j < n; j++) {
+            if ((i & (1 << j)) > 0) {
+                int prev = i - (1 << j);
+                if (prev == 0) {
+                    dp[i][j] = A[j].length();
+                } else {
+                    for (int k = 0; k < n; k++) {
+                        if (dp[prev][k] < INT_MAX && dp[prev][k] + graph[k][j] < dp[i][j]) {
+                            dp[i][j] = dp[prev][k] + graph[k][j];
+                            path[i][j] = k;
+                        }
+                    }
+                }
+            }
+            if (i == (1 << n) - 1 && dp[i][j] < minVal) {
+                minVal = dp[i][j];
+                last = j;
+            }
+        }
+    }
+
+    // Build the path
+    string res;
+    int cur = (1 << n) - 1;
+    stack<int> s;
+    while (cur > 0) {
+        s.push(last);
+        int temp = cur;
+        cur -= (1 << last);
+        last = path[temp][last];
+    }
+
+    // Build the result
+    int i = s.top();
+    s.pop();
+    res += A[i];
+    while (!s.empty()) {
+        int j = s.top();
+        s.pop();
+        res += A[j].substr(A[j].length() - graph[i][j]);
+        i = j;
+    }
+
+    return res;
+}
+
+int main() {
+    vector<string> arr{"catgc", "ctaagt", "gcta", "ttca", "atgcatc"};
+
+    cout << "The Shortest Superstring is " << shortestSuperstring(arr) << endl;
+
+   return 0;
+}
+
+Java
+
+// Java program for above approach
+import java.io.*;
+import java.util.*;
+
+class Solution
+{
+
+  // Function to calculate shortest
+  // super string
+  public static String shortestSuperstring(
+                                   String[] A)
+  {
+    int n = A.length;
+    int[][] graph = new int[n][n];
+
+    // Build the graph
+    for (int i = 0; i < n; i++)
+    {
+      for (int j = 0; j < n; j++)
+      {
+        graph[i][j] = calc(A[i], A[j]);
+        graph[j][i] = calc(A[j], A[i]);
+      }
+    }
+
+    // Creating dp array
+    int[][] dp = new int[1 << n][n];
+
+    // Creating path array
+    int[][] path = new int[1 << n][n];
+    int last = -1, min = Integer.MAX_VALUE;
+
+    // start TSP DP
+    for (int i = 1; i < (1 << n); i++)
+    {
+      Arrays.fill(dp[i], Integer.MAX_VALUE);
+
+      // Iterate j from 0 to n - 1
+      for (int j = 0; j < n; j++)
+      {
+        if ((i & (1 << j)) > 0)
+        {
+          int prev = i - (1 << j);
+
+          // Check if prev is zero
+          if (prev == 0)
+          {
+            dp[i][j] = A[j].length();
+          }
+          else
+          {
+
+            // Iterate k from 0 to n - 1
+            for (int k = 0; k < n; k++)
+            {
+              if (dp[prev][k] < Integer.MAX_VALUE &&
+                  dp[prev][k] + graph[k][j] < dp[i][j])
+              {
+                dp[i][j] = dp[prev][k] + graph[k][j];
+                path[i][j] = k;
+              }
+            }
+          }
+        }
+        if (i == (1 << n) - 1 && dp[i][j] < min)
+        {
+          min = dp[i][j];
+          last = j;
+        }
+      }
+    }
+
+    // Build the path
+    StringBuilder sb = new StringBuilder();
+    int cur = (1 << n) - 1;
+
+    // Creating a stack
+    Stack<Integer> stack = new Stack<>();
+
+    // Until cur is zero
+    // push last
+    while (cur > 0)
+    {
+      stack.push(last);
+      int temp = cur;
+      cur -= (1 << last);
+      last = path[temp][last];
+    }
+
+    // Build the result
+    int i = stack.pop();
+    sb.append(A[i]);
+
+    // Until stack is empty
+    while (!stack.isEmpty())
+    {
+      int j = stack.pop();
+      sb.append(A[j].substring(A[j].length() -
+                                graph[i][j]));
+      i = j;
+    }
+    return sb.toString();
+  }
+
+  // Function to check
+  public static int calc(String a, String b)
+  {
+    for (int i = 1; i < a.length(); i++)
+    {
+      if (b.startsWith(a.substring(i)))
+      {
+        return b.length() - a.length() + i;
+      }
+    }
+
+    // Return size of b
+    return b.length();
+  }
+
+  // Driver Code
+  public static void main(String[] args)
+  {
+    String[] arr = { "catgc", "ctaagt",
+                    "gcta", "ttca", "atgcatc" };
+
+    // Function Call
+    System.out.println("The Shortest Superstring is " +
+                    shortestSuperstring(arr));
+   }
+}
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    // Function to calculate the overlap between two strings
+    static int CalcOverlap(string a, string b)
+    {
+        for (int i = 1; i < a.Length; i++)
+        {
+            if (b.IndexOf(a.Substring(i)) == 0)
+            {
+                return b.Length - a.Length + i;
+            }
+        }
+        return b.Length;
+    }
+
+    // Function to calculate the shortest superstring
+    static string ShortestSuperstring(List<string> A)
+    {
+        int n = A.Count;
+        int[,] graph = new int[n, n];
+
+        // Build the graph
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                graph[i, j] = CalcOverlap(A[i], A[j]);
+                graph[j, i] = CalcOverlap(A[j], A[i]);
+            }
+        }
+
+        // Create dp and path arrays
+        int[][] dp = new int[1 << n][];
+        int[][] path = new int[1 << n][];
+        int last = -1, minVal = int.MaxValue;
+
+        for (int i = 0; i < (1 << n); i++)
+        {
+            dp[i] = new int[n];
+            path[i] = new int[n];
+
+            for (int j = 0; j < n; j++)
+            {
+                dp[i][j] = int.MaxValue;
+            }
+        }
+
+        // Start TSP DP
+        for (int mask = 1; mask < (1 << n); mask++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                if ((mask & (1 << j)) > 0)
+                {
+                    int prevMask = mask - (1 << j);
+                    if (prevMask == 0)
+                    {
+                        dp[mask][j] = A[j].Length;
+                    }
+                    else
+                    {
+                        for (int k = 0; k < n; k++)
+                        {
+                            if (dp[prevMask][k] < int.MaxValue &&
+                                dp[prevMask][k] + graph[k, j] < dp[mask][j])
+                            {
+                                dp[mask][j] = dp[prevMask][k] + graph[k, j];
+                                path[mask][j] = k;
+                            }
+                        }
+                    }
+                }
+                if (mask == (1 << n) - 1 && dp[mask][j] < minVal)
+                {
+                    minVal = dp[mask][j];
+                    last = j;
+                }
+            }
+        }
+
+        // Build the path
+        string res = string.Empty;
+        int currentMask = (1 << n) - 1;
+        Stack<int> s = new Stack<int>();
+        while (currentMask > 0)
+        {
+            s.Push(last);
+            int tempMask = currentMask;
+            currentMask -= (1 << last);
+            last = path[tempMask][last];
+        }
+
+        // Build the result
+        int firstStringIndex = s.Pop();
+        res += A[firstStringIndex];
+        while (s.Count > 0)
+        {
+            int nextStringIndex = s.Pop();
+            res += A[nextStringIndex].
+                   Substring(A[nextStringIndex].Length - graph[firstStringIndex,
+                             nextStringIndex]);
+            firstStringIndex = nextStringIndex;
+        }
+
+        return res;
+    }
+
+    static void Main()
+    {
+        List<string> arr = new List<string> { "catgc", "ctaagt", "gcta", "ttca", "atgcatc" };
+
+        Console.WriteLine("The Shortest Superstring is " + ShortestSuperstring(arr));
+    }
+}
+
+// This code is contributed by akshitaguprzj3
+
+JavaScript
+
+// Function to calculate shortest super string
+function shortestSuperstring(A) {
+    let n = A.length;
+    let graph = new Array(n).fill(0).map(() => new Array(n).fill(0));
+    // Build the graph
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            graph[i][j] = calc(A[i], A[j]);
+            graph[j][i] = calc(A[j], A[i]);
+        }
+    }
+    // Creating dp array
+    let dp = new Array(1 << n).fill(0).map(() => new Array(n).fill(0));
+    // Creating path array
+    let path = new Array(1 << n).fill(0).map(() => new Array(n).fill(0));
+    let last = -1, min = Number.MAX_VALUE;
+    // start TSP DP
+    for (let i = 1; i < (1 << n); i++) {
+        dp[i].fill(Number.MAX_VALUE);
+        // Iterate j from 0 to n - 1
+        for (let j = 0; j < n; j++) {
+            if ((i & (1 << j)) > 0) {
+                let prev = i - (1 << j);
+                // Check if prev is zero
+                if (prev == 0) {
+                    dp[i][j] = A[j].length;
+                } else {
+                    // Iterate k from 0 to n - 1
+                    for (let k = 0; k < n; k++) {
+                        if (dp[prev][k] < Number.MAX_VALUE && dp[prev][k] + graph[k][j] < dp[i][j]) {
+                            dp[i][j] = dp[prev][k] + graph[k][j];
+                            path[i][j] = k;
+                        }
+                    }
+                }
+            }
+            if (i == (1 << n) - 1 && dp[i][j] < min) {
+                min = dp[i][j];
+                last = j;
+            }
+        }
+    }
+    // Build the path
+    let sb = "";
+    let cur = (1 << n) - 1;
+    // Creating a stack
+    let stack = [];
+    // Until cur is zero
+    // push last
+    while (cur > 0) {
+        stack.push(last);
+        let temp = cur;
+        cur -= (1 << last);
+        last = path[temp][last];
+    }
+    // Build the result
+    let i = stack.pop();
+    sb += A[i];
+    // Until stack is empty
+    while (stack.length > 0) {
+        let j = stack.pop();
+        sb += A[j].substring(A[j].length - graph[i][j]);
+        i = j;
+    }
+    return sb;
+}
+// Function to check
+function calc(a, b) {
+    for (let i = 1; i < a.length; i++) {
+        if (b.startsWith(a.substring(i))) {
+            return b.length - a.length + i;
+        }
+    }
+    // Return size of b
+    return b.length;
+}
+// Driver Code
+let arr = ["catgc", "ctaagt", "gcta", "ttca", "atgcatc"];
+// Function Call
+console.log("The Shortest Superstring is " + shortestSuperstring(arr));
+
+Python3
+
+# Python program for the above approach
+
+def shortestSuperstring(A):
+    n = len(A)
+    graph = [[0 for i in range(n)] for j in range(n)]
+
+    # Build the graph
+    for i in range(n):
+        for j in range(n):
+            graph[i][j] = calc(A[i], A[j])
+            graph[j][i] = calc(A[j], A[i])
+
+    # Creating dp array
+    dp = [[0 for i in range(n)] for j in range(1 << n)]
+
+    # Creating path array
+    path = [[0 for i in range(n)] for j in range(1 << n)]
+    last = -1
+    min_val = float('inf')
+
+    # start TSP DP
+    for i in range(1, (1 << n)):
+        for j in range(n):
+            dp[i][j] = float('inf')
+
+        for j in range(n):
+            if (i & (1 << j)) > 0:
+                prev = i - (1 << j)
+
+                # Check if prev is zero
+                if prev == 0:
+                    dp[i][j] = len(A[j])
+                else:
+                    # Iterate k from 0 to n - 1
+                    for k in range(n):
+                        if dp[prev][k] < float('inf') and dp[prev][k] + graph[k][j] < dp[i][j]:
+                            dp[i][j] = dp[prev][k] + graph[k][j]
+                            path[i][j] = k
+
+                if i == (1 << n) - 1 and dp[i][j] < min_val:
+                    min_val = dp[i][j]
+                    last = j
+
+    # Build the path
+    sb = ""
+    cur = (1 << n) - 1
+
+    # Creating a stack
+    stack = []
+
+    # Until cur is zero
+    # push last
+    while cur > 0:
+        stack.append(last)
+        temp = cur
+        cur -= (1 << last)
+        last = path[temp][last]
+
+    # Build the result
+    i = stack.pop()
+    sb += A[i]
+
+    # Until stack is empty
+    while len(stack) > 0:
+        j = stack.pop()
+        sb += A[j][len(A[j]) - graph[i][j]:]
+        i = j
+
+    return sb
+
+# Function to check
+def calc(a, b):
+    for i in range(1, len(a)):
+        if b.startswith(a[i:]):
+            return len(b) - len(a) + i
+
+    # Return size of b
+    return len(b)
+
+# Driver Code
+if __name__ == '__main__':
+    arr = [ "catgc", "ctaagt", "gcta", "ttca", "atgcatc" ]
+
+    # Function Call
+    print("The Shortest Superstring is " + shortestSuperstring(arr))
+
+Output
+
+The Shortest Superstring is gctaagttcatgcatc
+
+Time complexity: O(n^2 * 2^n) , where N is the length of the string array. Auxiliary Space: O(2^N * N).
+
+There exist better approximate algorithms for this problem. Please refer to below link. Shortest Superstring Problem | Set 2 (Using Set Cover)
+
+Another Approach Using Bitmask and Dynamic Programming:
+
+> This is actually bitmasking problem: if we look at our strings as nodes, then we can evaluate distance between one string and another, for example for abcde and cdefghij distance is 5, because we need to use 5 more symbols fghij to continue first string to get the second. Note, that this is not symmetric, so our graph is oriented.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int tsp(int city, int mask, vector<vector<int>> &distance, vector<vector<int>> &dp, vector<vector<int>> &path, int n) {
+    if (mask == (1 << n) - 1) return 0;
+
+    if (dp[mask][city] != -1) {
+        return dp[mask][city];
+    }
+
+    int ans = INT_MAX;
+    int nextCity = -1;
+
+    for (int i = 0; i < n; i++) {
+        if ((mask & (1 << i)) == 0) {
+            int dis = distance[city][i] + tsp(i, (mask | (1 << i)), distance, dp, path, n);
+            if (dis < ans) {
+                ans = dis;
+                nextCity = i;
+            }
+        }
+    }
+
+    path[mask][city] = nextCity;
+    dp[mask][city] = ans;
+    return ans;
+}
+
+string createPath(vector<string> &words, int start, vector<vector<int>> &distance, vector<vector<int>> &path) {
+    int c = start;
+    string result = words[start];
+    int mask = (1 << start);
+    int x = path[mask][start];
+
+    while (x != -1) {
+        result += words[x].substr(distance[c][x]);
+        mask |= (1 << x);
+        c = x;
+        x = path[mask][x];
+    }
+
+    return result;
+}
+
+string shortestSuperstring(vector<string> words) {
+    int n = words.size();
+    vector<vector<int>> distance(n, vector<int>(n, 0));
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            int minLen = min(words[i].length(), words[j].length());
+            for (int k = minLen; k >= 0; k--) {
+                if (words[i].substr(words[i].length() - k) == words[j].substr(0, k)) {
+                    distance[i][j] = words[j].length() - k;
+                    break;
+                }
+            }
+        }
+    }
+
+    vector<vector<int>> dp(1 << n, vector<int>(n, -1));
+    vector<vector<int>> path(1 << n, vector<int>(n, -1));
+    string ans = "";
+    int len = INT_MAX;
+
+    for (int i = 0; i < n; i++) {
+        int tspResult = tsp(i, 0, distance, dp, path, n);
+        string str = createPath(words, i, distance, path);
+        if (str.length() < len) {
+            ans = str;
+            len = str.length();
+        }
+    }
+
+    return ans;
+}
+
+int main() {
+    vector<string> arr = {"catgc", "ctaagt", "gcta", "ttca", "atgcatc"};
+    cout << "The Shortest Superstring is " << shortestSuperstring(arr) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class ShortestSuperstring {
+
+    private static int tsp(int city, int mask, int[][] distance, int[][] dp, int[][] path, int n) {
+        if (mask == (1 << n) - 1) return 0;
+
+        if (dp[mask][city] != -1) {
+            return dp[mask][city];
+        }
+
+        int ans = Integer.MAX_VALUE;
+        int nextCity = -1;
+
+        for (int i = 0; i < n; i++) {
+            if ((mask & (1 << i)) == 0) {
+                int dis = distance[city][i] + tsp(i, (mask | (1 << i)), distance, dp, path, n);
+                if (dis < ans) {
+                    ans = dis;
+                    nextCity = i;
+                }
+            }
+        }
+
+        path[mask][city] = nextCity;
+        dp[mask][city] = ans;
+        return ans;
+    }
+
+    private static String createPath(List<String> words, int start, int[][] distance, int[][] path) {
+        int c = start;
+        StringBuilder result = new StringBuilder(words.get(start));
+        int mask = (1 << start);
+        int x = path[mask][start];
+
+        while (x != -1) {
+            result.append(words.get(x).substring(distance[c][x]));
+            mask |= (1 << x);
+            c = x;
+            x = path[mask][x];
+        }
+
+        return result.toString();
+    }
+
+    private static String shortestSuperstring(List<String> words) {
+        int n = words.size();
+        int[][] distance = new int[n][n];
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                int minLen = Math.min(words.get(i).length(), words.get(j).length());
+                for (int k = minLen; k >= 0; k--) {
+                    if (words.get(i).substring(words.get(i).length() - k).equals(words.get(j).substring(0, k))) {
+                        distance[i][j] = words.get(j).length() - k;
+                        break;
+                    }
+                }
+            }
+        }
+
+        int[][] dp = new int[1 << n][n];
+        int[][] path = new int[1 << n][n];
+        for (int i = 0; i < (1 << n); i++) {
+            Arrays.fill(dp[i], -1);
+            Arrays.fill(path[i], -1);
+        }
+
+        String ans = "";
+        int len = Integer.MAX_VALUE;
+
+        for (int i = 0; i < n; i++) {
+            int tspResult = tsp(i, 0, distance, dp, path, n);
+            String str = createPath(words, i, distance, path);
+            if (str.length() < len) {
+                ans = str;
+                len = str.length();
+            }
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        List<String> arr = Arrays.asList("catgc", "ctaagt", "gcta", "ttca", "atgcatc");
+        System.out.println("The Shortest Superstring is " + shortestSuperstring(arr));
+    }
+}
+
+Python
+
+def overlap(s1, s2):
+    """
+    Finds the maximum overlap between two strings.
+
+    Args:
+        s1: First string.
+        s2: Second string.
+
+    Returns:
+        Maximum overlap between s1 and s2.
+    """
+    max_overlap = min(len(s1), len(s2))
+    for i in range(max_overlap, 0, -1):
+        if s1.endswith(s2[:i]):
+            return i
+    return 0
+
+def merge_strings(s1, s2, overlap_len):
+    """
+    Merges two strings based on the given overlap length.
+
+    Args:
+        s1: First string.
+        s2: Second string.
+        overlap_len: Length of the overlap between s1 and s2.
+
+    Returns:
+        Merged string of s1 and s2.
+    """
+    return s1 + s2[overlap_len:]
+
+def shortest_superstring(words):
+    """
+    Finds the shortest superstring by merging the input list of words.
+
+    Args:
+        words: A list of strings.
+
+    Returns:
+        The shortest superstring formed by merging the words with minimal overlap.
+    """
+    while len(words) > 1:
+        max_overlap = -1
+        merge_indices = None
+        merged_string = None
+        for i in range(len(words)):
+            for j in range(len(words)):
+                if i != j:
+                    curr_overlap = overlap(words[i], words[j])
+                    if curr_overlap > max_overlap:
+                        max_overlap = curr_overlap
+                        merge_indices = (i, j)
+                        merged_string = merge_strings(words[i], words[j], curr_overlap)
+        if merge_indices is not None:
+            i, j = merge_indices
+            del words[j]
+            words[i] = merged_string
+    return words[0]
+
+# Example usage
+words = ["catgc", "ctaagt", "gcta", "ttca", "atgcatc"]
+shortest_string = shortest_superstring(words)
+print("The Shortest Superstring is:", shortest_string)
+#this code is contributed by Adarsh
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static int tsp(int city, int mask, int[][] distance, int[][] dp, int[][] path, int n)
+    {
+        if (mask == (1 << n) - 1) return 0;
+
+        if (dp[mask][city] != -1)
+        {
+            return dp[mask][city];
+        }
+
+        int ans = Int32.MaxValue;
+        int nextCity = -1;
+
+        for (int i = 0; i < n; i++)
+        {
+            if ((mask & (1 << i)) == 0)
+            {
+                int dis = distance[city][i] + tsp(i, (mask | (1 << i)), distance, dp, path, n);
+                if (dis < ans)
+                {
+                    ans = dis;
+                    nextCity = i;
+                }
+            }
+        }
+
+        path[mask][city] = nextCity;
+        dp[mask][city] = ans;
+        return ans;
+    }
+
+    static string createPath(List<string> words, int start, int[][] distance, int[][] path)
+    {
+        int c = start;
+        string result = words[start];
+        int mask = (1 << start);
+        int x = path[mask][start];
+
+        while (x != -1)
+        {
+            result += words[x].Substring(distance[c][x]);
+            mask |= (1 << x);
+            c = x;
+            x = path[mask][x];
+        }
+
+        return result;
+    }
+
+    static string shortestSuperstring(List<string> words)
+    {
+        int n = words.Count;
+        int[][] distance = new int[n][];
+        for (int i = 0; i < n; i++)
+        {
+            distance[i] = new int[n];
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                if (i != j)
+                {
+                    int minLen = Math.Min(words[i].Length, words[j].Length);
+                    for (int k = minLen; k >= 0; k--)
+                    {
+                        if (words[i].Substring(words[i].Length - k) == words[j].Substring(0, k))
+                        {
+                            distance[i][j] = words[j].Length - k;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        int[][] dp = new int[1 << n][];
+        int[][] path = new int[1 << n][];
+        for (int i = 0; i < (1 << n); i++)
+        {
+            dp[i] = new int[n];
+            path[i] = new int[n];
+            for (int j = 0; j < n; j++)
+            {
+                dp[i][j] = -1;
+                path[i][j] = -1;
+            }
+        }
+
+        string ans = "";
+        int len = Int32.MaxValue;
+
+        for (int i = 0; i < n; i++)
+        {
+            tsp(i, 1 << i, distance, dp, path, n);
+            string str = createPath(words, i, distance, path);
+            if (str.Length < len)
+            {
+                ans = str;
+                len = str.Length;
+            }
+        }
+
+        return ans;
+    }
+
+    static void Main(string[] args)
+    {
+        List<string> arr = new List<string> { "catgc", "ctaagt", "gcta", "ttca", "atgcatc" };
+        Console.WriteLine("The Shortest Superstring is " + shortestSuperstring(arr));
+    }
+}
+//This code is contributed by Utkarsh
+
+JavaScript
+
+function tsp(city, mask, distance, dp, path, n) {
+    if (mask == (1 << n) - 1) return 0;
+
+    if (dp[mask][city] !== -1) {
+        return dp[mask][city];
+    }
+
+    let ans = Number.MAX_SAFE_INTEGER;
+    let nextCity = -1;
+
+    for (let i = 0; i < n; i++) {
+        if ((mask & (1 << i)) === 0) {
+            const dis = distance[city][i] + tsp(i, (mask | (1 << i)), distance, dp, path, n);
+            if (dis < ans) {
+                ans = dis;
+                nextCity = i;
+            }
+        }
+    }
+
+    path[mask][city] = nextCity;
+    dp[mask][city] = ans;
+    return ans;
+}
+
+function createPath(words, start, distance, path) {
+    let c = start;
+    let result = words[start];
+    let mask = (1 << start);
+    let x = path[mask][start];
+
+    while (x !== -1) {
+        result += words[x].substring(distance[c][x]);
+        mask |= (1 << x);
+        c = x;
+        x = path[mask][x];
+    }
+
+    return result;
+}
+
+function shortestSuperstring(words) {
+    const n = words.length;
+    const distance = Array.from({ length: n }, () => Array(n).fill(0));
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            const minLen = Math.min(words[i].length, words[j].length);
+            for (let k = minLen; k >= 0; k--) {
+                if (words[i].substring(words[i].length - k) === words[j].substring(0, k)) {
+                    distance[i][j] = words[j].length - k;
+                    break;
+                }
+            }
+        }
+    }
+
+    const dp = Array.from({ length: 1 << n }, () => Array(n).fill(-1));
+    const path = Array.from({ length: 1 << n }, () => Array(n).fill(-1));
+    let ans = "";
+    let len = Number.MAX_SAFE_INTEGER;
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < (1 << n); j++) {
+            dp[j] = Array(n).fill(-1);
+            path[j] = Array(n).fill(-1);
+        }
+
+        const tspResult = tsp(i, 0, distance, dp, path, n);
+        const str = createPath(words, i, distance, path);
+
+        if (str.length < len) {
+            ans = str;
+            len = str.length;
+        }
+    }
+
+    return ans;
+}
+
+// Example usage
+const arr = ["catgc", "ctaagt", "gcta", "ttca", "atgcatc"];
+console.log("The Shortest Superstring is", shortestSuperstring(arr));
+
+Output
+
+The Shortest Superstring is catgccatcagta
+
+Time complexity: O(2^n*n^2*M), where M is the length of answer Auxiliary Space: O(2^n*n*M) as well.

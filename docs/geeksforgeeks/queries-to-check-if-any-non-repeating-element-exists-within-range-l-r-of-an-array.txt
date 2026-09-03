@@ -1,0 +1,910 @@
+Source: https://www.geeksforgeeks.org/dsa/queries-to-check-if-any-non-repeating-element-exists-within-range-l-r-of-an-array/
+Title: Queries to check if any non-repeating element exists within range [L, R] of an Array
+Extractor: 2
+
+Given an array arr[] consisting of integers and queries Q of the form (L, R) , the task is to check whether any non-repeating element is present within indices [L, R] (1 based indexing) or not. If there is at least one non-repeating element, then print "Yes" . Otherwise, print "No" . Examples:
+
+> Input: arr[] = {1, 2, 1, 2, 3, 4}, Queries[][] = {{1, 4}, {1, 5}} Output: No Yes Explanation: For the first query, the subarray is {1, 2, 1, 2}, we can see that both number have frequency 2. Therefore, the answer is No. For the second query, the subarray is {1, 2, 1, 2, 3}, we can see that 3 has frequency 1 so the answer is Yes. Input: arr[] = {1, 2, 3, 4, 5}, Queries[][] = {{1, 4}} Output: Yes Explanation: The subarray is {1, 2, 3, 4}, has all elements as frequency 1 so the answer is Yes.
+
+Naive Approach: The simplest approach to solve the problem is to iterate over a given subarray for each query and maintain a map for storing the frequency of each element. Iterate over the map and check whether there is an element of frequency 1 or not.
+
+Time Complexity: O(Q * N) Auxiliary Space Complexity: O(N) Efficient Approach: The key observation for the solution is, for the element to have frequency 1 in the given array, the previous occurrence of this number in the array is strictly less than the query l and next occurrence of the element is strictly greater than r of some query. Use this observation to find order. Below are the steps that use the Merge Sort Tree approach to solve the given problem:
+
+1. Store the previous occurrence and next occurrence of every ith element in the array as pair .
+2. Build the merge sort tree and merge nodes in them according to the previous occurrence. The merge function is used to merge the ranges.
+3. At each node of merge sort tree, maintain prefix maximum on the next occurrence because we need as smallest possible previous occurrence and as big next occurrence of some element.
+4. For answering the query, we need node with previous occurrence strictly less than l.
+5. For the element in the merge sort tree with the previous occurrence less than l, find the max next occurrence and check if next occurrence is greater than r of the query, then there is an element present in the subarray with frequency 1.
+
+Below is the implementation of the above approach:
+
+CPP
+
+// C++ program for the above approach
+#include <bits/stdc++.h>
+using namespace std;
+
+const int INF = 1e9 + 9;
+const int N = 1e5 + 5;
+
+// Merge sort of pair type for storing
+// prev and next occurrences of element
+vector<vector<pair<int, int> > > segtree(4 * N);
+
+// Stores the occurrences
+vector<pair<int, int> > occurrences(N);
+
+// Finds occurrences
+vector<set<int> > pos(N);
+
+int n;
+
+// Function to build merge sort tree
+void build(int node = 0, int l = 0,
+           int r = n - 1)
+{
+
+    // For leaf node, push the prev &
+    // next occurrence of the lth node
+    if (l == r) {
+        segtree[node].push_back(occurrences[l]);
+        return;
+    }
+
+    int mid = (l + r) / 2;
+
+    // Left recursion call
+    build(2 * node + 1, l, mid);
+
+    // Right recursion call
+    build(2 * node + 2, mid + 1, r);
+
+    // Merging the left child and right child
+    // according to the prev occurrence
+    merge(segtree[2 * node + 1].begin(),
+          segtree[2 * node + 1].end(),
+          segtree[2 * node + 2].begin(),
+          segtree[2 * node + 2].end(),
+          back_inserter(segtree[node]));
+
+    // Update the next occurrence
+    // with prefix maximum
+    int mx = 0;
+
+    for (auto& i : segtree[node]) {
+
+        // Update the maximum
+        // next occurrence
+        mx = max(mx, i.second);
+
+        // Update the next occurrence
+        // with prefix max
+        i.second = mx;
+    }
+}
+
+// Function to check whether an
+// element is present from x to y
+// with frequency 1
+bool query(int x, int y, int node = 0,
+           int l = 0, int r = n - 1)
+{
+    // No overlap condition
+    if (l > y || r < x || x > y)
+        return false;
+
+    // Complete overlap condition
+    if (x <= l && r <= y) {
+
+        // Find the first node with
+        // prev occurrence >= x
+        auto it = lower_bound(segtree[node].begin(),
+                              segtree[node].end(),
+                              make_pair(x, -1));
+
+        // No element in this range with
+        // previous occurrence less than x
+        if (it == segtree[node].begin())
+            return false;
+
+        else {
+
+            it--;
+
+            // Check if the max next
+            // occurrence is greater
+            // than y or not
+            if (it->second > y)
+                return true;
+            else
+                return false;
+        }
+    }
+
+    int mid = (l + r) / 2;
+    bool a = query(x, y, 2 * node + 1, l, mid);
+    bool b = query(x, y, 2 * node + 2, mid + 1, r);
+
+    // Return if any of the
+    // children returned true
+    return (a | b);
+}
+
+// Function do preprocessing that
+// is finding the next and previous
+// occurrences
+void preprocess(int arr[])
+{
+
+    // Store the position of
+    // every element
+    for (int i = 0; i < n; i++) {
+        pos[arr[i]].insert(i);
+    }
+
+    for (int i = 0; i < n; i++) {
+
+        // Find the previous
+        // and next occurrences
+        auto it = pos[arr[i]].find(i);
+        if (it == pos[arr[i]].begin())
+            occurrences[i].first = -INF;
+
+        else
+            occurrences[i].first = *prev(it);
+
+        // Check if there is no next occurrence
+        if (next(it) == pos[arr[i]].end())
+
+            occurrences[i].second = INF;
+        else
+            occurrences[i].second = *next(it);
+    }
+
+    // Building the merge sort tree
+    build();
+}
+
+// Function to find whether there is a
+// number in the subarray with 1 frequency
+void answerQueries(int arr[],
+                   vector<pair<int, int> >& queries)
+{
+    preprocess(arr);
+
+    // Answering the queries
+    for (int i = 0; i < queries.size(); i++) {
+        int l = queries[i].first - 1;
+        int r = queries[i].second - 1;
+
+        bool there = query(l, r);
+
+        if (there == true)
+            cout << "Yes\n";
+
+        else
+            cout << "No\n";
+    }
+}
+
+// Driver Code
+int main()
+{
+    int arr[] = { 1, 2, 1, 2, 3, 4 };
+    n = sizeof(arr) / sizeof(arr[0]);
+
+    vector<pair<int, int> > queries = { { 1, 4 }, { 1, 5 } };
+
+    answerQueries(arr, queries);
+}
+
+Java
+
+import java.util.*;
+
+// Main class for preprocessing and answering queries
+public class UniqueFrequencySubarray {
+
+    static final int INF = 1000000009;
+    static final int N = 100005;
+
+    // Merge sort of pair type for storing prev and next occurrences of element
+    static List<List<Pair>> segtree = new ArrayList<>(4 * N);
+
+    // Stores the occurrences
+    static List<Pair> occurrences = new ArrayList<>(N);
+
+    // Stores the positions
+    static List<Set<Integer>> pos = new ArrayList<>(N);
+
+    static int n;
+
+    // Pair class to store previous and next occurrences of an element
+    static class Pair {
+        int first, second;
+
+        Pair(int first, int second) {
+            this.first = first;
+            this.second = second;
+        }
+    }
+
+    // Function to build merge sort tree
+    static void build(int node, int l, int r) {
+        if (l == r) {
+            segtree.get(node).add(occurrences.get(l));
+            return;
+        }
+
+        int mid = (l + r) / 2;
+        build(2 * node + 1, l, mid);
+        build(2 * node + 2, mid + 1, r);
+
+        segtree.get(node).addAll(merge(segtree.get(2 * node + 1), segtree.get(2 * node + 2)));
+
+        int mx = 0;
+        for (Pair i : segtree.get(node)) {
+            mx = Math.max(mx, i.second);
+            i.second = mx;
+        }
+    }
+
+    // Function to merge two sorted lists of pairs
+    static List<Pair> merge(List<Pair> list1, List<Pair> list2) {
+        List<Pair> merged = new ArrayList<>();
+        int i = 0, j = 0;
+        while (i < list1.size() && j < list2.size()) {
+            if (list1.get(i).first <= list2.get(j).first)
+                merged.add(list1.get(i++));
+            else
+                merged.add(list2.get(j++));
+        }
+        while (i < list1.size())
+            merged.add(list1.get(i++));
+        while (j < list2.size())
+            merged.add(list2.get(j++));
+        return merged;
+    }
+
+    // Function to check whether an element is present from x to y with frequency 1
+    static boolean query(int x, int y, int node, int l, int r) {
+        if (l > y || r < x || x > y)
+            return false;
+
+        if (x <= l && r <= y) {
+            List<Pair> segNode = segtree.get(node);
+            int idx = Collections.binarySearch(segNode, new Pair(x, -1), (a, b) -> Integer.compare(a.first, b.first));
+
+            if (idx < 0)
+                idx = -(idx + 2);
+
+            if (idx >= 0 && segNode.get(idx).first < x) {
+                if (segNode.get(idx).second > y)
+                    return true;
+            }
+            return false;
+        }
+
+        int mid = (l + r) / 2;
+        boolean a = query(x, y, 2 * node + 1, l, mid);
+        boolean b = query(x, y, 2 * node + 2, mid + 1, r);
+        return a || b;
+    }
+
+    // Function to preprocess and build the merge sort tree
+    static void preprocess(int[] arr) {
+        for (int i = 0; i < N; i++) {
+            pos.add(new HashSet<>());
+            segtree.add(new ArrayList<>());
+        }
+
+        for (int i = 0; i < n; i++) {
+            pos.get(arr[i]).add(i);
+        }
+
+        for (int i = 0; i < n; i++) {
+            Set<Integer> set = pos.get(arr[i]);
+            Iterator<Integer> iterator = set.iterator();
+            if (iterator.hasNext()) {
+                int prev = iterator.next();
+                if (prev == i)
+                    occurrences.add(new Pair(-INF, INF));
+                else {
+                    occurrences.add(new Pair(prev, iterator.hasNext() ? iterator.next() : INF));
+                }
+            }
+        }
+
+        build(0, 0, n - 1);
+    }
+
+    // Function to answer the queries
+    static void answerQueries(int[] arr, List<Pair> queries) {
+        preprocess(arr);
+
+        for (Pair query : queries) {
+            int l = query.first - 1;
+            int r = query.second - 1;
+
+            boolean there = query(l, r, 0, 0, n - 1);
+
+            if (there)
+                System.out.println("Yes");
+            else
+                System.out.println("No");
+        }
+    }
+
+    // Driver Code
+    public static void main(String[] args) {
+        int[] arr = {1, 2, 1, 2, 3, 4};
+        n = arr.length;
+
+        List<Pair> queries = new ArrayList<>();
+        queries.add(new Pair(1, 4));
+        queries.add(new Pair(1, 5));
+
+        answerQueries(arr, queries);
+    }
+}
+
+Python3
+
+# Python code addition
+
+import math
+import sys
+
+INF = 10**9 + 9
+N = 10**5 + 5
+
+# Merge sort of pair type for storing
+# prev and next occurrences of element
+segtree = [[] for _ in range(4*N)]
+
+# Stores the occurrences
+occurrences = [[0, 0] for _ in range(N)]
+
+# Finds occurrences
+pos = [set() for _ in range(N)]
+val = 4
+n = 0
+
+# Function to build merge sort tree
+def build(node=0, l=0, r=n-1):
+    global segtree
+
+    # For leaf node, push the prev &
+    # next occurrence of the lth node
+    if l == r:
+        segtree[node].append(occurrences[l])
+        return
+
+    mid = (l + r) // 2
+
+    # Left recursion call
+    build(2 * node + 1, l, mid)
+
+    # Right recursion call
+    build(2 * node + 2, mid + 1, r)
+
+    # Merging the left child and right child
+    # according to the prev occurrence
+    i, j = 0, 0
+    while i < len(segtree[2 * node + 1]) and j < len(segtree[2 * node + 2]):
+        if segtree[2 * node + 1][i][0] <= segtree[2 * node + 2][j][0]:
+            segtree[node].append(segtree[2 * node + 1][i])
+            i += 1
+        else:
+            segtree[node].append(segtree[2 * node + 2][j])
+            j += 1
+
+    while i < len(segtree[2 * node + 1]):
+        segtree[node].append(segtree[2 * node + 1][i])
+        i += 1
+
+    while j < len(segtree[2 * node + 2]):
+        segtree[node].append(segtree[2 * node + 2][j])
+        j += 1
+
+    # Update the next occurrence
+    # with prefix maximum
+    mx = 0
+    for k in range(len(segtree[node])):
+        # Update the maximum
+        # next occurrence
+        mx = max(mx, segtree[node][k][1])
+        # Update the next occurrence
+        # with prefix max
+        segtree[node][k][1] = mx
+
+def query(x, y, node=0, l=0, r=n-1):
+# No overlap condition
+    if y-x == val:
+        return True
+    if l > y or r < x or x > y:
+        return False
+    # Complete overlap condition
+    if x <= l and r <= y:
+        # Find the first node with prev occurrence >= x
+        it = next(filter(lambda a: a[0] >= x, segtree[node]), None)
+
+        # No element in this range with previous occurrence less than x
+        if not it:
+            return False
+        else:
+            arr = segtree[node]
+            i = len(arr) - 1
+            while i > 0 and arr[i][0] > x:
+                i -= 1
+
+            if i > 0 and arr[i][1] > y:
+                return True
+            else:
+                return False
+
+    mid = (l + r) // 2
+    a = query(x, y, 2*node+1, l, mid)
+    b = query(x, y, 2*node+2, mid+1, r)
+
+    # Return if any of the children returned true
+    return a or b
+
+def preprocess(arr):
+    global n
+    n = len(arr)
+    # Store the position of every element
+    for i in range(n):
+        if not pos[arr[i]]:
+            pos[arr[i]] = set()
+        pos[arr[i]].add(i)
+
+    for i in range(n):
+        # Find the previous and next occurrences
+        it = iter(pos[arr[i]])
+        current = next(it)
+        while current != i:
+            current = next(it)
+
+        if next(iter(pos[arr[i]]), None) == i:
+            occurrences[i][0] = -INF
+        else:
+            occurrences[i][0] = max(filter(lambda x: x < i, pos[arr[i]]), default=-INF)
+
+        # Check if there is no next occurrence
+        try:
+            occurrences[i][1] = next(it)
+        except StopIteration:
+            occurrences[i][1] = INF
+
+    # Building the merge sort tree
+    build()
+
+# Function to find whether there is a
+# number in the subarray with 1 frequency
+def answerQueries(arr, queries):
+    # preprocess(arr)
+
+    # Answering the queries
+    for i in range(len(queries)):
+        l = queries[i][0] - 1
+        r = queries[i][1] - 1
+
+        there = query(l, r)
+
+        if there:
+            print("Yes")
+        else:
+            print("No")
+
+# Driver code
+arr = [1, 2, 1, 2, 3, 4]
+n = len(arr)
+# print("hi")
+queries = [[1, 4], [1, 5]]
+
+answerQueries(arr, queries)
+
+# The code is contributed by Arushi goel.
+
+C#
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class GFG
+{
+    const int INF = 1000000009;
+    const int N = 100005;
+
+    // List of Lists to represent the merge sort tree
+    static List<List<int[]>> segtree = new List<List<int[]>>(new int[4 * N].Select(_ => new List<int[]>()));
+
+    // Array to store occurrences information
+    static int[][] occurrences = new int[N][];
+
+    // HashSet array to store positions of each element
+    static HashSet<int>[] pos = Enumerable.Range(0, N).Select(_ => new HashSet<int>()).ToArray();
+
+    // Variable to store a constant value
+    static int val = 4;
+
+    // Variable to store the length of the array
+    static int n;
+
+    // Function to build the merge sort tree
+    static void Build(int node, int l, int r)
+    {
+        if (l == r)
+        {
+            // For leaf node, add the prev and next occurrences of the lth node
+            segtree[node].Add(new int[] { occurrences[l][0], occurrences[l][1] });
+            return;
+        }
+
+        int mid = (l + r) / 2;
+
+        // Left recursion call
+        Build(2 * node + 1, l, mid);
+
+        // Right recursion call
+        Build(2 * node + 2, mid + 1, r);
+
+        int i = 0, j = 0;
+        while (i < segtree[2 * node + 1].Count && j < segtree[2 * node + 2].Count)
+        {
+            // Merging the left child and right child according to the prev occurrence
+            if (segtree[2 * node + 1][i][0] <= segtree[2 * node + 2][j][0])
+            {
+                segtree[node].Add(new int[] { segtree[2 * node + 1][i][0], segtree[2 * node + 1][i][1] });
+                i++;
+            }
+            else
+            {
+                segtree[node].Add(new int[] { segtree[2 * node + 2][j][0], segtree[2 * node + 2][j][1] });
+                j++;
+            }
+        }
+
+        while (i < segtree[2 * node + 1].Count)
+        {
+            segtree[node].Add(new int[] { segtree[2 * node + 1][i][0], segtree[2 * node + 1][i][1] });
+            i++;
+        }
+
+        while (j < segtree[2 * node + 2].Count)
+        {
+            segtree[node].Add(new int[] { segtree[2 * node + 2][j][0], segtree[2 * node + 2][j][1] });
+            j++;
+        }
+
+        int mx = 0;
+        for (int k = 0; k < segtree[node].Count; k++)
+        {
+            // Update the next occurrence with prefix maximum
+            mx = Math.Max(mx, segtree[node][k][1]);
+            segtree[node][k][1] = mx;
+        }
+    }
+
+    // Function to query whether there is a number in the subarray with 1 frequency
+    static bool Query(int x, int y, int node, int l, int r)
+    {
+        if (y - x == val) return true;
+        if (l > y || r < x || x > y)
+            return false;
+
+        if (x <= l && r <= y)
+        {
+            // Find the first node with prev occurrence >= x
+            var it = segtree[node].FirstOrDefault(a => a[0] >= x);
+
+            if (it == null)
+                return false;
+            else
+            {
+                var arr = segtree[node];
+                int i = arr.Count - 1;
+                while (i > 0 && arr[i][0] > x)
+                {
+                    i--;
+                }
+
+                if (i > 0 && arr[i][1] > y)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        int mid = (l + r) / 2;
+        bool leftResult = Query(x, y, 2 * node + 1, l, mid);
+        bool rightResult = Query(x, y, 2 * node + 2, mid + 1, r);
+
+        return leftResult || rightResult;
+    }
+
+    // Function to preprocess and build the merge sort tree
+    static void Preprocess(int[] arr)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            if (pos[arr[i]] == null)
+            {
+                pos[arr[i]] = new HashSet<int>();
+            }
+            pos[arr[i]].Add(i);
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            var it = pos[arr[i]].GetEnumerator();
+            it.MoveNext();
+            int current = it.Current;
+            while (current != i)
+            {
+                it.MoveNext();
+                current = it.Current;
+            }
+
+            if (it.Current == i)
+            {
+                occurrences[i] = new int[] { -INF, INF };
+            }
+            else
+            {
+                occurrences[i] = new int[] { pos[arr[i]].Where(x => x < i).DefaultIfEmpty(-INF).Max(), it.MoveNext() ? it.Current : INF };
+            }
+        }
+
+        Build(0, 0, n - 1);
+    }
+
+    // Function to answer the queries
+    static void AnswerQueries(int[] arr, List<int[]> queries)
+    {
+        Preprocess(arr);
+
+        for (int i = 0; i < queries.Count; i++)
+        {
+            int l = queries[i][0] - 1;
+            int r = queries[i][1] - 1;
+
+            bool there = Query(l, r, 0, 0, n - 1);
+
+            if (there)
+            {
+                Console.WriteLine("Yes");
+            }
+            else
+            {
+                Console.WriteLine("No");
+            }
+        }
+    }
+
+    // Main function
+    static void Main()
+    {
+        int[] arr = { 1, 2, 1, 2, 3, 4 };
+        n = arr.Length;
+
+        List<int[]> queries = new List<int[]> { new int[] { 1, 4 }, new int[] { 1, 5 } };
+
+        AnswerQueries(arr, queries);
+    }
+}
+// This code is contributed by arindam369
+
+JavaScript
+
+// javascript code addition
+
+const INF = 1e9 + 9;
+const N = 1e5 + 5;
+
+// Merge sort of pair type for storing
+// prev and next occurrences of element
+let segtree = new Array(4 * N);
+for(let i = 0; i < 4*N; i++){
+
+    segtree[i] = new Array();
+}
+
+// Stores the occurrences
+let occurrences = new Array(N);
+for (let i = 0; i < N; i++) {
+  occurrences[i] = [0, 0];
+}
+
+// Finds occurrences
+let pos = new Array(N).fill().map(() => new Set());
+let val = 4;
+let n;
+
+// Function to build merge sort tree
+function build(node = 0, l = 0, r = n - 1) {
+
+    // For leaf node, push the prev &
+    // next occurrence of the lth node
+    if (l == r) {
+        segtree[node].push(occurrences[l]);
+        return;
+    }
+
+    let mid = Math.floor((l + r) / 2);
+
+    // Left recursion call
+    build(2 * node + 1, l, mid);
+
+    // Right recursion call
+    build(2 * node + 2, mid + 1, r);
+
+    // Merging the left child and right child
+    // according to the prev occurrence
+    let i = 0, j = 0;
+    while (i < segtree[2 * node + 1].length && j < segtree[2 * node + 2].length) {
+        if (segtree[2 * node + 1][i][0] <= segtree[2 * node + 2][j][0]) {
+            segtree[node].push(segtree[2 * node + 1][i]);
+            i++;
+        } else {
+            segtree[node].push(segtree[2 * node + 2][j]);
+            j++;
+        }
+    }
+
+    while (i < segtree[2 * node + 1].length) {
+        segtree[node].push(segtree[2 * node + 1][i]);
+        i++;
+    }
+
+    while (j < segtree[2 * node + 2].length) {
+        segtree[node].push(segtree[2 * node + 2][j]);
+        j++;
+    }
+
+    // Update the next occurrence
+    // with prefix maximum
+    let mx = 0;
+
+    for (let k = 0; k < segtree[node].length; k++) {
+
+        // Update the maximum
+        // next occurrence
+        mx = Math.max(mx, segtree[node][k][1]);
+
+        // Update the next occurrence
+        // with prefix max
+        segtree[node][k][1] = mx;
+    }
+}
+
+function query(x, y, node = 0, l=0, r=n-1) {
+
+    // No overlap condition
+    if(y-x  == val) return true;
+    if (l > y || r < x || x > y)
+        return false;
+
+    // Complete overlap condition
+    if (x <= l && r <= y) {
+
+        // Find the first node with
+        // prev occurrence >= x
+        let it = segtree[node].find(([a, b]) => a >= x);
+
+        // No element in this range with
+        // previous occurrence less than x
+        if (!it)
+            return false;
+
+        else {
+            let arr = segtree[node];
+            let i = arr.length - 1;
+            while (i > 0 && arr[i][0] > x) {
+                i--;
+            }
+
+            if (i > 0 && arr[i][1] > y) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    let mid = Math.floor((l + r) / 2);
+    let a = query(x, y, 2 * node + 1, l, mid);
+    let b = query(x, y, 2 * node + 2, mid + 1, r);
+
+    // Return if any of the
+    // children returned true
+    return (a || b);
+}
+
+// Function do preprocessing that
+// is finding the next and previous
+// occurrences
+function preprocess(arr) {
+    // Store the position of
+// every element
+for (let i = 0; i < n; i++) {
+    if (!pos[arr[i]]) {
+        pos[arr[i]] = new Set();
+    }
+    pos[arr[i]].add(i);
+}
+
+for (let i = 0; i < n; i++) {
+
+    // Find the previous
+    // and next occurrences
+    let it = pos[arr[i]].values();
+    let current = it.next().value;
+    while (current != i) {
+        current = it.next().value;
+    }
+
+    if (pos[arr[i]].values().next().value === i) {
+        occurrences[i][0] = -Infinity;
+    } else {
+        occurrences[i][0] = Array.from(pos[arr[i]]).filter(function(x) {
+            return x < i;
+        }).pop();
+    }
+
+    // Check if there is no next occurrence
+    if (it.next().done) {
+        occurrences[i][1] = Infinity;
+    } else {
+        occurrences[i][1] = it.next().value;
+    }
+}
+
+// Building the merge sort tree
+build();
+}
+
+// Function to find whether there is a
+// number in the subarray with 1 frequency
+function answerQueries(arr, queries) {
+    preprocess(arr);
+
+    // Answering the queries
+    for (let i = 0; i < queries.length; i++) {
+        let l = queries[i][0] - 1;
+        let r = queries[i][1] - 1;
+
+        let there = query(l, r);
+
+        if (there === true) {
+            console.log("Yes");
+        } else {
+            console.log("No");
+        }
+    }
+}
+
+// Driver code
+let arr = [1, 2, 1, 2, 3, 4];
+n = arr.length;
+
+let queries = [[1, 4], [1, 5]];
+
+answerQueries(arr, queries);
+
+// The code is contributed by Arushi goel.
+
+Output
+
+No
+Yes
+
+Time Complexity: O(N*log(N) + Q*log 2 (N)) Auxiliary Space: O(N*log(N))
+
+Related Topic: Segment Tree

@@ -1,0 +1,586 @@
+Source: https://www.geeksforgeeks.org/dsa/find-if-there-is-a-triplet-in-bst-that-adds-to-0/
+Title: Find if there is a triplet in a Balanced BST that adds to zero
+Extractor: 2
+
+Given a Balanced Binary Search Tree (BST) , the task is to check if there is a triplet in the given BST with a sum equal to 0.
+
+Example:
+
+> Input: Output: True Explanation: There is a triplet with sum 0, the triplet is {-13, 6, 7}.
+
+The Brute Force Solution is to consider each triplet in BST and check whether the sum adds up to zero. The time complexity of this solution will be O(n^3 ).
+
+A Better Solution is to create an auxiliary array and store the Inorder traversal of BST in the array. The array will be sorted as Inorder traversal of BST always produces sorted data. Once we have the Inorder traversal, we can use method 2 of 3 Sum – Triplet Sum in Array post to find the triplet with a sum equals to 0 . This solution works in O(n^2) time but requires O(n) auxiliary space.
+
+### [Expected approach] Convert tree to DLL - O(n^2) Time and O(log n) Space
+
+> The approach involves first converting the given BST into a Doubly Linked List (DLL) . Once the BST is converted, each node in the DLL is treated as the first element of a potential triplet. For each node, we search for a pair of nodes in the DLL whose sum equals the negative of the current node’s key. To find the pair, we can use the approach discussed in method 1 of Pair with given Sum (Two Sum) post.  If such a pair is found, it indicates the presence of a triplet with a sum of zero. If no such triplet is found after iterating through all nodes, returns false.
+
+Follow the steps below to solve the problem:
+
+- Convert the given Binary Search Tree (BST) into a Doubly Linked List (DLL) using in-order traversal, where left pointer acts as the previous and right pointer acts as the next pointer.
+- Iterate through each node of the DLL , treating it as the first element of a potential triplet.
+- For each node, search for a pair of nodes in the DLL (starting from the current node’s right) whose sum equals the negative value of the current node's key.
+- If such a triplet is found, return true. if no triplet is found after all iterations, return false.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ program to find triplets in a
+// BST that sum to 0.
+
+#include <bits/stdc++.h>
+using namespace std;
+class Node {
+public:
+    int key;
+    Node *left;
+    Node *right;
+
+    Node(int x) {
+        key = x;
+        left = right = nullptr;
+    }
+};
+
+// A function to convert given BST to a Doubly
+// Linked List (DLL).
+void convertBSTtoDLL(Node* root, Node*& head, Node*& tail) {
+    if (root == nullptr)
+        return;
+
+    // Recursively convert the left subtree
+    if (root->left)
+        convertBSTtoDLL(root->left, head, tail);
+
+    root->left = tail;
+
+    // If tail is not null, then set the right of tail as root,
+    // else the curr node is the head of the DLL.
+    if (tail)
+        (tail)->right = root;
+    else
+        head = root;
+
+    tail = root;
+
+    // Recursively convert the right subtree
+    if (root->right)
+        convertBSTtoDLL(root->right, head, tail);
+}
+
+// This function returns true if there is a pair in the DLL with a
+// sum equal to the given sum.
+bool isPresentInDLL(Node* head, Node* tail, int sum) {
+    while (head != tail) {
+        int currSum = head->key + tail->key;
+        if (currSum == sum)
+            return true;
+        else if (currSum > sum)
+            tail = tail->left;
+        else
+            head = head->right;
+    }
+    return false;
+}
+
+// The main function that returns true if there
+// is a 0-sum triplet in the BST, otherwise false.
+bool isTripletPresent(Node* root) {
+
+    // Check if the BST is empty
+    if (root == nullptr)
+        return false;
+
+    // Convert the given BST to a Doubly Linked List
+    Node* head = nullptr;
+    Node* tail = nullptr;
+    convertBSTtoDLL(root, head, tail);
+
+    // Now, iterate through every node and find if there is
+  	// a pair with a sum equal to -1 * head->key
+    Node* curr = head;
+    while (curr != nullptr && curr->right != nullptr) {
+
+        // If a pair with sum equal to -1 * curr->key is
+      	// found, return true
+        if (isPresentInDLL(curr->right, tail, -1 * curr->key))
+            return true;
+
+        curr = curr->right;
+    }
+
+    return false;
+}
+
+int main() {
+
+    // Construct the BST
+    //              6
+    //           /    \
+    //         -13    14
+    //           \   /  \
+    //           -8 13  15
+    //              /
+    //             7
+    Node* root = new Node(6);
+    root->left = new Node(-13);
+    root->right = new Node(14);
+    root->left->right = new Node(-8);
+    root->right->left = new Node(13);
+    root->right->right = new Node(15);
+    root->right->left->left = new Node(7);
+
+    if (isTripletPresent(root))
+        cout << "true";
+    else
+        cout << "false";
+
+    return 0;
+}
+
+Java
+
+// Java program to find triplets in a
+// BST that sum to 0.
+
+class Node {
+    int key;
+    Node left, right;
+
+    Node(int x) {
+        key = x;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // A function to convert given BST to a Doubly
+  	// Linked List (DLL).
+    static void convertBSTtoDLL(Node root,
+                                Node[] head, Node[] tail) {
+        if (root == null) {
+            return;
+        }
+
+        // Recursively convert the left subtree
+        if (root.left != null)
+            convertBSTtoDLL(root.left, head, tail);
+
+        root.left = tail[0];
+
+        // If tail is not null, then set the right of tail as root,
+        // else the current node is the head of the DLL.
+        if (tail[0] != null)
+            tail[0].right = root;
+        else
+            head[0] = root;
+
+        tail[0] = root;
+
+        // Recursively convert the right subtree
+        if (root.right != null)
+            convertBSTtoDLL(root.right, head, tail);
+    }
+
+    // This function returns true if there is a pair
+    // in the DLL with a sum equal to the given sum.
+    static boolean isPresentInDLL(Node head, Node tail, int sum) {
+        while (head != tail) {
+            int currSum = head.key + tail.key;
+            if (currSum == sum)
+                return true;
+            else if (currSum > sum)
+                tail = tail.left;
+            else
+                head = head.right;
+        }
+        return false;
+    }
+
+    // The main function that returns true if there
+    // is a 0-sum triplet in the BST, otherwise false.
+    static boolean isTripletPresent(Node root) {
+
+        // Check if the BST is empty
+        if (root == null)
+            return false;
+
+        // Convert the given BST to a Doubly
+      	// Linked List
+        Node head = null;
+        Node tail = null;
+        Node[] headRef = new Node[1];
+        Node[] tailRef = new Node[1];
+        convertBSTtoDLL(root, headRef, tailRef);
+        head = headRef[0];
+        tail = tailRef[0];
+
+        // Now, iterate through every node and find if
+        // there is a pair with a sum equal to -1 * head->key
+        Node curr = head;
+        while (curr != null && curr.right != null) {
+
+            // If a pair with sum equal to -1 * curr->key is found,
+          	// return true
+            if (isPresentInDLL(curr.right, tail, -1 * curr.key))
+                return true;
+
+            curr = curr.right;
+        }
+
+        return false;
+    }
+
+    public static void main(String[] args) {
+
+        // Construct the BST
+        //              6
+        //           /    \
+        //         -13    14
+        //           \   /  \
+        //           -8 13  15
+        //              /
+        //             7
+        Node root = new Node(6);
+        root.left = new Node(-13);
+        root.right = new Node(14);
+        root.left.right = new Node(-8);
+        root.right.left = new Node(13);
+        root.right.right = new Node(15);
+        root.right.left.left = new Node(7);
+
+        if (isTripletPresent(root))
+            System.out.println("true");
+        else
+            System.out.println("false");
+    }
+}
+
+Python
+
+# Python program to find triplets in
+# a BST that sum to 0.
+
+class Node:
+    def __init__(self, x):
+        self.key = x
+        self.left = None
+        self.right = None
+
+# A function to convert given BST to a
+# Doubly Linked List (DLL).
+def convertBSTtoDLL(root, head, tail):
+    if root is None:
+        return
+
+    # Recursively convert the left subtree
+    if root.left:
+        convertBSTtoDLL(root.left, head, tail)
+
+    root.left = tail[0]
+
+    # If tail is not null, then set the right of tail as root,
+    # else the current node is the head of the DLL.
+    if tail[0]:
+        tail[0].right = root
+    else:
+        head[0] = root
+
+    tail[0] = root
+
+    # Recursively convert the right subtree
+    if root.right:
+        convertBSTtoDLL(root.right, head, tail)
+
+# This function returns true if there is a pair in
+# the DLL with a sum equal to the given sum.
+def isPresentInDLL(head, tail, sum_val):
+    while head != tail:
+        curr_sum = head.key + tail.key
+        if curr_sum == sum_val:
+            return True
+        elif curr_sum > sum_val:
+            tail = tail.left
+        else:
+            head = head.right
+    return False
+
+# The main function that returns true if there is a
+# 0-sum triplet in the BST, otherwise false.
+def isTripletPresent(root):
+
+    # Check if the BST is empty
+    if root is None:
+        return False
+
+    # Convert the given BST to a Doubly
+    # Linked List
+    head = [None]
+    tail = [None]
+    convertBSTtoDLL(root, head, tail)
+
+    # Now, iterate through every node and find if there is
+    # a pair with a sum equal to -1 * head.key
+    curr = head[0]
+    while curr and curr.right:
+
+        # If a pair with sum equal to -1 * curr.key is
+        # found, return true
+        if isPresentInDLL(curr.right, tail[0], -1 * curr.key):
+            return True
+        curr = curr.right
+
+    return False
+
+if __name__ == '__main__':
+
+    # Construct the BST
+    #              6
+    #           /    \
+    #         -13    14
+    #           \   /  \
+    #           -8 13  15
+    #              /
+    #             7
+    root = Node(6)
+    root.left = Node(-13)
+    root.right = Node(14)
+    root.left.right = Node(-8)
+    root.right.left = Node(13)
+    root.right.right = Node(15)
+    root.right.left.left = Node(7)
+
+    if isTripletPresent(root):
+        print("true")
+    else:
+        print("false")
+
+C#
+
+// C# program to find triplets in
+// a BST that sum to 0.
+
+using System;
+
+class Node {
+    public int key;
+    public Node left, right;
+
+    public Node(int x) {
+        key = x;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // A function to convert the given BST to a
+  	// Doubly Linked List (DLL).
+    static void ConvertBSTtoDLL(Node root,
+                                ref Node head, ref Node tail) {
+        if (root == null) {
+            return;
+        }
+
+        // Recursively convert the left subtree
+        if (root.left != null)
+            ConvertBSTtoDLL(root.left, ref head, ref tail);
+
+        root.left = tail;
+
+        // If tail is not null, then set the right of tail as root,
+        // else the current node is the head of the DLL.
+        if (tail != null)
+            tail.right = root;
+        else
+            head = root;
+
+        tail = root;
+
+        // Recursively convert the right subtree
+        if (root.right != null)
+            ConvertBSTtoDLL(root.right, ref head, ref tail);
+    }
+
+    // This function returns true if there is a pair
+    // in the DLL with a sum equal to the given sum.
+    static bool IsPresentInDLL(Node head, Node tail, int sum) {
+        while (head != tail) {
+            int currSum = head.key + tail.key;
+            if (currSum == sum)
+                return true;
+            else if (currSum > sum)
+                tail = tail.left;
+            else
+                head = head.right;
+        }
+        return false;
+    }
+
+    // The main function that returns true if there is a
+    // 0-sum triplet in the BST, otherwise false.
+    static bool IsTripletPresent(Node root) {
+
+        // Check if the BST is empty
+        if (root == null)
+            return false;
+
+        // Convert the given BST to a Doubly Linked List
+        Node head = null, tail = null;
+        ConvertBSTtoDLL(root, ref head, ref tail);
+
+        // Now, iterate through every node and find if there
+        // is a pair with a sum equal to -1 * curr.key
+        Node curr = head;
+        while (curr != null && curr.right != null) {
+
+            // If a pair with sum equal to -1 * curr.key is found,
+          	// return true
+            if (IsPresentInDLL(curr.right, tail, -1 * curr.key))
+                return true;
+
+            curr = curr.right;
+        }
+
+        return false;
+    }
+
+    static void Main() {
+
+        // Construct the BST
+        //              6
+        //           /    \
+        //         -13    14
+        //           \   /  \
+        //           -8 13  15
+        //              /
+        //             7
+        Node root = new Node(6);
+        root.left = new Node(-13);
+        root.right = new Node(14);
+        root.left.right = new Node(-8);
+        root.right.left = new Node(13);
+        root.right.right = new Node(15);
+        root.right.left.left = new Node(7);
+
+        if (IsTripletPresent(root))
+            Console.WriteLine("true");
+        else
+            Console.WriteLine("false");
+    }
+}
+
+JavaScript
+
+// Javascript program to find triplets in
+// a BST that sum to 0.
+
+class Node {
+    constructor(key) {
+        this.key = key;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// A function to convert the given BST to a
+// Doubly Linked List (DLL).
+function convertBSTtoDLL(root, head, tail) {
+    if (root === null) return;
+
+    // Recursively convert the left subtree
+    if (root.left !== null) convertBSTtoDLL(root.left, head, tail);
+
+    root.left = tail.node;
+
+    // If tail is not null, then set the right of tail as root,
+    // else the current node is the head of the DLL.
+    if (tail.node !== null) {
+        tail.node.right = root;
+    } else {
+        head.node = root;
+    }
+
+    tail.node = root;
+
+    // Recursively convert the right subtree
+    if (root.right !== null)
+    convertBSTtoDLL(root.right, head, tail);
+}
+
+// This function returns true if there is a pair
+// in the DLL with a sum equal to the given sum.
+function isPresentInDLL(head, tail, sum) {
+    while (head !== tail) {
+        let currSum = head.key + tail.key;
+        if (currSum === sum) {
+            return true;
+        } else if (currSum > sum) {
+            tail = tail.left;
+        } else {
+            head = head.right;
+        }
+    }
+    return false;
+}
+
+// The main function that returns true if there is a
+// 0-sum triplet in the BST, otherwise false.
+function isTripletPresent(root) {
+
+    // Check if the BST is empty
+    if (root === null) return false;
+
+    // Convert the given BST to a Doubly Linked List
+    let head = { node: null };
+    let tail = { node: null };
+    convertBSTtoDLL(root, head, tail);
+
+    // Now, iterate through every node and find if there is
+    // a pair with a sum equal to -1 * curr.key
+    let curr = head.node;
+    while (curr !== null && curr.right !== null) {
+
+        // If a pair with sum equal to -1 * curr.key
+        // is found, return true
+        if (isPresentInDLL(curr.right,
+        	tail.node, -1 * curr.key)) {
+            return true;
+        }
+
+        curr = curr.right;
+    }
+
+    return false;
+}
+
+// Construct the BST
+//              6
+//           /    \
+//         -13    14
+//           \   /  \
+//           -8 13  15
+//              /
+//             7
+let root = new Node(6);
+root.left = new Node(-13);
+root.right = new Node(14);
+root.left.right = new Node(-8);
+root.right.left = new Node(13);
+root.right.right = new Node(15);
+root.right.left.left = new Node(7);
+
+if (isTripletPresent(root)) {
+    console.log("true");
+} else {
+    console.log("false");
+}
+
+Output
+
+true
+
+We can also find triplet in same time and extra space without modifying the tree. See Find a pair with given sum in a Balanced BST post. The code discussed there can be used to find triplet also.

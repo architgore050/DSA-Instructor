@@ -1,0 +1,352 @@
+Source: https://www.geeksforgeeks.org/dsa/sort-n-numbers-range-0-n2-1-linear-time/
+Title: Sort Numbers in a Range 0 to n^2 - 1
+Extractor: 2
+
+Given an integer array arr[] of size n , where every element lies in the range 0 to n² − 1 , sort the array in non-decreasing order in linear time.
+
+Examples:
+
+> Input: arr[] = [40, 12, 45, 32, 33, 1, 22] Output: [1, 12, 22, 32, 33, 40, 45] Explanation: The array sorted in non-decreasing order is [1, 12, 22, 32, 33, 40, 45]. Input: arr[] = [24, 12, 0, 15, 8] Output: [0, 8, 12, 15, 24] Explanation: The array sorted in non-decreasing order is [0, 8, 12, 15, 24].
+
+### Using Radix Sort - O(n) Time and O(n) Space
+
+> Using Counting Sort directly is not efficient because the values lie in the range 0 to n² − 1, requiring a count array of size n², which leads to O(n²) time and space. Comparison-based sorting algorithms like Merge Sort and Heap Sort take O(n log n) time, which does not satisfy the required linear complexity. To achieve O(n) time, we use Radix Sort , where Counting Sort acts as the stable sorting algorithm for each digit. Since every element lies in the range 0 to n² − 1, each number can be represented using exactly two digits in base n. Therefore, we perform two stable Counting Sort passes—first on the least significant digit (x % n) and then on the most significant digit (x / n). After these two passes, the array is sorted in O(n) time.
+
+- Perform a stable Counting Sort using the least significant digit ((x / 1) % n).
+- Compute the frequency of each digit and convert it into cumulative frequencies.
+- Place elements into their correct positions by traversing the array from right to left to maintain stability.
+- Perform another stable Counting Sort using the most significant digit ((x / n) % n).
+- After these two passes, the array is sorted in non-decreasing order in O(n) time.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+void countingSort(vector<int> &arr, int exp)
+{
+    int n = arr.size();
+
+    // Stores the frequency of each digit (0 to n-1).
+    vector<int> count(n, 0);
+
+    // Stores the sorted array after the current pass.
+    vector<int> output(n);
+
+    // Count the frequency of each digit.
+    for (int x : arr)
+    {
+        int digit = (x / exp) % n;
+        count[digit]++;
+    }
+
+    // Convert frequency array into cumulative frequency array.
+    // count[i] now stores the ending position of digit 'i'.
+    for (int i = 1; i < n; i++)
+    {
+        count[i] += count[i - 1];
+    }
+
+    // Build the output array.
+    // Traverse from right to left to keep Counting Sort stable.
+    for (int i = n - 1; i >= 0; i--)
+    {
+        int digit = (arr[i] / exp) % n;
+
+        output[count[digit] - 1] = arr[i];
+        count[digit]--;
+    }
+
+    // Copy the sorted elements back into the original array.
+    arr = output;
+}
+
+// Function to sort the array in linear time.
+void sortArray(vector<int> &arr)
+{
+    int n = arr.size();
+
+    // First pass
+    // Sort according to the least significant digit.
+    countingSort(arr, 1);
+
+    // Second pass
+    // Sort according to the most significant digit.
+    countingSort(arr, n);
+}
+
+// Driver code
+int main()
+{
+    vector<int> arr = {40, 12, 45, 32, 33, 1, 22};
+    sortArray(arr);
+
+    for (int x : arr)
+        cout << x << " ";
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    static void countingSort(int[] arr, int exp)
+    {
+        int n = arr.length;
+
+        // Stores the frequency of each digit (0 to n-1).
+        int[] count = new int[n];
+
+        // Stores the sorted array after the current pass.
+        int[] output = new int[n];
+
+        // Count the frequency of each digit.
+        for (int x : arr) {
+            int digit = (x / exp) % n;
+            count[digit]++;
+        }
+
+        // Convert frequency array into cumulative frequency
+        // array. count[i] now stores the ending position of
+        // digit 'i'.
+        for (int i = 1; i < n; i++) {
+            count[i] += count[i - 1];
+        }
+
+        // Build the output array.
+        // Traverse from right to left to keep Counting Sort
+        // stable.
+        for (int i = n - 1; i >= 0; i--) {
+            int digit = (arr[i] / exp) % n;
+
+            output[count[digit] - 1] = arr[i];
+            count[digit]--;
+        }
+
+        // Copy the sorted elements back into the original
+        // array.
+        System.arraycopy(output, 0, arr, 0, n);
+    }
+
+    // Function to sort the array in linear time.
+    static void sortArray(int[] arr)
+    {
+        int n = arr.length;
+
+        // First pass
+        // Sort according to the least significant digit.
+        countingSort(arr, 1);
+
+        // Second pass
+        // Sort according to the most significant digit.
+        countingSort(arr, n);
+    }
+
+    public static void main(String[] args)
+    {
+        int[] arr = { 40, 12, 45, 32, 33, 1, 22 };
+
+        sortArray(arr);
+
+        for (int x : arr)
+            System.out.print(x + " ");
+    }
+}
+
+Python
+
+def countingSort(arr, exp):
+
+    n = len(arr)
+
+    # Stores the frequency of each digit (0 to n-1).
+    count = [0] * n
+
+    # Stores the sorted array after the current pass.
+    output = [0] * n
+
+    # Count the frequency of each digit.
+    for x in arr:
+        digit = (x // exp) % n
+        count[digit] += 1
+
+    # Convert frequency array into cumulative frequency array.
+    # count[i] now stores the ending position of digit 'i'.
+    for i in range(1, n):
+        count[i] += count[i - 1]
+
+    # Build the output array.
+    # Traverse from right to left to keep Counting Sort stable.
+    for i in range(n - 1, -1, -1):
+        digit = (arr[i] // exp) % n
+
+        output[count[digit] - 1] = arr[i]
+        count[digit] -= 1
+
+    # Copy the sorted elements back into the original array.
+    for i in range(n):
+        arr[i] = output[i]
+
+# Function to sort the array in linear time.
+def sortArray(arr):
+
+    n = len(arr)
+
+    # First pass
+    # Sort according to the least significant digit.
+    countingSort(arr, 1)
+
+    # Second pass
+    # Sort according to the most significant digit.
+    countingSort(arr, n)
+
+# Driver code
+if __name__ == "__main__":
+    arr = [40, 12, 45, 32, 33, 1, 22]
+
+    sortArray(arr)
+
+    print(*arr)
+
+C#
+
+using System;
+
+class GFG {
+
+    static void countingSort(int[] arr, int exp)
+    {
+        int n = arr.Length;
+
+        // Stores the frequency of each digit (0 to n-1).
+        int[] count = new int[n];
+
+        // Stores the sorted array after the current pass.
+        int[] output = new int[n];
+
+        // Count the frequency of each digit.
+        foreach(int x in arr)
+        {
+            int digit = (x / exp) % n;
+            count[digit]++;
+        }
+
+        // Convert frequency array into cumulative frequency
+        // array. count[i] now stores the ending position of
+        // digit 'i'.
+        for (int i = 1; i < n; i++) {
+            count[i] += count[i - 1];
+        }
+
+        // Build the output array.
+        // Traverse from right to left to keep Counting Sort
+        // stable.
+        for (int i = n - 1; i >= 0; i--) {
+            int digit = (arr[i] / exp) % n;
+
+            output[count[digit] - 1] = arr[i];
+            count[digit]--;
+        }
+
+        // Copy the sorted elements back into the original
+        // array.
+        Array.Copy(output, arr, n);
+    }
+
+    // Function to sort the array in linear time.
+    static void sortArray(int[] arr)
+    {
+        int n = arr.Length;
+
+        // First pass
+        // Sort according to the least significant digit.
+        countingSort(arr, 1);
+
+        // Second pass
+        // Sort according to the most significant digit.
+        countingSort(arr, n);
+    }
+
+    static void Main()
+    {
+        int[] arr = { 40, 12, 45, 32, 33, 1, 22 };
+        sortArray(arr);
+
+        foreach(int x in arr) Console.Write(x + " ");
+    }
+}
+
+JavaScript
+
+// Function to sort the array in linear time.
+function sortArray(arr)
+{
+    const n = arr.length;
+
+    // First pass
+    // Sort according to the least significant digit.
+    countingSort(arr, 1);
+
+    // Second pass
+    // Sort according to the most significant digit.
+    countingSort(arr, n);
+}
+
+function countingSort(arr, exp)
+{
+    const n = arr.length;
+
+    // Stores the frequency of each digit (0 to n-1).
+    const count = new Array(n).fill(0);
+
+    // Stores the sorted array after the current pass.
+    const output = new Array(n);
+
+    // Count the frequency of each digit.
+    for (const x of arr) {
+        const digit = Math.floor(x / exp) % n;
+        count[digit]++;
+    }
+
+    // Convert frequency array into cumulative frequency
+    // array. count[i] now stores the ending position of
+    // digit 'i'.
+    for (let i = 1; i < n; i++) {
+        count[i] += count[i - 1];
+    }
+
+    // Build the output array.
+    // Traverse from right to left to keep Counting Sort
+    // stable.
+    for (let i = n - 1; i >= 0; i--) {
+        const digit = Math.floor(arr[i] / exp) % n;
+
+        output[count[digit] - 1] = arr[i];
+        count[digit]--;
+    }
+
+    // Copy the sorted elements back into the original
+    // array.
+    for (let i = 0; i < n; i++) {
+        arr[i] = output[i];
+    }
+}
+
+// Driver code
+const arr = [ 40, 12, 45, 32, 33, 1, 22 ];
+sortArray(arr);
+
+console.log(arr.join(" "));
+
+Output
+
+1 12 22 32 33 40 45
+
+Important points to observe:
+
+- The above approach works because every element lies in the range 0 to n² − 1, so each number has at most 2 digits in base n. Hence, only 2 passes of Counting Sort are required.
+- More generally, if the elements lie in the range 0 to nᵏ − 1, then each number can have at most k digits in base n. Therefore, we perform k stable Counting Sort passes, one for each digit from the least significant to the most significant.
+- If the range is 1 to nᵏ, simply subtract 1 from every element before sorting. This converts the range to 0 to nᵏ − 1, allowing the same algorithm to be applied. After sorting, add 1 back to every element to restore the original values.

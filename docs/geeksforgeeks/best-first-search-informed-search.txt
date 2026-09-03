@@ -1,0 +1,539 @@
+Source: https://www.geeksforgeeks.org/dsa/best-first-search-informed-search/
+Title: Best First Search (Informed Search)
+Extractor: 2
+
+Best First Search is a heuristic search algorithm that selects the most promising node for expansion based on an evaluation function. It prioritizes nodes in the search space using a heuristic to estimate their potential. By iteratively choosing the most promising node, it aims to efficiently navigate towards the goal state, making it particularly effective for optimization problems.
+
+We are given an edge list of a graph where every edge is represented as (u, v, w). Here u, v and w represent source, destination and weight of the edges respectively. We need to do Best First Search of the graph (Pick the minimum cost edge next).
+
+Examples:
+
+> Input: source = 0, target = 9 edgeList = [ [ 0, 1, 3 ], [ 0, 2, 6 ], [ 0, 3, 5 ], [ 1, 4, 9 ], [ 1, 5, 8 ], [ 2, 6, 12 ], [ 2, 7, 14 ], [ 3, 8, 7 ], [ 8, 9, 5 ], [ 8, 10, 6 ], [ 9, 11, 1 ], [ 9, 12, 10 ], [ 9, 13, 2 ] ] Output: 0 1 3 2 8 9 Explanation: Following describes the working of best first search: Start at node 0. Among its neighbors, node 1 has the lowest cost (edge cost 3), so move from 0 to 1. From node 1, since a better path forward isn’t available, backtrack to node 0. From node 0, choose the next best neighbor—node 3 (edge cost 5)—and move to node 3. At node 3, find that moving to node 2 leads to a lower incremental cost. Then proceed from node 2 to node 8, and finally from node 8 to node 9 (the target). Input: source = 0, target = 8 edgeList = [ [ 0, 1, 3 ], [ 0, 2, 6 ], [ 0, 3, 5 ], [ 1, 4, 9 ], [ 1, 5, 8 ], [ 2, 6, 12 ], [ 2, 7, 14 ], [ 3, 8, 7 ], [ 8, 9, 5 ], [ 8, 10, 6 ], [ 9, 11, 1 ], [ 9, 12, 10 ], [ 9, 13, 2 ] ] Output: 0 1 3 2 8 Explanation: Following describes the working of best first search: Start at node 0. Among its neighbors, node 1 has the lowest cost (edge cost 3), so move from 0 to 1. From node 1, since a better path forward isn’t available, backtrack to node 0. From node 0, choose the next best neighbor—node 3 (edge cost 5)—and move to node 3. At node 3, find that moving to node 2 leads to a lower incremental cost. Then proceed from node 2 to node 8 (the target)
+
+Approach:
+
+> The idea is to use priority queue or heap to store the costs of edges that have lowest evaluation function value and operate similar to BFS algorithm.
+
+Follow the below given steps:
+
+- Initialize an empty Priority Queue named pq .
+- Insert the starting node into pq .
+- While pq is not empty: Remove the node u with the lowest evaluation value from pq . If u is the goal node, terminate the search. Otherwise, for each neighbor v of u : If v has not been visited, Mark v as visited and Insert v into pq . Mark u as examined.
+- End the procedure when the goal is reached or pq becomes empty.
+
+Illustration:
+
+Let us consider the below example:
+
+> Best First Search (Informed Search) We start from source "S" and search for goal "I" using given costs and Best First search. pq initially contains S We remove S from pq and process unvisited neighbors of S to pq. pq now contains {A, C, B} (C is put before B because C has lesser cost) We remove A from pq and process unvisited neighbors of A to pq. pq now contains {C, B, E, D} We remove C from pq and process unvisited neighbors of C to pq. pq now contains {B, H, E, D} We remove B from pq and process unvisited neighbors of B to pq. pq now contains {H, E, D, F, G} We remove H from pq. Since our goal "I" is a neighbor of H, we return.
+
+Below is given the implementation :
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to perform Best First Search
+vector<int> bestFirstSearch(vector<vector<int>> edges,
+        int src, int target, int n) {
+
+    // create the adjacency list
+    vector<vector<vector<int>>> adj(n);
+    for (int i = 0; i < edges.size(); i++) {
+        adj[edges[i][0]].push_back({edges[i][1], edges[i][2]});
+        adj[edges[i][1]].push_back({edges[i][0], edges[i][2]});
+    }
+
+    // create a visited array to
+    // keep track of visited nodes
+    vector<bool> visited(n, false);
+
+    // create the min heap to store the nodes
+    // based on the cost
+    priority_queue<vector<int>, vector<vector<int>>,
+            greater<vector<int>>> pq;
+
+    // push the source node in the min heap
+    pq.push({0, src});
+
+    // mark the source node as visited
+    visited[src] = true;
+
+    // to store the path
+    vector<int> path;
+
+    // loop until the min heap is empty
+    while (!pq.empty()) {
+
+        // get the top element of the min heap
+        int x = pq.top()[1];
+
+        // push the current node in the path
+        path.push_back(x);
+
+        // pop the top element
+        pq.pop();
+
+        // if the current node is the target node
+        // break the loop
+        if (x == target)
+            break;
+
+        // loop through the edges of the current node
+        for (int i = 0; i < adj[x].size(); i++) {
+
+            // if the node is not visited
+            if (!visited[adj[x][i][0]]) {
+
+                // mark the node as visited
+                visited[adj[x][i][0]] = true;
+
+                // push the node in the min heap
+                pq.push({adj[x][i][1], adj[x][i][0]});
+            }
+        }
+    }
+
+    return path;
+}
+
+int main() {
+    int n = 14;
+    vector<vector<int>> edgeList = {
+        {0, 1, 3}, {0, 2, 6}, {0, 3, 5},
+        {1, 4, 9}, {1, 5, 8}, {2, 6, 12},
+        {2, 7, 14}, {3, 8, 7}, {8, 9, 5},
+        {8, 10, 6}, {9, 11, 1}, {9, 12, 10},
+        {9, 13, 2}
+    };
+
+    int source = 0;
+    int target = 9;
+
+    vector<int> path = bestFirstSearch(edgeList, source, target, n);
+
+    for (int i = 0; i < path.size(); i++) {
+        cout << path[i] << " ";
+    }
+    return 0;
+}
+
+Java
+
+// Function to perform Best First Search
+import java.util.*;
+
+class GfG {
+
+    // Function to perform Best First Search
+    static ArrayList<Integer> bestFirstSearch(int[][] edges,
+    int src, int target, int n) {
+
+        // create the adjacency list
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<>());
+        }
+        for (int i = 0; i < edges.length; i++) {
+            adj.get(edges[i][0]).add(new int[]{edges[i][1], edges[i][2]});
+            adj.get(edges[i][1]).add(new int[]{edges[i][0], edges[i][2]});
+        }
+
+        // create a visited array to
+        // keep track of visited nodes
+        boolean[] visited = new boolean[n];
+        Arrays.fill(visited, false);
+
+        // create the min heap to store the nodes
+        // based on the cost
+        PriorityQueue<int[]> pq = new PriorityQueue<>
+        (new Comparator<int[]>() {
+            public int compare(int[] a, int[] b) {
+                return Integer.compare(a[0], b[0]);
+            }
+        });
+
+        // push the source node in the min heap
+        pq.add(new int[]{0, src});
+
+        // mark the source node as visited
+        visited[src] = true;
+
+        // to store the path
+        ArrayList<Integer> path = new ArrayList<>();
+
+        // loop until the min heap is empty
+        while (!pq.isEmpty()) {
+
+            // get the top element of the min heap
+            int x = pq.peek()[1];
+
+            // push the current node in the path
+            path.add(x);
+
+            // pop the top element
+            pq.poll();
+
+            // if the current node is the target node
+            // break the loop
+            if (x == target)
+                break;
+
+            // loop through the edges of the current node
+            for (int i = 0; i < adj.get(x).size(); i++) {
+                if (!visited[adj.get(x).get(i)[0]]) {
+
+                    // mark the node as visited
+                    visited[adj.get(x).get(i)[0]] = true;
+
+                    // push the node in the min heap
+                    pq.add(new int[]{adj.get(x).get(i)[1],
+                    adj.get(x).get(i)[0]});
+                }
+            }
+        }
+
+        return path;
+    }
+
+    public static void main(String[] args) {
+        int n = 14;
+        int[][] edgeList = {
+            {0, 1, 3}, {0, 2, 6}, {0, 3, 5},
+            {1, 4, 9}, {1, 5, 8}, {2, 6, 12},
+            {2, 7, 14}, {3, 8, 7}, {8, 9, 5},
+            {8, 10, 6}, {9, 11, 1}, {9, 12, 10},
+            {9, 13, 2}
+        };
+
+        int source = 0;
+        int target = 9;
+
+        ArrayList<Integer> path =
+        bestFirstSearch(edgeList, source, target, n);
+
+        for (int i = 0; i < path.size(); i++) {
+            System.out.print(path.get(i) + " ");
+        }
+    }
+}
+
+Python
+
+# Function to perform Best First Search
+from heapq import heappush, heappop
+
+def bestFirstSearch(edges, src, target, n):
+
+    # create the adjacency list
+    adj = [[] for _ in range(n)]
+    for edge in edges:
+        adj[edge[0]].append([edge[1], edge[2]])
+        adj[edge[1]].append([edge[0], edge[2]])
+
+    # create a visited array to
+    # keep track of visited nodes
+    visited = [False] * n
+
+    # create the min heap to store the nodes
+    # based on the cost
+    pq = []
+
+    # push the source node in the min heap
+    heappush(pq, [0, src])
+
+    # mark the source node as visited
+    visited[src] = True
+
+    # to store the path
+    path = []
+
+    # loop until the min heap is empty
+    while pq:
+        # get the top element of the min heap
+        x = heappop(pq)[1]
+
+        # push the current node in the path
+        path.append(x)
+
+        # if the current node is the target node
+        # break the loop
+        if x == target:
+            break
+
+        # loop through the edges of the current node
+        for edge in adj[x]:
+            if not visited[edge[0]]:
+                # mark the node as visited
+                visited[edge[0]] = True
+                # push the node in the min heap
+                heappush(pq, [edge[1], edge[0]])
+
+    return path
+
+if __name__ == "__main__":
+    n = 14
+    edgeList = [
+        [0, 1, 3], [0, 2, 6], [0, 3, 5],
+        [1, 4, 9], [1, 5, 8], [2, 6, 12],
+        [2, 7, 14], [3, 8, 7], [8, 9, 5],
+        [8, 10, 6], [9, 11, 1], [9, 12, 10],
+        [9, 13, 2]
+    ]
+    source = 0
+    target = 9
+    path = bestFirstSearch(edgeList, source, target, n)
+    for i in range(len(path)):
+        print(path[i], end=" ")
+
+C#
+
+// Function to perform Best First Search
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to build the adjacency list
+    static List<List<int[]>> buildAdjacencyList(int[][] edges, int n) {
+        List<List<int[]>> adj = new List<List<int[]>>();
+        for (int i = 0; i < n; i++) {
+            adj.Add(new List<int[]>());
+        }
+        for (int i = 0; i < edges.Length; i++) {
+            adj[edges[i][0]].Add(new int[]{edges[i][1], edges[i][2]});
+            adj[edges[i][1]].Add(new int[]{edges[i][0], edges[i][2]});
+        }
+        return adj;
+    }
+
+    // Function to get the minimum element from the list (simulated priority queue)
+    static Tuple<int, int> get_min(LinkedList<Tuple<int, int>> pq) {
+        Tuple<int, int> curr_min = new Tuple<int, int>(100000, 100000);
+        foreach (var ele in pq) {
+            if (ele.Item1 == curr_min.Item1) {
+                if (ele.Item2 < curr_min.Item2)
+                    curr_min = ele;
+            }
+            else {
+                if (ele.Item1 < curr_min.Item1)
+                    curr_min = ele;
+            }
+        }
+        return curr_min;
+    }
+
+    // Function to perform Best First Search
+    // Gives output path having lowest cost
+    static List<int> bestFirstSearch(int[][] edges,
+    int src, int target, int n) {
+        List<List<int[]>> adj = buildAdjacencyList(edges, n);
+
+        // create a visited array to
+        // keep track of visited nodes
+        int[] visited = new int[n];
+        for (int i = 0; i < n; i++) {
+            visited[i] = 0;
+        }
+
+        // create the min heap to store the nodes
+        // based on the cost (simulated using LinkedList)
+        LinkedList<Tuple<int, int>> pq = new LinkedList<Tuple<int, int>>();
+
+        // push the source node in the min heap
+        pq.AddLast(new Tuple<int, int>(0, src));
+
+        // mark the source node as visited
+        visited[src] = 1;
+
+        // to store the path
+        List<int> path = new List<int>();
+
+        // loop until the min heap is empty
+        while (pq.Count > 0) {
+            Tuple<int, int> curr_min = get_min(pq);
+            int x = curr_min.Item2;
+            pq.Remove(curr_min);
+
+            // push the current node in the path
+            path.Add(x);
+
+            // if the current node is the target node
+            // break the loop
+            if (x == target)
+                break;
+
+            // loop through the edges of the current node
+            foreach (var edge in adj[x]) {
+                if (visited[edge[0]] == 0) {
+                    // mark the node as visited
+                    visited[edge[0]] = 1;
+                    // push the node in the min heap
+                    pq.AddLast(new Tuple<int, int>(edge[1], edge[0]));
+                }
+            }
+        }
+        return path;
+    }
+
+    static void Main() {
+        int n = 14;
+        int[][] edgeList = new int[][] {
+            new int[] {0, 1, 3}, new int[] {0, 2, 6}, new int[] {0, 3, 5},
+            new int[] {1, 4, 9}, new int[] {1, 5, 8}, new int[] {2, 6, 12},
+            new int[] {2, 7, 14}, new int[] {3, 8, 7}, new int[] {8, 9, 5},
+            new int[] {8, 10, 6}, new int[] {9, 11, 1}, new int[] {9, 12, 10},
+            new int[] {9, 13, 2}
+        };
+        int source = 0;
+        int target = 9;
+        List<int> path = bestFirstSearch(edgeList, source, target, n);
+        foreach (int x in path) {
+            Console.Write(x + " ");
+        }
+    }
+}
+
+JavaScript
+
+// Function to perform Best First Search
+function bestFirstSearch(edges, src, target, n) {
+
+    // create the adjacency list
+    let adj = new Array(n);
+    for (let i = 0; i < n; i++) {
+        adj[i] = [];
+    }
+    for (let i = 0; i < edges.length; i++) {
+        adj[edges[i][0]].push([edges[i][1], edges[i][2]]);
+        adj[edges[i][1]].push([edges[i][0], edges[i][2]]);
+    }
+
+    // create a visited array to
+    // keep track of visited nodes
+    let visited = new Array(n).fill(false);
+
+    // create the min heap to store the nodes
+    // based on the cost
+    class MinHeap {
+        constructor() {
+            this.heap = [];
+        }
+        push(item) {
+            this.heap.push(item);
+            this.bubbleUp(this.heap.length - 1);
+        }
+        pop() {
+            if (this.heap.length === 0) return null;
+            let top = this.heap[0];
+            let end = this.heap.pop();
+            if (this.heap.length > 0) {
+                this.heap[0] = end;
+                this.bubbleDown(0);
+            }
+            return top;
+        }
+        bubbleUp(index) {
+            while (index > 0) {
+                let parent = Math.floor((index - 1) / 2);
+                if (this.heap[index][0] < this.heap[parent][0]) {
+                    [this.heap[index], this.heap[parent]] =
+                    [this.heap[parent], this.heap[index]];
+                    index = parent;
+                } else {
+                    break;
+                }
+            }
+        }
+        bubbleDown(index) {
+            let length = this.heap.length;
+            while (true) {
+                let left = 2 * index + 1;
+                let right = 2 * index + 2;
+                let smallest = index;
+                if (left < length && this.heap[left][0] <
+                    this.heap[smallest][0])
+                    smallest = left;
+                if (right < length && this.heap[right][0] <
+                    this.heap[smallest][0])
+                    smallest = right;
+                if (smallest !== index) {
+                    [this.heap[index], this.heap[smallest]] =
+                    [this.heap[smallest], this.heap[index]];
+                    index = smallest;
+                } else {
+                    break;
+                }
+            }
+        }
+        size() {
+            return this.heap.length;
+        }
+    }
+    let pq = new MinHeap();
+
+    // push the source node in the min heap
+    pq.push([0, src]);
+
+    // mark the source node as visited
+    visited[src] = true;
+
+    // to store the path
+    let path = [];
+
+    // loop until the min heap is empty
+    while (pq.size() > 0) {
+        // get the top element of the min heap
+        let top = pq.pop();
+        let x = top[1];
+
+        // push the current node in the path
+        path.push(x);
+
+        // if the current node is the target node
+        // break the loop
+        if (x === target)
+            break;
+
+        // loop through the edges of the current node
+        for (let i = 0; i < adj[x].length; i++) {
+            if (!visited[adj[x][i][0]]) {
+                // mark the node as visited
+                visited[adj[x][i][0]] = true;
+                // push the node in the min heap
+                pq.push([adj[x][i][1], adj[x][i][0]]);
+            }
+        }
+    }
+
+    return path;
+}
+
+let edgeList = [
+    [0, 1, 3], [0, 2, 6], [0, 3, 5],
+    [1, 4, 9], [1, 5, 8], [2, 6, 12],
+    [2, 7, 14], [3, 8, 7], [8, 9, 5],
+    [8, 10, 6], [9, 11, 1], [9, 12, 10],
+    [9, 13, 2]
+];
+
+let source = 0;
+let target = 9;
+let n = 14;
+let path = bestFirstSearch(edgeList, source, target, n);
+for (let i = 0; i < path.length; i++) {
+    process.stdout.write(path[i] + " ");
+}
+
+Output
+
+0 1 3 2 8 9
+
+Time Complexity: O(n * log n), where n is the number of nodes. In the worst case, we may have to visit all nodes before we reach goal. Note that priority queue is implemented using Min (or Max) Heap, and insert and remove operations take O(log n) time. Space Complexity: O(n + e), where n is the number of nodes, and e is the number of edges.
+
+Special cases of Best first search:
+
+1. Greedy Best first search algorithm
+2. A* search algorithm

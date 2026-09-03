@@ -1,0 +1,1532 @@
+Source: https://www.geeksforgeeks.org/dsa/implement-reverse-dns-look-cache/
+Title: How to Implement Reverse DNS Look Up Cache?
+Extractor: 2
+
+Reverse DNS look up is using an internet IP address to find a domain name. For example, if you type 74.125.200.106 in browser, it automatically redirects to google.in. How to implement Reverse DNS Look Up cache? Following are the operations needed from cache:
+
+- Add an IP address to URL Mapping in cache.
+- Find URL for a given IP address.
+
+One solution is to use Hashing . In this post, a Trie based solution is discussed. One advantage of Trie based solutions is, the worst case upper bound is O(1) for Trie, for hashing, the best possible average case time complexity is O(1). Also, with Trie we can implement prefix search (finding all urls for a common prefix of IP addresses). The general disadvantage of Trie is large amount of memory requirement, this is not a major problem here as the alphabet size is only 11 here. Ten characters are needed for digits from '0' to '9' and one for dot ('.'). The idea is to store IP addresses in Trie nodes and in the last node we store the corresponding domain name. Following is C style implementation in C++.
+
+CPP
+
+// C++ based program to implement reverse DNS lookup
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+
+// There are atmost 11 different chars in a valid IP address
+#define CHARS 11
+
+// Maximum length of a valid IP address
+#define MAX 50
+
+// A utility function to find index of child for a given character 'c'
+int getIndex(char c) { return (c == '.')? 10: (c - '0'); }
+
+// A utility function to find character for a given child index.
+char getCharFromIndex(int i) { return (i== 10)? '.' : ('0' + i); }
+
+// Trie Node.
+struct trieNode
+{
+    bool isLeaf;
+    char *URL;
+    struct trieNode *child[CHARS];
+};
+
+// Function to create a new trie node.
+struct trieNode *newTrieNode(void)
+{
+    struct trieNode *newNode = new trieNode;
+    newNode->isLeaf = false;
+    newNode->URL = NULL;
+    for (int i=0; i<CHARS; i++)
+        newNode->child[i] = NULL;
+    return newNode;
+}
+
+// This method inserts an ip address and the corresponding
+// domain name in the trie. The last node in Trie contains the URL.
+void insert(struct trieNode *root, char *ipAdd, char *URL)
+{
+    // Length of the ip address
+    int len = strlen(ipAdd);
+    struct trieNode *pCrawl = root;
+
+    // Traversing over the length of the ip address.
+    for (int level=0; level<len; level++)
+    {
+        // Get index of child node from current character
+        // in ipAdd[].  Index must be from 0 to 10 where
+        // 0 to 9 is used for digits and 10 for dot
+        int index = getIndex(ipAdd[level]);
+
+        // Create a new child if not exist already
+        if (!pCrawl->child[index])
+            pCrawl->child[index] = newTrieNode();
+
+        // Move to the child
+        pCrawl = pCrawl->child[index];
+    }
+
+    //Below needs to be carried out for the last node.
+    //Save the corresponding URL of the ip address in the
+    //last node of trie.
+    pCrawl->isLeaf = true;
+    pCrawl->URL = new char[strlen(URL) + 1];
+    strcpy(pCrawl->URL, URL);
+}
+
+// This function returns URL if given IP address is present in DNS cache.
+// Else returns NULL
+char  *searchDNSCache(struct trieNode *root, char *ipAdd)
+{
+    // Root node of trie.
+    struct trieNode *pCrawl = root;
+    int  len = strlen(ipAdd);
+
+    // Traversal over the length of ip address.
+    for (int level=0; level<len; level++)
+    {
+        int index = getIndex(ipAdd[level]);
+        if (!pCrawl->child[index])
+            return NULL;
+        pCrawl = pCrawl->child[index];
+    }
+
+    // If we find the last node for a given ip address, print the URL.
+    if (pCrawl!=NULL && pCrawl->isLeaf)
+        return pCrawl->URL;
+
+    return NULL;
+}
+
+//Driver function.
+int main()
+{
+    /* Change third ipAddress for validation */
+    char ipAdd[][MAX] = {"107.108.11.123", "107.109.123.255",
+                         "74.125.200.106"};
+    char URL[][50] = {"www.samsung.com", "www.samsung.net",
+                      "www.google.in"};
+    int n = sizeof(ipAdd)/sizeof(ipAdd[0]);
+    struct trieNode *root = newTrieNode();
+
+    // Inserts all the ip address and their corresponding
+    // domain name after ip address validation.
+    for (int i=0; i<n; i++)
+        insert(root,ipAdd[i],URL[i]);
+
+    // If reverse DNS look up succeeds print the domain
+    // name along with DNS resolved.
+    char ip[] = "107.108.11.123";
+    char *res_url = searchDNSCache(root, ip);
+    if (res_url != NULL)
+        printf("Reverse DNS look up resolved in cache:\n%s --> %s",
+                ip, res_url);
+    else
+        printf("Reverse DNS look up not resolved in cache ");
+    return 0;
+}
+
+Java
+
+// Java based program to implement reverse DNS lookup
+import java.util.HashMap;
+
+// Maximum length of a valid IP address
+class TrieNode {
+    HashMap<Character, TrieNode> children;
+    boolean isLeaf;
+    String URL;
+
+    public TrieNode() {
+        children = new HashMap<>();
+        isLeaf = false;
+        URL = null;
+    }
+}
+
+// Class to represent DNS Cache
+class DNSCache {
+    // Root of Trie
+    TrieNode root;
+
+    // Constructor
+    public DNSCache() {
+        root = new TrieNode();
+    }
+
+    // Function to insert a new domain value with its corresponding
+    // IP address in the DNS cache
+    public void insert(String ipAdd, String URL) {
+        // Length of the ip address
+        int len = ipAdd.length();
+
+        // Traversing over the length of the ip address.
+        TrieNode pCrawl = root;
+        for (int level=0; level<len; level++) {
+
+            // Get index of child node from current character
+            // in ipAdd[].  Index must be from 0 to 10 where
+            // 0 to 9 is used for digits and 10 for dot
+            char c = ipAdd.charAt(level);
+            int index = getIndex(c);
+
+            // Create a new child if not exist already
+            if (pCrawl.children.get(c) == null)
+                pCrawl.children.put(c, new TrieNode());
+
+            // Move to the child
+            pCrawl = pCrawl.children.get(c);
+        }
+
+        //Below needs to be carried out for the last node.
+        //Save the corresponding URL of the ip address in the
+        //last node of trie.
+        pCrawl.isLeaf = true;
+        pCrawl.URL = URL;
+    }
+
+    // This function returns URL if given IP address is present in DNS cache.
+    // Else returns null
+    public String searchDNSCache(String ipAdd) {
+        // Root node of trie.
+        TrieNode pCrawl = root;
+        int  len = ipAdd.length();
+
+        // Traversal over the length of ip address.
+        for (int level=0; level<len; level++) {
+            char c = ipAdd.charAt(level);
+            int index = getIndex(c);
+            if (pCrawl.children.get(c) == null)
+                return null;
+            pCrawl = pCrawl.children.get(c);
+        }
+
+        // If we find the last node for a given ip address, print the URL.
+        if (pCrawl!=null && pCrawl.isLeaf)
+            return pCrawl.URL;
+
+        return null;
+    }
+
+    // A utility function to find index of child for a given character 'c'
+    public int getIndex(char c) { return (c == '.')? 10: (c - '0'); }
+
+    // Driver function
+    public static void main(String args[]) {
+        /* Change third ipAddress for validation */
+        String ipAdd[] = {"107.108.11.123", "107.109.123.255",
+                          "74.125.200.106"};
+        String URL[] = {"www.samsung.com", "www.samsung.net",
+                        "www.google.in"};
+        int n = ipAdd.length;
+        DNSCache dns = new DNSCache();
+
+        // Inserts all the ip address and their corresponding
+        // domain name after ip address validation.
+        for (int i = 0; i < n; i++)
+            dns.insert(ipAdd[i],URL[i]);
+
+        // If reverse DNS look up succeeds print the domain
+        // name along with DNS resolved.
+        String ip = "107.108.11.123";
+        String res_url = dns.searchDNSCache(ip);
+        if (res_url != null)
+            System.out.println("Reverse DNS look up resolved in cache:\n" + ip + " --> " + res_url);
+        else
+            System.out.println("Reverse DNS look up not resolved in cache ");
+    }
+}
+
+Python3
+
+# Trie Node.
+class TrieNode:
+    def __init__(self):
+        self.isLeaf = False
+        self.URL = None
+        self.child = [None]*11
+
+# Function to create a new trie node.
+def newTrieNode():
+    return TrieNode()
+
+# A utility function to find index of child for a given character 'c'
+def getIndex(c):
+    if c == '.':
+        return 10
+    else:
+        return ord(c) - ord('0')
+
+# A utility function to find character for a given child index.
+def getCharFromIndex(i):
+    if i == 10:
+        return '.'
+    else:
+        return chr(i + ord('0'))
+
+# This method inserts an ip address and the corresponding
+# domain name in the trie. The last node in Trie contains the URL.
+def insert(root, ipAdd, URL):
+    # Length of the ip address
+    len_ipAdd = len(ipAdd)
+    pCrawl = root
+
+    # Traversing over the length of the ip address.
+    for level in range(len_ipAdd):
+        # Get index of child node from current character
+        # in ipAdd[].  Index must be from 0 to 10 where
+        # 0 to 9 is used for digits and 10 for dot
+        index = getIndex(ipAdd[level])
+
+        # Create a new child if not exist already
+        if not pCrawl.child[index]:
+            pCrawl.child[index] = newTrieNode()
+
+        # Move to the child
+        pCrawl = pCrawl.child[index]
+
+    #Below needs to be carried out for the last node.
+    #Save the corresponding URL of the ip address in the
+    #last node of trie.
+    pCrawl.isLeaf = True
+    pCrawl.URL = URL
+
+# This function returns URL if given IP address is present in DNS cache.
+# Else returns None
+def searchDNSCache(root, ipAdd):
+    # Root node of trie.
+    pCrawl = root
+    len_ipAdd = len(ipAdd)
+
+    # Traversal over the length of ip address.
+    for level in range(len_ipAdd):
+        index = getIndex(ipAdd[level])
+        if not pCrawl.child[index]:
+            return None
+        pCrawl = pCrawl.child[index]
+
+    # If we find the last node for a given ip address, print the URL.
+    if pCrawl and pCrawl.isLeaf:
+        return pCrawl.URL
+
+    return None
+
+#Driver function.
+if __name__ == "__main__":
+    # Change third ipAddress for validation
+    ipAdd = ["107.108.11.123", "107.109.123.255", "74.125.200.106"]
+    URL = ["www.samsung.com", "www.samsung.net", "www.google.in"]
+    n = len(ipAdd)
+    root = newTrieNode()
+
+    # Inserts all the ip address and their corresponding
+    # domain name after ip address validation.
+    for i in range(n):
+        insert(root, ipAdd[i], URL[i])
+
+    # If reverse DNS look up succeeds print the domain
+    # name along with the IP address.
+    ip = "107.108.11.123"
+    name = searchDNSCache(root, ip)
+    if name != None:
+        print("Reverse DNS look up resolved in cache:\n" + ip + " --> " + name)
+    else:
+        print("Reverse DNS look up failed for " + ip)
+
+C#
+
+// C# based program to implement reverse DNS lookup
+using System;
+
+public class GFG {
+
+  // There are atmost 11 different chars in a valid IP
+  // address
+  const int CHARS = 11;
+
+  // Maximum length of a valid IP address
+  const int MAX = 50;
+
+  // A utility function to find index of child for a given
+  // character 'c'
+  static int GetIndex(char c)
+  {
+    return (c == '.') ? 10 : (c - '0');
+  }
+
+  // A utility function to find character for a given
+  // child index.
+  static char GetCharFromIndex(int i)
+  {
+    return (i == 10) ? '.' : (char)(i + '0');
+  }
+
+  // Trie Node.
+  class TrieNode {
+    public bool IsLeaf
+    {
+      get;
+      set;
+    }
+    public string URL
+    {
+      get;
+      set;
+    }
+    public TrieNode[] Child
+    {
+      get;
+      set;
+    }
+
+    // Function to create a new trie node.
+    public TrieNode()
+    {
+      IsLeaf = false;
+      URL = null;
+      Child = new TrieNode[CHARS];
+      for (int i = 0; i < CHARS; i++) {
+        Child[i] = null;
+      }
+    }
+  }
+
+  // This method inserts an ip address and the
+  // corresponding domain name in the trie. The last node
+  // in Trie contains the URL.
+  static void Insert(TrieNode root, string ipAdd,
+                     string URL)
+  {
+
+    // Length of the ip address
+    int len = ipAdd.Length;
+    TrieNode pCrawl = root;
+
+    // Traversing over the length of the ip address.
+    for (int level = 0; level < len; level++) {
+
+      // Get index of child node from current
+      // character in ipAdd[].  Index must be from 0
+      // to 10 where 0 to 9 is used for digits and 10
+      // for dot
+      int index = GetIndex(ipAdd[level]);
+
+      // Create a new child if not exist already
+      if (pCrawl.Child[index] == null) {
+        pCrawl.Child[index] = new TrieNode();
+      }
+
+      // Move to the child
+      pCrawl = pCrawl.Child[index];
+    }
+
+    // Below needs to be carried out for the last node.
+    // Save the corresponding URL of the ip address in
+    // the last node of trie.
+    pCrawl.IsLeaf = true;
+    pCrawl.URL = URL;
+  }
+
+  // This function returns URL if given IP address is
+  // present in DNS cache. Else returns NULL
+  static string SearchDNSCache(TrieNode root,
+                               string ipAdd)
+  {
+
+    // Root node of trie.
+    TrieNode pCrawl = root;
+    int len = ipAdd.Length;
+
+    // Traversal over the length of ip address.
+    for (int level = 0; level < len; level++) {
+      int index = GetIndex(ipAdd[level]);
+      if (pCrawl.Child[index] == null) {
+        return null;
+      }
+      pCrawl = pCrawl.Child[index];
+    }
+
+    // If we find the last node for a given ip address,
+    // print the URL.
+    if (pCrawl != null && pCrawl.IsLeaf) {
+      return pCrawl.URL;
+    }
+
+    return null;
+  }
+
+  // Driver function.
+  static public void Main(string[] args)
+  {
+
+    /* Change third ipAddress for validation */
+    string[] ipAdd
+      = { "107.108.11.123", "107.109.123.255",
+         "74.125.200.106" };
+    string[] URL
+      = { "www.samsung.com", "www.samsung.net",
+         "www.google.in" };
+    int n = ipAdd.Length;
+    TrieNode root = new TrieNode();
+
+    // Inserts all the ip address and their
+    // corresponding domain name after ip address
+    // validation.
+    for (int i = 0; i < n; i++) {
+      Insert(root, ipAdd[i], URL[i]);
+    }
+
+    // If reverse DNS look up succeeds print the domain
+    // name along with DNS resolved.
+    string ip = "107.108.11.123";
+    string res_url = SearchDNSCache(root, ip);
+    if (res_url != null) {
+      Console.WriteLine(
+        "Reverse DNS look up resolved in cache:");
+      Console.WriteLine(ip + " --> " + res_url);
+    }
+    else {
+      Console.WriteLine(
+        "Reverse DNS look up not resolved in cache ");
+    }
+  }
+}
+
+// This code is contributed by prasad264
+
+JavaScript
+
+// Trie Node.
+class TrieNode {
+    constructor() {
+        this.isLeaf = false;
+        this.URL = null;
+        this.child = Array(11).fill(null);
+    }
+}
+
+// Function to create a new trie node.
+function newTrieNode() {
+    return new TrieNode();
+}
+
+// A utility function to find index of child for a given character 'c'
+function getIndex(c) {
+    if (c === '.') {
+        return 10;
+    } else {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+    }
+}
+
+// A utility function to find character for a given child index.
+function getCharFromIndex(i) {
+    if (i === 10) {
+        return '.';
+    } else {
+        return String.fromCharCode(i + '0'.charCodeAt(0));
+    }
+}
+
+// This method inserts an ip address and the corresponding
+// domain name in the trie. The last node in Trie contains the URL.
+function insert(root, ipAdd, URL) {
+    // Length of the ip address
+    let len_ipAdd = ipAdd.length;
+    let pCrawl = root;
+
+    // Traversing over the length of the ip address.
+    for (let level = 0; level < len_ipAdd; level++) {
+        // Get index of child node from current character
+        // in ipAdd[].  Index must be from 0 to 10 where
+        // 0 to 9 is used for digits and 10 for dot
+        let index = getIndex(ipAdd[level]);
+
+        // Create a new child if not exist already
+        if (!pCrawl.child[index]) {
+            pCrawl.child[index] = newTrieNode();
+        }
+
+        // Move to the child
+        pCrawl = pCrawl.child[index];
+    }
+
+    // Below needs to be carried out for the last node.
+    // Save the corresponding URL of the ip address in the
+    // last node of trie.
+    pCrawl.isLeaf = true;
+    pCrawl.URL = URL;
+}
+
+// This function returns URL if given IP address is present in DNS cache.
+// Else returns None
+function searchDNSCache(root, ipAdd) {
+    // Root node of trie.
+    let pCrawl = root;
+    let len_ipAdd = ipAdd.length;
+
+    // Traversal over the length of ip address.
+    for (let level = 0; level < len_ipAdd; level++) {
+        let index = getIndex(ipAdd[level]);
+        if (!pCrawl.child[index]) {
+            return null;
+        }
+        pCrawl = pCrawl.child[index];
+    }
+
+    // If we find the last node for a given ip address, print the URL.
+    if (pCrawl && pCrawl.isLeaf) {
+        return pCrawl.URL;
+    }
+    return null;
+}
+
+//Driver function.
+let ipAdd = ["107.108.11.123", "107.109.123.255", "74.125.200.106"];
+let URL = ["www.samsung.com", "www.samsung.net", "www.google.in"];
+let n = ipAdd.length;
+let root = newTrieNode();
+
+// Inserts all the ip address and their corresponding
+// domain name after ip address validation.
+for (let i = 0; i < n; i++) {
+    insert(root, ipAdd[i], URL[i]);
+}
+
+// If reverse DNS look up succeeds print the domain
+// name along with the IP address.
+let ip = "107.108.11.123";
+let name = searchDNSCache(root, ip);
+if (name != null) {
+    console.log("Reverse DNS look up resolved in cache:\n" + ip + " --> " + name);
+} else {
+    console.log("Reverse DNS look up failed for " + ip);
+}
+
+Output:
+
+Reverse DNS look up resolved in cache:
+107.108.11.123 --> www.samsung.com
+
+Time complexity- The time complexity of the insert function is O(k), where k is the length of the IP address being inserted. The searchDNSCache function also has a time complexity of O(k), as it traverses the trie for the given IP address.
+
+Space complexity - The space complexity of the program is O(nm), where n is the number of IP addresses and m is the length of the longest URL. This is because we are storing the URL for each IP address in the trie, which can take up to m space. Additionally, we are creating a new trie node for each level of the IP address, which can take up to 11 pointers and a boolean flag, or 12 units of space per node. Therefore, the total space complexity is O(nm12), or O(nm).
+
+Note that the above implementation of Trie assumes that the given IP address does not contain characters other than {'0', '1',..... '9', '.'}. What if a user gives an invalid IP address that contains some other characters? This problem can be resolved by validating the input IP address before inserting it into Trie. We can use the approach discussed here for IP address validation. Java implementation is given below:
+
+C++
+
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+class TrieNode {
+public:
+    unordered_map<char, TrieNode*> child;
+    string url;
+
+    TrieNode() { this->url = ""; }
+
+    ~TrieNode()
+    {
+        for (auto it = child.begin(); it != child.end();
+             ++it) {
+            delete it->second;
+        }
+    }
+};
+
+class ReverseDNSLookup {
+public:
+    void insert(TrieNode* node, vector<string> ipAdd,
+                vector<string> urls)
+    {
+        for (int i = 0; i < ipAdd.size(); ++i) {
+            insertUtil(node, ipAdd[i], urls[i], 0);
+        }
+    }
+
+    void insertUtil(TrieNode* node, string ipAddr,
+                    string url, int pos)
+    {
+        TrieNode* temp = nullptr;
+        if (node->child.find(ipAddr[pos])
+            != node->child.end()) {
+            temp = node->child[ipAddr[pos]];
+        }
+        else {
+            temp = new TrieNode();
+            node->child[ipAddr[pos]] = temp;
+        }
+        if (pos == ipAddr.size() - 1) {
+            temp->url = url;
+            return;
+        }
+        insertUtil(temp, ipAddr, url, pos + 1);
+    }
+
+    string search(TrieNode* node, string ipAddr, int pos)
+    {
+        TrieNode* temp = nullptr;
+        if (pos == ipAddr.size() - 1) {
+            if (node->child.find(ipAddr[pos])
+                != node->child.end()) {
+                temp = node->child[ipAddr[pos]];
+                if (!temp->url.empty()) {
+                    return temp->url;
+                }
+            }
+        }
+        if (node->child.find(ipAddr[pos])
+            != node->child.end()) {
+            temp = node->child[ipAddr[pos]];
+            return search(temp, ipAddr, pos + 1);
+        }
+        return "No url associated/Invalid IP address";
+    }
+};
+
+int main()
+{
+    ReverseDNSLookup r;
+    vector<string> ipAdd
+        = { "107.108.11.123", "107.109.123.255",
+            "74.125.200.106" };
+    vector<string> urls
+        = { "www.samsung.com", "www.samsung.net",
+            "www.google.in" };
+
+    TrieNode* root = new TrieNode();
+    r.insert(root, ipAdd, urls);
+    cout << "74.125.200.106 : "
+         << r.search(root, "74.125.200.106", 0) << endl;
+    cout << "107.109.123.245 : "
+         << r.search(root, "107.109.123.245", 0) << endl;
+
+    delete root;
+
+    return 0;
+}
+// This code is contributed by prasad264
+
+Java
+
+/* https://www.geeksforgeeks.org/dsa/implement-reverse-dns-look-cache/ */
+import java.util.HashMap;
+import java.util.Map;
+
+public class ReverseDNSLookup
+{
+    public void insert(TrieNode node, String[] ipAdd, String[] urls)
+    {
+        for(int i=0;i<ipAdd.length;i++)
+            this.insertUtil(node, ipAdd[i], urls[i], 0);
+    }
+
+    public void insertUtil(TrieNode node, String ipAddr, String url, int pos)
+    {
+        TrieNode temp = null;
+        if(node.child.containsKey(ipAddr.charAt(pos)))
+        {
+            temp = node.child.get(ipAddr.charAt(pos));
+        }
+        else
+        {
+            temp = new TrieNode();
+            node.child.put(ipAddr.charAt(pos), temp);
+        }
+        if(pos==ipAddr.length()-1)
+        {
+            temp.url = url;
+            return;
+        }
+        this.insertUtil(temp, ipAddr, url, pos+1);
+    }
+
+    public String search(TrieNode node, String ipAddr, int pos)
+    {
+        TrieNode temp = null;
+        if(pos==ipAddr.length()-1)
+        {
+            temp = node.child.get(ipAddr.charAt(pos));
+            if(temp!=null)
+                return temp.url;
+        }
+        if(node.child.containsKey(ipAddr.charAt(pos)))
+        {
+            temp = node.child.get(ipAddr.charAt(pos));
+            return this.search(temp, ipAddr, pos+1);
+        }
+        return "No url associated/Invalid IP address";
+    }
+
+    public static void main(String []args)
+    {
+        ReverseDNSLookup r = new ReverseDNSLookup();
+        String[] ipAdd = {"107.108.11.123",
+                                  "107.109.123.255", "74.125.200.106"};
+        String[] urls = {"www.samsung.com",
+                         "www.samsung.net", "www.google.in"};
+
+        TrieNode root = new TrieNode();
+        r.insert(root, ipAdd, urls);
+        //System.out.println(root);
+        System.out.println("74.125.200.106 : "+
+                                r.search(root, "74.125.200.106", 0));
+        System.out.println("107.109.123.245 : "+
+                                r.search(root, "107.109.123.245", 0));
+    }
+}
+
+class TrieNode
+{
+    Map<Character, TrieNode> child;
+    String url;
+
+    TrieNode()
+    {
+        this.child = new HashMap<>();
+    }
+
+    public String toString()
+    {
+        return child.toString()+" : "+url;
+    }
+}
+
+// This code is contributed by Akhilesh Singla
+
+Python3
+
+class TrieNode:
+    def __init__(self):
+        self.child = {}
+        self.url = ""
+
+    def __str__(self):
+        return str(self.child) + " : " + self.url
+
+class ReverseDNSLookup:
+    def insert(self, node, ipAdd, urls):
+        for i in range(len(ipAdd)):
+            self.insertUtil(node, ipAdd[i], urls[i], 0)
+
+    def insertUtil(self, node, ipAddr, url, pos):
+        temp = None
+        if ipAddr[pos] in node.child:
+            temp = node.child[ipAddr[pos]]
+        else:
+            temp = TrieNode()
+            node.child[ipAddr[pos]] = temp
+        if pos == len(ipAddr) - 1:
+            temp.url = url
+            return
+        self.insertUtil(temp, ipAddr, url, pos + 1)
+
+    def search(self, node, ipAddr, pos):
+        temp = None
+        if pos == len(ipAddr) - 1:
+            temp = node.child.get(ipAddr[pos])
+            if temp:
+                return temp.url
+        if ipAddr[pos] in node.child:
+            temp = node.child[ipAddr[pos]]
+            return self.search(temp, ipAddr, pos + 1)
+        return "No url associated/Invalid IP address"
+
+def main():
+    r = ReverseDNSLookup()
+    ipAdd = ["107.108.11.123", "107.109.123.255", "74.125.200.106"]
+    urls = ["www.samsung.com", "www.samsung.net", "www.google.in"]
+
+    root = TrieNode()
+    r.insert(root, ipAdd, urls)
+    print("74.125.200.106 : " + r.search(root, "74.125.200.106", 0))
+    print("107.109.123.245 : " + r.search(root, "107.109.123.245", 0))
+
+if __name__ == "__main__":
+    main()
+
+JavaScript
+
+<script>
+
+class TrieNode
+{
+    constructor()
+    {
+        this.child = new Map();
+    }
+    toString()
+    {
+        return this.child.toString()+" : "+url;
+    }
+}
+
+function insert(node,ipAdd,urls)
+{
+    for(let i = 0; i < ipAdd.length; i++)
+            this.insertUtil(node, ipAdd[i], urls[i], 0);
+}
+
+function insertUtil(node, ipAddr,url,pos)
+{
+    let temp = null;
+        if(node.child.has(ipAddr[pos]))
+        {
+            temp = node.child.get(ipAddr[pos]);
+        }
+        else
+        {
+            temp = new TrieNode();
+            node.child.set(ipAddr[pos], temp);
+        }
+        if(pos==ipAddr.length-1)
+        {
+            temp.url = url;
+            return;
+        }
+        this.insertUtil(temp, ipAddr, url, pos+1);
+}
+
+function search(node,ipAddr, pos)
+{
+    let temp = null;
+        if(pos==ipAddr.length-1)
+        {
+            temp = node.child.get(ipAddr[pos]);
+            if(temp!=null)
+                return temp.url;
+        }
+        if(node.child.has(ipAddr[pos]))
+        {
+            temp = node.child.get(ipAddr[pos]);
+            return this.search(temp, ipAddr, pos+1);
+        }
+        return "No url associated/Invalid IP address";
+}
+
+let ipAdd = ["107.108.11.123","107.109.123.255", "74.125.200.106"];
+let urls = ["www.samsung.com",
+                 "www.samsung.net", "www.google.in"];
+
+let root = new TrieNode();
+insert(root, ipAdd, urls);
+//System.out.println(root);
+document.write("74.125.200.106 : "+
+                   search(root, "74.125.200.106", 0)+"<br>");
+document.write("107.109.123.245 : "+
+                   search(root, "107.109.123.245", 0)+"<br>");
+
+// This code is contributed by patel2127
+</script>
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public class TrieNode
+{
+    public Dictionary<char, TrieNode> Child { get; set; }
+    public string Url { get; set; }
+
+    public TrieNode()
+    {
+        Child = new Dictionary<char, TrieNode>();
+        Url = "";
+    }
+}
+
+public class ReverseDNSLookup
+{
+    public void Insert(TrieNode node, List<string> ipAdd, List<string> urls)
+    {
+        for (int i = 0; i < ipAdd.Count; ++i)
+        {
+            InsertUtil(node, ipAdd[i], urls[i], 0);
+        }
+    }
+
+    public void InsertUtil(TrieNode node, string ipAddr, string url, int pos)
+    {
+        TrieNode temp = null;
+        if (node.Child.ContainsKey(ipAddr[pos]))
+        {
+            temp = node.Child[ipAddr[pos]];
+        }
+        else
+        {
+            temp = new TrieNode();
+            node.Child[ipAddr[pos]] = temp;
+        }
+        if (pos == ipAddr.Length - 1)
+        {
+            temp.Url = url;
+            return;
+        }
+        InsertUtil(temp, ipAddr, url, pos + 1);
+    }
+
+    public string Search(TrieNode node, string ipAddr, int pos)
+    {
+        TrieNode temp = null;
+        if (pos == ipAddr.Length - 1)
+        {
+            if (node.Child.ContainsKey(ipAddr[pos]))
+            {
+                temp = node.Child[ipAddr[pos]];
+                if (!string.IsNullOrEmpty(temp.Url))
+                {
+                    return temp.Url;
+                }
+            }
+        }
+        if (node.Child.ContainsKey(ipAddr[pos]))
+        {
+            temp = node.Child[ipAddr[pos]];
+            return Search(temp, ipAddr, pos + 1);
+        }
+        return "No url associated/Invalid IP address";
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        ReverseDNSLookup r = new ReverseDNSLookup();
+        List<string> ipAdd = new List<string>() { "107.108.11.123", "107.109.123.255", "74.125.200.106" };
+        List<string> urls = new List<string>() { "www.samsung.com", "www.samsung.net", "www.google.in" };
+
+        TrieNode root = new TrieNode();
+        r.Insert(root, ipAdd, urls);
+        Console.WriteLine("74.125.200.106 : " + r.Search(root, "74.125.200.106", 0));
+        Console.WriteLine("107.109.123.245 : " + r.Search(root, "107.109.123.245", 0));
+    }
+}
+
+Output:
+
+74.125.200.106 : www.google.in
+107.109.123.245 : No url associated/Invalid IP address
+
+Time Complexity:
+
+The insert() method has a time complexity of O(nm), where n is the number of IP addresses and m is the length of the IP address string. The search() method has a time complexity of O(m), where m is the length of the IP address string. Space Complexity:
+
+The space complexity of the TrieNode class is O(k * n), where k is the average length of the URL and n is the number of URLs. The space complexity of the ReverseDNSLookup class is O(1) since it only contains methods and no additional variables. The overall space complexity of the program is O(k * n), where k is the average length of the URL and n is the number of URLs.
+
+Python3 Implementation:
+
+C++
+
+// C++ Program for the above approach
+#include <bits/stdc++.h>
+using namespace std;
+
+// Trie Node structure
+class TrieNode {
+public:
+    vector<TrieNode*> child;
+    string url;
+    bool is_end;
+
+    TrieNode() {
+        child.resize(11);
+        for (int i = 0; i < 11; i++) {
+            child[i] = nullptr;
+        }
+        url = "";
+        is_end = false;
+    }
+};
+
+class Trie {
+public:
+    TrieNode* root;
+
+    Trie() {
+        root = new TrieNode();
+    }
+
+    int getIndex(char c) {
+        // For the . (dot) in IP address, we'll use the 10th index in child list
+        return c == '.' ? 10 : c - '0';
+    }
+
+    void insert(string ip, string domain) {
+        TrieNode* cur = root;
+        int n = ip.length();
+
+        for (int level = 0; level < n; level++) {
+            int idx = getIndex(ip[level]);
+
+            if (cur->child[idx] == nullptr) {
+                // Create a new trie node if not available for a particular digit
+                // and assign to the respective index
+                cur->child[idx] = new TrieNode();
+            }
+
+            cur = cur->child[idx];
+        }
+        // At the end, we'll map the domain name and mark the end node
+        cur->url = domain;
+        cur->is_end = true;
+    }
+
+      // function for search domain
+    string search_domain(string ip) {
+        TrieNode* cur = root;
+        int n = ip.length();
+        // We'll use the digits of IP address to form the trie structure
+        for (int level = 0; level < n; level++) {
+            int idx = getIndex(ip[level]);
+            if (cur->child[idx] == nullptr) {
+                return "Domain name not found";
+            }
+
+            cur = cur->child[idx];
+        }
+        // Returns the url when all the digits in ip found
+        if (cur && !cur->url.empty()) {
+            return cur->url;
+        }
+
+        return "Domain name not found";
+    }
+};
+
+// driver code to test above functions
+int main() {
+    vector<string> ip = {"107.108.11.123", "107.109.123.255", "74.125.200.106"};
+    vector<string> domain = {"www.samsung.com", "www.samsung.net", "www.google.co.in"};
+
+    Trie trie;
+    for(int idx = 0; idx < ip.size(); idx++)
+        trie.insert(ip[idx], domain[idx]);
+
+    // function call
+    cout << trie.search_domain("107.109.123.255") << endl;
+    cout << trie.search_domain("107.109.123.245") << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+// Trie Node structure
+class TrieNode {
+    Vector<TrieNode> child;
+    String url;
+    boolean is_end;
+
+    TrieNode()
+    {
+        child = new Vector<TrieNode>(11);
+        for (int i = 0; i < 11; i++) {
+            child.add(null);
+        }
+        url = "";
+        is_end = false;
+    }
+}
+
+class Trie {
+    TrieNode root;
+
+    Trie() { root = new TrieNode(); }
+
+    int getIndex(char c)
+    {
+        // For the . (dot) in IP address, we'll use the 10th
+        // index in child list
+        return c == '.' ? 10 : c - '0';
+    }
+
+    void insert(String ip, String domain)
+    {
+        TrieNode cur = root;
+        int n = ip.length();
+
+        for (int level = 0; level < n; level++) {
+            int idx = getIndex(ip.charAt(level));
+
+            if (cur.child.get(idx) == null) {
+                // Create a new trie node if not available
+                // for a particular digit and assign to the
+                // respective index
+                cur.child.set(idx, new TrieNode());
+            }
+
+            cur = cur.child.get(idx);
+        }
+        // At the end, we'll map the domain name and mark
+        // the end node
+        cur.url = domain;
+        cur.is_end = true;
+    }
+
+    // function for search domain
+    String search_domain(String ip)
+    {
+        TrieNode cur = root;
+        int n = ip.length();
+        // We'll use the digits of IP address to form the
+        // trie structure
+        for (int level = 0; level < n; level++) {
+            int idx = getIndex(ip.charAt(level));
+            if (cur.child.get(idx) == null) {
+                return "Domain name not found";
+            }
+
+            cur = cur.child.get(idx);
+        }
+        // Returns the url when all the digits in ip found
+        if (cur != null && !cur.url.isEmpty()) {
+            return cur.url;
+        }
+
+        return "Domain name not found";
+    }
+}
+
+// driver code to test above functions
+public class Main {
+    public static void main(String[] args)
+    {
+        String[] ip = { "107.108.11.123", "107.109.123.255",
+                        "74.125.200.106" };
+        String[] domain
+            = { "www.samsung.com", "www.samsung.net",
+                "www.google.co.in" };
+
+        Trie trie = new Trie();
+        for (int idx = 0; idx < ip.length; idx++)
+            trie.insert(ip[idx], domain[idx]);
+
+        // function call
+        System.out.println(
+            trie.search_domain("107.109.123.255"));
+        System.out.println(
+            trie.search_domain("107.109.123.245"));
+    }
+}
+
+Python3
+
+# Trie Node
+class TrieNode:
+    def __init__(self):
+        self.child = [None] * 11
+        self.url = None
+        self.is_end = False
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def getIndex(self, c):
+        # For the . (dot) in IP address, we'll use the 10th index in child list
+        return 10 if c == '.' else int(c)
+
+    def insert(self, ip, domain):
+        cur = self.root
+        n = len(ip)
+
+        for level in range(n):
+            # We'll use the digits of IP address to form the trie structure
+            idx = self.getIndex(ip[level])
+
+            if cur.child[idx] is None:
+                # Create a new trie node if not available for a particular digit
+                # and assign to the respective index
+                cur.child[idx] = TrieNode()
+
+            cur = cur.child[idx]
+
+        # At the end, we'll map the domain name and mark the end node
+        cur.url = domain
+        cur.is_end = True
+
+    def search_domain(self, ip):
+        cur = self.root
+        n = len(ip)
+
+        # Traverse through the trie structure with all digits in ip address
+        for level in range(n):
+            idx = self.getIndex(ip[level])
+            if cur.child[idx] is None:
+                return "Domain name not found"
+
+            cur = cur.child[idx]
+
+        # Returns the url when all the digits in ip found
+        if cur and cur.url:
+            return cur.url
+
+        return "Domain name not found"
+
+# Driver Code
+ip = ["107.108.11.123", "107.109.123.255", "74.125.200.106"]
+domain = ["www.samsung.com", "www.samsung.net", "www.google.co.in"]
+
+trie = Trie()
+for idx in range(len(ip)):
+    trie.insert(ip[idx], domain[idx])
+
+print(trie.search_domain("107.109.123.255"))
+print(trie.search_domain("107.109.123.245"))
+
+# This code is contributed by Abhilash Pujari
+
+JavaScript
+
+// Trie Node
+class TrieNode {
+    constructor() {
+        this.child = new Array(11).fill(null);
+        this.url = null;
+        this.is_end = false;
+    }
+}
+
+class Trie {
+    constructor() {
+        this.root = new TrieNode();
+    }
+
+    getIndex(c) {
+        // For the . (dot) in IP address, we'll use the 10th index in child list
+        return c == '.' ? 10 : parseInt(c);
+    }
+
+    insert(ip, domain) {
+        let cur = this.root;
+        let n = ip.length;
+
+        for (let level = 0; level < n; level++) {
+            let idx = this.getIndex(ip[level]);
+
+            if (cur.child[idx] == null) {
+                // Create a new trie node if not available for a particular digit
+                // and assign to the respective index
+                cur.child[idx] = new TrieNode();
+            }
+
+            cur = cur.child[idx];
+        }
+        // At the end, we'll map the domain name and mark the end node
+        cur.url = domain;
+        cur.is_end = true;
+    }
+
+    search_domain(ip) {
+        let cur = this.root;
+        let n = ip.length;
+        // We'll use the digits of IP address to form the trie structure
+        for (let level = 0; level < n; level++) {
+            let idx = this.getIndex(ip[level]);
+            if (cur.child[idx] == null) {
+                return "Domain name not found";
+            }
+
+            cur = cur.child[idx];
+        }
+        // Returns the url when all the digits in ip found
+        if (cur && cur.url) {
+            return cur.url;
+        }
+
+        return "Domain name not found";
+    }
+}
+
+let ip = ["107.108.11.123", "107.109.123.255", "74.125.200.106"]
+let domain = ["www.samsung.com", "www.samsung.net", "www.google.co.in"]
+
+let trie = new Trie()
+for(let idx = 0; idx<ip.length; idx++)
+    trie.insert(ip[idx], domain[idx])
+
+console.log(trie.search_domain("107.109.123.255"))
+console.log(trie.search_domain("107.109.123.245"))
+
+C#
+
+using System;
+
+using System.Collections.Generic;
+
+class TrieNode
+
+{
+
+    public TrieNode[] child;
+
+    public string url;
+
+    public bool is_end;
+
+    public TrieNode()
+
+    {
+
+        child = new TrieNode[11];
+
+        for (int i = 0; i < 11; i++)
+
+        {
+
+            child[i] = null;
+        }
+
+        url = "";
+
+        is_end = false;
+    }
+}
+
+class Trie
+
+{
+
+    public TrieNode root;
+
+    public Trie() { root = new TrieNode(); }
+
+    public int GetIndex(char c)
+
+    {
+
+        // For the . (dot) in IP address, we'll use the 10th
+        // index in child list
+
+        return c == '.' ? 10 : c - '0';
+    }
+
+    public void Insert(string ip, string domain)
+
+    {
+
+        TrieNode cur = root;
+
+        int n = ip.Length;
+
+        for (int level = 0; level < n; level++)
+
+        {
+
+            int idx = GetIndex(ip[level]);
+
+            if (cur.child[idx] == null)
+
+            {
+
+                // Create a new trie node if not available
+                // for a particular digit
+
+                // and assign to the respective index
+
+                cur.child[idx] = new TrieNode();
+            }
+
+            cur = cur.child[idx];
+        }
+
+        // At the end, we'll map the domain name and mark
+        // the end node
+
+        cur.url = domain;
+
+        cur.is_end = true;
+    }
+
+    // function for search domain
+
+    public string SearchDomain(string ip)
+
+    {
+
+        TrieNode cur = root;
+
+        int n = ip.Length;
+
+        // We'll use the digits of IP address to form the
+        // trie structure
+
+        for (int level = 0; level < n; level++)
+
+        {
+
+            int idx = GetIndex(ip[level]);
+
+            if (cur.child[idx] == null)
+
+            {
+
+                return "Domain name not found";
+            }
+
+            cur = cur.child[idx];
+        }
+
+        // Returns the url when all the digits in ip found
+
+        if (cur != null && !string.IsNullOrEmpty(cur.url))
+
+        {
+
+            return cur.url;
+        }
+
+        return "Domain name not found";
+    }
+}
+
+// driver code to test above functions
+
+class Program
+
+{
+
+    static void Main(string[] args)
+
+    {
+
+        string[] ip = { "107.108.11.123", "107.109.123.255",
+                        "74.125.200.106" };
+
+        string[] domain
+            = { "www.samsung.com", "www.samsung.net",
+                "www.google.co.in" };
+
+        Trie trie = new Trie();
+
+        for (int idx = 0; idx < ip.Length; idx++)
+
+            trie.Insert(ip[idx], domain[idx]);
+
+        // function call
+
+        Console.WriteLine(
+            trie.SearchDomain("107.109.123.255"));
+
+        Console.WriteLine(
+            trie.SearchDomain("107.109.123.245"));
+    }
+}
+
+Output:
+
+www.samsung.net
+Domain name not found

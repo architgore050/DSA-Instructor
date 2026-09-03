@@ -1,0 +1,682 @@
+Source: https://www.geeksforgeeks.org/dsa/random-acyclic-maze-generator-with-given-entry-and-exit-point/
+Title: Random Acyclic Maze Generator with given Entry and Exit point
+Extractor: 2
+
+Given two integers N and M , the task is to generate any N * M sized maze containing only 0 (representing a wall) and 1 (representing an empty space where one can move) with the entry point as P0 and exit point P1 and there is only one path between any two movable positions.
+
+Note: P0 and P1 will be marked as 2 and 3 respectively and one can move through the moveable positions in 4 directions (up, down, right and left).
+
+Examples:
+
+> Input: N = 5, M = 5, P0 = (0, 0), P1 = (4, 4) Output: maze = [ [ 2 1 1 1 1 ], [ 1 0 1 0 1 ], [ 1 0 1 0 0 ], [ 1 1 0 1 0 ], [ 0 1 1 1 3 ] ] Explanation: It is valid because there is no cycle, and there is no unreachable walkable position. Some other options could be [ [ 2 1 1 1 1 ], [ 1 0 1 0 1 ], [ 1 0 1 0 0 ], [ 1 1 1 1 0 ], [ 0 0 0 1 3 ] ] or [ [ 2 1 1 0 1 ], [ 1 0 1 0 1 ], [ 1 0 1 0 0 ], [ 1 0 1 1 0 ], [ 1 0 0 1 3 ] ]. But these are not valid because in the first one there is a cycle in the maze and in the second one (0, 4) and (1, 4) cannot be reached from the starting point.
+
+Approach: The problem can be solved based on the following idea:
+
+> Use a DFS which starts from the P0 position and moves to any of the neighbours but does not make a cycle and ends at P1. In this way, there will only be 1 path between any two movable positions.
+
+Follow the below steps to implement the idea:
+
+- Initialize a stack (S) for the iterative DFS , the matrix that will be returned as the random maze.
+- Insert the entry point P0 into the stack.
+- While S is not empty, repeat the following steps: Remove a position (say P ) from S and mark it as seen. If marking the position walkable, forms a cycle then don't include it as a moveable position. Otherwise, set the position as walkable. Insert the neighbours of P which are not visited in random order into the stack. Random insertion in the stack guarantees that the maze being generated is random. If any of the neighbours is the same as the P1 then insert it at the top so that we do not skip this position because of cycle formation.
+- Mark the initial position P0 (with 2) and final position P1 (with 3)
+- Return the maze.
+
+Below is the implementation for the above approach:
+
+Python3
+
+# Python3 code to implement the approach
+
+from random import randint
+
+# Class to define structure of a node
+class Node:
+    def __init__(self, value = None,
+               next_element = None):
+        self.val = value
+        self.next = next_element
+
+# Class to implement a stack
+class stack:
+
+    # Constructor
+    def __init__(self):
+        self.head = None
+        self.length = 0
+
+    # Put an item on the top of the stack
+    def insert(self, data):
+        self.head = Node(data, self.head)
+        self.length += 1
+
+    # Return the top position of the stack
+    def pop(self):
+        if self.length == 0:
+            return None
+        else:
+            returned = self.head.val
+            self.head = self.head.next
+            self.length -= 1
+            return returned
+
+    # Return False if the stack is empty
+    # and true otherwise
+    def not_empty(self):
+        return bool(self.length)
+
+    # Return the top position of the stack
+    def top(self):
+        return self.head.val
+
+# Function to generate the random maze
+def random_maze_generator(r, c, P0, Pf):
+    ROWS, COLS = r, c
+
+    # Array with only walls (where paths will
+    # be created)
+    maze = list(list(0 for _ in range(COLS))
+                       for _ in range(ROWS))
+
+    # Auxiliary matrices to avoid cycles
+    seen = list(list(False for _ in range(COLS))
+                           for _ in range(ROWS))
+    previous = list(list((-1, -1)
+     for _ in range(COLS)) for _ in range(ROWS))
+
+    S = stack()
+
+    # Insert initial position
+    S.insert(P0)
+
+    # Keep walking on the graph using dfs
+    # until we have no more paths to traverse
+    # (create)
+    while S.not_empty():
+
+        # Remove the position of the Stack
+        # and mark it as seen
+        x, y = S.pop()
+        seen[x][y] = True
+
+        # Check if it will create a cycle
+        # if the adjacent position is valid
+        # (is in the maze) and the position
+        # is not already marked as a path
+        # (was traversed during the dfs) and
+        # this position is not the one before it
+        # in the dfs path it means that
+        # the current position must not be marked.
+
+        # This is to avoid cycles with adj positions
+        if (x + 1 < ROWS) and maze[x + 1][y] == 1 \
+        and previous[x][y] != (x + 1,  y):
+            continue
+        if (0 < x) and maze[x-1][y] == 1 \
+        and previous[x][y] != (x-1,  y):
+            continue
+        if (y + 1 < COLS) and maze[x][y + 1] == 1 \
+        and previous[x][y] != (x, y + 1):
+            continue
+        if (y > 0) and maze[x][y-1] == 1 \
+        and previous[x][y] != (x, y-1):
+            continue
+
+        # Mark as walkable position
+        maze[x][y] = 1
+
+        # Array to shuffle neighbours before
+        # insertion
+        to_stack = []
+
+        # Before inserting any position,
+        # check if it is in the boundaries of
+        # the maze
+        # and if it were seen (to avoid cycles)
+
+        # If adj position is valid and was not seen yet
+        if (x + 1 < ROWS) and seen[x + 1][y] == False:
+
+            # Mark the adj position as seen
+            seen[x + 1][y] = True
+
+            # Memorize the position to insert the
+            # position in the stack
+            to_stack.append((x + 1,  y))
+
+            # Memorize the current position as its
+            # previous position on the path
+            previous[x + 1][y] = (x, y)
+
+        if (0 < x) and seen[x-1][y] == False:
+
+            # Mark the adj position as seen
+            seen[x-1][y] = True
+
+            # Memorize the position to insert the
+            # position in the stack
+            to_stack.append((x-1,  y))
+
+            # Memorize the current position as its
+            # previous position on the path
+            previous[x-1][y] = (x, y)
+
+        if (y + 1 < COLS) and seen[x][y + 1] == False:
+
+            # Mark the adj position as seen
+            seen[x][y + 1] = True
+
+            # Memorize the position to insert the
+            # position in the stack
+            to_stack.append((x, y + 1))
+
+            # Memorize the current position as its
+            # previous position on the path
+            previous[x][y + 1] = (x, y)
+
+        if (y > 0) and seen[x][y-1] == False:
+
+            # Mark the adj position as seen
+            seen[x][y-1] = True
+
+            # Memorize the position to insert the
+            # position in the stack
+            to_stack.append((x, y-1))
+
+            # Memorize the current position as its
+            # previous position on the path
+            previous[x][y-1] = (x, y)
+
+        # Indicates if Pf is a neighbour position
+        pf_flag = False
+        while len(to_stack):
+
+            # Remove random position
+            neighbour = to_stack.pop(randint(0, len(to_stack)-1))
+
+            # Is the final position,
+            # remember that by marking the flag
+            if neighbour == Pf:
+                pf_flag = True
+
+            # Put on the top of the stack
+            else:
+                S.insert(neighbour)
+
+        # This way, Pf will be on the top
+        if pf_flag:
+            S.insert(Pf)
+
+    # Mark the initial position
+    x0, y0 = P0
+    xf, yf = Pf
+    maze[x0][y0] = 2
+    maze[xf][yf] = 3
+
+    # Return maze formed by the traversed path
+    return maze
+
+# Driver code
+if __name__ == "__main__":
+    N = 5
+    M = 5
+    P0 = (0, 0)
+    P1 = (4, 4)
+    maze = random_maze_generator(N, M, P0, P1)
+    for line in maze:
+        print(line)
+
+JavaScript
+
+// JavaScript code to implement the approach
+
+// Class to define structure of a node
+class Node {
+    constructor(value = null, next_element = null) {
+        this.val = value;
+        this.next = next_element;
+    }
+}
+
+// Class to implement a stack
+class Stack {
+    // Constructor
+    constructor() {
+        this.head = null;
+        this.length = 0;
+    }
+
+    // Put an item on the top of the stack
+    insert(data) {
+        this.head = new Node(data, this.head);
+        this.length += 1;
+    }
+
+    // Return the top position of the stack
+    pop() {
+        if (this.length === 0) {
+            return null;
+        } else {
+            let returned = this.head.val;
+            this.head = this.head.next;
+            this.length -= 1;
+            return returned;
+        }
+    }
+
+    // Return False if the stack is empty
+    // and true otherwise
+    not_empty() {
+        return Boolean(this.length);
+    }
+
+    // Return the top position of the stack
+    top() {
+        return this.head.val;
+    }
+}
+
+// Function to generate the random maze
+function random_maze_generator(r, c, P0, Pf) {
+    const ROWS = r;
+    const COLS = c;
+    // Array with only walls (where paths will
+    // be created)
+    const maze = [...Array(ROWS)].map(() => Array(COLS).fill(0));
+
+    // Auxiliary matrices to avoid cycles
+    const seen = [...Array(ROWS)].map(() => Array(COLS).fill(false));
+    const previous = [...Array(ROWS)].map(() => Array(COLS).fill([-1, -1]));
+    const S = [];
+
+    // Insert initial position
+    S.push(P0);
+
+    // Keep walking on the graph using dfs
+    // until we have no more paths to traverse
+    // (create)
+    while (S.length > 0) {
+        // Remove the position of the Stack
+        // and mark it as seen
+        const [x, y] = S.pop();
+        seen[x][y] = true;
+
+        // Check if it will create a cycle
+        // if the adjacent position is valid
+        // (is in the maze) and the position
+        // is not already marked as a path
+        // (was traversed during the dfs) and
+        // this position is not the one before it
+        // in the dfs path it means that
+        // the current position must not be marked.
+
+        // This is to avoid cycles with adj positions
+        if (x + 1 < ROWS && maze[x + 1][y] === 1 && !isEqual(previous[x][y], [x + 1, y])) continue;
+        if (x > 0 && maze[x - 1][y] === 1 && !isEqual(previous[x][y], [x - 1, y])) continue;
+        if (y + 1 < COLS && maze[x][y + 1] === 1 && !isEqual(previous[x][y], [x, y + 1])) continue;
+        if (y > 0 && maze[x][y - 1] === 1 && !isEqual(previous[x][y], [x, y - 1])) continue;
+
+        // Mark as walkable position
+        maze[x][y] = 1;
+        // Array to shuffle neighbours before
+        // insertion
+        const to_stack = [];
+
+        // Before inserting any position,
+        // check if it is in the boundaries of
+        // the maze
+        // and if it were seen (to avoid cycles)
+
+        // If adj position is valid and was not seen yet
+        if (x + 1 < ROWS && !seen[x + 1][y]) {
+            // Mark the adj position as seen
+            seen[x + 1][y] = true;
+            // Memorize the position to insert the
+            // position in the stack
+            to_stack.push([x + 1, y]);
+            // Memorize the current position as its
+            // previous position on the path
+            previous[x + 1][y] = [x, y];
+        }
+
+        if (x > 0 && !seen[x - 1][y]) {
+            // Mark the adj position as seen
+            seen[x - 1][y] = true;
+
+            // Memorize the position to insert the
+            // position in the stack
+            to_stack.push([x - 1, y]);
+
+            // Memorize the current position as its
+            // previous position on the path
+            previous[x - 1][y] = [x, y];
+        }
+
+        if (y + 1 < COLS && !seen[x][y + 1]) {
+            // Mark the adj position as seen
+            seen[x][y + 1] = true;
+            // Memorize the position to insert the
+            // position in the stack
+            to_stack.push([x, y + 1]);
+            // Memorize the current position as its
+            // previous position on the path
+            previous[x][y + 1] = [x, y];
+        }
+
+        if (y > 0 && !seen[x][y - 1]) {
+            // Mark the adj position as seen
+            seen[x][y - 1] = true;
+            // Memorize the position to insert the
+            // position in the stack
+            to_stack.push([x, y - 1]);
+            // Memorize the current position as its
+            // previous position on the path
+            previous[x][y - 1] = [x, y];
+        }
+
+        // Indicates if Pf is a neighbour position
+        let pf_flag = false;
+
+        while (to_stack.length > 0) {
+            const index = Math.floor(Math.random() * to_stack.length);
+            const neighbour = to_stack.splice(index, 1)[0];
+
+            // Is the final position,
+            // remember that by marking the flag
+            if (isEqual(neighbour, Pf)) {
+                pf_flag = true;
+            } else {
+                // Put on the top of the stack
+
+                S.push(neighbour);
+            }
+        }
+
+        // This way, Pf will be on the top
+        if (pf_flag) {
+            S.push(Pf);
+        }
+    }
+
+    // Mark the initial position
+    const [x0, y0] = P0;
+    const [xf, yf] = Pf;
+    maze[x0][y0] = 2;
+    maze[xf][yf] = 3;
+
+    // Return maze formed by the traversed path
+    return maze;
+}
+
+// Helper function to compare two arrays for equality
+function isEqual(arr1, arr2) {
+    return arr1[0] === arr2[0] && arr1[1] === arr2[1];
+}
+
+// Driver code
+const N = 5;
+const M = 5;
+const P0 = [0, 0];
+const P1 = [4, 4];
+const maze = random_maze_generator(N, M, P0, P1);
+for (const line of maze) {
+    console.log(line);
+}
+
+// Contributed by adityasharmadev01
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+using namespace std;
+
+const int WALL = 0;
+const int EMPTY = 1;
+const int START = 2;
+const int END = 3;
+const int DX[] = {0, 0, 1, -1};
+const int DY[] = {1, -1, 0, 0};
+
+class MazeGenerator {
+private:
+    int n, m;
+    vector<vector<int>> maze;
+    mt19937 random;
+
+public:
+    MazeGenerator(int n, int m, vector<int>& start, vector<int>& end) {
+        this->n = n;
+        this->m = m;
+        this->maze = vector<vector<int>>(n, vector<int>(m, WALL));
+        this->random = mt19937(random_device()());
+
+        // Initialize maze with walls
+        for (int i = 0; i < n; i++) {
+            fill(maze[i].begin(), maze[i].end(), WALL);
+        }
+
+        // Set start and end points
+        maze[start[0]][start[1]] = START;
+        maze[end[0]][end[1]] = END;
+
+        // Generate maze
+        dfs(start[0], start[1]);
+
+        // Print maze (for debugging purposes)
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                cout << maze[i][j] << " ";
+            }
+            cout << endl;
+        }
+    }
+
+private:
+    void dfs(int x, int y) {
+        vector<int> directions = {0, 1, 2, 3};
+        shuffle(directions.begin(), directions.end(), random);
+
+        for (int d : directions) {
+            int nx = x + DX[d];
+            int ny = y + DY[d];
+
+            if (nx < 0 || nx >= n || ny < 0 || ny >= m || maze[nx][ny] != WALL) {
+                continue;
+            }
+
+            // Carve path
+            maze[x + DX[d] / 2][y + DY[d] / 2] = EMPTY;
+            maze[nx][ny] = EMPTY;
+
+            // Recursively visit next cell
+            dfs(nx, ny);
+        }
+    }
+};
+
+int main() {
+    int n = 5, m = 5;
+    vector<int> start = {0, 0}, end = {4, 4};
+    MazeGenerator maze(n, m, start, end);
+    return 0;
+}
+
+//This code is contributed by Akash Jha
+
+Java
+
+import java.util.*;
+
+public class MazeGenerator {
+    private static final int WALL = 0;
+    private static final int EMPTY = 1;
+    private static final int START = 2;
+    private static final int END = 3;
+    private static final int[] DX = {0, 0, 1, -1};
+    private static final int[] DY = {1, -1, 0, 0};
+    private final int n, m;
+    private final int[][] maze;
+    private final Random random;
+
+    public MazeGenerator(int n, int m, int[] start, int[] end) {
+        this.n = n;
+        this.m = m;
+        this.maze = new int[n][m];
+        this.random = new Random();
+
+        // Initialize maze with walls
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(maze[i], WALL);
+        }
+
+        // Set start and end points
+        maze[start[0]][start[1]] = START;
+        maze[end[0]][end[1]] = END;
+
+        // Generate maze
+        dfs(start[0], start[1]);
+
+        // Print maze (for debugging purposes)
+        for (int i = 0; i < n; i++) {
+            System.out.println(Arrays.toString(maze[i]));
+        }
+    }
+
+    private void dfs(int x, int y) {
+        List<Integer> directions = Arrays.asList(0, 1, 2, 3);
+        Collections.shuffle(directions, random);
+
+        for (int d : directions) {
+            int nx = x + DX[d];
+            int ny = y + DY[d];
+
+            if (nx < 0 || nx >= n || ny < 0 || ny >= m || maze[nx][ny] != WALL) {
+                continue;
+            }
+
+            // Carve path
+            maze[x + DX[d] / 2][y + DY[d] / 2] = EMPTY;
+            maze[nx][ny] = EMPTY;
+
+            // Recursively visit next cell
+            dfs(nx, ny);
+        }
+    }
+
+    public static void main(String[] args) {
+        int n = 5, m = 5;
+        int[] start = {0, 0}, end = {4, 4};
+        MazeGenerator maze = new MazeGenerator(n, m, start, end);
+    }
+}
+//This code is contributed by Akash Jha
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class MazeGenerator {
+    private const int WALL = 0;
+    private const int EMPTY = 1;
+    private const int START = 2;
+    private const int END = 3;
+    private readonly int n, m;
+    private readonly int[, ] maze;
+    private readonly Random random;
+
+    public MazeGenerator(int n, int m, int[] start,
+                         int[] end)
+    {
+        this.n = n;
+        this.m = m;
+        this.maze = new int[n, m];
+        this.random = new Random();
+
+        // Initialize maze with walls
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                maze[i, j] = WALL;
+            }
+        }
+
+        // Set start and end points
+        maze[start[0], start[1]] = START;
+        maze[end[0], end[1]] = END;
+
+        // Generate maze
+        dfs(start[0], start[1]);
+
+        // Print maze (for debugging purposes)
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                Console.Write(maze[i, j] + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+
+    private void dfs(int x, int y)
+    {
+        List<int> directions
+            = new List<int>() { 0, 1, 2, 3 };
+        directions.Sort((a, b) =
+                            > random.Next(2) == 0 ? -1 : 1);
+
+        foreach(int d in directions)
+        {
+            int nx = x + DX[d];
+            int ny = y + DY[d];
+
+            if (nx < 0 || nx >= n || ny < 0 || ny >= m
+                || maze[nx, ny] != WALL) {
+                continue;
+            }
+
+            // Carve path
+            maze[x + DX[d] / 2, y + DY[d] / 2] = EMPTY;
+            maze[nx, ny] = EMPTY;
+
+            // Recursively visit next cell
+            dfs(nx, ny);
+        }
+    }
+
+    private static readonly int[] DX = { 0, 0, 1, -1 };
+    private static readonly int[] DY = { 1, -1, 0, 0 };
+}
+
+class Program {
+    static void Main(string[] args)
+    {
+        int n = 5, m = 5;
+        int[] start = new int[] { 0, 0 },
+              end = new int[] { 4, 4 };
+        MazeGenerator maze
+            = new MazeGenerator(n, m, start, end);
+    }
+}
+
+//This code is contributed by Akash Jha
+
+Output
+
+[2, 0, 0, 1, 1]
+[1, 1, 1, 0, 1]
+[0, 0, 1, 1, 1]
+[1, 1, 0, 0, 1]
+[0, 1, 1, 1, 3]
+
+Time Complexity: O(N * M)
+
+- As the algorithm is basically a DFS with more conditions, the time complexity is the time complexity of the DFS: O(V+E) (where V is the number of vertices and E is the number of edges).
+- In this case, the number of vertices is the number of squares in the matrix: N * M. Each "vertex" (square) has at most 4 "edges" (4 adjacent squares) so E < 4*N*M. So O(V+E) will be O(5*N*M) i.e. O(N*M).
+
+Auxiliary Space: O(N * M)
+
+- Each auxiliary matrix needs O(N*M) of space.
+- The stack can't have more than N*M squares inside it, because it never holds (in this implementation) the same square more than one time.
+- The sum of all space mentioned will be O(N*M).

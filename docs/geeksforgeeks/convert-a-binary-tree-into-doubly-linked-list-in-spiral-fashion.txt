@@ -1,0 +1,580 @@
+Source: https://www.geeksforgeeks.org/dsa/convert-a-binary-tree-into-doubly-linked-list-in-spiral-fashion/
+Title: Convert a Binary Tree into Doubly Linked List in spiral fashion
+Extractor: 2
+
+Given a binary tree , convert it into a doubly linked list (DLL) where the nodes are arranged in a spiral order . The left pointer of the binary tree node should act as the previous node in the DLL, and the right pointer should act as the next node in the DLL.
+
+The solution should not allocate extra memory for the DLL nodes . It should use the existing binary tree nodes for creating the DLL , meaning only changes to the pointers are allowed.
+
+Example:
+
+> Input: Output: Explanation: The above binary tree is converted into doubly linked list where left pointer of the binary tree node act as the previous node and right pointer of the binary tree node act as the next node.
+
+Approach:
+
+> The idea is to use a deque (double-ended queue) that can be expanded or contracted from both ends (either from its front or its back ). We perform a level-order traversal, but to maintain spiral order , for every odd level , we dequeue a node from the front and insert its left and right children at the back of the deque. For each even level , we dequeue a node from the back and insert its right and left children at the front of the deque. We also maintain a stack to store the binary tree nodes. Whenever we pop nodes from the deque, we push that node into the stack. Later, we pop all the nodes from the stack and insert them at the beginning of the list.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ program to convert Binary Tree into Doubly
+// Linked List where the nodes are represented spirally
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int val) {
+        data = val;
+        left = right = nullptr;
+    }
+};
+
+// Function to insert node at the
+// front of DLL and return the new head
+Node* push(Node* head, Node* node) {
+    node->right = head;
+    node->left = nullptr;
+    if (head != nullptr) {
+        head->left = node;
+    }
+    return node;
+}
+
+// Function to perform spiral level-order traversal
+// and convert binary tree into DLL
+Node* spiralToDLL(Node* root) {
+    if (root == nullptr) return nullptr;
+
+    deque<Node*> dq;
+    dq.push_front(root);
+
+    stack<Node*> stk;
+    Node* head = nullptr;
+
+    bool leftToRight = true;
+
+    // Perform spiral level order traversal
+    while (!dq.empty()) {
+        int levelSize = dq.size();
+
+        while (levelSize--) {
+            if (leftToRight) {
+
+                // Left-to-right traversal: pop from front
+                Node* node = dq.front();
+                dq.pop_front();
+
+                // Push children for next level (left to right)
+                if (node->left) dq.push_back(node->left);
+                if (node->right) dq.push_back(node->right);
+
+                stk.push(node);
+            } else {
+
+                // Right-to-left traversal: pop from back
+                Node* node = dq.back();
+                dq.pop_back();
+
+                // Push children for next level (right to left)
+                if (node->right) dq.push_front(node->right);
+                if (node->left) dq.push_front(node->left);
+
+                stk.push(node);
+            }
+        }
+        leftToRight = !leftToRight;
+    }
+
+    // Pop nodes from stack and form the DLL
+    while (!stk.empty()) {
+        Node* node = stk.top();
+        stk.pop();
+
+        // Insert node at the front of DLL and update head
+        head = push(head, node);
+    }
+
+    // Return the head of the created DLL
+    return head;
+}
+
+void printList(Node* node) {
+    while (node != nullptr) {
+        cout << node->data << " ";
+        node = node->right;
+    }
+    cout << endl;
+}
+
+int main() {
+
+    // Example tree:
+    //          1
+    //        /   \
+    //       2     3
+    //      / \   / \
+    //     4   5 6   7
+    Node* root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+    root->right->left = new Node(6);
+    root->right->right = new Node(7);
+
+    Node* head = spiralToDLL(root);
+    printList(head);
+
+    return 0;
+}
+
+Java
+
+// Java program to convert Binary Tree into Doubly
+// Linked List where the nodes are represented spirally
+
+import java.util.*;
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int val) {
+        data = val;
+        left = right = null;
+    }
+}
+
+// Function to insert node at the
+// front of DLL and return the new head
+class GfG {
+
+    static Node push(Node head, Node node) {
+        node.right = head;
+        node.left = null;
+        if (head != null) {
+            head.left = node;
+        }
+        return node;
+    }
+
+    // Function to perform spiral level-order traversal
+    // and convert binary tree into DLL
+    static Node spiralToDLL(Node root) {
+        if (root == null) return null;
+
+        Deque<Node> dq = new ArrayDeque<>();
+        dq.addFirst(root);
+
+        Stack<Node> stk = new Stack<>();
+        Node head = null;
+
+        boolean leftToRight = true;
+
+        // Perform spiral level order traversal
+        while (!dq.isEmpty()) {
+            int levelSize = dq.size();
+
+            while (levelSize-- > 0) {
+                if (leftToRight) {
+
+                    // Left-to-right traversal: pop from front
+                    Node node = dq.pollFirst();
+
+                    // Push children for next level (left to right)
+                    if (node.left != null) dq.addLast(node.left);
+                    if (node.right != null) dq.addLast(node.right);
+
+                    stk.push(node);
+                } else {
+
+                    // Right-to-left traversal: pop from back
+                    Node node = dq.pollLast();
+
+                    // Push children for next level (right to left)
+                    if (node.right != null) dq.addFirst(node.right);
+                    if (node.left != null) dq.addFirst(node.left);
+
+                    stk.push(node);
+                }
+            }
+            leftToRight = !leftToRight;
+        }
+
+        // Pop nodes from stack and form the DLL
+        while (!stk.isEmpty()) {
+            Node node = stk.pop();
+
+            // Insert node at the front of DLL and update head
+            head = push(head, node);
+        }
+
+        // Return the head of the created DLL
+        return head;
+    }
+
+    static void printList(Node node) {
+        while (node != null) {
+            System.out.print(node.data + " ");
+            node = node.right;
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+
+        // Example tree:
+        //          1
+        //        /   \
+        //       2     3
+        //      / \   / \
+        //     4   5 6   7
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+
+        Node head = spiralToDLL(root);
+        printList(head);
+    }
+}
+
+Python
+
+# Python program to convert Binary Tree into Doubly
+# Linked List where the nodes are represented spirally
+from collections import deque
+
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.left = self.right = None
+
+# Function to insert node at the
+# front of DLL and return the new head
+def push(head, node):
+    node.right = head
+    node.left = None
+    if head:
+        head.left = node
+    return node
+
+# Function to perform spiral level-order traversal
+# and convert binary tree into DLL
+def spiralToDLL(root):
+    if not root:
+        return None
+
+    dq = deque([root])
+    stk = []
+    head = None
+    leftToRight = True
+
+    # Perform spiral level order traversal
+    while dq:
+        levelSize = len(dq)
+
+        for _ in range(levelSize):
+            if leftToRight:
+
+                # Left-to-right traversal: pop from front
+                node = dq.popleft()
+
+                # Push children for next level (left to right)
+                if node.left:
+                    dq.append(node.left)
+                if node.right:
+                    dq.append(node.right)
+
+                stk.append(node)
+            else:
+
+                # Right-to-left traversal: pop from back
+                node = dq.pop()
+
+                # Push children for next level (right to left)
+                if node.right:
+                    dq.appendleft(node.right)
+                if node.left:
+                    dq.appendleft(node.left)
+
+                stk.append(node)
+
+        leftToRight = not leftToRight
+
+    # Pop nodes from stack and form the DLL
+    while stk:
+        node = stk.pop()
+
+        # Insert node at the front of DLL and update head
+        head = push(head, node)
+
+    # Return the head of the created DLL
+    return head
+
+def printList(node):
+    while node:
+        print(node.data, end=" ")
+        node = node.right
+    print()
+
+if __name__ == "__main__":
+
+    # Example tree:
+    #          1
+    #        /   \
+    #       2     3
+    #      / \   / \
+    #     4   5 6   7
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+    root.right.left = Node(6)
+    root.right.right = Node(7)
+
+    head = spiralToDLL(root)
+    printList(head)
+
+C#
+
+// C# program to convert Binary Tree into Doubly
+// Linked List where the nodes are represented spirally
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int val) {
+        data = val;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // Function to insert node at the
+    // front of DLL and return the new head
+    static Node Push(Node head, Node node) {
+        node.right = head;
+        node.left = null;
+        if (head != null) {
+            head.left = node;
+        }
+        return node;
+    }
+
+    // Function to perform spiral level-order traversal
+    // and convert binary tree into DLL
+    static Node SpiralToDLL(Node root) {
+        if (root == null) return null;
+
+        LinkedList<Node> dq = new LinkedList<Node>();
+        dq.AddFirst(root);
+
+        Stack<Node> stk = new Stack<Node>();
+        Node head = null;
+
+        bool leftToRight = true;
+
+        // Perform spiral level order traversal
+        while (dq.Count > 0) {
+            int levelSize = dq.Count;
+
+            while (levelSize-- > 0) {
+                if (leftToRight) {
+
+                    // Left-to-right traversal: pop from front
+                    Node node = dq.First.Value;
+                    dq.RemoveFirst();
+
+                    // Push children for next level (left to right)
+                    if (node.left != null) dq.AddLast(node.left);
+                    if (node.right != null) dq.AddLast(node.right);
+
+                    stk.Push(node);
+                } else {
+
+                    // Right-to-left traversal: pop from back
+                    Node node = dq.Last.Value;
+                    dq.RemoveLast();
+
+                    // Push children for next level (right to left)
+                    if (node.right != null) dq.AddFirst(node.right);
+                    if (node.left != null) dq.AddFirst(node.left);
+
+                    stk.Push(node);
+                }
+            }
+            leftToRight = !leftToRight;
+        }
+
+        // Pop nodes from stack and form the DLL
+        while (stk.Count > 0) {
+            Node node = stk.Pop();
+
+            // Insert node at the front of DLL and update head
+            head = Push(head, node);
+        }
+
+        // Return the head of the created DLL
+        return head;
+    }
+
+    static void PrintList(Node node) {
+        while (node != null) {
+            Console.Write(node.data + " ");
+            node = node.right;
+        }
+        Console.WriteLine();
+    }
+
+    static void Main(string[] args) {
+
+        // Example tree:
+        //          1
+        //        /   \
+        //       2     3
+        //      / \   / \
+        //     4   5 6   7
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+
+        Node head = SpiralToDLL(root);
+        PrintList(head);
+    }
+}
+
+JavaScript
+
+// JavaScript program to convert Binary Tree into Doubly
+// Linked List where the nodes are represented spirally
+
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.left = this.right = null;
+    }
+}
+
+// Function to insert node at the
+// front of DLL and return the new head
+function push(head, node) {
+    node.right = head;
+    node.left = null;
+    if (head !== null) {
+        head.left = node;
+    }
+    return node;
+}
+
+// Function to perform spiral level-order traversal
+// and convert binary tree into DLL
+function spiralToDLL(root) {
+    if (root === null) return null;
+
+    let dq = [];
+    dq.push(root);
+
+    let stk = [];
+    let head = null;
+    let leftToRight = true;
+
+    // Perform spiral level order traversal
+    while (dq.length > 0) {
+        let levelSize = dq.length;
+
+        while (levelSize--) {
+            if (leftToRight) {
+
+                // Left-to-right traversal: pop from front
+                let node = dq.shift();
+
+                // Push children for next level (left to right)
+                if (node.left !== null) dq.push(node.left);
+                if (node.right !== null) dq.push(node.right);
+
+                stk.push(node);
+            } else {
+
+                // Right-to-left traversal: pop from back
+                let node = dq.pop();
+
+                // Push children for next level (right to left)
+                if (node.right !== null) dq.unshift(node.right);
+                if (node.left !== null) dq.unshift(node.left);
+
+                stk.push(node);
+            }
+        }
+        leftToRight = !leftToRight;
+    }
+
+    // Pop nodes from stack and form the DLL
+    while (stk.length > 0) {
+        let node = stk.pop();
+
+        // Insert node at the front of DLL and update head
+        head = push(head, node);
+    }
+
+    // Return the head of the created DLL
+    return head;
+}
+
+function printList(node) {
+    while (node !== null) {
+        console.log(node.data);
+        node = node.right;
+    }
+}
+
+// Example tree:
+//          1
+//        /   \
+//       2     3
+//      / \   / \
+//     4   5 6   7
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+root.right.left = new Node(6);
+root.right.right = new Node(7);
+
+let head = spiralToDLL(root);
+printList(head);
+
+Output
+
+1 3 2 4 5 6 7
+
+Time Complexity: O(n), as we are using a loop to traverse n times. Auxiliary Space: O(n), as we are using extra space for dequeue and stack.
+
+Related articles:
+
+- Convert a given Binary Tree to a Doubly Linked List | Set 1
+- Convert a given Binary Tree to a Doubly Linked List | Set 2
+- Convert a given Binary Tree to a Doubly Linked List | Set 3
+- Convert a given Binary Tree to a Doubly Linked List | Set 4
+- Convert a given Binary Tree to a Doubly Linked List | Set 5

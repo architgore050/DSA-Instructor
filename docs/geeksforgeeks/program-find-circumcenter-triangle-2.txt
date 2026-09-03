@@ -1,0 +1,567 @@
+Source: https://www.geeksforgeeks.org/dsa/program-find-circumcenter-triangle-2/
+Title: Program to find Circumcenter of a Triangle
+Extractor: 2
+
+Given 3 non-collinear points in the 2D Plane P, Q and R with their respective x and y coordinates, find the circumcenter of the triangle. Note: Circumcenter of a triangle is the centre of the circle, formed by the three vertices of a triangle. Note that three points can uniquely determine a circle. Examples:
+
+Input : P(6, 0)
+        Q(0, 0)
+        R(0, 8)
+Output : The circumcenter of the triangle PQR
+         is: (3, 4)
+
+Input : P(1, 1)
+        Q(0, 0)
+        R(2, 2)
+Output : The two perpendicular bisectors found
+         come parallel. Thus, the given points
+         do not form a triangle and are collinear
+
+Given, three points of the triangle, we can easily find the sides of the triangle. Now, we have the equations of the lines for the three sides of the triangle. After getting these, we can find the circumcenter of the triangle by a simple property stated as under:
+
+> The circumcenter of the triangle is point where all the perpendicular bisectors of the sides of the triangle intersect.
+
+This is well explained in the following diagram.
+
+Note here that, there is no need to find all of the three sides of the triangle. Finding two sides is sufficient as we can uniquely find the point of intersection using just two perpendicular bisectors. The third perpendicular bisector will itself pass through the so found circumcenter. The things to be done can be divided as under:
+
+1. Find 2 lines (say PQ and QR) which form the sides of the triangle.
+2. Find the perpendicular bisectors of PQ and QR (say lines L and M respectively).
+3. Find the point of intersection of lines L and M as the circumcenter of the given triangle.
+
+STEP 1 Refer this post Program to find line passing through 2 Points STEP 2 Let PQ be represented as ax + by = c A line perpendicular to this line is represented as -bx + ay = d for some d. However, we are interested in the perpendicular bisector. So, we find the mid-point of P and Q and putting this value in the standard equation, we get the value of d. Similarly, we repeat the process for QR.
+
+d = -bx + ay
+where, x = (xp + xq)/2
+AND y = (yp + yq)/2
+
+STEP 3 Refer this post Program for Point of Intersection of Two Lines
+
+CPP
+
+// C++ program to find the CIRCUMCENTER of a
+// triangle
+#include <iostream>
+#include <cfloat>
+using namespace std;
+
+// This pair is used to store the X and Y
+// coordinate of a point respectively
+#define pdd pair<double, double>
+
+// Function to find the line given two points
+void lineFromPoints(pdd P, pdd Q, double &a,
+                        double &b, double &c)
+{
+    a = Q.second - P.second;
+    b = P.first - Q.first;
+    c = a*(P.first)+ b*(P.second);
+}
+
+// Function which converts the input line to its
+// perpendicular bisector. It also inputs the points
+// whose mid-point lies on the bisector
+void perpendicularBisectorFromLine(pdd P, pdd Q,
+                 double &a, double &b, double &c)
+{
+    pdd mid_point = make_pair((P.first + Q.first)/2,
+                            (P.second + Q.second)/2);
+
+    // c = -bx + ay
+    c = -b*(mid_point.first) + a*(mid_point.second);
+
+    double temp = a;
+    a = -b;
+    b = temp;
+}
+
+// Returns the intersection point of two lines
+pdd lineLineIntersection(double a1, double b1, double c1,
+                         double a2, double b2, double c2)
+{
+    double determinant = a1*b2 - a2*b1;
+    if (determinant == 0)
+    {
+        // The lines are parallel. This is simplified
+        // by returning a pair of FLT_MAX
+        return make_pair(FLT_MAX, FLT_MAX);
+    }
+
+    else
+    {
+        double x = (b2*c1 - b1*c2)/determinant;
+        double y = (a1*c2 - a2*c1)/determinant;
+        return make_pair(x, y);
+    }
+}
+
+void findCircumCenter(pdd P, pdd Q, pdd R)
+{
+    // Line PQ is represented as ax + by = c
+    double a, b, c;
+    lineFromPoints(P, Q, a, b, c);
+
+    // Line QR is represented as ex + fy = g
+    double e, f, g;
+    lineFromPoints(Q, R, e, f, g);
+
+    // Converting lines PQ and QR to perpendicular
+    // vbisectors. After this, L = ax + by = c
+    // M = ex + fy = g
+    perpendicularBisectorFromLine(P, Q, a, b, c);
+    perpendicularBisectorFromLine(Q, R, e, f, g);
+
+    // The point of intersection of L and M gives
+    // the circumcenter
+    pdd circumcenter =
+           lineLineIntersection(a, b, c, e, f, g);
+
+    if (circumcenter.first == FLT_MAX &&
+        circumcenter.second == FLT_MAX)
+    {
+        cout << "The two perpendicular bisectors "
+                "found come parallel" << endl;
+        cout << "Thus, the given points do not form "
+                "a triangle and are collinear" << endl;
+    }
+
+    else
+    {
+        cout << "The circumcenter of the triangle PQR is: ";
+        cout << "(" << circumcenter.first << ", "
+             << circumcenter.second  << ")" << endl;
+    }
+}
+
+// Driver code.
+int main()
+{
+    pdd P = make_pair(6, 0);
+    pdd Q = make_pair(0, 0);
+    pdd R = make_pair(0, 8);
+    findCircumCenter(P, Q, R);
+    return 0;
+}
+
+Java
+
+// Java program to find the CIRCUMCENTER of a triangle
+import java.io.*;
+
+import java.util.ArrayList;
+
+public class GFG {
+
+    // Function to find the line given two points
+    public static void lineFromPoints(ArrayList<Integer> P, ArrayList<Integer> Q,
+                                      int[] a_b_c) {
+        a_b_c[0] = Q.get(1) - P.get(1);
+        a_b_c[1] = P.get(0) - Q.get(0);
+        a_b_c[2] = a_b_c[0] * (P.get(0)) + a_b_c[1] * (P.get(1));
+    }
+
+    // Function which converts the input line to its
+    // perpendicular bisector. It also inputs the points
+    // whose mid-point lies on the bisector
+    public static void perpendicularBisectorFromLine(
+            ArrayList<Integer> P, ArrayList<Integer> Q, int[] a_b_c) {
+        ArrayList<Integer> mid_point = new ArrayList<Integer>();
+        mid_point.add((P.get(0) + Q.get(0)) / 2);
+        mid_point.add((P.get(1) + Q.get(1)) / 2);
+
+        // c = -bx + ay
+        a_b_c[2] = -a_b_c[1] * (mid_point.get(0)) + a_b_c[0] * (mid_point.get(1));
+
+        int temp = a_b_c[0];
+        a_b_c[0] = -a_b_c[1];
+        a_b_c[1] = temp;
+    }
+
+    // Returns the intersection point of two lines
+    public static ArrayList<Integer> lineLineIntersection(int a1, int b1, int c1,
+                                                          int a2, int b2, int c2) {
+        ArrayList<Integer> ans = new ArrayList<Integer>();
+        int determinant = a1 * b2 - a2 * b1;
+        if (determinant == 0) {
+            // The lines are parallel. This is simplified
+            // by returning a pair of FLT_MAX
+            ans.add(Integer.MAX_VALUE);
+            ans.add(Integer.MAX_VALUE);
+        } else {
+            int x = (b2 * c1 - b1 * c2) / determinant;
+            int y = (a1 * c2 - a2 * c1) / determinant;
+            ans.add(x);
+            ans.add(y);
+        }
+        return ans;
+    }
+
+    public static void findCircumCenter(ArrayList<Integer> P,
+                                        ArrayList<Integer> Q,
+                                        ArrayList<Integer> R) {
+        // Line PQ is represented as ax + by = c
+        int[] a_b_c = {0, 0, 0};
+        lineFromPoints(P, Q, a_b_c);
+
+        // Line QR is represented as ex + fy = g
+
+        int[] e_f_g = {0, 0, 0};
+        lineFromPoints(Q, R, e_f_g);
+
+        // Converting lines PQ and QR to perpendicular
+        // bisectors. After this, L = ax + by = c
+        // M = ex + fy = g
+        perpendicularBisectorFromLine(P, Q, a_b_c);
+        perpendicularBisectorFromLine(Q, R, e_f_g);
+
+        // The point of intersection of L and M gives
+        // the circumcenter
+        ArrayList<Integer> circumcenter = lineLineIntersection(a_b_c[0], a_b_c[1], a_b_c[2], e_f_g[0], e_f_g[1], e_f_g[2]);
+
+        if (circumcenter.get(0) == Integer.MAX_VALUE
+                && circumcenter.get(1) == Integer.MAX_VALUE) {
+            System.out.println("The two perpendicular bisectors "
+                    + "found come parallel");
+        } else {
+            System.out.println("The circumcenter of the triangle PQR is: (" + circumcenter.get(0) + ", " + circumcenter.get(1) + ") ");
+        }
+    }
+
+    public static void main(String[] args) {
+        ArrayList<Integer> P = new ArrayList<Integer>();
+        P.add(6);
+        P.add(0);
+        ArrayList<Integer> Q = new ArrayList<Integer>();
+        Q.add(0);
+        Q.add(0);
+        ArrayList<Integer> R = new ArrayList<Integer>();
+        R.add(0);
+        R.add(8);
+        findCircumCenter(P, Q, R);
+    }
+}
+// this code is contributed by devendrasalunke
+
+Python3
+
+# Python3 program to find the CIRCUMCENTER of a
+# triangle
+
+# This pair is used to store the X and Y
+# coordinate of a point respectively
+# define pair<double, double>
+
+# Function to find the line given two points
+def lineFromPoints(P, Q, a, b, c):
+    a = Q[1] - P[1]
+    b = P[0] - Q[0]
+    c = a * (P[0]) + b * (P[1])
+    return a, b, c
+
+# Function which converts the input line to its
+# perpendicular bisector. It also inputs the points
+# whose mid-point lies on the bisector
+def perpendicularBisectorFromLine(P, Q, a, b, c):
+    mid_point = [(P[0] + Q[0])//2, (P[1] + Q[1])//2]
+
+    # c = -bx + ay
+    c = -b * (mid_point[0]) + a * (mid_point[1])
+    temp = a
+    a = -b
+    b = temp
+    return a, b, c
+
+# Returns the intersection point of two lines
+def lineLineIntersection(a1, b1, c1, a2, b2, c2):
+    determinant = a1 * b2 - a2 * b1
+    if (determinant == 0):
+
+        # The lines are parallel. This is simplified
+        # by returning a pair of (10.0)**19
+        return [(10.0)**19, (10.0)**19]
+    else:
+        x = (b2 * c1 - b1 * c2)//determinant
+        y = (a1 * c2 - a2 * c1)//determinant
+        return [x, y]
+
+def findCircumCenter(P, Q, R):
+
+    # Line PQ is represented as ax + by = c
+    a, b, c = 0.0, 0.0, 0.0
+    a, b, c = lineFromPoints(P, Q, a, b, c)
+
+    # Line QR is represented as ex + fy = g
+    e, f, g = 0.0, 0.0, 0.0
+    e, f, g = lineFromPoints(Q, R, e, f, g)
+
+    # Converting lines PQ and QR to perpendicular
+    # vbisectors. After this, L = ax + by = c
+    # M = ex + fy = g
+    a, b, c = perpendicularBisectorFromLine(P, Q, a, b, c)
+    e, f, g = perpendicularBisectorFromLine(Q, R, e, f, g)
+
+    # The point of intersection of L and M gives
+    # the circumcenter
+    circumcenter = lineLineIntersection(a, b, c, e, f, g)
+
+    if (circumcenter[0] == (10.0)**19 and circumcenter[1] == (10.0)**19):
+        print("The two perpendicular bisectors found come parallel")
+        print("Thus, the given points do not form a triangle and are collinear")
+    else:
+        print("The circumcenter of the triangle PQR is: ", end="")
+        print("(", circumcenter[0], ",", circumcenter[1], ")")
+
+# Driver code.
+if __name__ == '__main__':
+    P = [6, 0]
+    Q = [0, 0]
+    R = [0, 8]
+    findCircumCenter(P, Q, R)
+
+    # This code is contributed by mohit kumar 29
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public static class GFG {
+    // C# program to find the CIRCUMCENTER of a
+    // triangle
+
+    // This pair is used to store the X and Y
+    // coordinate of a point respectively
+
+    // Function to find the line given two points
+    public static void
+    lineFromPoints(List<double> P, List<double> Q,
+                   ref double a, ref double b, ref double c)
+    {
+        a = Q[1] - P[1];
+        b = P[0] - Q[0];
+        c = a * (P[0]) + b * (P[1]);
+    }
+
+    // Function which converts the input line to its
+    // perpendicular bisector. It also inputs the points
+    // whose mid-point lies on the bisector
+    public static void perpendicularBisectorFromLine(
+        List<double> P, List<double> Q, ref double a,
+        ref double b, ref double c)
+    {
+        List<double> mid_point = new List<double>();
+        mid_point.Add((P[0] + Q[0]) / 2);
+
+        mid_point.Add((P[1] + Q[1]) / 2);
+
+        // c = -bx + ay
+        c = -b * (mid_point[0]) + a * (mid_point[1]);
+
+        double temp = a;
+        a = -b;
+        b = temp;
+    }
+
+    // Returns the intersection point of two lines
+    public static List<double>
+    lineLineIntersection(double a1, double b1, double c1,
+                         double a2, double b2, double c2)
+    {
+        List<double> ans = new List<double>();
+        double determinant = a1 * b2 - a2 * b1;
+        if (determinant == 0) {
+            // The lines are parallel. This is simplified
+            // by returning a pair of FLT_MAX
+            ans.Add(double.MaxValue);
+            ans.Add(double.MaxValue);
+        }
+
+        else {
+            double x = (b2 * c1 - b1 * c2) / determinant;
+            double y = (a1 * c2 - a2 * c1) / determinant;
+            ans.Add(x);
+            ans.Add(y);
+        }
+        return ans;
+    }
+
+    public static void findCircumCenter(List<double> P,
+                                        List<double> Q,
+                                        List<double> R)
+    {
+        // Line PQ is represented as ax + by = c
+        double a = 0;
+        double b = 0;
+        double c = 0;
+        lineFromPoints(P, Q, ref a, ref b, ref c);
+
+        // Line QR is represented as ex + fy = g
+        double e = 0;
+        double f = 0;
+        double g = 0;
+        lineFromPoints(Q, R, ref e, ref f, ref g);
+
+        // Converting lines PQ and QR to perpendicular
+        // vbisectors. After this, L = ax + by = c
+        // M = ex + fy = g
+        perpendicularBisectorFromLine(P, Q, ref a, ref b,
+                                      ref c);
+        perpendicularBisectorFromLine(Q, R, ref e, ref f,
+                                      ref g);
+
+        // The point of intersection of L and M gives
+        // the circumcenter
+        List<double> circumcenter
+            = lineLineIntersection(a, b, c, e, f, g);
+
+        if (circumcenter[0] == float.MaxValue
+            && circumcenter[1] == float.MaxValue) {
+            Console.Write("The two perpendicular bisectors "
+                          + "found come parallel");
+            Console.Write("\n");
+            Console.Write(
+                "Thus, the given points do not form "
+                + "a triangle and are collinear");
+            Console.Write("\n");
+        }
+
+        else {
+            Console.Write(
+                "The circumcenter of the triangle PQR is: ");
+            Console.Write("(");
+            Console.Write(circumcenter[0]);
+            Console.Write(", ");
+            Console.Write(circumcenter[1]);
+            Console.Write(")");
+            Console.Write("\n");
+        }
+    }
+
+    // Driver code.
+    public static void Main()
+    {
+
+        List<double> P = new List<double>();
+        P.Add(6);
+        P.Add(0);
+        List<double> Q = new List<double>();
+        Q.Add(0);
+        Q.Add(0);
+        List<double> R = new List<double>();
+        R.Add(0);
+        R.Add(8);
+
+        findCircumCenter(P, Q, R);
+    }
+}
+
+// The code is contributed by Aarti_Rathi
+
+JavaScript
+
+// JavaScript program to find the CIRCUMCENTER of a
+// triangle
+
+// This pair is used to store the X and Y
+// coordinate of a point respectively
+// #define pdd pair<double, double>
+
+// Function to find the line given two points
+function lineFromPoints(P, Q)
+{
+    let a = Q[1] - P[1];
+    let b = P[0] - Q[0];
+    let c = a*(P[0])+ b*(P[1]);
+    return [a, b, c];
+}
+
+// Function which converts the input line to its
+// perpendicular bisector. It also inputs the points
+// whose mid-point lies on the bisector
+function perpendicularBisectorFromLine(P, Q, a, b, c)
+{
+    let mid_point = [(P[0] + Q[0])/2, (P[1] + Q[1])/2];
+
+    // c = -bx + ay
+    c = -b*(mid_point[0]) + a*(mid_point[1]);
+
+    let temp = a;
+    a = -b;
+    b = temp;
+    return [a, b, c];
+}
+
+// Returns the intersection point of two lines
+function lineLineIntersection(a1, b1, c1, a2, b2, c2)
+{
+    let determinant = a1*b2 - a2*b1;
+    if (determinant == 0)
+    {
+        // The lines are parallel. This is simplified
+        // by returning a pair of FLT_MAX
+        return  [(10.0)**19, (10.0)**19];
+    }
+
+    else
+    {
+        let x = (b2*c1 - b1*c2)/determinant;
+        let y = (a1*c2 - a2*c1)/determinant;
+        return [x, y];
+    }
+}
+
+function findCircumCenter(P, Q, R)
+{
+    // Line PQ is represented as ax + by = c
+    let PQ_line = lineFromPoints(P, Q);
+    let a = PQ_line[0];
+    let b = PQ_line[1];
+    let c = PQ_line[2];
+
+    // Line QR is represented as ex + fy = g
+    let QR_line = lineFromPoints(Q, R);
+    let e = QR_line[0];
+    let f = QR_line[1];
+    let g = QR_line[2];
+
+    // Converting lines PQ and QR to perpendicular
+    // vbisectors. After this, L = ax + by = c
+    // M = ex + fy = g
+    let PQ_perpendicular = perpendicularBisectorFromLine(P, Q, a, b, c);
+    a = PQ_perpendicular[0];
+    b = PQ_perpendicular[1];
+    c = PQ_perpendicular[2];
+
+    let QR_perpendicular = perpendicularBisectorFromLine(Q, R, e, f, g);
+    e = QR_perpendicular[0];
+    f = QR_perpendicular[1];
+    g = QR_perpendicular[2];
+
+    // The point of intersection of L and M gives
+    // the circumcenter
+    let circumcenter = lineLineIntersection(a, b, c, e, f, g);
+
+    if (circumcenter[0] == (10.0)**19 && circumcenter[1] == (10.0)**19){
+        console.log("The two perpendicular bisectors found come parallel" )
+        console.log("Thus, the given points do not form a triangle and are collinear");
+    }
+    else{
+        console.log("The circumcenter of the triangle PQR is: (", circumcenter[0], ",", circumcenter[1], ")");
+    }
+}
+
+// Driver code.
+let P = [6, 0];
+let Q = [0, 0];
+let R = [0, 8];
+findCircumCenter(P, Q, R);
+
+// The code is contributed by Gautam goel (gautamgoel962)
+
+Output:
+
+The circumcenter of the triangle PQR is: (3, 4)
+
+Time complexity : O(1) since performing constant operations
+
+Auxiliary Space: O(1)

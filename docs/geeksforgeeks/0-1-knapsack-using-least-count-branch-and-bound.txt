@@ -1,0 +1,1204 @@
+Source: https://www.geeksforgeeks.org/dsa/0-1-knapsack-using-least-count-branch-and-bound/
+Title: 0/1 Knapsack using Least Cost Branch and Bound
+Extractor: 2
+
+Given N items with weights W[0..n-1] , values V[0..n-1] and a knapsack with capacity C , select the items such that:
+
+1. The sum of weights taken into the knapsack is less than or equal to C.
+2. The sum of values of the items in the knapsack is maximum among all the possible combinations.
+
+Examples:
+
+> Input: N = 4, C = 15, V[]= {10, 10, 12, 18}, W[]= {2, 4, 6, 9} Output: Items taken into the knapsack are 1 1 0 1 Maximum profit is 38 Explanation: 1 in the output indicates that the item is included in the knapsack while 0 indicates that the item is excluded. Since the maximum possible cost allowed is 15, the ways to select items are: (1 1 0 1) -> Cost = 2 + 4 + 9 = 15, Profit = 10 + 10 + 18 = 38. (0 0 1 1) -> Cost = 6 + 9 = 15, Profit = 12 + 18 = 30 (1 1 1 0) -> Cost = 2 + 4 + 6 = 12, Profit = 32 Hence, maximum profit possible within a cost of 15 is 38. Input: N = 4, C = 21, V[]= {18, 20, 14, 18}, W[]= {6, 3, 5, 9} Output: Items taken into the knapsack are 1 1 0 1 Maximum profit is 56 Explanation: Cost = 6 + 3 + 9 = 18 Profit = 18 + 20 + 18 = 56
+
+Approach: In this post, the implementation of Branch and Bound method using Least cost(LC) for 0/1 Knapsack Problem is discussed. Branch and Bound can be solved using FIFO , LIFO and LC strategies. The least cost(LC) is considered the most intelligent as it selects the next node based on a Heuristic Cost Function . It picks the one with the least cost. As 0/1 Knapsack is about maximizing the total value, we cannot directly use the LC Branch and Bound technique to solve this. Instead, we convert this into a minimization problem by taking negative of the given values. Follow the steps below to solve the problem:
+
+1. Sort the items based on their value/weight(V/W) ratio.
+2. Insert a dummy node into the priority queue .
+3. Repeat the following steps until the priority queue is empty: Extract the peek element from the priority queue and assign it to the current node . If the upper bound of the current node is less than minLB , the minimum lower bound of all the nodes explored, then there is no point of exploration. So, continue with the next element. The reason for not considering the nodes whose upper bound is greater than minLB is that, the upper bound stores the best value that might be achieved. If the best value itself is not optimal than minLB , then exploring that path is of no use. Update the path array . If the current node’s level is N , then check whether the lower bound of the current node is less than finalLB , minimum lower bound of all the paths that reached the final level. If it is true, update the finalPath and finalLB . Otherwise, continue with the next element. Calculate the lower and upper bounds of the right child of the current node. If the current item can be inserted into the knapsack, then calculate the lower and upper bound of the left child of the current node. Update the minLB and insert the children if their upper bound is less than minLB .
+
+> Illustration: N = 4, C = 15, V[]= {10 10 12 18}, W[]= {2 4 6 9} Left branch and right branch at i th level stores the maximum obtained including and excluding the i th element. Below image shows the state of the priority queue after every step:
+
+Below is the implementation of the above approach:
+
+C++
+
+#include <iostream>
+#include <algorithm>
+#include <queue>
+
+using namespace std;
+
+// Class to represent an item
+class Item {
+public:
+    float weight;
+    int value;
+    int idx;
+
+    // Constructor to initialize an item
+    Item(int value, float weight, int idx) : value(value), weight(weight), idx(idx) {}
+};
+
+// Class to represent a node in the branch and bound algorithm
+class Node {
+public:
+    float ub;    // Upper bound
+    float lb;    // Lower bound
+    int level;   // Level in the decision tree
+    bool flag;   // Flag to indicate if the item is selected or not
+    float tv;    // Total value of selected items
+    float tw;    // Total weight of selected items
+
+    // Default constructor
+    Node() {}
+
+    // Copy constructor
+    Node(const Node& cpy) : tv(cpy.tv), tw(cpy.tw), ub(cpy.ub), lb(cpy.lb), level(cpy.level), flag(cpy.flag) {}
+};
+
+// Comparator to sort nodes based on lower bound
+class sortByC {
+public:
+    bool operator()(const Node& a, const Node& b) const {
+        return a.lb > b.lb;
+    }
+};
+
+// Comparator to sort items based on value/weight ratio
+class sortByRatio {
+public:
+    bool operator()(const Item& a, const Item& b) const {
+        return static_cast<float>(a.value) / a.weight > static_cast<float>(b.value) / b.weight;
+    }
+};
+
+// Function to assign values to a node
+void assign(Node& a, float ub, float lb, int level, bool flag, float tv, float tw) {
+    a.ub = ub;
+    a.lb = lb;
+    a.level = level;
+    a.flag = flag;
+    a.tv = tv;
+    a.tw = tw;
+}
+
+// Function to calculate the upper bound (best case) considering fractional knapsack
+float upperBound(float tv, float tw, int idx, Item arr[], int size, float capacity) {
+    float value = tv;
+    float weight = tw;
+
+    // Iterate over the remaining items and add them to the knapsack if possible
+    for (int i = idx; i < size; i++) {
+        if (weight + arr[i].weight <= capacity) {
+            weight += arr[i].weight;
+            value -= arr[i].value;
+        } else {
+            // If the remaining capacity is not enough for the entire item, add a fraction of it
+            value -= static_cast<float>(capacity - weight) / arr[i].weight * arr[i].value;
+            break;
+        }
+    }
+    return value;
+}
+
+// Function to calculate the lower bound (worst case) without considering fractional part of items
+float lowerBound(float tv, float tw, int idx, Item arr[], int size, float capacity) {
+    float value = tv;
+    float weight = tw;
+
+    // Iterate over the remaining items and add them to the knapsack if possible
+    for (int i = idx; i < size; i++) {
+        if (weight + arr[i].weight <= capacity) {
+            weight += arr[i].weight;
+            value -= arr[i].value;
+        } else {
+            break;
+        }
+    }
+    return value;
+}
+
+// Function to solve the 0/1 knapsack problem using branch and bound
+void solve(Item arr[], int size, float capacity) {
+    // Sort the items based on the value/weight ratio
+    sort(arr, arr + size, sortByRatio());
+
+    // Initialize nodes
+    Node current, left, right;
+    current.tv = current.tw = current.ub = current.lb = 0;
+    current.level = 0;
+    current.flag = false;
+
+    float minLB = 0, finalLB = numeric_limits<float>::max();
+    current.tv = current.tw = current.ub = current.lb = 0;
+    current.level = 0;
+    current.flag = false;
+
+    // Priority queue to store nodes based on lower bounds
+    priority_queue<Node, vector<Node>, sortByC> pq;
+    pq.push(current);
+
+    // Arrays to store the current and final selection of items
+    bool currPath[size];
+    bool finalPath[size];
+
+    // Explore nodes in the priority queue
+    while (!pq.empty()) {
+        current = pq.top();
+        pq.pop();
+
+        // Prune if the upper bound is greater than the minimum lower bound
+        if (current.ub > minLB || current.ub >= finalLB) {
+            continue;
+        }
+
+        // Store the selection if it reaches the final level
+        if (current.level != 0)
+            currPath[current.level - 1] = current.flag;
+
+        // Check if it's the last level and update the final selection if the lower bound is better
+        if (current.level == size) {
+            if (current.lb < finalLB) {
+                for (int i = 0; i < size; i++)
+                    finalPath[arr[i].idx] = currPath[i];
+                finalLB = current.lb;
+            }
+            continue;
+        }
+
+        int level = current.level;
+
+        // Explore the right node (exclude current item)
+        assign(right, upperBound(current.tv, current.tw, level + 1, arr, size, capacity),
+               lowerBound(current.tv, current.tw, level + 1, arr, size, capacity),
+               level + 1, false, current.tv, current.tw);
+
+        // Explore the left node (include current item)
+        if (current.tw + arr[current.level].weight <= capacity) {
+            left.ub = upperBound(current.tv - arr[level].value, current.tw + arr[level].weight, level + 1, arr, size, capacity);
+            left.lb = lowerBound(current.tv - arr[level].value, current.tw + arr[level].weight, level + 1, arr, size, capacity);
+            assign(left, left.ub, left.lb, level + 1, true, current.tv - arr[level].value, current.tw + arr[level].weight);
+        } else {
+            // If the left node cannot be inserted, stop it from getting added to the priority queue
+            left.ub = left.lb = 1;
+        }
+
+        // Update minLB
+        minLB = min(minLB, left.lb);
+        minLB = min(minLB, right.lb);
+
+        // Add nodes to the priority queue if their upper bounds are less than minLB
+        if (minLB >= left.ub)
+            pq.push(left);
+        if (minLB >= right.ub)
+            pq.push(right);
+    }
+
+    // Print the final result
+    cout << "Items taken into the knapsack are\n";
+    for (int i = 0; i < size; i++) {
+        if (finalPath[i])
+            cout << "1 ";
+        else
+            cout << "0 ";
+    }
+    cout << "\nMaximum profit is " << -finalLB << endl;
+}
+
+// Main function
+int main() {
+    int size = 4;
+    float capacity = 15;
+
+    // Create an array of items
+    Item arr[] = {Item(10, 2, 0), Item(10, 4, 1), Item(12, 6, 2), Item(18, 9, 3)};
+
+    // Call the solve function to solve the knapsack problem
+    solve(arr, size, capacity);
+
+    return 0;
+}
+// This code is contributed by arindam369
+
+Java
+
+// Java Program to implement
+// 0/1 knapsack using LC
+// Branch and Bound
+
+import java.util.*;
+class Item {
+
+    // Stores the weight
+    // of items
+    float weight;
+
+    // Stores the values
+    // of items
+    int value;
+
+    // Stores the index
+    // of items
+    int idx;
+    public Item() {}
+    public Item(int value, float weight,
+                int idx)
+    {
+        this.value = value;
+        this.weight = weight;
+        this.idx = idx;
+    }
+}
+
+class Node {
+    // Upper Bound: Best case
+    // (Fractional Knapsack)
+    float ub;
+
+    // Lower Bound: Worst case
+    // (0/1)
+    float lb;
+
+    // Level of the node in
+    // the decision tree
+    int level;
+
+    // Stores if the current
+    // item is selected or not
+    boolean flag;
+
+    // Total Value: Stores the
+    // sum of the values of the
+    // items included
+    float tv;
+
+    // Total Weight: Stores the sum of
+    // the weights of included items
+    float tw;
+    public Node() {}
+    public Node(Node cpy)
+    {
+        this.tv = cpy.tv;
+        this.tw = cpy.tw;
+        this.ub = cpy.ub;
+        this.lb = cpy.lb;
+        this.level = cpy.level;
+        this.flag = cpy.flag;
+    }
+}
+
+// Comparator to sort based on lower bound
+class sortByC implements Comparator<Node> {
+    public int compare(Node a, Node b)
+    {
+        boolean temp = a.lb > b.lb;
+        return temp ? 1 : -1;
+    }
+}
+
+class sortByRatio implements Comparator<Item> {
+    public int compare(Item a, Item b)
+    {
+        boolean temp = (float)a.value
+                           / a.weight
+                       > (float)b.value
+                             / b.weight;
+        return temp ? -1 : 1;
+    }
+}
+
+class knapsack {
+
+    private static int size;
+    private static float capacity;
+
+    // Function to calculate upper bound
+    // (includes fractional part of the items)
+    static float upperBound(float tv, float tw,
+                            int idx, Item arr[])
+    {
+        float value = tv;
+        float weight = tw;
+        for (int i = idx; i < size; i++) {
+            if (weight + arr[i].weight
+                <= capacity) {
+                weight += arr[i].weight;
+                value -= arr[i].value;
+            }
+            else {
+                value -= (float)(capacity
+                                 - weight)
+                         / arr[i].weight
+                         * arr[i].value;
+                break;
+            }
+        }
+        return value;
+    }
+
+    // Calculate lower bound (doesn't
+    // include fractional part of items)
+    static float lowerBound(float tv, float tw,
+                            int idx, Item arr[])
+    {
+        float value = tv;
+        float weight = tw;
+        for (int i = idx; i < size; i++) {
+            if (weight + arr[i].weight
+                <= capacity) {
+                weight += arr[i].weight;
+                value -= arr[i].value;
+            }
+            else {
+                break;
+            }
+        }
+        return value;
+    }
+
+    static void assign(Node a, float ub, float lb,
+                       int level, boolean flag,
+                       float tv, float tw)
+    {
+        a.ub = ub;
+        a.lb = lb;
+        a.level = level;
+        a.flag = flag;
+        a.tv = tv;
+        a.tw = tw;
+    }
+
+    public static void solve(Item arr[])
+    {
+        // Sort the items based on the
+        // profit/weight ratio
+        Arrays.sort(arr, new sortByRatio());
+
+        Node current, left, right;
+        current = new Node();
+        left = new Node();
+        right = new Node();
+
+        // min_lb -> Minimum lower bound
+        // of all the nodes explored
+
+        // final_lb -> Minimum lower bound
+        // of all the paths that reached
+        // the final level
+        float minLB = 0, finalLB
+                         = Integer.MAX_VALUE;
+        current.tv = current.tw = current.ub
+            = current.lb = 0;
+        current.level = 0;
+        current.flag = false;
+
+        // Priority queue to store elements
+        // based on lower bounds
+        PriorityQueue<Node> pq
+            = new PriorityQueue<Node>(
+                new sortByC());
+
+        // Insert a dummy node
+        pq.add(current);
+
+        // curr_path -> Boolean array to store
+        // at every index if the element is
+        // included or not
+
+        // final_path -> Boolean array to store
+        // the result of selection array when
+        // it reached the last level
+        boolean currPath[] = new boolean[size];
+        boolean finalPath[] = new boolean[size];
+
+        while (!pq.isEmpty()) {
+            current = pq.poll();
+            if (current.ub > minLB
+                || current.ub >= finalLB) {
+                // if the current node's best case
+                // value is not optimal than minLB,
+                // then there is no reason to
+                // explore that node. Including
+                // finalLB eliminates all those
+                // paths whose best values is equal
+                // to the finalLB
+                continue;
+            }
+
+            if (current.level != 0)
+                currPath[current.level - 1]
+                    = current.flag;
+
+            if (current.level == size) {
+                if (current.lb < finalLB) {
+                    // Reached last level
+                    for (int i = 0; i < size; i++)
+                        finalPath[arr[i].idx]
+                            = currPath[i];
+                    finalLB = current.lb;
+                }
+                continue;
+            }
+
+            int level = current.level;
+
+            // right node -> Excludes current item
+            // Hence, cp, cw will obtain the value
+            // of that of parent
+            assign(right, upperBound(current.tv,
+                                     current.tw,
+                                     level + 1, arr),
+                   lowerBound(current.tv, current.tw,
+                              level + 1, arr),
+                   level + 1, false,
+                   current.tv, current.tw);
+
+            if (current.tw + arr[current.level].weight
+                <= capacity) {
+
+                // left node -> includes current item
+                // c and lb should be calculated
+                // including the current item.
+                left.ub = upperBound(
+                    current.tv
+                        - arr[level].value,
+                    current.tw
+                        + arr[level].weight,
+                    level + 1, arr);
+                left.lb = lowerBound(
+                    current.tv
+                        - arr[level].value,
+                    current.tw
+                        + arr[level].weight,
+                    level + 1,
+                    arr);
+                assign(left, left.ub, left.lb,
+                       level + 1, true,
+                       current.tv - arr[level].value,
+                       current.tw
+                           + arr[level].weight);
+            }
+
+            // If the left node cannot
+            // be inserted
+            else {
+
+                // Stop the left node from
+                // getting added to the
+                // priority queue
+                left.ub = left.lb = 1;
+            }
+
+            // Update minLB
+            minLB = Math.min(minLB, left.lb);
+            minLB = Math.min(minLB, right.lb);
+
+            if (minLB >= left.ub)
+                pq.add(new Node(left));
+            if (minLB >= right.ub)
+                pq.add(new Node(right));
+        }
+        System.out.println("Items taken"
+                           + "into the knapsack are");
+        for (int i = 0; i < size; i++) {
+            if (finalPath[i])
+                System.out.print("1 ");
+            else
+                System.out.print("0 ");
+        }
+        System.out.println("\nMaximum profit"
+                           + " is " + (-finalLB));
+    }
+
+    // Driver code
+    public static void main(String args[])
+    {
+        size = 4;
+        capacity = 15;
+
+        Item arr[] = new Item[size];
+        arr[0] = new Item(10, 2, 0);
+        arr[1] = new Item(10, 4, 1);
+        arr[2] = new Item(12, 6, 2);
+        arr[3] = new Item(18, 9, 3);
+
+        solve(arr);
+    }
+}
+
+Python3
+
+class Item:
+    def __init__(self, value, weight, idx):
+        self.value = value
+        self.weight = weight
+        self.idx = idx
+
+class Node:
+    def __init__(self):
+        self.ub = 0  # Upper bound
+        self.lb = 0  # Lower bound
+        self.level = 0  # Level in the decision tree
+        self.flag = False  # Flag to indicate if the item is selected or not
+        self.tv = 0  # Total value of selected items
+        self.tw = 0  # Total weight of selected items
+
+def assign(a, ub, lb, level, flag, tv, tw):
+    # Helper function to assign values to a Node object
+    a.ub = ub
+    a.lb = lb
+    a.level = level
+    a.flag = flag
+    a.tv = tv
+    a.tw = tw
+
+def upper_bound(tv, tw, idx, arr, capacity):
+    # Calculate the upper bound of the current node
+    value, weight = tv, tw
+    for i in range(idx, len(arr)):
+        if weight + arr[i].weight <= capacity:
+            weight += arr[i].weight
+            value -= arr[i].value
+        else:
+            value -= ((capacity - weight) / arr[i].weight) * arr[i].value
+            break
+    return value
+
+def lower_bound(tv, tw, idx, arr, capacity):
+    # Calculate the lower bound of the current node
+    value, weight = tv, tw
+    for i in range(idx, len(arr)):
+        if weight + arr[i].weight <= capacity:
+            weight += arr[i].weight
+            value -= arr[i].value
+        else:
+            break
+    return value
+
+def solve(arr, capacity):
+    # Main function to solve the 0/1 Knapsack problem using Branch and Bound
+
+    # Sort items by value-to-weight ratio in descending order
+    arr.sort(key=lambda x: x.value / x.weight, reverse=True)
+
+    # Initialize the root node
+    current = Node()
+    current.tv = current.tw = current.ub = current.lb = 0
+    current.level = 0
+    current.flag = False
+
+    # Initialize variables to track the best solution
+    min_lb = 0
+    final_lb = float('inf')
+    current.tv = current.tw = current.ub = current.lb = 0
+    current.level = 0
+    current.flag = False
+
+    # Lists to track the current and final selected items
+    curr_path = [False] * len(arr)
+    final_path = [False] * len(arr)
+
+    # Priority queue for node exploration
+    pq = []
+    pq.append(current)
+
+    while pq:
+        current = pq.pop(0)
+
+        # Prune the node if its upper bound is greater than the current minimum lower bound
+        if current.ub > min_lb or current.ub >= final_lb:
+            continue
+
+        if current.level != 0:
+            curr_path[current.level - 1] = current.flag
+
+        # Check if the current node is a leaf node
+        if current.level == len(arr):
+            # Update the final solution if the current lower bound is better
+            if current.lb < final_lb:
+                for i in range(len(arr)):
+                    final_path[arr[i].idx] = curr_path[i]
+                final_lb = current.lb
+            continue
+
+        level = current.level
+
+        # Explore right child (item is not included in the knapsack)
+        right = Node()
+        right.ub = upper_bound(current.tv, current.tw, level + 1, arr, capacity)
+        right.lb = lower_bound(current.tv, current.tw, level + 1, arr, capacity)
+        assign(right, right.ub, right.lb, level + 1, False, current.tv, current.tw)
+
+        # Explore left child (item is included in the knapsack)
+        left = Node()
+        if current.tw + arr[current.level].weight <= capacity:
+            left.ub = upper_bound(
+                current.tv - arr[level].value,
+                current.tw + arr[level].weight,
+                level + 1,
+                arr,
+                capacity
+            )
+            left.lb = lower_bound(
+                current.tv - arr[level].value,
+                current.tw + arr[level].weight,
+                level + 1,
+                arr,
+                capacity
+            )
+            assign(
+                left,
+                left.ub,
+                left.lb,
+                level + 1,
+                True,
+                current.tv - arr[level].value,
+                current.tw + arr[level].weight
+            )
+        else:
+            # If adding the current item exceeds the capacity, set bounds to 1
+            left.ub = 1
+            left.lb = 1
+
+        min_lb = min(min_lb, left.lb, right.lb)
+
+        # Add valid children to the priority queue for further exploration
+        if min_lb >= left.ub:
+            pq.append(left)
+        if min_lb >= right.ub:
+            pq.append(right)
+
+    # Print the selected items and maximum profit
+    print("Items taken into the knapsack are")
+    max_profit = -final_lb
+    for i in range(len(arr)):
+        if final_path[i]:
+            print("1")
+        else:
+            print("0")
+    print("Maximum profit is", max_profit)
+
+# Main function
+def main():
+    # Example usage
+    capacity = 15
+    arr = [
+        Item(10, 2, 0),
+        Item(10, 4, 1),
+        Item(12, 6, 2),
+        Item(18, 9, 3),
+    ]
+
+    solve(arr, capacity)
+
+if __name__ == "__main__":
+    main()
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+// Class to represent an item
+class Item
+{
+    public float Weight { get; set; }
+    public int Value { get; set; }
+    public int Index { get; set; }
+
+    // Constructor to initialize an item
+    public Item(int value, float weight, int index)
+    {
+        Value = value;
+        Weight = weight;
+        Index = index;
+    }
+}
+
+// Class to represent a node in the branch and bound algorithm
+class Node
+{
+    public float UpperBound { get; set; }
+    public float LowerBound { get; set; }
+    public int Level { get; set; }
+    public bool Flag { get; set; }
+    public float TotalValue { get; set; }
+    public float TotalWeight { get; set; }
+
+    // Default constructor
+    public Node() { }
+
+    // Copy constructor
+    public Node(Node copy)
+    {
+        TotalValue = copy.TotalValue;
+        TotalWeight = copy.TotalWeight;
+        UpperBound = copy.UpperBound;
+        LowerBound = copy.LowerBound;
+        Level = copy.Level;
+        Flag = copy.Flag;
+    }
+}
+
+// Comparator to sort nodes based on lower bound
+class SortByC : IComparer<Node>
+{
+    public int Compare(Node a, Node b)
+    {
+        return a.LowerBound.CompareTo(b.LowerBound);
+    }
+}
+
+// Comparator to sort items based on value/weight ratio
+class SortByRatio : IComparer<Item>
+{
+    public int Compare(Item a, Item b)
+    {
+        return ((float)a.Value / a.Weight).CompareTo((float)b.Value / b.Weight);
+    }
+}
+
+class Program
+{
+    // Function to assign values to a node
+    static void Assign(Node a, float ub, float lb, int level, bool flag, float tv, float tw)
+    {
+        a.UpperBound = ub;
+        a.LowerBound = lb;
+        a.Level = level;
+        a.Flag = flag;
+        a.TotalValue = tv;
+        a.TotalWeight = tw;
+    }
+
+    // Function to calculate the upper bound (best case) considering fractional knapsack
+    static float UpperBound(float tv, float tw, int idx, Item[] arr, int size, float capacity)
+    {
+        float value = tv;
+        float weight = tw;
+
+        // Iterate over the remaining items and add them to the knapsack if possible
+        for (int i = idx; i < size; i++)
+        {
+            if (weight + arr[i].Weight <= capacity)
+            {
+                weight += arr[i].Weight;
+                value -= arr[i].Value;
+            }
+            else
+            {
+                // If the remaining capacity is not enough for the entire item, add a fraction of it
+                value -= ((capacity - weight) / arr[i].Weight) * arr[i].Value;
+                break;
+            }
+        }
+        return value;
+    }
+
+    // Function to calculate the lower bound (worst case) without considering fractional part of items
+    static float LowerBound(float tv, float tw, int idx, Item[] arr, int size, float capacity)
+    {
+        float value = tv;
+        float weight = tw;
+
+        // Iterate over the remaining items and add them to the knapsack if possible
+        for (int i = idx; i < size; i++)
+        {
+            if (weight + arr[i].Weight <= capacity)
+            {
+                weight += arr[i].Weight;
+                value -= arr[i].Value;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return value;
+    }
+
+    // Function to solve the 0/1 knapsack problem using branch and bound
+    static void Solve(Item[] arr, int size, float capacity)
+    {
+        // Sort the items based on the value/weight ratio
+        Array.Sort(arr, new SortByRatio());
+
+        // Initialize nodes
+        Node current = new Node();
+        Node left = new Node();
+        Node right = new Node();
+        current.TotalValue = current.TotalWeight = current.UpperBound = current.LowerBound = 0;
+        current.Level = 0;
+        current.Flag = false;
+
+        float minLB = 0, finalLB = float.MaxValue;
+        current.TotalValue = current.TotalWeight = current.UpperBound = current.LowerBound = 0;
+        current.Level = 0;
+        current.Flag = false;
+
+        // Priority queue to store nodes based on lower bounds
+        PriorityQueue<Node> pq = new PriorityQueue<Node>(new SortByC());
+        pq.Enqueue(current);
+
+        // Arrays to store the current and final selection of items
+        bool[] currPath = new bool[size];
+        bool[] finalPath = new bool[size];
+
+        // Explore nodes in the priority queue
+        while (pq.Count > 0)
+        {
+            current = pq.Dequeue();
+
+            // Prune if the upper bound is greater than the minimum lower bound
+            if (current.UpperBound > minLB || current.UpperBound >= finalLB)
+            {
+                continue;
+            }
+
+            // Store the selection if it reaches the final level
+            if (current.Level != 0)
+                currPath[current.Level - 1] = current.Flag;
+
+            // Check if it's the last level and update the final selection if the lower bound is better
+            if (current.Level == size)
+            {
+                if (current.LowerBound < finalLB)
+                {
+                    for (int i = 0; i < size; i++)
+                        finalPath[arr[i].Index] = currPath[i];
+                    finalLB = current.LowerBound;
+                }
+                continue;
+            }
+
+            int level = current.Level;
+
+            // Explore the right node (exclude current item)
+            Assign(right, UpperBound(current.TotalValue, current.TotalWeight, level + 1, arr, size, capacity),
+                   LowerBound(current.TotalValue, current.TotalWeight, level + 1, arr, size, capacity),
+                   level + 1, false, current.TotalValue, current.TotalWeight);
+
+            // Explore the left node (include current item)
+            if (current.TotalWeight + arr[current.Level].Weight <= capacity)
+            {
+                left.UpperBound = UpperBound(current.TotalValue - arr[level].Value, current.TotalWeight + arr[level].Weight, level + 1, arr, size, capacity);
+                left.LowerBound = LowerBound(current.TotalValue - arr[level].Value, current.TotalWeight + arr[level].Weight, level + 1, arr, size, capacity);
+                Assign(left, left.UpperBound, left.LowerBound, level + 1, true, current.TotalValue - arr[level].Value, current.TotalWeight + arr[level].Weight);
+            }
+            else
+            {
+                // If the left node cannot be inserted, stop it from getting added to the priority queue
+                left.UpperBound = left.LowerBound = 1;
+            }
+
+            // Update minLB
+            minLB = Math.Min(minLB, left.LowerBound);
+            minLB = Math.Min(minLB, right.LowerBound);
+
+            // Add nodes to the priority queue if their upper bounds are less than minLB
+            if (minLB >= left.UpperBound)
+                pq.Enqueue(left);
+            if (minLB >= right.UpperBound)
+                pq.Enqueue(right);
+        }
+
+        // Print the final result
+        Console.WriteLine("Items taken into the knapsack are");
+        for (int i = 0; i < size; i++)
+        {
+            if (finalPath[i])
+                Console.Write("1 ");
+            else
+                Console.Write("0 ");
+        }
+        Console.WriteLine($"\nMaximum profit is {-finalLB}");
+    }
+
+    // Main function
+    static void Main()
+    {
+        int size = 4;
+        float capacity = 15;
+
+        // Create an array of items
+        Item[] arr = { new Item(10, 2, 0), new Item(10, 4, 1), new Item(12, 6, 2), new Item(18, 9, 3) };
+
+        // Call the solve function to solve the knapsack problem
+        Solve(arr, size, capacity);
+    }
+}
+
+// Priority Queue implementation for C#
+public class PriorityQueue<T>
+{
+    private List<T> list;
+    private IComparer<T> comparer;
+
+    public PriorityQueue(IComparer<T> comparer)
+    {
+        this.list = new List<T>();
+        this.comparer = comparer;
+    }
+
+    public int Count
+    {
+        get { return list.Count; }
+    }
+
+    public void Enqueue(T item)
+    {
+        list.Add(item);
+        int i = list.Count - 1;
+
+        while (i > 0)
+        {
+            int parent = (i - 1) / 2;
+
+            if (comparer.Compare(list[i], list[parent]) >= 0)
+                break;
+
+            Swap(i, parent);
+            i = parent;
+        }
+    }
+
+    public T Dequeue()
+    {
+        int count = list.Count;
+
+        if (count == 0)
+            throw new InvalidOperationException("Queue is empty");
+
+        T root = list[0];
+
+        if (count == 1)
+        {
+            list.RemoveAt(0);
+        }
+        else
+        {
+            list[0] = list[count - 1];
+            list.RemoveAt(count - 1);
+            Heapify(0);
+        }
+
+        return root;
+    }
+
+    private void Heapify(int i)
+    {
+        int leftChild, rightChild, smallestChild;
+
+        while (true)
+        {
+            leftChild = 2 * i + 1;
+            rightChild = 2 * i + 2;
+            smallestChild = i;
+
+            if (leftChild < list.Count && comparer.Compare(list[leftChild], list[smallestChild]) < 0)
+                smallestChild = leftChild;
+
+            if (rightChild < list.Count && comparer.Compare(list[rightChild], list[smallestChild]) < 0)
+                smallestChild = rightChild;
+
+            if (smallestChild == i)
+                break;
+
+            Swap(i, smallestChild);
+            i = smallestChild;
+        }
+    }
+
+    private void Swap(int i, int j)
+    {
+        T temp = list[i];
+        list[i] = list[j];
+        list[j] = temp;
+    }
+}
+
+JavaScript
+
+class Item {
+  constructor(value, weight, idx) {
+    this.value = value;
+    this.weight = weight;
+    this.idx = idx;
+  }
+}
+
+class Node {
+  constructor() {
+    this.ub = 0; // Upper bound
+    this.lb = 0; // Lower bound
+    this.level = 0; // Level in the decision tree
+    this.flag = false; // Flag to indicate if the item is selected or not
+    this.tv = 0; // Total value of selected items
+    this.tw = 0; // Total weight of selected items
+  }
+}
+
+function assign(a, ub, lb, level, flag, tv, tw) {
+  a.ub = ub;
+  a.lb = lb;
+  a.level = level;
+  a.flag = flag;
+  a.tv = tv;
+  a.tw = tw;
+}
+
+function upperBound(tv, tw, idx, arr, capacity) {
+  let value = tv;
+  let weight = tw;
+
+  for (let i = idx; i < arr.length; i++) {
+    if (weight + arr[i].weight <= capacity) {
+      weight += arr[i].weight;
+      value -= arr[i].value;
+    } else {
+      value -= ((capacity - weight) / arr[i].weight) * arr[i].value;
+      break;
+    }
+  }
+  return value;
+}
+
+function lowerBound(tv, tw, idx, arr, capacity) {
+  let value = tv;
+  let weight = tw;
+
+  for (let i = idx; i < arr.length; i++) {
+    if (weight + arr[i].weight <= capacity) {
+      weight += arr[i].weight;
+      value -= arr[i].value;
+    } else {
+      break;
+    }
+  }
+  return value;
+}
+
+function solve(arr, capacity) {
+  arr.sort((a, b) => b.value / b.weight - a.value / a.weight);
+
+  let current = new Node();
+  current.tv = current.tw = current.ub = current.lb = 0;
+  current.level = 0;
+  current.flag = false;
+
+  let minLB = 0,
+    finalLB = Number.MAX_SAFE_INTEGER;
+  current.tv = current.tw = current.ub = current.lb = 0;
+  current.level = 0;
+  current.flag = false;
+
+  let currPath = Array(arr.length).fill(false);
+  let finalPath = Array(arr.length).fill(false);
+
+  let pq = [];
+  pq.push(current);
+
+  while (pq.length > 0) {
+    current = pq.shift();
+
+    if (current.ub > minLB || current.ub >= finalLB) {
+      continue;
+    }
+
+    if (current.level !== 0) currPath[current.level - 1] = current.flag;
+
+    if (current.level === arr.length) {
+      if (current.lb < finalLB) {
+        for (let i = 0; i < arr.length; i++)
+          finalPath[arr[i].idx] = currPath[i];
+        finalLB = current.lb;
+      }
+      continue;
+    }
+
+    let level = current.level;
+
+    let right = new Node();
+    right.ub = upperBound(
+      current.tv,
+      current.tw,
+      level + 1,
+      arr,
+      capacity
+    );
+    right.lb = lowerBound(
+      current.tv,
+      current.tw,
+      level + 1,
+      arr,
+      capacity
+    );
+    assign(right, right.ub, right.lb, level + 1, false, current.tv, current.tw);
+
+    let left = new Node();
+    if (current.tw + arr[current.level].weight <= capacity) {
+      left.ub = upperBound(
+        current.tv - arr[level].value,
+        current.tw + arr[level].weight,
+        level + 1,
+        arr,
+        capacity
+      );
+      left.lb = lowerBound(
+        current.tv - arr[level].value,
+        current.tw + arr[level].weight,
+        level + 1,
+        arr,
+        capacity
+      );
+      assign(
+        left,
+        left.ub,
+        left.lb,
+        level + 1,
+        true,
+        current.tv - arr[level].value,
+        current.tw + arr[level].weight
+      );
+    } else {
+      left.ub = 1;
+      left.lb = 1;
+    }
+
+    minLB = Math.min(minLB, left.lb);
+    minLB = Math.min(minLB, right.lb);
+
+    if (minLB >= left.ub) pq.push(left);
+    if (minLB >= right.ub) pq.push(right);
+  }
+
+  console.log("Items taken into the knapsack are");
+  let maxProfit = -finalLB;
+  for (let i = 0; i < arr.length; i++) {
+    if (finalPath[i]) console.log("1");
+    else console.log("0");
+  }
+  console.log("Maximum profit is " + maxProfit);
+}
+
+// Main function
+function main() {
+  const capacity = 15;
+  const arr = [
+    new Item(10, 2, 0),
+    new Item(10, 4, 1),
+    new Item(12, 6, 2),
+    new Item(18, 9, 3),
+  ];
+
+  solve(arr, capacity);
+}
+
+main();
+
+Output
+
+Items taken into the knapsack are :
+1 1 0 1
+Maximum profit is : 38

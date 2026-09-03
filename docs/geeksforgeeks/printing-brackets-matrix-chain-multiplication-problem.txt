@@ -1,0 +1,958 @@
+Source: https://www.geeksforgeeks.org/dsa/printing-brackets-matrix-chain-multiplication-problem/
+Title: Printing brackets in Matrix Chain Multiplication Problem
+Extractor: 2
+
+Given an array arr[] which represents the chain of matrices such that the dimensions of the ith matrix are arr[i-1] x arr[i] . The task is to find the correct parenthesis of the matrices such that when we multiply all the matrices together, the cost or total number of element multiplications is minimal .
+
+Examples:
+
+> Input: arr[] = [10, 20, 30] Output: (AB) Explanation: There is only one way to multiply two matrices: (AB): The cost for the multiplication will be 6000. Input: arr[] = [10, 20, 30, 40] Output: ((AB)C) Explanation : There are three possible ways to multiply four matrices: ((AB)C): The cost for the multiplication will be 18,000 (A(BC)): The cost for the multiplication will be 32,000 (AB)(CD): The cost for the multiplication will be 51,000 So, the minimum cost will be achieved in the arrangement ((AB)C). Input: arr[] = [40, 20, 30, 10, 30] Output: ((A(BC))D) Explanation: T here are five possible ways to multiply four matrices: (((AB)C)D)): The cost for the multiplication will be 48,000 ( (A(BC))D): The cost for the multiplication will be 26,000 (A((BC)D)): The cost for the multiplication will be 36,000 ((AB)(CD)): The cost for the multiplication will be 69,000 ( A(B(CD))): The cost for the multiplication will be 51,000 So, the minimum costs will be occurred in the arrangement ((A(BC))D).
+
+Table of Content
+
+- Using Recursion - O(2^n) Time and O(n) Space
+- Using Top-Down DP (Memoization) - O(n^3) Time and O(n^2) Space
+- Using Bottom-Up DP(Tabulation) - O(n^3) Time and O(n^2) Space
+
+### Using Recursion - O(2^n) Time and O(n) Space
+
+> The approach is similar to recursive approach of matrix chain multiplication , with the key difference is, instead of returning optimal cost for each subproblem (i, j) , we are also returning the matrix multiplication order in form of string , along with the corresponding optimal cost .
+
+C++
+
+// C++ program to find Optimal parenthesization using Recursion
+
+#include <iostream>
+#include <vector>
+#include <string>
+#include <limits.h>
+using namespace std;
+
+pair<string, int> matrixChainOrderRec(vector<int> &arr,
+                                                int i, int j) {
+
+    // If there is only one matrix
+    if (i == j) {
+        string temp = "";
+        temp += char('A' + i);
+        return {temp, 0};
+    }
+
+    int res = INT_MAX;
+    string str;
+
+    // Try all possible split points k between i and j
+    for (int k = i + 1; k <= j; k++) {
+        pair<string, int> left
+                        = matrixChainOrderRec(arr, i, k - 1);
+        pair<string, int> right
+                        = matrixChainOrderRec(arr, k, j);
+
+        // Calculate the cost of multiplying
+        // matrices from i to k and from k to j
+        int currCost = left.second + right.second
+                                + arr[i] * arr[k] * arr[j+1];
+
+        // Update if we find a lower cost
+        if(res > currCost) {
+            res = currCost;
+            str = "(" + left.first + right.first + ")";
+        }
+    }
+
+    return {str, res};
+}
+
+string matrixChainOrder(vector<int> &arr) {
+    int n = arr.size();
+    return matrixChainOrderRec(arr, 0, n - 2).first;
+}
+
+int main() {
+    vector<int> arr = {40, 20, 30, 10, 30};
+    cout << matrixChainOrder(arr);
+    return 0;
+}
+
+Java
+
+// Java program to find Optimal parenthesization
+// using Recursion
+
+import java.util.*;
+
+class GfG {
+
+    // Custom pair class where first value is matrix
+    // multiplication order and second is optimal cost
+    static class Pair {
+        String first;
+        Integer second;
+
+        Pair(String first, Integer second) {
+            this.first = first;
+            this.second = second;
+        }
+    }
+
+    static Pair matrixChainOrderRec(int[] arr, int i, int j) {
+
+        // If there is only one matrix
+        if (i == j) {
+            String temp = "";
+            temp += (char) ('A' + i);
+            return new Pair(temp, 0);
+        }
+
+        int res = Integer.MAX_VALUE;
+        String str = "";
+
+        // Try all possible split points k between i and j
+        for (int k = i + 1; k <= j; k++) {
+            Pair left = matrixChainOrderRec(arr, i, k - 1);
+            Pair right = matrixChainOrderRec(arr, k, j);
+
+            // Calculate the cost of multiplying
+            // matrices from i to k and from k to j
+            int currCost = left.second + right.second
+                                    + arr[i] * arr[k] * arr[j + 1];
+
+            // Update if we find a lower cost
+            if (res > currCost) {
+                res = currCost;
+                str = "(" + left.first + right.first + ")";
+            }
+        }
+        return new Pair(str, res);
+    }
+
+    static String matrixChainOrder(int[] arr) {
+        int n = arr.length;
+        return matrixChainOrderRec(arr, 0, n - 2).first;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {40, 20, 30, 10, 30};
+        System.out.println(matrixChainOrder(arr));
+    }
+}
+
+Python
+
+# Python program to find Optimal parenthesization
+# using Recursion
+
+def matrixChainOrderRec(arr, i, j):
+
+    # If there is only one matrix
+    if i == j:
+        temp = chr(ord('A') + i)
+        return (temp, 0)
+
+    res = float('inf')
+    str = ""
+
+    # Try all possible split points k between i and j
+    for k in range(i + 1, j + 1):
+        left = matrixChainOrderRec(arr, i, k - 1)
+        right = matrixChainOrderRec(arr, k, j)
+
+        # Calculate the cost of multiplying
+        # matrices from i to k and from k to j
+        currCost = left[1] + right[1] + arr[i] * arr[k] * arr[j + 1]
+
+        # Update if we find a lower cost
+        if res > currCost:
+            res = currCost
+            str = "(" + left[0] + right[0] + ")"
+
+    return (str, res)
+
+def matrixChainOrder(arr):
+    n = len(arr)
+    return matrixChainOrderRec(arr, 0, n - 2)[0]
+
+arr = [40, 20, 30, 10, 30]
+print(matrixChainOrder(arr))
+
+C#
+
+// C# program to find Optimal parenthesization
+// using Recursion
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static Tuple<string, int> MatrixChainOrderRec(List<int> arr
+                                                  	, int i, int j) {
+
+        // If there is only one matrix
+        if (i == j) {
+            string temp = "";
+            temp += (char)('A' + i);
+            return new Tuple<string, int>(temp, 0);
+        }
+
+        int res = int.MaxValue;
+        string str = "";
+
+        // Try all possible split points k
+      	// between i and j
+        for (int k = i + 1; k <= j; k++) {
+            var left = MatrixChainOrderRec(arr, i, k - 1);
+            var right = MatrixChainOrderRec(arr, k, j);
+
+            // Calculate the cost of multiplying
+            // matrices from i to k and from k to j
+            int currCost = left.Item2 + right.Item2
+              						+ arr[i] * arr[k] * arr[j + 1];
+
+            // Update if we find a lower cost
+            if (res > currCost) {
+                res = currCost;
+                str = "(" + left.Item1 + right.Item1 + ")";
+            }
+        }
+
+        return new Tuple<string, int>(str, res);
+    }
+
+    static string MatrixChainOrder(List<int> arr) {
+        int n = arr.Count;
+        return MatrixChainOrderRec(arr, 0, n - 2).Item1;
+    }
+
+    static void Main() {
+        List<int> arr = new List<int> { 40, 20, 30, 10, 30 };
+        Console.WriteLine(MatrixChainOrder(arr));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find Optimal parenthesization
+// using Recursion
+
+function matrixChainOrderRec(arr, i, j) {
+
+    // If there is only one matrix
+    if (i === j) {
+        let temp = String.fromCharCode(65 + i);
+        return [ temp, 0 ];
+    }
+
+    let res = Infinity;
+    let str = "";
+
+    // Try all possible split points k between i and j
+    for (let k = i + 1; k <= j; k++) {
+        let left = matrixChainOrderRec(arr, i, k - 1);
+        let right = matrixChainOrderRec(arr, k, j);
+
+        // Calculate the cost of multiplying
+        // matrices from i to k and from k to j
+        let currCost = left[1] + right[1]
+                       + arr[i] * arr[k] * arr[j + 1];
+
+        // Update if we find a lower cost
+        if (res > currCost) {
+            res = currCost;
+            str = `(${left[0]}${right[0]})`;
+        }
+    }
+
+    return [ str, res ];
+}
+
+function matrixChainOrder(arr) {
+
+    let n = arr.length;
+    return matrixChainOrderRec(arr, 0, n - 2)[0];
+}
+
+let arr = [ 40, 20, 30, 10, 30 ];
+console.log(matrixChainOrder(arr));
+
+Output
+
+((A(BC))D)
+
+### Using Top-Down DP (Memoization) - O(n^3) Time and O(n^2) Space
+
+Let’s suppose we have four matrices (M 1 , M 2 , M 3 , M 4 ). Based on the recursive approach described above, we can construct a recursion tree .
+
+> If we observe carefully, we can see that recursive solution has these two properties of Dynamic Programming : 1) Optimal Substructure: We are breaking the bigger groups into smaller subgroups and solving them to finally find the minimum number of multiplications. Therefore, it can be said that the problem has optimal substructure property. 2) Overlapping Subproblems : We can see in the recursion tree that the same subproblems are called again and again and this problem has the Overlapping Subproblems property.
+
+So, we create a 2D memo[][] array of size n*n, where memo[i][j] stores a pair consisting of a string (representing matrix multiplication order) and an integer (optimal cost) for multiplying matrices from i to j.
+
+C++
+
+// C++ program to find Optimal parenthesization
+// using Memoization
+
+#include <iostream>
+#include <limits.h>
+#include <string>
+#include <vector>
+using namespace std;
+
+pair<string, int> matrixChainOrderRec(vector<int> &arr,
+	int i, int j, vector<vector<pair<string, int>>> &memo) {
+
+    // If there is only one matrix
+    if (i == j) {
+        string temp = "";
+        temp += char('A' + i);
+        return {temp, 0};
+    }
+
+    // if the result for this subproblem is
+    // already computed then return it
+    if (memo[i][j].second != -1)
+        return memo[i][j];
+
+    int res = INT_MAX;
+    string str;
+
+    // Try all possible split points k between i and j
+    for (int k = i + 1; k <= j; k++) {
+        pair<string, int> left = matrixChainOrderRec(arr, i, k - 1, memo);
+        pair<string, int> right = matrixChainOrderRec(arr, k, j, memo);
+
+        // Calculate the cost of multiplying
+        // matrices from i to k and from k to j
+        int curr = left.second + right.second + arr[i] * arr[k] * arr[j + 1];
+
+        // Update if we find a lower cost
+        if (res > curr)
+        {
+            res = curr;
+            str = "(" + left.first + right.first + ")";
+        }
+    }
+
+    // Return minimum cost and matrix
+  	// multiplication order
+    return memo[i][j] = {str, res};
+}
+
+string matrixChainOrder(vector<int> &arr) {
+    int n = arr.size();
+
+    // Memoization array to store the results
+    vector<vector<pair<string, int>>> memo
+      (n, vector<pair<string, int>>(n, {"", -1}));
+    return matrixChainOrderRec(arr, 0, n - 2, memo).first;
+}
+
+int main() {
+
+    vector<int> arr = {40, 20, 30, 10, 30};
+    cout << matrixChainOrder(arr);
+    return 0;
+}
+
+Java
+
+// Java program to find Optimal parenthesization using
+// Memoization
+
+import java.util.*;
+
+class GfG {
+
+    // Custom pair class where first value is matrix
+    // multiplication order and second is optimal cost
+    static class Pair {
+        String first;
+        Integer second;
+
+        Pair(String first, Integer second) {
+            this.first = first;
+            this.second = second;
+        }
+    }
+
+    static Pair matrixChainOrderRec(int[] arr, int i, int j,
+                                    Pair[][] memo) {
+
+        // If there is only one matrix
+        if (i == j) {
+            String temp = "";
+            temp += (char)('A' + i);
+            return new Pair(temp, 0);
+        }
+
+        // if the result for this subproblem is
+        // already computed then return it
+        if (memo[i][j].second != -1)
+            return memo[i][j];
+
+        int res = Integer.MAX_VALUE;
+        String str = "";
+
+        // Try all possible split points k between i and j
+        for (int k = i + 1; k <= j; k++) {
+            Pair left
+                = matrixChainOrderRec(arr, i, k - 1, memo);
+            Pair right
+                = matrixChainOrderRec(arr, k, j, memo);
+
+            // Calculate the cost of multiplying
+            // matrices from i to k and from k to j
+            int curr = left.second + right.second
+                       + arr[i] * arr[k] * arr[j + 1];
+
+            // Update if we find a lower cost
+            if (res > curr) {
+                res = curr;
+                str = "(" + left.first + right.first + ")";
+            }
+        }
+
+        // Return minimum cost and matrix multiplication
+        // order
+        return memo[i][j] = new Pair(str, res);
+    }
+
+    static String matrixChainOrder(int[] arr) {
+        int n = arr.length;
+
+        // Memoization array to store the results
+        Pair[][] memo = new Pair[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                memo[i][j] = new Pair("", -1);
+            }
+        }
+
+        return matrixChainOrderRec(arr, 0, n - 2, memo)
+            .first;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = { 40, 20, 30, 10, 30 };
+        System.out.println(matrixChainOrder(arr));
+    }
+}
+
+Python
+
+# Python program to find Optimal parenthesization
+# using Memoization
+
+def matrixChainOrderRec(arr, i, j, memo):
+
+    # If there is only one matrix
+    if i == j:
+        temp = chr(ord('A') + i)
+        return (temp, 0)
+
+    # if the result for this subproblem is
+    # already computed then return it
+    if memo[i][j][1] != -1:
+        return memo[i][j]
+
+    res = float('inf')
+    str = ""
+
+    # Try all possible split points k between i and j
+    for k in range(i + 1, j + 1):
+        left = matrixChainOrderRec(arr, i, k - 1, memo)
+        right = matrixChainOrderRec(arr, k, j, memo)
+
+        # Calculate the cost of multiplying
+        # matrices from i to k and from k to j
+        curr = left[1] + right[1] + arr[i] * arr[k] * arr[j + 1]
+
+        # Update if we find a lower cost
+        if res > curr:
+            res = curr
+            str = "(" + left[0] + right[0] + ")"
+
+    # Return minimum cost and matrix
+    # multiplication order
+    memo[i][j] = (str, res)
+    return memo[i][j]
+
+def matrixChainOrder(arr):
+    n = len(arr)
+
+    # Memoization array to store the results
+    memo = [[("", -1) for i in range(n)] for i in range(n)]
+
+    return matrixChainOrderRec(arr, 0, n - 2, memo)[0]
+
+arr = [40, 20, 30, 10, 30]
+print(matrixChainOrder(arr))
+
+C#
+
+// C# program to find Optimal parenthesization using
+// Memoization
+
+using System;
+
+class GfG {
+    static Tuple<string, int>
+    MatrixChainOrderRec(int[] arr, int i, int j,
+                        Tuple<string, int>[
+                            ,
+                        ] memo) {
+
+        // If there is only one matrix
+        if (i == j) {
+            string temp = "";
+            temp += (char)('A' + i);
+            return new Tuple<string, int>(temp, 0);
+        }
+
+        // if the result for this subproblem is
+        // already computed then return it
+        if (memo[i, j].Item2 != -1)
+            return memo[i, j];
+
+        int res = int.MaxValue;
+        string str = "";
+
+        // Try all possible split points k between i and j
+        for (int k = i + 1; k <= j; k++) {
+            var left
+                = MatrixChainOrderRec(arr, i, k - 1, memo);
+            var right
+                = MatrixChainOrderRec(arr, k, j, memo);
+
+            // Calculate the cost of multiplying
+            // matrices from i to k and from k to j
+            int curr = left.Item2 + right.Item2
+                       + arr[i] * arr[k] * arr[j + 1];
+
+            // Update if we find a lower cost
+            if (res > curr) {
+                res = curr;
+                str = "(" + left.Item1 + right.Item1 + ")";
+            }
+        }
+
+        // Return minimum cost and matrix multiplication
+        // order
+        return memo[i, j]
+            = new Tuple<string, int>(str, res);
+    }
+
+    static string MatrixChainOrder(int[] arr) {
+        int n = arr.Length;
+
+        // Memoization array to store the results
+        var memo = new Tuple<string, int>[ n, n ];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++)
+                memo[i, j] = new Tuple<string, int>("", -1);
+        }
+
+        return MatrixChainOrderRec(arr, 0, n - 2, memo)
+            .Item1;
+    }
+
+    static void Main() {
+        int[] arr = { 40, 20, 30, 10, 30 };
+        Console.WriteLine(MatrixChainOrder(arr));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find Optimal parenthesization using
+// Memoization
+
+function matrixChainOrderRec(arr, i, j, memo) {
+
+    // If there is only one matrix
+    if (i === j) {
+        let temp = String.fromCharCode(65 + i);
+        return [ temp, 0 ];
+    }
+
+    // if the result for this subproblem is
+    // already computed then return it
+    if (memo[i][j][1] !== -1)
+        return memo[i][j];
+
+    let res = Infinity;
+    let str = "";
+
+    // Try all possible split points k between i and j
+    for (let k = i + 1; k <= j; k++) {
+        let left = matrixChainOrderRec(arr, i, k - 1, memo);
+        let right = matrixChainOrderRec(arr, k, j, memo);
+
+        // Calculate the cost of multiplying
+        // matrices from i to k and from k to j
+        let curr = left[1] + right[1]
+                   + arr[i] * arr[k] * arr[j + 1];
+
+        // Update if we find a lower cost
+        if (res > curr) {
+            res = curr;
+            str = `(${left[0]}${right[0]})`;
+        }
+    }
+
+    // Return minimum cost and matrix
+    // multiplication order
+    memo[i][j] = [ str, res ];
+    return memo[i][j];
+}
+
+function matrixChainOrder(arr) {
+
+    let n = arr.length;
+
+    // Memoization array to store the results
+    let memo = Array.from({length : n},
+                          () => Array(n).fill([ "", -1 ]));
+
+    return matrixChainOrderRec(arr, 0, n - 2, memo)[0];
+}
+
+let arr = [ 40, 20, 30, 10, 30 ];
+console.log(matrixChainOrder(arr));
+
+Output
+
+((A(BC))D)
+
+### Using Bottom-Up DP(Tabulation) - O(n^3) Time and O(n^2) Space
+
+> The approach is similar to the previous one ; just instead of breaking down the problem recursively , we iteratively build up the solution by calculating in bottom-up manner. We maintain a 2d dp[][] table, such that dp[i][j] , stores the pair of matrix multiplication order and optimal cost for subproblem (i, j).
+
+C++
+
+// C++ program to find Optimal parenthesization
+// using Tabulation
+
+#include <climits>
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+string matrixChainOrder(vector<int> &arr) {
+    int n = arr.size();
+
+    // dp[i][j] stores a pair: matrix order, minimum cost
+    vector<vector<pair<string, int>>> dp
+      (n, vector<pair<string, int>>(n, {"", 0}));
+
+    // Base Case: Initializing diagonal of the dp
+    // Cost for multiplying a single matrix is zero
+    for (int i = 0; i < n; i++) {
+
+        string temp = "";
+
+        // Label the matrices as A, B, C, ...
+        temp += char('A' + i);
+
+        // No cost for multiplying a single matrix
+        dp[i][i] = {temp, 0};
+    }
+
+    // Fill the DP table for chain lengths greater than 1
+    for (int len = 2; len < n; len++) {
+        for (int i = 0; i < n - len; i++) {
+            int j = i + len - 1;
+            int cost = INT_MAX;
+            string str;
+
+            // Try all possible split points k between i and j
+            for (int k = i + 1; k <= j; k++) {
+
+                // Calculate the cost of multiplying
+                // matrices from i to k and from k to j
+                int currCost = dp[i][k - 1].second +
+                dp[k][j].second + arr[i] * arr[k] * arr[j + 1];
+
+                // Update if we find a lower cost
+                if (currCost < cost) {
+                    cost = currCost;
+                    str = "(" + dp[i][k - 1].first +
+                    dp[k][j].first + ")";
+                }
+            }
+
+            dp[i][j] = {str, cost};
+        }
+    }
+
+    // Return the optimal matrix order
+  	// for the entire chain
+    return dp[0][n - 2].first;
+}
+
+int main() {
+
+    vector<int> arr = {40, 20, 30, 10, 30};
+    cout << matrixChainOrder(arr) << endl;
+    return 0;
+}
+
+Java
+
+// Java program to find Optimal parenthesization
+// using Tabulation
+
+import java.util.*;
+
+class GfG {
+
+    // Custom pair class where first value is matrix
+    // multiplication order and second is optimal cost
+    static class Pair {
+        String first;
+        Integer second;
+
+        Pair(String first, Integer second) {
+            this.first = first;
+            this.second = second;
+        }
+    }
+
+    static String matrixChainOrder(int[] arr) {
+        int n = arr.length;
+
+        // dp[i][j] stores a pair: matrix order, minimum cost
+        Pair[][] dp = new Pair[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                dp[i][j] = new Pair("", 0);
+            }
+        }
+
+        // Base Case: Initializing diagonal of the dp
+        // Cost for multiplying a single matrix is zero
+        for (int i = 0; i < n; i++) {
+            String temp = "";
+
+            // Label the matrices as A, B, C, ...
+            temp += (char) ('A' + i);
+
+            // No cost for multiplying a single matrix
+            dp[i][i] = new Pair(temp, 0);
+        }
+
+        // Fill the DP table for chain lengths greater than 1
+        for (int len = 2; len < n; len++) {
+            for (int i = 0; i < n - len; i++) {
+                int j = i + len - 1;
+                int cost = Integer.MAX_VALUE;
+                String str = "";
+
+                // Try all possible split points k between i and j
+                for (int k = i + 1; k <= j; k++) {
+
+                    // Calculate the cost of multiplying
+                    // matrices from i to k and from k to j
+                    int currCost = dp[i][k - 1].second + dp[k][j].second
+                            + arr[i] * arr[k] * arr[j + 1];
+
+                    // Update if we find a lower cost
+                    if (currCost < cost) {
+                        cost = currCost;
+                        str = "(" + dp[i][k - 1].first + dp[k][j].first + ")";
+                    }
+                }
+
+                dp[i][j] = new Pair(str, cost);
+            }
+        }
+
+        // Return the optimal matrix order for the entire chain
+        return dp[0][n - 2].first;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {40, 20, 30, 10, 30};
+        System.out.println(matrixChainOrder(arr));
+    }
+}
+
+Python
+
+# Python program to find Optimal parenthesization
+# using Tabulation
+
+def matrixChainOrder(arr):
+    n = len(arr)
+
+    # dp[i][j] stores a pair: matrix order,
+    # minimum cost
+    dp = [[("", 0) for i in range(n)] for i in range(n)]
+
+    # Base Case: Initializing diagonal of the dp
+    # Cost for multiplying a single matrix is zero
+    for i in range(n):
+        temp = ""
+
+        # Label the matrices as A, B, C, ...
+        temp += chr(ord('A') + i)
+
+        # No cost for multiplying a single matrix
+        dp[i][i] = (temp, 0)
+
+    # Fill the DP table for chain lengths
+    # greater than 1
+    for length in range(2, n):
+        for i in range(n - length):
+            j = i + length - 1
+            cost = float("inf")
+            str = ""
+
+            # Try all possible split points k
+            # between i and j
+            for k in range(i + 1, j + 1):
+
+                # Calculate the cost of multiplying
+                # matrices from i to k and from k to j
+                currCost = (
+                    dp[i][k - 1][1] + dp[k][j][1]
+                    + arr[i] * arr[k] * arr[j + 1]
+                )
+
+                # Update if we find a lower cost
+                if currCost < cost:
+                    cost = currCost
+                    str = "(" + dp[i][k - 1][0] + dp[k][j][0] + ")"
+
+            dp[i][j] = (str, cost)
+
+    # Return the optimal matrix order for
+    # the entire chain
+    return dp[0][n - 2][0]
+
+arr = [40, 20, 30, 10, 30]
+print(matrixChainOrder(arr))
+
+C#
+
+// C# program to find Optimal parenthesization using Tabulation
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static string MatrixChainOrder(List<int> arr) {
+        int n = arr.Count;
+
+        // dp[i][j] stores a pair: matrix order, minimum cost
+        var dp = new (string, int)[n, n];
+
+        // Base Case: Initializing diagonal of the dp
+        // Cost for multiplying a single matrix is zero
+        for (int i = 0; i < n; i++) {
+            string temp = "";
+
+            // Label the matrices as A, B, C, ...
+            temp += (char)('A' + i);
+
+            // No cost for multiplying a single matrix
+            dp[i, i] = (temp, 0);
+        }
+
+        // Fill the DP table for chain lengths greater than 1
+        for (int len = 2; len < n; len++) {
+            for (int i = 0; i < n - len; i++) {
+                int j = i + len - 1;
+                int cost = int.MaxValue;
+                string str = "";
+
+                // Try all possible split points k between i and j
+                for (int k = i + 1; k <= j; k++) {
+
+                    // Calculate the cost of multiplying
+                    // matrices from i to k and from k to j
+                    int currCost = dp[i, k - 1].Item2 + dp[k, j].Item2
+                            + arr[i] * arr[k] * arr[j + 1];
+
+                    // Update if we find a lower cost
+                    if (currCost < cost) {
+                        cost = currCost;
+                        str = "(" + dp[i, k - 1].Item1 + dp[k, j].Item1 + ")";
+                    }
+                }
+
+                dp[i, j] = (str, cost);
+            }
+        }
+
+        // Return the optimal matrix order
+      	// for the entire chain
+        return dp[0, n - 2].Item1;
+    }
+
+    static void Main() {
+        List<int> arr = new List<int> { 40, 20, 30, 10, 30 };
+        Console.WriteLine(MatrixChainOrder(arr));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find Optimal parenthesization using Tabulation
+
+function matrixChainOrder(arr) {
+    const n = arr.length;
+
+    // dp[i][j] stores a pair: matrix order,
+    // minimum cost
+    const dp = Array.from({ length: n }, () => Array(n).fill(["", 0]));
+
+    // Base Case: Initializing diagonal of the dp
+    // Cost for multiplying a single matrix is zero
+    for (let i = 0; i < n; i++) {
+        let temp = "";
+
+        // Label the matrices as A, B, C, ...
+        temp += String.fromCharCode("A".charCodeAt(0) + i);
+
+        // No cost for multiplying a single matrix
+        dp[i][i] = [temp, 0];
+    }
+
+    // Fill the DP table for chain lengths greater than 1
+    for (let len = 2; len < n; len++) {
+        for (let i = 0; i < n - len; i++) {
+            const j = i + len - 1;
+            let cost = Infinity;
+            let str = "";
+
+            // Try all possible split points k between i and j
+            for (let k = i + 1; k <= j; k++) {
+
+                // Calculate the cost of multiplying
+                // matrices from i to k and from k to j
+                const currCost = dp[i][k - 1][1] + dp[k][j][1]
+                        + arr[i] * arr[k] * arr[j + 1];
+
+                // Update if we find a lower cost
+                if (currCost < cost) {
+                    cost = currCost;
+                    str = "(" + dp[i][k - 1][0] + dp[k][j][0] + ")";
+                }
+            }
+
+            dp[i][j] = [str, cost];
+        }
+    }
+
+    // Return the optimal matrix order for
+    // the entire chain
+    return dp[0][n - 2][0];
+}
+
+const arr = [40, 20, 30, 10, 30];
+console.log(matrixChainOrder(arr));
+
+Output
+
+((A(BC))D)

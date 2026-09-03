@@ -1,0 +1,1692 @@
+Source: https://www.geeksforgeeks.org/dsa/operations-sparse-matrices/
+Title: Operations on Sparse Matrices
+Extractor: 2
+
+Given two sparse matrices ( Sparse Matrix and its representations | Set 1 (Using Arrays and Linked Lists) ), perform operations such as add, multiply or transpose of the matrices in their sparse form itself. The result should consist of three sparse matrices, one obtained by adding the two input matrices, one by multiplying the two matrices and one obtained by transpose of the first matrix.
+
+Example: Note that other entries of matrices will be zero as matrices are sparse.
+
+Input :
+
+Matrix 1: (4x4)
+Row Column Value
+1   2       10
+1   4       12
+3   3       5
+4   1       15
+4   2       12
+
+Matrix 2: (4X4)
+Row Column Value
+1   3       8
+2   4       23
+3   3       9
+4   1       20
+4   2       25
+
+Output :
+
+Result of Addition: (4x4)
+Row Column Value
+1   2      10
+1   3      8
+1   4      12
+2   4      23
+3   3      14
+4   1      35
+4   2      37
+
+Result of Multiplication: (4x4)
+Row Column Value
+1   1      240
+1   2      300
+1   4      230
+3   3      45
+4   3      120
+4   4      276
+
+Result of transpose on the first matrix: (4x4)
+Row Column Value
+1   4      15
+2   1      10
+2   4      12
+3   3      5
+4   1      12
+
+The sparse matrix used anywhere in the program is sorted according to its row values. Two elements with the same row values are further sorted according to their column values.
+
+Now to Add the matrices, we simply traverse through both matrices element by element and insert the smaller element (one with smaller row and col value) into the resultant matrix. If we come across an element with the same row and column value, we simply add their values and insert the added data into the resultant matrix.
+
+To Transpose a matrix, we can simply change every column value to the row value and vice-versa, however, in this case, the resultant matrix won't be sorted as we require. Hence, we initially determine the number of elements less than the current element's column being inserted in order to get the exact index of the resultant matrix where the current element should be placed. This is done by maintaining an array index[] whose ith value indicates the number of elements in the matrix less than the column i.
+
+To Multiply the matrices, we first calculate transpose of the second matrix to simplify our comparisons and maintain the sorted order. So, the resultant matrix is obtained by traversing through the entire length of both matrices and summing the appropriate multiplied values.
+
+Any row value equal to x in the first matrix and row value equal to y in the second matrix (transposed one) will contribute towards result[x][y]. This is obtained by multiplying all such elements having col value in both matrices and adding only those with the row as x in first matrix and row as y in the second transposed matrix to get the result[x][y].
+
+For example: Consider 2 matrices:
+
+Row Col Val      Row Col Val
+1   2   10       1   1   2
+1   3   12       1   2   5
+2   1   1        2   2   1
+2   3   2        3   1   8
+
+The resulting matrix after multiplication will be obtained as follows:
+
+Transpose of second matrix:
+
+Row Col Val      Row Col Val
+1   2   10       1   1   2
+1   3   12       1   3   8
+2   1   1        2   1   5
+2   3   2        2   2   1
+
+Summation of multiplied values:
+
+result[1][1] = A[1][3]*B[1][3] = 12*8 = 96
+result[1][2] = A[1][2]*B[2][2] = 10*1 = 10
+result[2][1] = A[2][1]*B[1][1] + A[2][3]*B[1][3] = 2*1 + 2*8 = 18
+result[2][2] = A[2][1]*B[2][1] = 1*5 = 5
+
+Any other element cannot be obtained
+by any combination of row in
+Matrix A and Row in Matrix B.
+
+Hence the final resultant matrix will be:
+
+Row Col Val
+1   1   96
+1   2   10
+2   1   18
+2   2   5
+
+Following is the implementation of above approach:
+
+C++
+
+// C++ code to perform add, multiply
+// and transpose on sparse matrices
+#include <iostream>
+using namespace std;
+
+class sparse_matrix
+{
+
+    // Maximum number of elements in matrix
+    const static int MAX = 100;
+
+    // Double-pointer initialized by
+    // the constructor to store
+    // the triple-represented form
+    int **data;
+
+    // dimensions of matrix
+    int row, col;
+
+    // total number of elements in matrix
+    int len;
+
+public:
+    sparse_matrix(int r, int c)
+    {
+
+        // initialize row
+        row = r;
+
+        // initialize col
+        col = c;
+
+        // initialize length to 0
+        len = 0;
+
+        //Array of Pointer to make a matrix
+        data = new int *[MAX];
+
+        // Array representation
+        // of sparse matrix
+        //[,0] represents row
+        //[,1] represents col
+        //[,2] represents value
+        for (int i = 0; i < MAX; i++)
+            data[i] = new int[3];
+    }
+
+    // insert elements into sparse matrix
+    void insert(int r, int c, int val)
+    {
+
+        // invalid entry
+        if (r > row || c > col)
+        {
+            cout << "Wrong entry";
+        }
+        else
+        {
+
+            // insert row value
+            data[len][0] = r;
+
+            // insert col value
+            data[len][1] = c;
+
+            // insert element's value
+            data[len][2] = val;
+
+            // increment number of data in matrix
+            len++;
+        }
+    }
+
+    void add(sparse_matrix b)
+    {
+
+        // if matrices don't have same dimensions
+        if (row != b.row || col != b.col)
+        {
+            cout << "Matrices can't be added";
+        }
+
+        else
+        {
+            int apos = 0, bpos = 0;
+            sparse_matrix result(row, col);
+
+            while (apos < len && bpos < b.len)
+            {
+
+                // if b's row and col is smaller
+                if (data[apos][0] > b.data[bpos][0] ||
+                   (data[apos][0] == b.data[bpos][0] &&
+                    data[apos][1] > b.data[bpos][1]))
+
+                {
+
+                    // insert smaller value into result
+                    result.insert(b.data[bpos][0],
+                                  b.data[bpos][1],
+                                  b.data[bpos][2]);
+
+                    bpos++;
+                }
+
+                // if a's row and col is smaller
+                else if (data[apos][0] < b.data[bpos][0] ||
+                        (data[apos][0] == b.data[bpos][0] &&
+                         data[apos][1] < b.data[bpos][1]))
+
+                {
+
+                    // insert smaller value into result
+                    result.insert(data[apos][0],
+                                  data[apos][1],
+                                  data[apos][2]);
+
+                    apos++;
+                }
+
+                else
+                {
+
+                    // add the values as row and col is same
+                    int addedval = data[apos][2] +
+                                 b.data[bpos][2];
+
+                    if (addedval != 0)
+                        result.insert(data[apos][0],
+                                      data[apos][1],
+                                      addedval);
+                    // then insert
+                    apos++;
+                    bpos++;
+                }
+            }
+
+            // insert remaining elements
+            while (apos < len)
+                result.insert(data[apos][0],
+                              data[apos][1],
+                              data[apos++][2]);
+
+            while (bpos < b.len)
+                result.insert(b.data[bpos][0],
+                              b.data[bpos][1],
+                              b.data[bpos++][2]);
+
+            // print result
+            result.print();
+        }
+    }
+
+    sparse_matrix transpose()
+    {
+
+        // new matrix with inversed row X col
+        sparse_matrix result(col, row);
+
+        // same number of elements
+        result.len = len;
+
+        // to count number of elements in each column
+        int *count = new int[col + 1];
+
+        // initialize all to 0
+        for (int i = 1; i <= col; i++)
+            count[i] = 0;
+
+        for (int i = 0; i < len; i++)
+            count[data[i][1]]++;
+
+        int *index = new int[col + 1];
+
+        // to count number of elements having
+        // col smaller than particular i
+
+        // as there is no col with value < 0
+        index[0] = 0;
+
+        // initialize rest of the indices
+        for (int i = 1; i <= col; i++)
+
+            index[i] = index[i - 1] + count[i - 1];
+
+        for (int i = 0; i < len; i++)
+        {
+
+            // insert a data at rpos and
+            // increment its value
+            int rpos = index[data[i][1]]++;
+
+            // transpose row=col
+            result.data[rpos][0] = data[i][1];
+
+            // transpose col=row
+            result.data[rpos][1] = data[i][0];
+
+            // same value
+            result.data[rpos][2] = data[i][2];
+        }
+
+        // the above method ensures
+        // sorting of transpose matrix
+        // according to row-col value
+        return result;
+    }
+
+    void multiply(sparse_matrix b)
+    {
+        if (col != b.row)
+        {
+
+            // Invalid multiplication
+            cout << "Can't multiply, Invalid dimensions";
+            return;
+        }
+
+        // transpose b to compare row
+        // and col values and to add them at the end
+        b = b.transpose();
+        int apos, bpos;
+
+        // result matrix of dimension row X b.col
+        // however b has been transposed,
+        // hence row X b.row
+        sparse_matrix result(row, b.row);
+
+        // iterate over all elements of A
+        for (apos = 0; apos < len;)
+        {
+
+            // current row of result matrix
+            int r = data[apos][0];
+
+            // iterate over all elements of B
+            for (bpos = 0; bpos < b.len;)
+            {
+
+                // current column of result matrix
+                // data[,0] used as b is transposed
+                int c = b.data[bpos][0];
+
+                // temporary pointers created to add all
+                // multiplied values to obtain current
+                // element of result matrix
+                int tempa = apos;
+                int tempb = bpos;
+
+                int sum = 0;
+
+                // iterate over all elements with
+                // same row and col value
+                // to calculate result[r]
+                while (tempa < len && data[tempa][0] == r &&
+                       tempb < b.len && b.data[tempb][0] == c)
+                {
+                    if (data[tempa][1] < b.data[tempb][1])
+
+                        // skip a
+                        tempa++;
+
+                    else if (data[tempa][1] > b.data[tempb][1])
+
+                        // skip b
+                        tempb++;
+                    else
+
+                        // same col, so multiply and increment
+                        sum += data[tempa++][2] *
+                             b.data[tempb++][2];
+                }
+
+                // insert sum obtained in result[r]
+                // if its not equal to 0
+                if (sum != 0)
+                    result.insert(r, c, sum);
+
+                while (bpos < b.len &&
+                       b.data[bpos][0] == c)
+
+                    // jump to next column
+                    bpos++;
+            }
+            while (apos < len && data[apos][0] == r)
+
+                // jump to next row
+                apos++;
+        }
+        result.print();
+    }
+
+    // printing matrix
+    void print()
+    {
+        cout << "\nDimension: " << row << "x" << col;
+        cout << "\nSparse Matrix: \nRow\tColumn\tValue\n";
+
+        for (int i = 0; i < len; i++)
+        {
+            cout << data[i][0] << "\t " << data[i][1]
+                 << "\t " << data[i][2] << endl;
+        }
+    }
+};
+
+// Driver Code
+int main()
+{
+
+    // create two sparse matrices and insert values
+    sparse_matrix a(4, 4);
+    sparse_matrix b(4, 4);
+
+    a.insert(1, 2, 10);
+    a.insert(1, 4, 12);
+    a.insert(3, 3, 5);
+    a.insert(4, 1, 15);
+    a.insert(4, 2, 12);
+    b.insert(1, 3, 8);
+    b.insert(2, 4, 23);
+    b.insert(3, 3, 9);
+    b.insert(4, 1, 20);
+    b.insert(4, 2, 25);
+
+    // Output result
+    cout << "Addition: ";
+    a.add(b);
+    cout << "\nMultiplication: ";
+    a.multiply(b);
+    cout << "\nTranspose: ";
+    sparse_matrix atranspose = a.transpose();
+    atranspose.print();
+}
+
+// This code is contributed
+// by Bharath Vignesh J K
+
+Java
+
+// Java code to perform add,
+// multiply and transpose on sparse matrices
+
+public class sparse_matrix {
+
+    // Maximum number of elements in matrix
+    int MAX = 100;
+
+    // Array representation
+    // of sparse matrix
+    //[][0] represents row
+    //[][1] represents col
+    //[][2] represents value
+    int data[][] = new int[MAX][3];
+
+    // dimensions of matrix
+    int row, col;
+
+    // total number of elements in matrix
+    int len;
+
+    public sparse_matrix(int r, int c)
+    {
+
+        // initialize row
+        row = r;
+
+        // initialize col
+        col = c;
+
+        // initialize length to 0
+        len = 0;
+    }
+
+    // insert elements into sparse matrix
+    public void insert(int r, int c, int val)
+    {
+
+        // invalid entry
+        if (r > row || c > col) {
+            System.out.println("Wrong entry");
+        }
+
+        else {
+
+            // insert row value
+            data[len][0] = r;
+
+            // insert col value
+            data[len][1] = c;
+
+            // insert element's value
+            data[len][2] = val;
+
+            // increment number of data in matrix
+            len++;
+        }
+    }
+
+    public void add(sparse_matrix b)
+    {
+
+        // if matrices don't have same dimensions
+        if (row != b.row || col != b.col) {
+            System.out.println("Matrices can't be added");
+        }
+
+        else {
+
+            int apos = 0, bpos = 0;
+            sparse_matrix result = new sparse_matrix(row, col);
+
+            while (apos < len && bpos < b.len) {
+
+                // if b's row and col is smaller
+                if (data[apos][0] > b.data[bpos][0] ||
+                  (data[apos][0] == b.data[bpos][0] &&
+                   data[apos][1] > b.data[bpos][1]))
+
+                {
+
+                    // insert smaller value into result
+                    result.insert(b.data[bpos][0],
+                                  b.data[bpos][1],
+                                  b.data[bpos][2]);
+
+                    bpos++;
+                }
+
+                // if a's row and col is smaller
+                else if (data[apos][0] < b.data[bpos][0] ||
+                (data[apos][0] == b.data[bpos][0] &&
+                  data[apos][1] < b.data[bpos][1]))
+
+                {
+
+                    // insert smaller value into result
+                    result.insert(data[apos][0],
+                                  data[apos][1],
+                                  data[apos][2]);
+
+                    apos++;
+                }
+
+                else {
+
+                    // add the values as row and col is same
+                    int addedval = data[apos][2] + b.data[bpos][2];
+
+                    if (addedval != 0)
+                        result.insert(data[apos][0],
+                                      data[apos][1],
+                                      addedval);
+                    // then insert
+                    apos++;
+                    bpos++;
+                }
+            }
+
+            // insert remaining elements
+            while (apos < len)
+                result.insert(data[apos][0],
+                              data[apos][1],
+                              data[apos++][2]);
+
+            while (bpos < b.len)
+                result.insert(b.data[bpos][0],
+                              b.data[bpos][1],
+                              b.data[bpos++][2]);
+
+            // print result
+            result.print();
+        }
+    }
+
+    public sparse_matrix transpose()
+    {
+
+        // new matrix with inversed row X col
+        sparse_matrix result = new sparse_matrix(col, row);
+
+        // same number of elements
+        result.len = len;
+
+        // to count number of elements in each column
+        int count[] = new int[col + 1];
+
+        // initialize all to 0
+        for (int i = 1; i <= col; i++)
+            count[i] = 0;
+
+        for (int i = 0; i < len; i++)
+            count[data[i][1]]++;
+
+        int[] index = new int[col + 1];
+
+        // to count number of elements having col smaller
+        // than particular i
+
+        // as there is no col with value < 1
+        index[1] = 0;
+
+        // initialize rest of the indices
+        for (int i = 2; i <= col; i++)
+
+            index[i] = index[i - 1] + count[i - 1];
+
+        for (int i = 0; i < len; i++) {
+
+            // insert a data at rpos and increment its value
+            int rpos = index[data[i][1]]++;
+
+            // transpose row=col
+            result.data[rpos][0] = data[i][1];
+
+            // transpose col=row
+            result.data[rpos][1] = data[i][0];
+
+            // same value
+            result.data[rpos][2] = data[i][2];
+        }
+
+        // the above method ensures
+        // sorting of transpose matrix
+        // according to row-col value
+        return result;
+    }
+
+    public void multiply(sparse_matrix b)
+    {
+
+        if (col != b.row) {
+
+            // Invalid multiplication
+            System.out.println("Can't multiply, "
+                               + "Invalid dimensions");
+
+            return;
+        }
+
+        // transpose b to compare row
+        // and col values and to add them at the end
+        b = b.transpose();
+        int apos, bpos;
+
+        // result matrix of dimension row X b.col
+        // however b has been transposed, hence row X b.row
+        sparse_matrix result = new sparse_matrix(row, b.row);
+
+        // iterate over all elements of A
+        for (apos = 0; apos < len;) {
+
+            // current row of result matrix
+            int r = data[apos][0];
+
+            // iterate over all elements of B
+            for (bpos = 0; bpos < b.len;) {
+
+                // current column of result matrix
+                // data[][0] used as b is transposed
+                int c = b.data[bpos][0];
+
+                // temporary pointers created to add all
+                // multiplied values to obtain current
+                // element of result matrix
+                int tempa = apos;
+                int tempb = bpos;
+
+                int sum = 0;
+
+                // iterate over all elements with
+                // same row and col value
+                // to calculate result[r][c]
+                while (tempa < len && data[tempa][0] == r
+                       && tempb < b.len && b.data[tempb][0] == c) {
+
+                    if (data[tempa][1] < b.data[tempb][1])
+
+                        // skip a
+                        tempa++;
+
+                    else if (data[tempa][1] > b.data[tempb][1])
+
+                        // skip b
+                        tempb++;
+                    else
+
+                        // same col, so multiply and increment
+                        sum += data[tempa++][2] * b.data[tempb++][2];
+                }
+
+                // insert sum obtained in result[r][c]
+                // if its not equal to 0
+                if (sum != 0)
+                    result.insert(r, c, sum);
+
+                while (bpos < b.len && b.data[bpos][0] == c)
+
+                    // jump to next column
+                    bpos++;
+            }
+
+            while (apos < len && data[apos][0] == r)
+
+                // jump to next row
+                apos++;
+        }
+
+        result.print();
+    }
+
+    // printing matrix
+    public void print()
+    {
+        System.out.println("Dimension: " + row + "x" + col);
+        System.out.println("Sparse Matrix: \nRow Column Value");
+
+        for (int i = 0; i < len; i++) {
+
+            System.out.println(data[i][0] + " "
+                             + data[i][1] + " " + data[i][2]);
+        }
+    }
+
+    public static void main(String args[])
+    {
+
+        // create two sparse matrices and insert values
+        sparse_matrix a = new sparse_matrix(4, 4);
+        sparse_matrix b = new sparse_matrix(4, 4);
+
+        a.insert(1, 2, 10);
+        a.insert(1, 4, 12);
+        a.insert(3, 3, 5);
+        a.insert(4, 1, 15);
+        a.insert(4, 2, 12);
+        b.insert(1, 3, 8);
+        b.insert(2, 4, 23);
+        b.insert(3, 3, 9);
+        b.insert(4, 1, 20);
+        b.insert(4, 2, 25);
+
+        // Output result
+        System.out.println("Addition: ");
+        a.add(b);
+        System.out.println("\nMultiplication: ");
+        a.multiply(b);
+        System.out.println("\nTranspose: ");
+        sparse_matrix atranspose = a.transpose();
+        atranspose.print();
+    }
+}
+
+// This code is contributed by Sudarshan Khasnis
+
+Python3
+
+# Python3 code to perform add,
+# multiply and transpose on sparse matrices
+class sparse_matrix :
+
+    def __init__(self, r, c):
+
+        # Maximum number of elements in matrix
+        self.MAX = 100;
+
+        # Array representation
+        # of sparse matrix
+        #[][0] represents row
+        #[][1] represents col
+        #[][2] represents value
+        self.data = [None for _ in range(self.MAX)]
+        for i in range(self.MAX):
+            self.data[i] = [None for _ in range(3)]
+
+        # dimensions of matrix
+        self.row = r;
+        self.col = c;
+
+        # total number of elements in matrix
+        self.len = 0;
+
+    # insert elements into sparse matrix
+    def insert(self, r, c, val):
+
+        # invalid entry
+        if (r > self.row or c > self.col) :
+            print("Wrong entry");
+        else :
+
+            # insert row value
+            self.data[self.len][0] = r;
+
+            # insert col value
+            self.data[self.len][1] = c;
+
+            # insert element's value
+            self.data[self.len][2] = val;
+
+            # increment number of data in matrix
+            self.len += 1;
+
+    def add(self, b):
+
+        # if matrices don't have same dimensions
+        if (self.row != b.row or self.col != b.col) :
+            print("Matrices can't be added");
+        else:
+
+            apos = 0;
+            bpos = 0;
+            result = sparse_matrix(self.row, self.col);
+
+            while (apos < self.len and bpos < b.len):
+
+                # if b's row and col is smaller
+                if (self.data[apos][0] > b.data[bpos][0] or (self.data[apos][0] == b.data[bpos][0] and self.data[apos][1] > b.data[bpos][1])):
+
+                    # insert smaller value into result
+                    result.insert(b.data[bpos][0],
+                                  b.data[bpos][1],
+                                  b.data[bpos][2]);
+                    bpos += 1
+
+                # if a's row and col is smaller
+                elif (self.data[apos][0] < b.data[bpos][0] or (self.data[apos][0] == b.data[bpos][0] and self.data[apos][1] < b.data[bpos][1])):
+
+                    # insert smaller value into result
+                    result.insert(self.data[apos][0], self.data[apos][1], self.data[apos][2]);
+                    apos += 1;
+
+                else:
+
+                    # add the values as row and col is same
+                    addedval = self.data[apos][2] + b.data[bpos][2];
+
+                    if (addedval != 0):
+                        result.insert(self.data[apos][0], self.data[apos][1], addedval);
+                    # then insert
+                    apos += 1;
+                    bpos += 1;
+
+            # insert remaining elements
+            while (apos < self.len):
+                result.insert(self.data[apos][0],self.data[apos][1], self.data[apos][2]);
+                apos += 1
+
+            while (bpos < b.len):
+                result.insert(b.data[bpos][0], b.data[bpos][1], b.data[bpos][2]);
+                bpos += 1
+
+            # print result
+            result.print();
+
+    def transpose(self):
+
+        # new matrix with inversed row X col
+        result = sparse_matrix(self.col, self.row);
+
+        # same number of elements
+        result.len = self.len;
+
+        # to count number of elements in each column
+        count = [None for _ in range(self.col + 1)];
+
+        # initialize all to 0
+        for i in range(1, 1 + self.col):
+            count[i] = 0;
+
+        for i in range(0, self.len):
+            count[self.data[i][1]] += 1
+
+        index = [None for _ in range(self.col + 1)]
+
+        # to count number of elements having col smaller
+        # than particular i
+
+        # as there is no col with value < 1
+        index[1] = 0;
+
+        # initialize rest of the indices
+        for i in range(2, 1 + self.col):
+            index[i] = index[i - 1] + count[i - 1];
+
+        for i in range(self.len):
+
+            # insert a data at rpos and increment its value
+            rpos = index[self.data[i][1]]
+            index[self.data[i][1]] += 1
+
+            # transpose row=col
+            result.data[rpos][0] = self.data[i][1];
+
+            # transpose col=row
+            result.data[rpos][1] = self.data[i][0];
+
+            # same value
+            result.data[rpos][2] = self.data[i][2];
+
+        # the above method ensures
+        # sorting of transpose matrix
+        # according to row-col value
+        return result;
+
+    def multiply(self, b):
+        if (self.col != b.row):
+
+            # Invalid multiplication
+            print("Can't multiply, Invalid dimensions");
+            return;
+
+        # transpose b to compare row
+        # and col values and to add them at the end
+        b = b.transpose();
+
+        # result matrix of dimension row X b.col
+        # however b has been transposed, hence row X b.row
+        result = sparse_matrix(self.row, b.row);
+
+        # iterate over all elements of A
+        for apos in range(self.len):
+
+            # current row of result matrix
+            r = self.data[apos][0];
+
+            # iterate over all elements of B
+            for bpos in range(b.len):
+
+                # current column of result matrix
+                # data[][0] used as b is transposed
+                c = b.data[bpos][0];
+
+                # temporary pointers created to add all
+                # multiplied values to obtain current
+                # element of result matrix
+                tempa = apos;
+                tempb = bpos;
+                sum = 0;
+
+                # iterate over all elements with
+                # same row and col value
+                # to calculate result[r][c]
+                while (tempa < self.len and self.data[tempa][0] == r and tempb < b.len and b.data[tempb][0] == c):
+
+                    if (self.data[tempa][1] < b.data[tempb][1]):
+
+                        # skip a
+                        tempa += 1
+
+                    elif (self.data[tempa][1]  > b.data[tempb][1]):
+
+                        # skip b
+                        tempb += 1
+                    else:
+
+                        # same col, so multiply and
+                        # increment
+                        sum += self.data[tempa][2] * b.data[tempb][2];
+                        tempa += 1
+                        tempb += 1
+
+                # insert sum obtained in result[r][c]
+                # if its not equal to 0
+                if (sum != 0):
+                    result.insert(r, c, sum);
+                while (bpos < b.len and b.data[bpos][0] == c):
+
+                    # jump to next column
+                    bpos += 1
+
+            while (apos < self.len and self.data[apos][0] == r):
+
+                # jump to next row
+                apos += 1
+
+        result.print();
+
+    # printing matrix
+    def print(self):
+        print("Dimension:", self.row, "x", self.col);
+        print("Sparse Matrix: \nRow Column Value");
+
+        for i in range(self.len):
+            print(self.data[i][0], self.data[i][1], self.data[i][2]);
+
+# create two sparse matrices and insert values
+a = sparse_matrix(4, 4);
+b = sparse_matrix(4, 4);
+
+a.insert(1, 2, 10);
+a.insert(1, 4, 12);
+a.insert(3, 3, 5);
+a.insert(4, 1, 15);
+a.insert(4, 2, 12);
+b.insert(1, 3, 8);
+b.insert(2, 4, 23);
+b.insert(3, 3, 9);
+b.insert(4, 1, 20);
+b.insert(4, 2, 25);
+
+# Output result
+print("Addition: ");
+a.add(b);
+print("\nMultiplication: ");
+a.multiply(b);
+print("\nTranspose: ");
+atranspose = a.transpose();
+atranspose.print();
+
+# This code is contributed by phasing17
+
+C#
+
+// C# code to perform add,
+// multiply and transpose on sparse matrices
+
+public class sparse_matrix {
+
+    // Maximum number of elements in matrix
+    static int MAX = 100;
+
+    // Array representation
+    // of sparse matrix
+    //[,0] represents row
+    //[,1] represents col
+    //[,2] represents value
+    int[,] data = new int[MAX,3];
+
+    // dimensions of matrix
+    int row, col;
+
+    // total number of elements in matrix
+    int len;
+
+    public sparse_matrix(int r, int c)
+    {
+
+        // initialize row
+        row = r;
+
+        // initialize col
+        col = c;
+
+        // initialize length to 0
+        len = 0;
+    }
+
+    // insert elements into sparse matrix
+    public void insert(int r, int c, int val)
+    {
+
+        // invalid entry
+        if (r > row || c > col) {
+            System.Console.WriteLine("Wrong entry");
+        }
+
+        else {
+
+            // insert row value
+            data[len,0] = r;
+
+            // insert col value
+            data[len,1] = c;
+
+            // insert element's value
+            data[len,2] = val;
+
+            // increment number of data in matrix
+            len++;
+        }
+    }
+
+    public void add(sparse_matrix b)
+    {
+
+        // if matrices don't have same dimensions
+        if (row != b.row || col != b.col) {
+            System.Console.WriteLine("Matrices can't be added");
+        }
+
+        else {
+
+            int apos = 0, bpos = 0;
+            sparse_matrix result = new sparse_matrix(row, col);
+
+            while (apos < len && bpos < b.len) {
+
+                // if b's row and col is smaller
+                if (data[apos,0] > b.data[bpos,0] ||
+                (data[apos,0] == b.data[bpos,0] &&
+                data[apos,1] > b.data[bpos,1]))
+
+                {
+
+                    // insert smaller value into result
+                    result.insert(b.data[bpos,0],
+                                b.data[bpos,1],
+                                b.data[bpos,2]);
+
+                    bpos++;
+                }
+
+                // if a's row and col is smaller
+                else if (data[apos,0] < b.data[bpos,0] ||
+                (data[apos,0] == b.data[bpos,0] &&
+                data[apos,1] < b.data[bpos,1]))
+
+                {
+
+                    // insert smaller value into result
+                    result.insert(data[apos,0],
+                                data[apos,1],
+                                data[apos,2]);
+
+                    apos++;
+                }
+
+                else {
+
+                    // add the values as row and col is same
+                    int addedval = data[apos,2] + b.data[bpos,2];
+
+                    if (addedval != 0)
+                        result.insert(data[apos,0],
+                                    data[apos,1],
+                                    addedval);
+                    // then insert
+                    apos++;
+                    bpos++;
+                }
+            }
+
+            // insert remaining elements
+            while (apos < len)
+                result.insert(data[apos,0],
+                            data[apos,1],
+                            data[apos++,2]);
+
+            while (bpos < b.len)
+                result.insert(b.data[bpos,0],
+                            b.data[bpos,1],
+                            b.data[bpos++,2]);
+
+            // print result
+            result.print();
+        }
+    }
+
+    public sparse_matrix transpose()
+    {
+
+        // new matrix with inversed row X col
+        sparse_matrix result = new sparse_matrix(col, row);
+
+        // same number of elements
+        result.len = len;
+
+        // to count number of elements in each column
+        int[] count = new int[col + 1];
+
+        // initialize all to 0
+        for (int i = 1; i <= col; i++)
+            count[i] = 0;
+
+        for (int i = 0; i < len; i++)
+            count[data[i,1]]++;
+
+        int[] index = new int[col + 1];
+
+        // to count number of elements having col smaller
+        // than particular i
+
+        // as there is no col with value < 1
+        index[1] = 0;
+
+        // initialize rest of the indices
+        for (int i = 2; i <= col; i++)
+
+            index[i] = index[i - 1] + count[i - 1];
+
+        for (int i = 0; i < len; i++) {
+
+            // insert a data at rpos and increment its value
+            int rpos = index[data[i,1]]++;
+
+            // transpose row=col
+            result.data[rpos,0] = data[i,1];
+
+            // transpose col=row
+            result.data[rpos,1] = data[i,0];
+
+            // same value
+            result.data[rpos,2] = data[i,2];
+        }
+
+        // the above method ensures
+        // sorting of transpose matrix
+        // according to row-col value
+        return result;
+    }
+
+    public void multiply(sparse_matrix b)
+    {
+
+        if (col != b.row) {
+
+            // Invalid multiplication
+            System.Console.WriteLine("Can't multiply, "
+                            + "Invalid dimensions");
+
+            return;
+        }
+
+        // transpose b to compare row
+        // and col values and to add them at the end
+        b = b.transpose();
+        int apos, bpos;
+
+        // result matrix of dimension row X b.col
+        // however b has been transposed, hence row X b.row
+        sparse_matrix result = new sparse_matrix(row, b.row);
+
+        // iterate over all elements of A
+        for (apos = 0; apos < len;) {
+
+            // current row of result matrix
+            int r = data[apos,0];
+
+            // iterate over all elements of B
+            for (bpos = 0; bpos < b.len;) {
+
+                // current column of result matrix
+                // data[,0] used as b is transposed
+                int c = b.data[bpos,0];
+
+                // temporary pointers created to add all
+                // multiplied values to obtain current
+                // element of result matrix
+                int tempa = apos;
+                int tempb = bpos;
+
+                int sum = 0;
+
+                // iterate over all elements with
+                // same row and col value
+                // to calculate result[r]
+                while (tempa < len && data[tempa,0] == r
+                    && tempb < b.len && b.data[tempb,0] == c) {
+
+                    if (data[tempa,1] < b.data[tempb,1])
+
+                        // skip a
+                        tempa++;
+
+                    else if (data[tempa,1] > b.data[tempb,1])
+
+                        // skip b
+                        tempb++;
+                    else
+
+                        // same col, so multiply and increment
+                        sum += data[tempa++,2] * b.data[tempb++,2];
+                }
+
+                // insert sum obtained in result[r]
+                // if its not equal to 0
+                if (sum != 0)
+                    result.insert(r, c, sum);
+
+                while (bpos < b.len && b.data[bpos,0] == c)
+
+                    // jump to next column
+                    bpos++;
+            }
+
+            while (apos < len && data[apos,0] == r)
+
+                // jump to next row
+                apos++;
+        }
+
+        result.print();
+    }
+
+    // printing matrix
+    public void print()
+    {
+        System.Console.WriteLine("Dimension: " + row + "x" + col);
+        System.Console.WriteLine("Sparse Matrix: \nRow Column Value");
+
+        for (int i = 0; i < len; i++) {
+
+            System.Console.WriteLine(data[i,0] + " "
+                            + data[i,1] + " " + data[i,2]);
+        }
+    }
+
+    public static void Main()
+    {
+
+        // create two sparse matrices and insert values
+        sparse_matrix a = new sparse_matrix(4, 4);
+        sparse_matrix b = new sparse_matrix(4, 4);
+
+        a.insert(1, 2, 10);
+        a.insert(1, 4, 12);
+        a.insert(3, 3, 5);
+        a.insert(4, 1, 15);
+        a.insert(4, 2, 12);
+        b.insert(1, 3, 8);
+        b.insert(2, 4, 23);
+        b.insert(3, 3, 9);
+        b.insert(4, 1, 20);
+        b.insert(4, 2, 25);
+
+        // Output result
+        System.Console.WriteLine("Addition: ");
+        a.add(b);
+        System.Console.WriteLine("\nMultiplication: ");
+        a.multiply(b);
+        System.Console.WriteLine("\nTranspose: ");
+        sparse_matrix atranspose = a.transpose();
+        atranspose.print();
+    }
+}
+
+// This code is contributed by mits
+
+JavaScript
+
+// JavaScript code to perform add,
+// multiply and transpose on sparse matrices
+class sparse_matrix {
+
+    constructor(r, c)
+    {
+
+        // Maximum number of elements in matrix
+        this.MAX = 100;
+
+        // Array representation
+        // of sparse matrix
+        //[][0] represents row
+        //[][1] represents col
+        //[][2] represents value
+        this.data = new Array(this.MAX);
+        for (var i = 0; i < this.MAX; i++)
+            this.data[i] = new Array(3);
+
+        // dimensions of matrix
+        this.row = r;
+        this.col = c;
+
+        // total number of elements in matrix
+        this.len = 0;
+    }
+
+    // insert elements into sparse matrix
+    insert(r, c, val)
+    {
+
+        // invalid entry
+        if (r > this.row || c > this.col) {
+            console.log("Wrong entry");
+        }
+
+        else {
+
+            // insert row value
+            this.data[this.len][0] = r;
+
+            // insert col value
+            this.data[this.len][1] = c;
+
+            // insert element's value
+            this.data[this.len][2] = val;
+
+            // increment number of data in matrix
+            this.len++;
+        }
+    }
+
+    add(b)
+    {
+
+        // if matrices don't have same dimensions
+        if (this.row != b.row || this.col != b.col) {
+            console.log("Matrices can't be added");
+        }
+
+        else {
+
+            let apos = 0, bpos = 0;
+            let result
+                = new sparse_matrix(this.row, this.col);
+
+            while (apos < this.len && bpos < b.len) {
+
+                // if b's row and col is smaller
+                if (this.data[apos][0] > b.data[bpos][0]
+                    || (this.data[apos][0]
+                            == b.data[bpos][0]
+                        && this.data[apos][1]
+                               > b.data[bpos][1]))
+
+                {
+
+                    // insert smaller value into result
+                    result.insert(b.data[bpos][0],
+                                  b.data[bpos][1],
+                                  b.data[bpos][2]);
+
+                    bpos++;
+                }
+
+                // if a's row and col is smaller
+                else if (this.data[apos][0]
+                             < b.data[bpos][0]
+                         || (this.data[apos][0]
+                                 == b.data[bpos][0]
+                             && this.data[apos][1]
+                                    < b.data[bpos][1]))
+
+                {
+
+                    // insert smaller value into result
+                    result.insert(this.data[apos][0],
+                                  this.data[apos][1],
+                                  this.data[apos][2]);
+
+                    apos++;
+                }
+
+                else {
+
+                    // add the values as row and col is same
+                    let addedval = this.data[apos][2]
+                                   + b.data[bpos][2];
+
+                    if (addedval != 0)
+                        result.insert(this.data[apos][0],
+                                      this.data[apos][1],
+                                      addedval);
+                    // then insert
+                    apos++;
+                    bpos++;
+                }
+            }
+
+            // insert remaining elements
+            while (apos < this.len)
+                result.insert(this.data[apos][0],
+                              this.data[apos][1],
+                              this.data[apos++][2]);
+
+            while (bpos < b.len)
+                result.insert(b.data[bpos][0],
+                              b.data[bpos][1],
+                              b.data[bpos++][2]);
+
+            // print result
+            result.print();
+        }
+    }
+
+    transpose()
+    {
+
+        // new matrix with inversed row X col
+        let result = new sparse_matrix(this.col, this.row);
+
+        // same number of elements
+        result.len = this.len;
+
+        // to count number of elements in each column
+        let count = new Array(this.col + 1);
+
+        // initialize all to 0
+        for (var i = 1; i <= this.col; i++)
+            count[i] = 0;
+
+        for (var i = 0; i < this.len; i++)
+            count[this.data[i][1]]++;
+
+        let index = new Array(this.col + 1);
+
+        // to count number of elements having col smaller
+        // than particular i
+
+        // as there is no col with value < 1
+        index[1] = 0;
+
+        // initialize rest of the indices
+        for (var i = 2; i <= this.col; i++)
+
+            index[i] = index[i - 1] + count[i - 1];
+
+        for (var i = 0; i < this.len; i++) {
+
+            // insert a data at rpos and increment its value
+            var rpos = index[this.data[i][1]]++;
+
+            // transpose row=col
+            result.data[rpos][0] = this.data[i][1];
+
+            // transpose col=row
+            result.data[rpos][1] = this.data[i][0];
+
+            // same value
+            result.data[rpos][2] = this.data[i][2];
+        }
+
+        // the above method ensures
+        // sorting of transpose matrix
+        // according to row-col value
+        return result;
+    }
+
+    multiply(b)
+    {
+
+        if (this.col != b.row) {
+
+            // Invalid multiplication
+            console.log("Can't multiply, "
+                        + "Invalid dimensions");
+
+            return;
+        }
+
+        // transpose b to compare row
+        // and col values and to add them at the end
+        b = b.transpose();
+        let apos, bpos;
+
+        // result matrix of dimension row X b.col
+        // however b has been transposed, hence row X b.row
+        let result = new sparse_matrix(this.row, b.row);
+
+        // iterate over all elements of A
+        for (apos = 0; apos < this.len;) {
+
+            // current row of result matrix
+            let r = this.data[apos][0];
+
+            // iterate over all elements of B
+            for (bpos = 0; bpos < b.len;) {
+
+                // current column of result matrix
+                // data[][0] used as b is transposed
+                let c = b.data[bpos][0];
+
+                // temporary pointers created to add all
+                // multiplied values to obtain current
+                // element of result matrix
+                let tempa = apos;
+                let tempb = bpos;
+
+                let sum = 0;
+
+                // iterate over all elements with
+                // same row and col value
+                // to calculate result[r][c]
+                while (tempa < this.len
+                       && this.data[tempa][0] == r
+                       && tempb < b.len
+                       && b.data[tempb][0] == c) {
+
+                    if (this.data[tempa][1]
+                        < b.data[tempb][1])
+
+                        // skip a
+                        tempa++;
+
+                    else if (this.data[tempa][1]
+                             > b.data[tempb][1])
+
+                        // skip b
+                        tempb++;
+                    else
+
+                        // same col, so multiply and
+                        // increment
+                        sum += this.data[tempa++][2]
+                               * b.data[tempb++][2];
+                }
+
+                // insert sum obtained in result[r][c]
+                // if its not equal to 0
+                if (sum != 0)
+                    result.insert(r, c, sum);
+
+                while (bpos < b.len && b.data[bpos][0] == c)
+
+                    // jump to next column
+                    bpos++;
+            }
+
+            while (apos < this.len
+                   && this.data[apos][0] == r)
+
+                // jump to next row
+                apos++;
+        }
+
+        result.print();
+    }
+
+    // printing matrix
+    print()
+    {
+        console.log("Dimension: " + this.row + "x"
+                    + this.col);
+        console.log("Sparse Matrix: \nRow Column Value");
+
+        for (var i = 0; i < this.len; i++) {
+
+            console.log(this.data[i][0] + " "
+                        + this.data[i][1] + " "
+                        + this.data[i][2]);
+        }
+    }
+};
+
+// create two sparse matrices and insert values
+let a = new sparse_matrix(4, 4);
+let b = new sparse_matrix(4, 4);
+
+a.insert(1, 2, 10);
+a.insert(1, 4, 12);
+a.insert(3, 3, 5);
+a.insert(4, 1, 15);
+a.insert(4, 2, 12);
+b.insert(1, 3, 8);
+b.insert(2, 4, 23);
+b.insert(3, 3, 9);
+b.insert(4, 1, 20);
+b.insert(4, 2, 25);
+
+// Output result
+console.log("Addition: ");
+a.add(b);
+console.log("\nMultiplication: ");
+a.multiply(b);
+console.log("\nTranspose: ");
+let atranspose = a.transpose();
+atranspose.print();
+
+// This code is contributed by phasing17
+
+Output
+
+Addition:
+Dimension: 4x4
+Sparse Matrix:
+Row    Column    Value
+1     2     10
+1     3     8
+1     4     12
+2     4     23
+3     3     14
+4     1     35
+4     2     37
+
+Multiplication:
+Dimension: 4x4
+Sparse Matrix:
+Row    Column    Value
+1     1     240
+1     2     300
+1     4     230
+3     3     45
+4     3     120
+4     4     276
+
+Transpose:
+Dimension: 4x4
+Sparse Matrix:
+Row    Column    Value
+1     4     15
+2     1     10
+2     4     12
+3     3     5
+4     1     12
+
+Worst case time complexity: Addition operation traverses the matrices linearly, hence, has a time complexity of O(n), where n is the number of non-zero elements in the larger matrix amongst the two. Transpose has a time complexity of O(n+m), where n is the number of columns and m is the number of non-zero elements in the matrix. Multiplication, however, has a time complexity of O(x*n + y*m), where (x, m) is number of columns and terms in the second matrix; and (y, n) is number of rows and terms in the first matrix.

@@ -1,0 +1,429 @@
+Source: https://www.geeksforgeeks.org/dsa/dynamic-connectivity-set-1-incremental/
+Title: Dynamic Connectivity | Set 1 (Incremental)
+Extractor: 2
+
+Dynamic connectivity is a data structure that dynamically maintains the information about the connected components of graph. In simple words suppose there is a graph G(V, E) in which number of vertices V is constant but number of edges E is variable. There are three ways in which we can change the number of edges
+
+1. Incremental Connectivity : Edges are only added to the graph.
+2. Decremental Connectivity : Edges are only deleted from the graph.
+3. Fully Dynamic Connectivity : Edges can both be deleted and added to the graph.
+
+In this article only Incremental connectivity is discussed. There are mainly two operations that need to be handled.
+
+1. [1, u, v]: An edge between u and v is added to the graph.
+2. [2, u, v]: Check if u and v are connected.
+
+Example:
+
+> Input: V = 5, queries[][] = [[1, 0, 1], [2, 0, 1], [2, 1, 2], [1, 0, 2], [2, 1, 2], [1, 3, 4], [2, 2, 4], [1, 1, 3], [2, 2, 4]] Output: true false true false true Explanation: Initial state: Components = [[0], [1], [2], [3], [4]] Query [1, 0, 1]: Union(0,1) --> Components = [[0,1], [2], [3], [4]] Query [2, 0, 1]: Check connectivity --> Connected: true Query [2, 1, 2]: Check connectivity --> Connected: false Query [1, 0, 2]: Union(0,2) --> Components = [[0,1,2], [3], [4]] Query [2, 1, 2]: Check connectivity --> Connected: true Query [1, 3, 4]: Union(3,4) --> Components = [[0,1,2], [3,4]] Query [2, 2, 4]: Check connectivity --> Connected: false Query [1, 1, 3]: Union(1,3) --> Components = [[0,1,2,3,4]] Query [2, 2, 4]: Check connectivity --> Connected: true
+
+Approach:
+
+> To solve the problems of incremental connectivity disjoint data structure is used. Here each connected component represents a set and if the two nodes belong to the same set it means that they are connected.
+
+Implementation is given below here we are using union by rank and path compression
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Find the representative of the set that x belongs to
+int find(int i, vector<int> &parent) {
+	int root = parent[i];
+
+	if (parent[root] != root) {
+		return parent[i] = find(root, parent);
+	}
+
+	return root;
+}
+
+// Union of sets containing x and y
+void unionSets(int x, int y, vector<int> &rank, vector<int> &parent) {
+	int xRoot = find(x, parent);
+	int yRoot = find(y, parent);
+
+	// If they are in the same set, no need to union
+	if (xRoot == yRoot) return;
+
+	// Union by rank
+	if (rank[xRoot] < rank[yRoot]) {
+		parent[xRoot] = yRoot;
+	} else if (rank[yRoot] < rank[xRoot]) {
+		parent[yRoot] = xRoot;
+	} else {
+		parent[yRoot] = xRoot;
+		rank[xRoot]++;
+	}
+}
+
+vector<bool> incrementalQueries(int V, vector<vector<int>> &queries) {
+	vector<int> rank(V, 0);
+	vector<int> parent(V);
+	for (int i=0; i<V; i++) parent[i] = i;
+
+	vector<bool> res;
+
+    for (int i=0; i<queries.size(); i++) {
+        int q = queries[i][0], u = queries[i][1],
+        v = queries[i][2];
+
+        // For union query
+        if (q == 1) {
+            unionSets(u, v, rank, parent);
+        }
+
+        // Check if connected
+        else {
+
+            // If parents are same, then
+            // connected, otherwise not
+            if (find(u, parent) == find(v, parent)) {
+                res.push_back(true);
+            }
+            else {
+                res.push_back(false);
+            }
+        }
+    }
+
+    return res;
+}
+
+int main() {
+	int V = 5;
+	vector<vector<int>> queries =
+	{	{1, 0, 1}, {2, 0, 1}, {2, 1, 2}, {1, 0, 2}, {2, 1, 2},
+		{1, 3, 4}, {2, 2, 4}, {1, 1, 3}, {2, 2, 4}
+	};
+	vector<bool> res = incrementalQueries(V, queries);
+	for (bool val: res) {
+	    if (val) cout << "true" << " ";
+	    else cout << "false" << " ";
+	}
+	cout << endl;
+
+	return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+class GfG {
+
+    // Find the representative of the set that x belongs to
+    static int find(int i, int[] parent) {
+        int root = parent[i];
+
+        if (parent[root] != root) {
+            return parent[i] = find(root, parent);
+        }
+
+        return root;
+    }
+
+    // Union of sets containing x and y
+    static void unionSets(int x, int y, int[] rank, int[] parent) {
+        int xRoot = find(x, parent);
+        int yRoot = find(y, parent);
+
+        // If they are in the same set, no need to union
+        if (xRoot == yRoot) return;
+
+        // Union by rank
+        if (rank[xRoot] < rank[yRoot]) {
+            parent[xRoot] = yRoot;
+        } else if (rank[yRoot] < rank[xRoot]) {
+            parent[yRoot] = xRoot;
+        } else {
+            parent[yRoot] = xRoot;
+            rank[xRoot]++;
+        }
+    }
+
+    static ArrayList<Boolean> incrementalQueries(int V, int[][] queries) {
+        int[] rank = new int[V];
+        int[] parent = new int[V];
+        for (int i = 0; i < V; i++) parent[i] = i;
+
+        ArrayList<Boolean> res = new ArrayList<>();
+
+        for (int i = 0; i < queries.length; i++) {
+            int q = queries[i][0], u = queries[i][1],
+            v = queries[i][2];
+
+            // For union query
+            if (q == 1) {
+                unionSets(u, v, rank, parent);
+            }
+
+            // Check if connected
+            else {
+
+                // If parents are same, then
+                // connected, otherwise not
+                if (find(u, parent) == find(v, parent)) {
+                    res.add(true);
+                }
+                else {
+                    res.add(false);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int V = 5;
+        int[][] queries =
+        {   {1, 0, 1}, {2, 0, 1}, {2, 1, 2}, {1, 0, 2}, {2, 1, 2},
+            {1, 3, 4}, {2, 2, 4}, {1, 1, 3}, {2, 2, 4}
+        };
+        ArrayList<Boolean> res = incrementalQueries(V, queries);
+        for (boolean val : res) {
+            if (val) System.out.print("true ");
+            else System.out.print("false ");
+        }
+        System.out.println();
+    }
+}
+
+Python
+
+# Find the representative of the set that x belongs to
+def find(i, parent):
+    root = parent[i]
+
+    if parent[root] != root:
+        parent[i] = find(root, parent)
+        return parent[i]
+
+    return root
+
+# Union of sets containing x and y
+def unionSets(x, y, rank, parent):
+    xRoot = find(x, parent)
+    yRoot = find(y, parent)
+
+    # If they are in the same set, no need to union
+    if xRoot == yRoot:
+        return
+
+    # Union by rank
+    if rank[xRoot] < rank[yRoot]:
+        parent[xRoot] = yRoot
+    elif rank[yRoot] < rank[xRoot]:
+        parent[yRoot] = xRoot
+    else:
+        parent[yRoot] = xRoot
+        rank[xRoot] += 1
+
+def incrementalQueries(V, queries):
+    rank = [0] * V
+    parent = [i for i in range(V)]
+
+    res = []
+
+    for query in queries:
+        q, u, v = query
+
+        # For union query
+        if q == 1:
+            unionSets(u, v, rank, parent)
+
+        # Check if connected
+        else:
+
+            # If parents are same, then
+            # connected, otherwise not
+            if find(u, parent) == find(v, parent):
+                res.append(True)
+            else:
+                res.append(False)
+
+    return res
+
+if __name__ == "__main__":
+    V = 5
+    queries = [
+        [1, 0, 1], [2, 0, 1], [2, 1, 2], [1, 0, 2], [2, 1, 2],
+        [1, 3, 4], [2, 2, 4], [1, 1, 3], [2, 2, 4]
+    ]
+    res = incrementalQueries(V, queries)
+    for val in res:
+        if val:
+            print("true", end=" ")
+        else:
+            print("false", end=" ")
+    print()
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Find the representative of the set that x belongs to
+    static int Find(int i, int[] parent) {
+        int root = parent[i];
+
+        if (parent[root] != root) {
+            return parent[i] = Find(root, parent);
+        }
+
+        return root;
+    }
+
+    // Union of sets containing x and y
+    static void UnionSets(int x, int y, int[] rank, int[] parent) {
+        int xRoot = Find(x, parent);
+        int yRoot = Find(y, parent);
+
+        // If they are in the same set, no need to union
+        if (xRoot == yRoot) return;
+
+        // Union by rank
+        if (rank[xRoot] < rank[yRoot]) {
+            parent[xRoot] = yRoot;
+        } else if (rank[yRoot] < rank[xRoot]) {
+            parent[yRoot] = xRoot;
+        } else {
+            parent[yRoot] = xRoot;
+            rank[xRoot]++;
+        }
+    }
+
+    static List<bool> IncrementalQueries(int V, int[,] queries) {
+        int[] rank = new int[V];
+        int[] parent = new int[V];
+        for (int i = 0; i < V; i++) parent[i] = i;
+
+        List<bool> res = new List<bool>();
+
+        for (int i = 0; i < queries.GetLength(0); i++) {
+            int q = queries[i, 0], u = queries[i, 1],
+            v = queries[i, 2];
+
+            // For union query
+            if (q == 1) {
+                UnionSets(u, v, rank, parent);
+            }
+
+            // Check if connected
+            else {
+
+                // If parents are same, then
+                // connected, otherwise not
+                if (Find(u, parent) == Find(v, parent)) {
+                    res.Add(true);
+                }
+                else {
+                    res.Add(false);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int V = 5;
+        int[,] queries =
+        {   {1, 0, 1}, {2, 0, 1}, {2, 1, 2}, {1, 0, 2}, {2, 1, 2},
+            {1, 3, 4}, {2, 2, 4}, {1, 1, 3}, {2, 2, 4}
+        };
+        List<bool> res = IncrementalQueries(V, queries);
+        foreach (bool val in res) {
+            if (val) Console.Write("true ");
+            else Console.Write("false ");
+        }
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+// Find the representative of the set that x belongs to
+function find(i, parent) {
+    let root = parent[i];
+
+    if (parent[root] !== root) {
+        return parent[i] = find(root, parent);
+    }
+
+    return root;
+}
+
+// Union of sets containing x and y
+function unionSets(x, y, rank, parent) {
+    let xRoot = find(x, parent);
+    let yRoot = find(y, parent);
+
+    // If they are in the same set, no need to union
+    if (xRoot === yRoot) return;
+
+    // Union by rank
+    if (rank[xRoot] < rank[yRoot]) {
+        parent[xRoot] = yRoot;
+    } else if (rank[yRoot] < rank[xRoot]) {
+        parent[yRoot] = xRoot;
+    } else {
+        parent[yRoot] = xRoot;
+        rank[xRoot]++;
+    }
+}
+
+function incrementalQueries(V, queries) {
+    let rank = new Array(V).fill(0);
+    let parent = new Array(V);
+    for (let i = 0; i < V; i++) parent[i] = i;
+
+    let res = [];
+
+    for (let i = 0; i < queries.length; i++) {
+        let q = queries[i][0], u = queries[i][1],
+        v = queries[i][2];
+
+        // For union query
+        if (q === 1) {
+            unionSets(u, v, rank, parent);
+        }
+
+        // Check if connected
+        else {
+
+            // If parents are same, then
+            // connected, otherwise not
+            if (find(u, parent) === find(v, parent)) {
+                res.push(true);
+            }
+            else {
+                res.push(false);
+            }
+        }
+    }
+
+    return res;
+}
+
+let V = 5;
+let queries = [
+    [1, 0, 1], [2, 0, 1], [2, 1, 2], [1, 0, 2], [2, 1, 2],
+    [1, 3, 4], [2, 2, 4], [1, 1, 3], [2, 2, 4]
+];
+let res = incrementalQueries(V, queries);
+for (let val of res) {
+    if (val) process.stdout.write("true ");
+    else process.stdout.write("false ");
+}
+console.log();
+
+Output
+
+true false true false true
+
+Time Complexity: O(α(n)), Inverse Ackermann, nearly constant time, because of path compression and union by rank optimization. Space Complexity: O(n), For parent and rank arrays as arrays store disjoint set info for n elements.

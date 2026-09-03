@@ -1,0 +1,1265 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-positive-points-to-reach-destination/
+Title: Minimum Initial Points to Reach Destination
+Extractor: 2
+
+Given a m*n grid with each cell consisting of positive, negative, or no points i.e., zero points. From a cell (i, j) we can move to (i+1, j) or (i, j+1) and we can move to a cell only if we have positive points ( > 0 ) when we move to that cell. Whenever we pass through a cell, points in that cell are added to our overall points. The task is to find the minimum initial points to reach cell (m-1, n-1) from (0, 0).
+
+Example:
+
+> Input: points[][] = [[-2, -3, 3], [-5,-10, 1], [10, 30, -5]] Output: 7 Explanation: 7 is the minimum value to reach the destination with positive throughout the path. Below is the path (0,0) -> (0,1) -> (0,2) -> (1, 2) -> (2, 2). We start from (0, 0) with 7, we reach (0, 1) with 5, (0, 2) with 2, (1, 2) with 5, (2, 2) with and finally we have 1 point (we needed greater than 0 points at the end). Input: p oints[][] = [[2, 3], [5, 10], [10,30]] Output: 1 Explanation: Take any path, all of them are positive. So, required one point at the start
+
+Table of Content
+
+- Using Recursion - O(2^(m*n)) Time and O(m*n) Space
+- Using Top-Down DP (Memoization) - O(n*m) Time and O(n*m) Space
+- Using Bottom-Up DP (Tabulation) - O(m*n) Time and O(m*n) Space
+- Using Dijkstra's Shortest Path Algorithm - O((m*n)*log(m*n)) Time and O(m*n) Space
+
+### Using Recursion - O(2^(m*n)) Time and O(m*n) Space
+
+> For any cell (i, j), we recursively find the minimum initial points needed for its right and down neighbors (i.e., (i, j+1) and (i+1, j)). The minimum of these values, minExitPoints , determines the number of points needed at the current cell: If points[i][j] > 0, the minimum points needed are max(minExitPoints - points[i][j], 1). If points[i][j] <= 0, we need at least minExitPoints - points[i][j] to ensure we can move forward.
+
+Mathematically the recurrence relation will look like the following:
+
+> minPoints(i, j) = max(minExitPoints - points[i][j], 1) where minExitPoints = min(minPoints[i+1][j], minPoints[i][j+1]). Base case: If the destination cell is reached (i == m-1 && j == n-1), we compute the minimum points needed: If the cell value is positive , return 1. If the cell value is negative or zero , return abs(points[i][j]) + 1 to ensure that we have enough points to end up with positive points. Out-of-bounds cells: For any out-of-bounds cell (i.e., when i < 0 or j < 0), we return INT_MAX as it represents an invalid path.
+
+How the above expression covers all the cases?
+
+1. If points[i][j] == 0, No additional points are needed; we leave with the same points as we entered.
+2. If points[i][j] < 0, To account for the negative value, we need enough points to compensate the loss, i.e., minExitPoints - points[i][j].
+3. If points[i][j] > 0, We can enter with as few points as minExitPoints - points[i][j] , but if this value drops to 0 or below, we must enter with at least 1 point. Therefore, the formula max(minExitPoints - points[i][j], 1) ensures that the points remain positive.
+
+C++
+
+// C++ program to find minimum initial
+// points to reach destination
+#include <bits/stdc++.h>
+using namespace std;
+
+// Recursive function to find minimum
+// initial points needed at cell i,j
+int pointsRecur(int i, int j, vector<vector<int>> &points) {
+
+    // Base case 1: If out of bounds
+    if (i < 0 || i == points.size() || j < 0 || j == points[0].size())
+        return INT_MAX;
+
+    // Base case 2: At destination cell (bottom-right)
+    if (i == points.size() - 1 && j == points[0].size() - 1) {
+
+        // If cell value is positive,
+        // we need minimum 1 point
+        if (points[i][j] > 0)
+            return 1;
+
+        // If negative, we need |value| + 1 points to
+        // stay positive after including cell value
+        return abs(points[i][j]) + 1;
+    }
+
+    // Recursively find minimum points
+    // needed for right and down paths
+    int right = pointsRecur(i, j + 1, points);
+    int down = pointsRecur(i + 1, j, points);
+
+    // Take minimum of both paths
+    // as we want the optimal path
+    int minExitPoints = min(right, down);
+
+    return max(1, minExitPoints - points[i][j]);
+}
+
+// Wrapper function that initiates
+// the recursive solution
+int minPoints(vector<vector<int>> points) {
+    int m = points.size(), n = points[0].size();
+
+    return pointsRecur(0, 0, points);
+}
+
+int main() {
+    vector<vector<int>> points = {{-2, -3, 3}, {-5, -10, 1}, {10, 30, -5}};
+    cout << minPoints(points);
+    return 0;
+}
+
+Java
+
+// Java program to find minimum initial
+// points to reach destination
+import java.util.*;
+
+class GfG {
+
+    // Recursive function to find minimum
+    // initial points needed at cell i,j
+    static int pointsRecur(int i, int j, int[][] points) {
+
+        // Base case 1: If out of bounds
+        if (i < 0 || i == points.length || j < 0
+            || j == points[0].length)
+            return Integer.MAX_VALUE;
+
+        // Base case 2: At destination cell (bottom-right)
+        if (i == points.length - 1
+            && j == points[0].length - 1) {
+
+            // If cell value is positive,
+            // we need minimum 1 point
+            if (points[i][j] > 0)
+                return 1;
+
+            // If negative, we need |value| + 1 points to
+            // stay positive after including cell value
+            return Math.abs(points[i][j]) + 1;
+        }
+
+        // Recursively find minimum points
+        // needed for right and down paths
+        int right = pointsRecur(i, j + 1, points);
+        int down = pointsRecur(i + 1, j, points);
+
+        // Take minimum of both paths
+        // as we want the optimal path
+        int minExitPoints = Math.min(right, down);
+
+        return Math.max(1, minExitPoints - points[i][j]);
+    }
+
+    // Wrapper function that initiates
+    // the recursive solution
+    static int minPoints(int[][] points) {
+        return pointsRecur(0, 0, points);
+    }
+
+    public static void main(String[] args) {
+        int[][] points = { { -2, -3, 3 },
+                           { -5, -10, 1 },
+                           { 10, 30, -5 } };
+        System.out.println(minPoints(points));
+    }
+}
+
+Python
+
+# Python program to find minimum initial
+# points to reach destination
+
+# Recursive function to find minimum
+# initial points needed at cell i,j
+def pointsRecur(i, j, points):
+
+    # Base case 1: If out of bounds
+    if i < 0 or i == len(points) or j < 0 or j == len(points[0]):
+        return float('inf')
+
+    # Base case 2: At destination cell (bottom-right)
+    if i == len(points) - 1 and j == len(points[0]) - 1:
+
+        # If cell value is positive,
+        # we need minimum 1 point
+        if points[i][j] > 0:
+            return 1
+
+        # If negative, we need |value| + 1 points to
+        # stay positive after including cell value
+        return abs(points[i][j]) + 1
+
+    # Recursively find minimum points
+    # needed for right and down paths
+    right = pointsRecur(i, j + 1, points)
+    down = pointsRecur(i + 1, j, points)
+
+    # Take minimum of both paths
+    # as we want the optimal path
+    minExitPoints = min(right, down)
+
+    return max(1, minExitPoints - points[i][j])
+
+# Wrapper function that initiates
+# the recursive solution
+def minPoints(points):
+    return pointsRecur(0, 0, points)
+
+if __name__ == "__main__":
+    points = [[-2, -3, 3], [-5, -10, 1], [10, 30, -5]]
+    print(minPoints(points))
+
+C#
+
+// C# program to find minimum initial
+// points to reach destination
+using System;
+
+class GfG {
+
+    // Recursive function to find minimum
+    // initial points needed at cell i,j
+    static int pointsRecur(int i, int j, int[, ] points) {
+
+        // Base case 1: If out of bounds
+        if (i < 0 || i == points.GetLength(0) || j < 0
+            || j == points.GetLength(1))
+            return int.MaxValue;
+
+        // Base case 2: At destination cell (bottom-right)
+        if (i == points.GetLength(0) - 1
+            && j == points.GetLength(1) - 1) {
+
+            // If cell value is positive,
+            // we need minimum 1 point
+            if (points[i, j] > 0)
+                return 1;
+
+            // If negative, we need |value| + 1 points to
+            // stay positive after including cell value
+            return Math.Abs(points[i, j]) + 1;
+        }
+
+        // Recursively find minimum points
+        // needed for right and down paths
+        int right = pointsRecur(i, j + 1, points);
+        int down = pointsRecur(i + 1, j, points);
+
+        // Take minimum of both paths
+        // as we want the optimal path
+        int minExitPoints = Math.Min(right, down);
+
+        return Math.Max(1, minExitPoints - points[i, j]);
+    }
+
+    // Wrapper function that initiates
+    // the recursive solution
+    static int minPoints(int[, ] points) {
+        return pointsRecur(0, 0, points);
+    }
+
+    static void Main(string[] args) {
+        int[, ] points = { { -2, -3, 3 },
+                           { -5, -10, 1 },
+                           { 10, 30, -5 } };
+        Console.WriteLine(minPoints(points));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find minimum initial
+// points to reach destination
+
+// Recursive function to find minimum
+// initial points needed at cell i,j
+function pointsRecur(i, j, points) {
+
+    // Base case 1: If out of bounds
+    if (i < 0 || i === points.length || j < 0
+        || j === points[0].length)
+        return Infinity;
+
+    // Base case 2: At destination cell (bottom-right)
+    if (i === points.length - 1
+        && j === points[0].length - 1) {
+
+        // If cell value is positive,
+        // we need minimum 1 point
+        if (points[i][j] > 0)
+            return 1;
+
+        // If negative, we need |value| + 1 points to
+        // stay positive after including cell value
+        return Math.abs(points[i][j]) + 1;
+    }
+
+    // Recursively find minimum points
+    // needed for right and down paths
+    let right = pointsRecur(i, j + 1, points);
+    let down = pointsRecur(i + 1, j, points);
+
+    // Take minimum of both paths
+    // as we want the optimal path
+    let minExitPoints = Math.min(right, down);
+
+    return Math.max(1, minExitPoints - points[i][j]);
+}
+
+// Wrapper function that initiates
+// the recursive solution
+function minPoints(points) {
+    return pointsRecur(0, 0, points);
+}
+
+let points =
+    [ [ -2, -3, 3 ], [ -5, -10, 1 ], [ 10, 30, -5 ] ];
+console.log(minPoints(points));
+
+Output
+
+7
+
+### Using Top-Down DP (Memoization) - O(n*m) Time and O(n*m) Space
+
+If we notice carefully, we can observe that the above recursive solution holds the following two properties of Dynamic Programming :
+
+> 1. Optimal Substructure :  Minimum points required at cell (i, j) depends on the optimal solutions of minPoints(i+1, j) and minPoints(i, j+1). By comparing these optimal substructures, we can efficiently calculate minPoints(i, j). 2. Overlapping Subproblems : While applying a recursive approach in this problem, we notice that certain subproblems are computed multiple times. For example, minPoints(1,1) will call minPoints(1, 2) and minPoints(2, 1). Both minPoints(1, 2) and minPoints(2, 1) will call minPoints(2, 2).
+
+- There are only are two parameters: i and j that changes in the recursive solution. So we create a 2D matrix of size m*n for memoization .
+- We initialize this matrix as -1 to indicate nothing is computed initially.
+- Now we modify our recursive solution to first check if the value is -1, then only make recursive calls. This way, we avoid re-computations of the same subproblems.
+
+C++
+
+// C++ program to find minimum initial
+// points to reach destination
+#include <bits/stdc++.h>
+using namespace std;
+
+// Recursive function to find minimum
+// initial points needed at cell i,j
+int pointsRecur(int i, int j, vector<vector<int>> &points, vector<vector<int>> &memo) {
+
+    // Base case 1: If out of bounds
+    if (i < 0 || i == points.size() || j < 0 || j == points[0].size())
+        return INT_MAX;
+
+    // Base case 2: At destination cell (bottom-right)
+    if (i == points.size() - 1 && j == points[0].size() - 1) {
+
+        // If cell value is positive,
+        // we need minimum 1 point
+        if (points[i][j] > 0)
+            return 1;
+
+        // If negative, we need |value| + 1 points to
+        // stay positive after including cell value
+        return abs(points[i][j]) + 1;
+    }
+
+    // If value is memoized
+    if (memo[i][j] != -1)
+        return memo[i][j];
+
+    // Recursively find minimum points
+    // needed for right and down paths
+    int right = pointsRecur(i, j + 1, points, memo);
+    int down = pointsRecur(i + 1, j, points, memo);
+
+    // Take minimum of both paths
+    // as we want the optimal path
+    int minExitPoints = min(right, down);
+
+    return memo[i][j] = max(1, minExitPoints - points[i][j]);
+}
+
+// Wrapper function that initiates
+// the recursive solution
+int minPoints(vector<vector<int>> points) {
+
+    int m = points.size(), n = points[0].size();
+    vector<vector<int>> memo(m, vector<int>(n, -1));
+    return pointsRecur(0, 0, points, memo);
+}
+
+int main() {
+    vector<vector<int>> points = {{-2, -3, 3}, {-5, -10, 1}, {10, 30, -5}};
+    cout << minPoints(points);
+    return 0;
+}
+
+Java
+
+// Java program to find minimum initial
+// points to reach destination
+import java.util.*;
+
+class GfG {
+
+    // Recursive function to find minimum
+    // initial points needed at cell i,j
+    static int pointsRecur(int i, int j, int[][] points,
+                           int[][] memo) {
+
+        // Base case 1: If out of bounds
+        if (i < 0 || i == points.length || j < 0
+            || j == points[0].length)
+            return Integer.MAX_VALUE;
+
+        // Base case 2: At destination cell (bottom-right)
+        if (i == points.length - 1
+            && j == points[0].length - 1) {
+
+            // If cell value is positive,
+            // we need minimum 1 point
+            if (points[i][j] > 0)
+                return 1;
+
+            // If negative, we need |value| + 1 points to
+            // stay positive after including cell value
+            return Math.abs(points[i][j]) + 1;
+        }
+
+        // If value is memoized
+        if (memo[i][j] != -1)
+            return memo[i][j];
+
+        // Recursively find minimum points
+        // needed for right and down paths
+        int right = pointsRecur(i, j + 1, points, memo);
+        int down = pointsRecur(i + 1, j, points, memo);
+
+        // Take minimum of both paths
+        // as we want the optimal path
+        int minExitPoints = Math.min(right, down);
+
+        return memo[i][j]
+            = Math.max(1, minExitPoints - points[i][j]);
+    }
+
+    // Wrapper function that initiates
+    // the recursive solution
+    static int minPoints(int[][] points) {
+        int m = points.length, n = points[0].length;
+        int[][] memo = new int[m][n];
+        for (int[] row : memo)
+            Arrays.fill(row, -1);
+        return pointsRecur(0, 0, points, memo);
+    }
+
+    public static void main(String[] args) {
+        int[][] points = { { -2, -3, 3 },
+                           { -5, -10, 1 },
+                           { 10, 30, -5 } };
+        System.out.println(minPoints(points));
+    }
+}
+
+Python
+
+# Python program to find minimum initial
+# points to reach destination
+
+# Recursive function to find minimum
+# initial points needed at cell i,j
+def pointsRecur(i, j, points, memo):
+
+    # Base case 1: If out of bounds
+    if i < 0 or i == len(points) or j < 0 or j == len(points[0]):
+        return float('inf')
+
+    # Base case 2: At destination cell (bottom-right)
+    if i == len(points) - 1 and j == len(points[0]) - 1:
+
+        # If cell value is positive,
+        # we need minimum 1 point
+        if points[i][j] > 0:
+            return 1
+
+        # If negative, we need |value| + 1 points to
+        # stay positive after including cell value
+        return abs(points[i][j]) + 1
+
+    # If value is memoized
+    if memo[i][j] != -1:
+        return memo[i][j]
+
+    # Recursively find minimum points
+    # needed for right and down paths
+    right = pointsRecur(i, j + 1, points, memo)
+    down = pointsRecur(i + 1, j, points, memo)
+
+    # Take minimum of both paths
+    # as we want the optimal path
+    minExitPoints = min(right, down)
+
+    memo[i][j] = max(1, minExitPoints - points[i][j])
+    return memo[i][j]
+
+# Wrapper function that initiates
+# the recursive solution
+def minPoints(points):
+    m, n = len(points), len(points[0])
+    memo = [[-1 for _ in range(n)] for _ in range(m)]
+    return pointsRecur(0, 0, points, memo)
+
+if __name__ == "__main__":
+    points = [[-2, -3, 3], [-5, -10, 1], [10, 30, -5]]
+    print(minPoints(points))
+
+C#
+
+// C# program to find minimum initial
+// points to reach destination
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Recursive function to find minimum
+    // initial points needed at cell i,j
+    static int pointsRecur(int i, int j,
+    List<List<int>> points, int[,] memo) {
+
+        // Base case 1: If out of bounds
+        if (i < 0 || i == points.Count ||
+        j < 0 || j == points[0].Count)
+            return int.MaxValue;
+
+        // Base case 2: At destination cell (bottom-right)
+        if (i == points.Count - 1 && j == points[0].Count - 1) {
+
+            // If cell value is positive,
+            // we need minimum 1 point
+            if (points[i][j] > 0) return 1;
+
+            // If negative, we need |value| + 1 points to
+            // stay positive after including cell value
+            return Math.Abs(points[i][j]) + 1;
+        }
+
+        // If value is memoized
+        if (memo[i, j] != -1) return memo[i, j];
+
+        // Recursively find minimum points
+        // needed for right and down paths
+        int right = pointsRecur(i, j + 1, points, memo);
+        int down = pointsRecur(i + 1, j, points, memo);
+
+        // Take minimum of both paths
+        // as we want the optimal path
+        int minExitPoints = Math.Min(right, down);
+
+        return memo[i, j] = Math.Max(1, minExitPoints - points[i][j]);
+    }
+
+    // Wrapper function that initiates
+    // the recursive solution
+    static int minPoints(List<List<int>> points) {
+        int m = points.Count, n = points[0].Count;
+        var memo = new int[m, n];
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) memo[i, j] = -1;
+        }
+        return pointsRecur(0, 0, points, memo);
+    }
+
+    static void Main(string[] args) {
+        var points = new List<List<int>> {
+            new List<int> { -2, -3, 3 },
+            new List<int> { -5, -10, 1 },
+            new List<int> { 10, 30, -5 }
+        };
+        Console.WriteLine(minPoints(points));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find minimum initial
+// points to reach destination
+
+// Recursive function to find minimum
+// initial points needed at cell i,j
+function pointsRecur(i, j, points, memo) {
+
+    // Base case 1: If out of bounds
+    if (i < 0 || i === points.length || j < 0
+        || j === points[0].length)
+        return Infinity;
+
+    // Base case 2: At destination cell (bottom-right)
+    if (i === points.length - 1
+        && j === points[0].length - 1) {
+
+        // If cell value is positive,
+        // we need minimum 1 point
+        if (points[i][j] > 0)
+            return 1;
+
+        // If negative, we need |value| + 1 points to
+        // stay positive after including cell value
+        return Math.abs(points[i][j]) + 1;
+    }
+
+    // If value is memoized
+    if (memo[i][j] !== -1)
+        return memo[i][j];
+
+    // Recursively find minimum points
+    // needed for right and down paths
+    let right = pointsRecur(i, j + 1, points, memo);
+    let down = pointsRecur(i + 1, j, points, memo);
+
+    // Take minimum of both paths
+    // as we want the optimal path
+    let minExitPoints = Math.min(right, down);
+
+    return (memo[i][j]
+            = Math.max(1, minExitPoints - points[i][j]));
+}
+
+// Wrapper function that initiates
+// the recursive solution
+function minPoints(points) {
+    let m = points.length, n = points[0].length;
+    let memo
+        = Array.from({length : m}, () => Array(n).fill(-1));
+    return pointsRecur(0, 0, points, memo);
+}
+
+let points =
+    [ [ -2, -3, 3 ], [ -5, -10, 1 ], [ 10, 30, -5 ] ];
+console.log(minPoints(points));
+
+Output
+
+7
+
+### Using Bottom-Up DP (Tabulation) - O(m*n) Time and O(m*n) Space
+
+> The idea is to use a 2D dp array where dp[i][j] represents the minimum initial points required to reach destination cell (m-1, n-1) starting from cell (i, j). From any cell (i, j) there two options to move (i+1, j) and (i, j+1), so to compute dp[i][j], we choose a cell that require less intial points to reach the end i.e., min(dp[i+1][j], dp[i][j+1]).
+
+Follow the steps to solve the problem
+
+- Create a 2D dp array of the same size as the grid, where dp[i][j] represents the minimum initial points required to reach destination cell (m-1, n-1) starting from cell (i, j). dp[0][0] is our final answer.
+- Start filling the array from the bottom right corner to left top.
+- At any cell (i, j) there two options to move (i-1, j) and (i, j-1) . We choose a cell that require less initial points to reach the end i.e., minExitPoints = min(dp[i-1][j], dp[i][j-1]). From minExitPoints we can compute dp[i][j] by: dp[i][j] = max(minExitPoints - points[i][j], 1)
+
+C++
+
+// C++ program to find minimum initial
+// points to reach destination
+#include <bits/stdc++.h>
+using namespace std;
+
+int minPoints(vector<vector<int>>& points) {
+    int m = points.size(), n = points[0].size();
+
+    vector<vector<int>> dp(m, vector<int>(n));
+
+    // Base case
+    if (points[m - 1][n - 1] > 0) {
+        dp[m - 1][n - 1] = 1;
+    }
+    else
+        dp[m - 1][n - 1] = abs(points[m - 1][n - 1]) + 1;
+
+    // Fill last row and last column as base to fill
+    // entire table
+    for (int i = m - 2; i >= 0; i--)
+        dp[i][n - 1] = max(dp[i + 1][n - 1] - points[i][n - 1], 1);
+    for (int j = n - 2; j >= 0; j--)
+        dp[m - 1][j] = max(dp[m - 1][j + 1] - points[m - 1][j], 1);
+
+    // fill the table in bottom-up fashion
+    for (int i = m - 2; i >= 0; i--) {
+        for (int j = n - 2; j >= 0; j--) {
+            int minExitPoints = min(dp[i + 1][j], dp[i][j + 1]);
+
+            dp[i][j] = max(minExitPoints - points[i][j], 1);
+        }
+    }
+
+    return dp[0][0];
+}
+
+int main() {
+    vector<vector<int>> points = {{-2, -3, 3}, {-5, -10, 1}, {10, 30, -5}};
+    cout << minPoints(points);
+    return 0;
+}
+
+Java
+
+// Java program to find minimum initial
+// points to reach destination
+
+class GfG {
+    static int minPoints(int[][] points) {
+        int m = points.length, n = points[0].length;
+        int[][] dp = new int[m][n];
+
+        // Base case
+        if (points[m - 1][n - 1] > 0) {
+            dp[m - 1][n - 1] = 1;
+        }
+        else {
+            dp[m - 1][n - 1]
+                = Math.abs(points[m - 1][n - 1]) + 1;
+        }
+
+        // Fill last row and last column as base to fill
+        // entire table
+        for (int i = m - 2; i >= 0; i--) {
+            dp[i][n - 1] = Math.max(
+                dp[i + 1][n - 1] - points[i][n - 1], 1);
+        }
+        for (int j = n - 2; j >= 0; j--) {
+            dp[m - 1][j] = Math.max(
+                dp[m - 1][j + 1] - points[m - 1][j], 1);
+        }
+
+        // fill the table in bottom-up fashion
+        for (int i = m - 2; i >= 0; i--) {
+            for (int j = n - 2; j >= 0; j--) {
+                int minExitPoints
+                    = Math.min(dp[i + 1][j], dp[i][j + 1]);
+                dp[i][j] = Math.max(
+                    minExitPoints - points[i][j], 1);
+            }
+        }
+
+        return dp[0][0];
+    }
+
+    public static void main(String[] args) {
+        int[][] points = { { -2, -3, 3 },
+                           { -5, -10, 1 },
+                           { 10, 30, -5 } };
+        System.out.println(minPoints(points));
+    }
+}
+
+Python
+
+# Python program to find minimum initial
+# points to reach destination
+
+def minPoints(points):
+    m, n = len(points), len(points[0])
+    dp = [[0] * n for _ in range(m)]
+
+    # Base case
+    if points[m - 1][n - 1] > 0:
+        dp[m - 1][n - 1] = 1
+    else:
+        dp[m - 1][n - 1] = abs(points[m - 1][n - 1]) + 1
+
+    # Fill last row and last column as base to fill
+    # entire table
+    for i in range(m - 2, -1, -1):
+        dp[i][n - 1] = max(dp[i + 1][n - 1] - points[i][n - 1], 1)
+    for j in range(n - 2, -1, -1):
+        dp[m - 1][j] = max(dp[m - 1][j + 1] - points[m - 1][j], 1)
+
+    # fill the table in bottom-up fashion
+    for i in range(m - 2, -1, -1):
+        for j in range(n - 2, -1, -1):
+            minExitPoints = min(dp[i + 1][j], dp[i][j + 1])
+            dp[i][j] = max(minExitPoints - points[i][j], 1)
+
+    return dp[0][0]
+
+if __name__ == "__main__":
+    points = [[-2, -3, 3], [-5, -10, 1], [10, 30, -5]]
+    print(minPoints(points))
+
+C#
+
+// C# program to find minimum initial
+// points to reach destination
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static int minPoints(List<List<int>> points) {
+        int m = points.Count, n = points[0].Count;
+        int[,] dp = new int[m, n];
+
+        // Base case
+        if (points[m - 1][n - 1] > 0) {
+            dp[m - 1, n - 1] = 1;
+        } else {
+            dp[m - 1, n - 1] = Math.Abs(points[m - 1][n - 1]) + 1;
+        }
+
+        // Fill last row and last column as base to fill
+        // entire table
+        for (int i = m - 2; i >= 0; i--) {
+            dp[i, n - 1] = Math.Max(dp[i + 1, n - 1] - points[i][n - 1], 1);
+        }
+        for (int j = n - 2; j >= 0; j--) {
+            dp[m - 1, j] = Math.Max(dp[m - 1, j + 1] - points[m - 1][j], 1);
+        }
+
+        // fill the table in bottom-up fashion
+        for (int i = m - 2; i >= 0; i--) {
+            for (int j = n - 2; j >= 0; j--) {
+                int minExitPoints = Math.Min(dp[i + 1, j], dp[i, j + 1]);
+                dp[i, j] = Math.Max(minExitPoints - points[i][j], 1);
+            }
+        }
+
+        return dp[0, 0];
+    }
+
+    static void Main(string[] args) {
+        List<List<int>> points = new List<List<int>> {
+            new List<int> { -2, -3, 3 },
+            new List<int> { -5, -10, 1 },
+            new List<int> { 10, 30, -5 }
+        };
+        Console.WriteLine(minPoints(points));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find minimum initial
+// points to reach destination
+
+function minPoints(points) {
+    const m = points.length, n = points[0].length;
+    const dp = Array.from({ length: m }, () => Array(n).fill(0));
+
+    // Base case
+    dp[m - 1][n - 1] = points[m - 1][n - 1] > 0
+        ? 1
+        : Math.abs(points[m - 1][n - 1]) + 1;
+
+    // Fill last row and last column as base to fill
+    // entire table
+    for (let i = m - 2; i >= 0; i--) {
+        dp[i][n - 1] = Math.max(dp[i + 1][n - 1] - points[i][n - 1], 1);
+    }
+    for (let j = n - 2; j >= 0; j--) {
+        dp[m - 1][j] = Math.max(dp[m - 1][j + 1] - points[m - 1][j], 1);
+    }
+
+    // fill the table in bottom-up fashion
+    for (let i = m - 2; i >= 0; i--) {
+        for (let j = n - 2; j >= 0; j--) {
+            const minExitPoints = Math.min(dp[i + 1][j], dp[i][j + 1]);
+            dp[i][j] = Math.max(minExitPoints - points[i][j], 1);
+        }
+    }
+
+    return dp[0][0];
+}
+
+const points = [[-2, -3, 3], [-5, -10, 1], [10, 30, -5]];
+console.log(minPoints(points));
+
+Output
+
+7
+
+### Using Dijkstra's Shortest Path Algorithm - O((m*n)*log(m*n)) Time and O(m*n) Space
+
+> If we take a closer look at the problem, we can notice that this is more of a graph problem where we have two outgoing edges from every point.  The edges can have negative weight, but there are no back edges. So we can use Dijkstra's Shortest Path Algorithm here and since there are no back edges, we do not have to keep track of the visited elements. We can simply use a priority queue to pick the next vertex like we do in Dijkstra's algorithm.
+
+C++
+
+// C++ program to find minimum initial points to reach
+// destination
+#include <bits/stdc++.h>
+using namespace std;
+
+int minPoints(vector<vector<int>> &points) {
+
+    int m = points.size(), n = points[0].size();
+    int ans = 0;
+
+    // The first item is cost and second item is
+    // coordinates. The elements are going to be
+    // ordered by cost
+    priority_queue<pair<int, pair<int, int>>> pq;
+
+    // Push the first vertex (source vertex) with
+    // cost as its value
+    pq.push({points[0][0], {0, 0}});
+
+    // Dijkstra style loop
+    while (!pq.empty()) {
+
+        // Pick the minimum cost item and process
+        // its adjacent
+        auto it = pq.top();
+        pq.pop();
+        int cost = it.first;
+
+        // Please note that the ans will either be
+        // 0 or negative
+        ans = min(ans, cost);
+
+        // Find adjacent of the picked item
+        int x = it.second.first;
+        int y = it.second.second;
+
+        if (x == m - 1 && y == n - 1)
+            break;
+        if (x + 1 < m)
+            pq.push({cost + points[x + 1][y], {x + 1, y}});
+        if (y + 1 < n)
+            pq.push({cost + points[x][y + 1], {x, y + 1}});
+    }
+    return abs(ans) + 1;
+}
+
+int main() {
+
+    vector<vector<int>> points = {{-2, -3, 3}, {-5, -10, 1}, {10, 30, -5}};
+    cout << minPoints(points);
+    return 0;
+}
+
+Java
+
+// Java program to find minimum initial points to reach
+// destination
+import java.util.*;
+
+class GfG {
+
+    static int minPoints(int[][] points) {
+
+      	 int m = points.length, n = points[0].length;
+        int ans = 0;
+
+        // The first item is cost and second item is
+        // coordinates. The elements are going to be
+        // ordered by cost
+        PriorityQueue<int[]> pq = new PriorityQueue<>(
+            (a, b) -> b[0] - a[0]);
+
+        // Push the first vertex (source vertex) with
+        // cost as its value
+        pq.add(new int[] { points[0][0], 0, 0 });
+
+        // Dijkstra style loop
+        while (!pq.isEmpty()) {
+
+            // Pick the minimum cost item and process
+            // its adjacent
+            int[] it = pq.poll();
+            int cost = it[0];
+
+            // Please note that the ans will either be
+            // 0 or negative
+            ans = Math.min(ans, cost);
+
+            // Find adjacent of the picked item
+            int x = it[1];
+            int y = it[2];
+
+            if (x == m - 1 && y == n - 1)
+                break;
+            if (x + 1 < m)
+                pq.add(new int[] { cost + points[x + 1][y], x + 1, y });
+            if (y + 1 < n)
+                pq.add(new int[] { cost + points[x][y + 1], x, y + 1 });
+        }
+        return Math.abs(ans) + 1;
+    }
+
+    public static void main(String[] args) {
+        int[][] points = {
+            { -2, -3, 3 },
+            { -5, -10, 1 },
+            { 10, 30, -5 }
+        };
+        System.out.println(minPoints(points));
+    }
+}
+
+Python
+
+# Python program to find minimum initial points to reach
+# destination
+import heapq
+
+def minPoints(points):
+    m, n = len(points), len(points[0])
+    ans = 0
+
+    # The first item is cost and second item is
+    # coordinates. The elements are going to be
+    # ordered by cost
+    pq = []
+
+    # Push the first vertex (source vertex) with
+    # cost as its value
+    heapq.heappush(pq, (-points[0][0], 0, 0))
+
+    # Dijkstra style loop
+    while pq:
+        # Pick the minimum cost item and process
+        # its adjacent
+        cost, x, y = heapq.heappop(pq)
+        cost = -cost
+
+        # Please note that the ans will either be
+        # 0 or negative
+        ans = min(ans, cost)
+
+        # Find adjacent of the picked item
+        if x == m - 1 and y == n - 1:
+            break
+        if x + 1 < m:
+            heapq.heappush(pq, (-(cost + points[x + 1][y]), x + 1, y))
+        if y + 1 < n:
+            heapq.heappush(pq, (-(cost + points[x][y + 1]), x, y + 1))
+    return abs(ans) + 1
+
+if __name__ == "__main__":
+    points = [
+        [-2, -3, 3],
+        [-5, -10, 1],
+        [10, 30, -5]
+    ]
+    print(minPoints(points))
+
+C#
+
+//C# program to find minimum initial points to reach
+//destination
+using System;
+using System.Collections.Generic;
+
+// Custom comparator class for max heap
+class Comparer : IComparer<List<int>> {
+    public int Compare(List<int> a, List<int> b) {
+        if (a[0] < b[0])
+            return 1;
+        else if (a[0] > b[0])
+            return -1;
+        return 0;
+    }
+}
+
+class GfG {
+    static int MinPoints(List<List<int>> points) {
+        int m = points.Count, n = points[0].Count;
+        int ans = 0;
+
+        // The first item is cost and second item is
+        // coordinates. The elements are going to be ordered
+        // by cost (max-heap now)
+        PriorityQueue<List<int>> pq = new PriorityQueue<List<int>>(new Comparer());
+
+        // Push the first vertex (source vertex) with cost
+        // as its value
+        pq.Enqueue(new List<int>{points[0][0],0,0});
+
+        // Dijkstra style loop
+        while (!pq.IsEmpty()) {
+
+            // Pick the maximum cost item and process its
+            // adjacent
+            List<int> top = pq.Dequeue();
+            int cost = top[0], x = top[1], y = top[2];
+
+            // Update the answer with the minimum cost
+            ans = Math.Min(ans, cost);
+
+            // Find adjacent of the picked item
+            if (x == m - 1 && y == n - 1)
+                break;
+
+            if (x + 1 < m)
+                pq.Enqueue(new List<int>{cost + points[x + 1][y], x + 1, y});
+            if (y + 1 < n)
+                pq.Enqueue(new List<int>{cost + points[x][y+1], x, y + 1});
+        }
+        return Math.Abs(ans) + 1;
+    }
+
+    static void Main() {
+        List<List<int>> points = new List<List<int>> {
+            new List<int> { -2, -3, 3 },
+            new List<int> { -5, -10, 1 },
+            new List<int> { 10, 30, -5 }
+        };
+        Console.WriteLine( MinPoints(points));
+    }
+}
+
+// Custom Priority queue
+class PriorityQueue<T> {
+    private List<T> heap;
+    private IComparer<T> comparer;
+
+    public PriorityQueue(IComparer<T> comparer = null) {
+        this.heap = new List<T>();
+        this.comparer = comparer ?? Comparer<T>.Default;
+    }
+
+    public int Count => heap.Count;
+
+    // Enqueue operation
+    public void Enqueue(T item) {
+        heap.Add(item);
+        int i = heap.Count - 1;
+        while (i > 0) {
+            int parent = (i - 1) / 2;
+            if (comparer.Compare(heap[parent], heap[i]) <= 0)
+                break;
+            Swap(parent, i);
+            i = parent;
+        }
+    }
+
+    // Dequeue operation
+    public T Dequeue() {
+        if (heap.Count == 0)
+            throw new InvalidOperationException("Priority queue is empty.");
+        T result = heap[0];
+        int last = heap.Count - 1;
+        heap[0] = heap[last];
+        heap.RemoveAt(last);
+        last--;
+        int i = 0;
+        while (true) {
+            int left = 2 * i + 1;
+            if (left > last)
+                break;
+            int right = left + 1;
+            int minChild = left;
+            if (right <= last && comparer.Compare(heap[right], heap[left]) < 0)
+                minChild = right;
+            if (comparer.Compare(heap[i], heap[minChild]) <= 0)
+                break;
+            Swap(i, minChild);
+            i = minChild;
+        }
+        return result;
+    }
+
+    // Swap two elements in the heap
+    private void Swap(int i, int j) {
+        T temp = heap[i];
+        heap[i] = heap[j];
+        heap[j] = temp;
+    }
+
+    public bool IsEmpty() {
+        return heap.Count==0;
+    }
+}
+
+JavaScript
+
+// JavaScript program to find minimum initial
+// points to reach destination
+
+function comparator(a, b) {
+    if (a[0] > b[0])
+        return 1;
+    else if (b[0] > a[0])
+        return -1;
+    return 0;
+}
+
+class PriorityQueue {
+    constructor(compare) {
+        this.heap = [];
+        this.compare = compare;
+    }
+
+    enqueue(value) {
+        this.heap.push(value);
+        this.bubbleUp();
+    }
+
+    bubbleUp() {
+        let index = this.heap.length - 1;
+        while (index > 0) {
+            let element = this.heap[index],
+                parentIndex = Math.floor((index - 1) / 2),
+                parent = this.heap[parentIndex];
+            if (this.compare(element, parent) < 0)
+                break;
+            this.heap[index] = parent;
+            this.heap[parentIndex] = element;
+            index = parentIndex;
+        }
+    }
+
+    dequeue() {
+        let max = this.heap[0];
+        let end = this.heap.pop();
+        if (this.heap.length > 0) {
+            this.heap[0] = end;
+            this.sinkDown(0);
+        }
+        return max;
+    }
+
+    sinkDown(index) {
+        let left = 2 * index + 1, right = 2 * index + 2,
+            largest = index;
+
+        if (left < this.heap.length
+            && this.compare(this.heap[left],
+                            this.heap[largest])
+                   > 0) {
+            largest = left;
+        }
+
+        if (right < this.heap.length
+            && this.compare(this.heap[right],
+                            this.heap[largest])
+                   > 0) {
+            largest = right;
+        }
+
+        if (largest !== index) {
+            [this.heap[largest], this.heap[index]] = [
+                this.heap[index],
+                this.heap[largest],
+            ];
+            this.sinkDown(largest);
+        }
+    }
+
+    isEmpty() { return this.heap.length === 0; }
+}
+
+function minPoints(points) {
+    const m = points.length;
+    const n = points[0].length;
+    let ans = 0;
+
+    // Initialize priority queue
+    const pq = new PriorityQueue(comparator);
+
+    // Push the first vertex (source vertex) with cost as
+    // its value
+    pq.enqueue([ points[0][0], 0, 0 ]);
+
+    // Dijkstra style loop
+    while (!pq.isEmpty()) {
+
+        // Pick the minimum cost item and process its
+        // adjacent
+        const [cost, x, y] = pq.dequeue();
+
+        // Please note that the ans will either be 0 or
+        // negative
+        ans = Math.min(ans, cost);
+
+        // Find adjacent of the picked item
+        if (x === m - 1 && y === n - 1) {
+            break;
+        }
+        if (x + 1 < m) {
+            pq.enqueue(
+                [ cost + points[x + 1][y], x + 1, y ]);
+        }
+        if (y + 1 < n) {
+            pq.enqueue(
+                [ cost + points[x][y + 1], x, y + 1 ]);
+        }
+    }
+
+    return Math.abs(ans) + 1;
+}
+
+const points =
+    [ [ -2, -3, 3 ], [ -5, -10, 1 ], [ 10, 30, -5 ] ];
+const m = points.length;
+const n = points[0].length;
+console.log(minPoints(points));
+
+Output
+
+7

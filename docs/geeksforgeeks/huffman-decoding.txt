@@ -1,0 +1,742 @@
+Source: https://www.geeksforgeeks.org/dsa/huffman-decoding/
+Title: Huffman Decoding
+Extractor: 2
+
+We have discussed Huffman Encoding in a previous post. In this post, decoding is discussed.
+
+Examples:
+
+> Input Data: AAAAAABCCCCCCDDEEEEE Frequencies: A: 6, B: 1, C: 6, D: 2, E: 5 Encoded Data: 0000000000001100101010101011111111010101010 Huffman Tree: '#' is the special character usedfor internal nodes as character field is not needed for internal nodes. #(20) /       \ #(12)         #(8) /      \        /     \ A(6)     C(6) E(5)     #(3) /     \ B(1)    D(2) Code of 'A' is '00', code of 'C' is '01', .. Decoded Data: AAAAAABCCCCCCDDEEEEE Input Data: GeeksforGeeks Character With there Frequencies e 10, f 1100, g 011, k 00, o 010, r 1101, s 111 Encoded Huffman data: 01110100011111000101101011101000111 Decoded Huffman Data: geeksforgeeks
+
+Follow the below steps to solve the problem:
+
+Note: To decode the encoded data we require the Huffman tree. We iterate through the binary encoded data. To find character corresponding to current bits, we use the following simple steps:
+
+- We start from the root and do the following until a leaf is found.
+- If the current bit is 0, we move to the left node of the tree.
+- If the bit is 1, we move to right node of the tree.
+- If during the traversal, we encounter a leaf node, we print the character of that particular leaf node and then again continue the iteration of the encoded data starting from step 1.
+
+The below code takes a string as input, encodes it, and saves it in a variable encoded string. Then it decodes it and prints the original string.
+
+Below is the implementation of the above approach:
+
+CPP
+
+// C++ program to encode and decode a string using
+// Huffman Coding.
+#include <bits/stdc++.h>
+#define MAX_TREE_HT 256
+using namespace std;
+
+// to map each character its huffman value
+map<char, string> codes;
+
+// To store the frequency of character of the input data
+map<char, int> freq;
+
+// A Huffman tree node
+struct MinHeapNode {
+    char data; // One of the input characters
+    int freq; // Frequency of the character
+    MinHeapNode *left, *right; // Left and right child
+
+    MinHeapNode(char data, int freq)
+    {
+        left = right = NULL;
+        this->data = data;
+        this->freq = freq;
+    }
+};
+
+// utility function for the priority queue
+struct compare {
+    bool operator()(MinHeapNode* l, MinHeapNode* r)
+    {
+        return (l->freq > r->freq);
+    }
+};
+
+// utility function to print characters along with
+// there huffman value
+void printCodes(struct MinHeapNode* root, string str)
+{
+    if (!root)
+        return;
+    if (root->data != '$')
+        cout << root->data << ": " << str << "\n";
+    printCodes(root->left, str + "0");
+    printCodes(root->right, str + "1");
+}
+
+// utility function to store characters along with
+// there huffman value in a hash table, here we
+// have C++ STL map
+void storeCodes(struct MinHeapNode* root, string str)
+{
+    if (root == NULL)
+        return;
+    if (root->data != '$')
+        codes[root->data] = str;
+    storeCodes(root->left, str + "0");
+    storeCodes(root->right, str + "1");
+}
+
+// STL priority queue to store heap tree, with respect
+// to their heap root node value
+priority_queue<MinHeapNode*, vector<MinHeapNode*>, compare>
+    minHeap;
+
+// function to build the Huffman tree and store it
+// in minHeap
+void HuffmanCodes(int size)
+{
+    struct MinHeapNode *left, *right, *top;
+    for (map<char, int>::iterator v = freq.begin();
+         v != freq.end(); v++)
+        minHeap.push(new MinHeapNode(v->first, v->second));
+    while (minHeap.size() != 1) {
+        left = minHeap.top();
+        minHeap.pop();
+        right = minHeap.top();
+        minHeap.pop();
+        top = new MinHeapNode('$',
+                              left->freq + right->freq);
+        top->left = left;
+        top->right = right;
+        minHeap.push(top);
+    }
+    storeCodes(minHeap.top(), "");
+}
+
+// utility function to store map each character with its
+// frequency in input string
+void calcFreq(string str, int n)
+{
+    for (int i = 0; i < str.size(); i++)
+        freq[str[i]]++;
+}
+
+// function iterates through the encoded string s
+// if s[i]=='1' then move to node->right
+// if s[i]=='0' then move to node->left
+// if leaf node append the node->data to our output string
+string decode_file(struct MinHeapNode* root, string s)
+{
+    string ans = "";
+    struct MinHeapNode* curr = root;
+    for (int i = 0; i < s.size(); i++) {
+        if (s[i] == '0')
+            curr = curr->left;
+        else
+            curr = curr->right;
+
+        // reached leaf node
+        if (curr->left == NULL and curr->right == NULL) {
+            ans += curr->data;
+            curr = root;
+        }
+    }
+    // cout<<ans<<endl;
+    return ans + '\0';
+}
+
+// Driver code
+int main()
+{
+    string str = "geeksforgeeks";
+    string encodedString, decodedString;
+    calcFreq(str, str.length());
+    HuffmanCodes(str.length());
+    cout << "Character With there Frequencies:\n";
+    for (auto v = codes.begin(); v != codes.end(); v++)
+        cout << v->first << ' ' << v->second << endl;
+
+    for (auto i : str)
+        encodedString += codes[i];
+
+    cout << "\nEncoded Huffman data:\n"
+         << encodedString << endl;
+
+      // Function call
+    decodedString
+        = decode_file(minHeap.top(), encodedString);
+    cout << "\nDecoded Huffman Data:\n"
+         << decodedString << endl;
+    return 0;
+}
+
+Java
+
+// Java program to encode and decode a string using
+// Huffman Coding.
+import java.util.*;
+import java.util.Map.Entry;
+
+public class HuffmanCoding {
+
+    private static Map<Character, String> codes = new HashMap<>();
+    private static Map<Character, Integer> freq = new HashMap<>();
+    private static PriorityQueue<MinHeapNode> minHeap = new PriorityQueue<>();
+
+    public static void main(String[] args) {
+        String str = "geeksforgeeks";
+        String encodedString = "";
+        String decodedString = "";
+        calcFreq(str);
+        HuffmanCodes(str.length());
+        System.out.println("Character With their Frequencies:");
+        for (Entry<Character, String> entry : codes.entrySet()) {
+            System.out.println(entry.getKey() + " " + entry.getValue());
+        }
+        for (char c : str.toCharArray()) {
+            encodedString += codes.get(c);
+        }
+        System.out.println("\nEncoded Huffman data:");
+        System.out.println(encodedString);
+        decodedString = decodeFile(minHeap.peek(), encodedString);
+        System.out.println("\nDecoded Huffman Data:");
+        System.out.println(decodedString);
+    }
+
+    private static void HuffmanCodes(int size) {
+        for (Entry<Character, Integer> entry : freq.entrySet()) {
+            minHeap.add(new MinHeapNode(entry.getKey(), entry.getValue()));
+        }
+        while (minHeap.size() != 1) {
+            MinHeapNode left = minHeap.poll();
+            MinHeapNode right = minHeap.poll();
+            MinHeapNode top = new MinHeapNode('$', left.freq + right.freq);
+            top.left = left;
+            top.right = right;
+            minHeap.add(top);
+        }
+        storeCodes(minHeap.peek(), "");
+    }
+
+    private static void calcFreq(String str) {
+        for (char c : str.toCharArray()) {
+            freq.put(c, freq.getOrDefault(c, 0) + 1);
+        }
+    }
+
+    private static void storeCodes(MinHeapNode root, String str) {
+        if (root == null) {
+            return;
+        }
+        if (root.data != '$') {
+            codes.put(root.data, str);
+        }
+        storeCodes(root.left, str + "0");
+        storeCodes(root.right, str + "1");
+    }
+
+    private static String decodeFile(MinHeapNode root, String s) {
+        String ans = "";
+        MinHeapNode curr = root;
+        int n = s.length();
+        for (int i = 0; i < n; i++) {
+            if (s.charAt(i) == '0') {
+                curr = curr.left;
+            } else {
+                curr = curr.right;
+            }
+            if (curr.left == null && curr.right == null) {
+                ans += curr.data;
+                curr = root;
+            }
+        }
+        return ans + '\0';
+    }
+
+}
+
+class MinHeapNode implements Comparable<MinHeapNode> {
+    char data;
+    int freq;
+    MinHeapNode left, right;
+
+    MinHeapNode(char data, int freq) {
+        this.data = data;
+        this.freq = freq;
+    }
+
+    public int compareTo(MinHeapNode other) {
+        return this.freq - other.freq;
+    }
+}
+
+//This code is contributed by NarasingaNikhil
+
+Python3
+
+import heapq
+from collections import defaultdict
+
+# to map each character its huffman value
+codes = {}
+
+# To store the frequency of character of the input data
+freq = defaultdict(int)
+
+# A Huffman tree node
+class MinHeapNode:
+    def __init__(self, data, freq):
+        self.left = None
+        self.right = None
+        self.data = data
+        self.freq = freq
+
+    def __lt__(self, other):
+        return self.freq < other.freq
+
+# utility function to print characters along with
+# there huffman value
+def printCodes(root, str):
+    if root is None:
+        return
+    if root.data != '$':
+        print(root.data, ":", str)
+    printCodes(root.left, str + "0")
+    printCodes(root.right, str + "1")
+
+# utility function to store characters along with
+# there huffman value in a hash table
+def storeCodes(root, str):
+    if root is None:
+        return
+    if root.data != '$':
+        codes[root.data] = str
+    storeCodes(root.left, str + "0")
+    storeCodes(root.right, str + "1")
+
+# function to build the Huffman tree and store it
+# in minHeap
+def HuffmanCodes(size):
+    global minHeap
+    for key in freq:
+        minHeap.append(MinHeapNode(key, freq[key]))
+    heapq.heapify(minHeap)
+    while len(minHeap) != 1:
+        left = heapq.heappop(minHeap)
+        right = heapq.heappop(minHeap)
+        top = MinHeapNode('$', left.freq + right.freq)
+        top.left = left
+        top.right = right
+        heapq.heappush(minHeap, top)
+    storeCodes(minHeap[0], "")
+
+# utility function to store map each character with its
+# frequency in input string
+def calcFreq(str, n):
+    for i in range(n):
+        freq[str[i]] += 1
+
+# function iterates through the encoded string s
+# if s[i]=='1' then move to node->right
+# if s[i]=='0' then move to node->left
+# if leaf node append the node->data to our output string
+def decode_file(root, s):
+    ans = ""
+    curr = root
+    n = len(s)
+    for i in range(n):
+        if s[i] == '0':
+            curr = curr.left
+        else:
+            curr = curr.right
+
+        # reached leaf node
+        if curr.left is None and curr.right is None:
+            ans += curr.data
+            curr = root
+    return ans + '\0'
+
+# Driver code
+if __name__ == "__main__":
+    minHeap = []
+    str = "geeksforgeeks"
+    encodedString, decodedString = "", ""
+    calcFreq(str, len(str))
+    HuffmanCodes(len(str))
+    print("Character With there Frequencies:")
+    for key in sorted(codes):
+        print(key, codes[key])
+
+    for i in str:
+        encodedString += codes[i]
+
+    print("\nEncoded Huffman data:")
+    print(encodedString)
+
+    # Function call
+    decodedString = decode_file(minHeap[0], encodedString)
+    print("\nDecoded Huffman Data:")
+    print(decodedString)
+
+JavaScript
+
+// To map each character its huffman value
+let codes = {};
+
+// To store the frequency of character of the input data
+let freq = {};
+
+// A Huffman tree node
+class MinHeapNode {
+    constructor(data, freq) {
+        this.left = null;
+        this.right = null;
+        this.data = data;
+        this.freq = freq;
+    }
+
+    // Define the comparison method for sorting the nodes in the heap
+    compareTo(other) {
+        return this.freq - other.freq;
+    }
+}
+
+// Create an empty min-heap
+let minHeap = [];
+
+// Utility function to print characters along with their huffman value
+function printCodes(root, str) {
+    if (!root) {
+        return;
+    }
+    if (root.data !== "$") {
+        console.log(root.data + " : " + str);
+    }
+    printCodes(root.left, str + "0");
+    printCodes(root.right, str + "1");
+}
+
+// Utility function to store characters along with their huffman value in a hash table
+function storeCodes(root, str) {
+    if (!root) {
+        return;
+    }
+    if (root.data !== "$") {
+        codes[root.data] = str;
+    }
+    storeCodes(root.left, str + "0");
+    storeCodes(root.right, str + "1");
+}
+
+// Function to build the Huffman tree and store it in minHeap
+function HuffmanCodes(size) {
+    for (let key in freq) {
+        minHeap.push(new MinHeapNode(key, freq[key]));
+    }
+    // Convert the array to a min-heap using the built-in sort method
+    minHeap.sort((a, b) => a.compareTo(b));
+    while (minHeap.length !== 1) {
+        let left = minHeap.shift();
+        let right = minHeap.shift();
+        let top = new MinHeapNode("$", left.freq + right.freq);
+        top.left = left;
+        top.right = right;
+        minHeap.push(top);
+        // Sort the array to maintain the min-heap property
+        minHeap.sort((a, b) => a.compareTo(b));
+    }
+    storeCodes(minHeap[0], "");
+}
+
+// Utility function to store map each character with its frequency in input string
+function calcFreq(str) {
+    for (let i = 0; i < str.length; i++) {
+        let char = str.charAt(i);
+        if (freq[char]) {
+            freq[char]++;
+        } else {
+            freq[char] = 1;
+        }
+    }
+}
+
+// Function iterates through the encoded string s
+// If s[i] == '1' then move to node.right
+// If s[i] == '0' then move to node.left
+// If leaf node, append the node.data to our output string
+function decode_file(root, s) {
+    let ans = "";
+    let curr = root;
+    let n = s.length;
+    for (let i = 0; i < n; i++) {
+        if (s.charAt(i) == "0") {
+            curr = curr.left;
+        } else {
+            curr = curr.right;
+        }
+
+        // Reached leaf node
+        if (!curr.left && !curr.right) {
+            ans += curr.data;
+            curr = root;
+        }
+    }
+    return ans + "\0";
+}
+
+// Driver code
+let str = "geeksforgeeks";
+let encodedString = "";
+let decodedString = "";
+calcFreq(str);
+HuffmanCodes(str.length);
+console.log("Character With their Frequencies:")
+let keys = Array.from(Object.keys(codes))
+keys.sort()
+for (var key of keys)
+    console.log(key, codes[key])
+
+for (var i of str)
+    encodedString += codes[i]
+
+console.log("\nEncoded Huffman data:")
+console.log(encodedString)
+
+// Function call
+decodedString = decode_file(minHeap[0], encodedString)
+console.log("\nDecoded Huffman Data:")
+console.log(decodedString)
+
+C#
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace HuffmanEncoding
+{
+    // To store the frequency of character of the input data
+    class FrequencyTable
+    {
+        private readonly Dictionary<char, int> _freq = new Dictionary<char, int>();
+
+        public void Add(char c)
+        {
+            if (_freq.ContainsKey(c))
+            {
+                _freq[c]++;
+            }
+            else
+            {
+                _freq[c] = 1;
+            }
+        }
+
+        public Dictionary<char, int> ToDictionary()
+        {
+            return _freq;
+        }
+    }
+
+    // A Huffman tree node
+    class HuffmanNode : IComparable<HuffmanNode>
+    {
+        public HuffmanNode Left { get; set; }
+        public HuffmanNode Right { get; set; }
+        public char Data { get; set; }
+        public int Frequency { get; set; }
+
+        public HuffmanNode(char data, int freq)
+        {
+            Data = data;
+            Frequency = freq;
+        }
+
+        // Define the comparison method for sorting the nodes in the heap
+        public int CompareTo(HuffmanNode other)
+        {
+            return Frequency - other.Frequency;
+        }
+    }
+
+    // Utility class for creating Huffman codes
+    class HuffmanEncoder
+    {
+        // To map each character its Huffman value
+        private readonly Dictionary<char, string> _codes = new Dictionary<char, string>();
+
+        // Create an empty min-heap
+        private readonly List<HuffmanNode> _minHeap = new List<HuffmanNode>();
+
+        // Function to build the Huffman tree and store it in minHeap
+        private void BuildHuffmanTree(Dictionary<char, int> freq)
+        {
+            foreach (var kvp in freq)
+            {
+                _minHeap.Add(new HuffmanNode(kvp.Key, kvp.Value));
+            }
+            // Convert the list to a min-heap using the built-in sort method
+            _minHeap.Sort();
+            while (_minHeap.Count > 1)
+            {
+                var left = _minHeap.First();
+                _minHeap.RemoveAt(0);
+                var right = _minHeap.First();
+                _minHeap.RemoveAt(0);
+                var top = new HuffmanNode('$', left.Frequency + right.Frequency);
+                top.Left = left;
+                top.Right = right;
+                _minHeap.Add(top);
+                // Sort the list to maintain the min-heap property
+                _minHeap.Sort();
+            }
+        }
+
+        // Utility function to store characters along with their Huffman value in a hash table
+        private void StoreCodes(HuffmanNode root, string str)
+        {
+            if (root == null)
+            {
+                return;
+            }
+            if (root.Data != '$')
+            {
+                _codes[root.Data] = str;
+            }
+            StoreCodes(root.Left, str + "0");
+            StoreCodes(root.Right, str + "1");
+        }
+
+        // Utility function to print characters along with their Huffman value
+        public void PrintCodes(HuffmanNode root, string str)
+        {
+            if (root == null)
+            {
+                return;
+            }
+            if (root.Data != '$')
+            {
+                Console.WriteLine(root.Data + " : " + str);
+            }
+            PrintCodes(root.Left, str + "0");
+            PrintCodes(root.Right, str + "1");
+        }
+
+        // Function iterates through the encoded string s
+        // If s[i] == '1' then move to node.right
+        // If s[i] == '0' then move to node.left
+        // If leaf node, append the node.data to our output string
+        public string DecodeFile(HuffmanNode root, string s)
+        {
+
+            string ans = "";
+            HuffmanNode curr = root;
+            int n = s.Length;
+            for (int i = 0; i < n; i++)
+            {
+                if (s[i] == '0')
+                {
+                    curr = curr.Left;
+                }
+                else
+                {
+                    curr = curr.Right;
+                }
+
+                // Reached leaf node
+                if (curr.Left == null && curr.Right == null)
+                {
+                    ans += curr.Data;
+                    curr = root;
+                }
+            }
+            return ans + "\0";
+        }
+
+        // Function to build the Huffman tree and store it in minHeap
+        public void BuildCodes(Dictionary<char, int> freq)
+        {
+            BuildHuffmanTree(freq);
+            StoreCodes(_minHeap.First(), "");
+        }
+
+        public Dictionary<char, string> GetCodes()
+        {
+            return _codes;
+        }
+
+        public HuffmanNode GetRoot()
+        {
+            return _minHeap.First();
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Driver code
+            string str = "geeksforgeeks";
+            string encodedString = "";
+            string decodedString;
+            var freqTable = new FrequencyTable();
+            foreach (char c in str)
+            {
+                freqTable.Add(c);
+            }
+            var huffmanEncoder = new HuffmanEncoder();
+            huffmanEncoder.BuildCodes(freqTable.ToDictionary());
+            Console.WriteLine("Character With their Frequencies:");
+            foreach (var kvp in huffmanEncoder.GetCodes())
+            {
+                Console.WriteLine($"{kvp.Key} : {kvp.Value}");
+            }
+
+            foreach (char c in str)
+            {
+                encodedString += huffmanEncoder.GetCodes()[c];
+            }
+
+            Console.WriteLine("\nEncoded Huffman data:");
+            Console.WriteLine(encodedString);
+
+            // Function call
+            decodedString = huffmanEncoder.DecodeFile(huffmanEncoder.GetRoot(), encodedString);
+            Console.WriteLine("\nDecoded Huffman Data:");
+            Console.WriteLine(decodedString);
+        }
+    }
+}
+
+Output
+
+Character With there Frequencies:
+e 10
+f 1100
+g 011
+k 00
+o 010
+r 1101
+s 111
+
+Encoded Huffman data:
+01110100011111000101101011101000111
+
+Decoded Huffman Data:
+geeksforgeeks
+
+Time complexity:
+
+Time complexity of the Huffman coding algorithm is O(n log n), where n is the number of characters in the input string. The auxiliary space complexity is also O(n), where n is the number of characters in the input string.
+
+In the given C++ implementation, the time complexity is dominated by the creation of the Huffman tree using the priority queue, which takes O(n log n) time. The space complexity is dominated by the maps used to store the frequency and codes of characters, which take O(n) space. The recursive functions used to print codes and store codes also contribute to the space complexity.
+
+### Comparing Input file size and Output file size:
+
+Comparing the input file size and the Huffman encoded output file. We can calculate the size of the output data in a simple way. Let's say our input is a string "geeksforgeeks" and is stored in a file input.txt.
+
+Input File Size:
+
+> Input: "geeksforgeeks" Total number of character i.e. input length: 13 Size: 13 character occurrences * 8 bits = 104 bits or 13 bytes.
+
+Output File Size:
+
+> Input: "geeksforgeeks" ------------------------------------------------ Character |  Frequency |  Binary Huffman Value | ------------------------------------------------ e      |      4     |         10              | f       |      1     |         1100          | g      |      2     |         011            | k      |      2     |         00              | o      |      1     |         010            | r       |      1     |         1101          | s       |      2     |         111            | ------------------------------------------------ So to calculate output size: e: 4 occurrences * 2 bits = 8 bits f: 1 occurrence  * 4 bits = 4 bits g: 2 occurrences * 3 bits = 6 bits k: 2 occurrences * 2 bits = 4 bits o: 1 occurrence  * 3 bits = 3 bits r: 1 occurrence  * 4 bits = 4 bits s: 2 occurrences * 3 bits = 6 bits Total Sum: 35 bits approx 5 bytes
+
+Hence, we could see that after encoding the data we saved a large amount of data. The above method can also help us to determine the value of N i.e. the length of the encoded data.

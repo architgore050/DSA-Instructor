@@ -1,0 +1,1017 @@
+Source: https://www.geeksforgeeks.org/dsa/dinics-algorithm-maximum-flow/
+Title: Dinic's algorithm for Maximum Flow
+Extractor: 2
+
+Problem Statement : Given a graph that represents a flow network where every edge has a capacity. Also given two vertices source ‘s’ and sink ‘t’ in the graph, find the maximum possible flow from s to t with the following constraints :
+
+1. Flow on an edge doesn’t exceed the given capacity of the edge.
+2. An incoming flow is equal to an outgoing flow for every vertex except s and t.
+
+For example:
+
+> In the following input graph, the maximum s-t flow is 19 which is shown below.
+
+Background :
+
+1. Max Flow Problem Introduction : We introduced the Maximum Flow problem, discussed Greedy Algorithm, and introduced the residual graph.
+2. Ford-Fulkerson Algorithm and Edmond Karp Implementation : We discussed the Ford-Fulkerson algorithm and its implementation. We also discussed the residual graph in detail.
+
+The time complexity of Edmond Karp Implementation is O(VE 2 ). In this post, a new Dinic's algorithm is discussed which is a faster algorithm and takes O(EV 2 ).
+
+Like Edmond Karp's algorithm, Dinic's algorithm uses following concepts :
+
+1. A flow is maximum if there is no s to t path in residual graph.
+2. BFS is used in a loop. There is a difference though in the way we use BFS in both algorithms.
+
+In Edmond's Karp algorithm , we use BFS to find an augmenting path and send flow across this path. In Dinic's algorithm, we use BFS to check if more flow is possible and to construct level graph. In level graph , we assign levels to all nodes, level of a node is shortest distance (in terms of number of edges) of the node from source. Once level graph is constructed, we send multiple flows using this level graph. This is the reason it works better than Edmond Karp. In Edmond Karp, we send only flow that is send across the path found by BFS.
+
+Outline of Dinic's algorithm :
+
+> Initialize residual graph G as given graph. Do BFS of G to construct a level graph (or assign levels to vertices) and also check if more flow is possible. If more flow is not possible, then return Send multiple flows in G using level graph until blocking flow is reached. Here using level graph means, in every flow, levels of path nodes should be 0, 1, 2...(in order) from s to t.
+
+> A flow is Blocking Flow if no more flow can be sent using level graph, i.e., no more s-t path exists such that path vertices have current levels 0, 1, 2... in order. Blocking Flow can be seen same as maximum flow path in Greedy algorithm discussed here .
+
+Illustration : Initial Residual Graph (Same as given Graph)
+
+Total Flow = 0
+
+First Iteration : We assign levels to all nodes using BFS. We also check if more flow is possible (or there is a s-t path in residual graph).
+
+Now we find blocking flow using levels (means every flow path should have levels as 0, 1, 2, 3). We send three flows together. This is where it is optimized compared to Edmond Karp where we send one flow at a time. 4 units of flow on path s - 1 - 3 - t. 6 units of flow on path s - 1 - 4 - t. 4 units of flow on path s - 2 - 4 - t. Total flow = Total flow + 4 + 6 + 4 = 14 After one iteration, residual graph changes to following.
+
+Second Iteration : We assign new levels to all nodes using BFS of above modified residual graph. We also check if more flow is possible (or there is a s-t path in residual graph).
+
+Now we find blocking flow using levels (means every flow path should have levels as 0, 1, 2, 3, 4). We can send only one flow this time. 5 units of flow on path s - 2 - 4 - 3 - t Total flow = Total flow + 5 = 19 The new residual graph is
+
+Third Iteration : We run BFS and create a level graph. We also check if more flow is possible and proceed only if possible. This time there is no s-t path in residual graph, so we terminate the algorithm.
+
+Implementation : Below is c++ implementation of Dinic's algorithm:
+
+CPP
+
+// C++ implementation of Dinic's Algorithm
+#include <bits/stdc++.h>
+using namespace std;
+
+// A structure to represent a edge between
+// two vertex
+struct Edge {
+    int v; // Vertex v (or "to" vertex)
+           // of a directed edge u-v. "From"
+           // vertex u can be obtained using
+           // index in adjacent array.
+
+    int flow; // flow of data in edge
+
+    int C; // capacity
+
+    int rev; // To store index of reverse
+             // edge in adjacency list so that
+             // we can quickly find it.
+};
+
+// Residual Graph
+class Graph {
+    int V; // number of vertex
+    int* level; // stores level of a node
+    vector<Edge>* adj;
+
+public:
+    Graph(int V)
+    {
+        adj = new vector<Edge>[V];
+        this->V = V;
+        level = new int[V];
+    }
+
+    // add edge to the graph
+    void addEdge(int u, int v, int C)
+    {
+        // Forward edge : 0 flow and C capacity
+        Edge a{ v, 0, C, (int)adj[v].size() };
+
+        // Back edge : 0 flow and 0 capacity
+        Edge b{ u, 0, 0, (int)adj[u].size() };
+
+        adj[u].push_back(a);
+        adj[v].push_back(b); // reverse edge
+    }
+
+    bool BFS(int s, int t);
+    int sendFlow(int s, int flow, int t, int ptr[]);
+    int DinicMaxflow(int s, int t);
+};
+
+// Finds if more flow can be sent from s to t.
+// Also assigns levels to nodes.
+bool Graph::BFS(int s, int t)
+{
+    for (int i = 0; i < V; i++)
+        level[i] = -1;
+
+    level[s] = 0; // Level of source vertex
+
+    // Create a queue, enqueue source vertex
+    // and mark source vertex as visited here
+    // level[] array works as visited array also.
+    list<int> q;
+    q.push_back(s);
+
+    vector<Edge>::iterator i;
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop_front();
+        for (i = adj[u].begin(); i != adj[u].end(); i++) {
+            Edge& e = *i;
+            if (level[e.v] < 0 && e.flow < e.C) {
+                // Level of current vertex is,
+                // level of parent + 1
+                level[e.v] = level[u] + 1;
+
+                q.push_back(e.v);
+            }
+        }
+    }
+
+    // IF we can not reach to the sink we
+    // return false else true
+    return level[t] < 0 ? false : true;
+}
+
+// A DFS based function to send flow after BFS has
+// figured out that there is a possible flow and
+// constructed levels. This function called multiple
+// times for a single call of BFS.
+// flow : Current flow send by parent function call
+// start[] : To keep track of next edge to be explored.
+//           start[i] stores  count of edges explored
+//           from i.
+//  u : Current vertex
+//  t : Sink
+int Graph::sendFlow(int u, int flow, int t, int start[])
+{
+    // Sink reached
+    if (u == t)
+        return flow;
+
+    // Traverse all adjacent edges one -by - one.
+    for (; start[u] < adj[u].size(); start[u]++) {
+        // Pick next edge from adjacency list of u
+        Edge& e = adj[u][start[u]];
+
+        if (level[e.v] == level[u] + 1 && e.flow < e.C) {
+            // find minimum flow from u to t
+            int curr_flow = min(flow, e.C - e.flow);
+
+            int temp_flow
+                = sendFlow(e.v, curr_flow, t, start);
+
+            // flow is greater than zero
+            if (temp_flow > 0) {
+                // add flow  to current edge
+                e.flow += temp_flow;
+
+                // subtract flow from reverse edge
+                // of current edge
+                adj[e.v][e.rev].flow -= temp_flow;
+                return temp_flow;
+            }
+        }
+    }
+
+    return 0;
+}
+
+// Returns maximum flow in graph
+int Graph::DinicMaxflow(int s, int t)
+{
+    // Corner case
+    if (s == t)
+        return -1;
+
+    int total = 0; // Initialize result
+
+    // Augment the flow while there is path
+    // from source to sink
+    while (BFS(s, t) == true) {
+        // store how many edges are visited
+        // from V { 0 to V }
+        int* start = new int[V + 1]{ 0 };
+
+        // while flow is not zero in graph from S to D
+        while (int flow = sendFlow(s, INT_MAX, t, start)) {
+
+            // Add path flow to overall flow
+            total += flow;
+        }
+
+          // Remove allocated array
+          delete[] start;
+    }
+
+    // return maximum flow
+    return total;
+}
+
+// Driver Code
+int main()
+{
+    Graph g(6);
+    g.addEdge(0, 1, 16);
+    g.addEdge(0, 2, 13);
+    g.addEdge(1, 2, 10);
+    g.addEdge(1, 3, 12);
+    g.addEdge(2, 1, 4);
+    g.addEdge(2, 4, 14);
+    g.addEdge(3, 2, 9);
+    g.addEdge(3, 5, 20);
+    g.addEdge(4, 3, 7);
+    g.addEdge(4, 5, 4);
+
+    // next exmp
+    /*g.addEdge(0, 1, 3 );
+      g.addEdge(0, 2, 7 ) ;
+      g.addEdge(1, 3, 9);
+      g.addEdge(1, 4, 9 );
+      g.addEdge(2, 1, 9 );
+      g.addEdge(2, 4, 9);
+      g.addEdge(2, 5, 4);
+      g.addEdge(3, 5, 3);
+      g.addEdge(4, 5, 7 );
+      g.addEdge(0, 4, 10);
+
+     // next exp
+     g.addEdge(0, 1, 10);
+     g.addEdge(0, 2, 10);
+     g.addEdge(1, 3, 4 );
+     g.addEdge(1, 4, 8 );
+     g.addEdge(1, 2, 2 );
+     g.addEdge(2, 4, 9 );
+     g.addEdge(3, 5, 10 );
+     g.addEdge(4, 3, 6 );
+     g.addEdge(4, 5, 10 ); */
+
+    cout << "Maximum flow " << g.DinicMaxflow(0, 5);
+    return 0;
+}
+
+Java
+
+// JAVA implementation of above approach
+
+import java.util.*;
+
+class Edge {
+    public int v; // Vertex v (or "to" vertex)
+                 // of a directed edge u-v. "From"
+                 // vertex u can be obtained using
+                 // index in adjacent array
+
+    public int flow;    // flow of data in edge
+
+    public int C;        // Capacity
+
+    public int rev;        // To store index of reverse
+                       // edge in adjacency list so that
+                       // we can quickly find it.
+
+    public Edge(int v, int flow, int C, int rev) {
+        this.v = v;
+        this.flow = flow;
+        this.C = C;
+        this.rev = rev;
+    }
+}
+
+// Residual Graph
+class Graph {
+    private int V;                // No. of vertex
+    private int[] level;        // Stores level of graph
+    private List<Edge>[] adj;
+
+    public Graph(int V) {
+        adj = new ArrayList[V];
+        for (int i = 0; i < V; i++) {
+            adj[i] = new ArrayList<Edge>();
+        }
+        this.V = V;
+        level = new int[V];
+    }
+
+      // Add edge to the graph
+    public void addEdge(int u, int v, int C) {
+
+          // Forward edge : 0 flow and C capacity
+        Edge a = new Edge(v, 0, C, adj[v].size());
+
+          // Back edge : 0 flow and 0 capacity
+        Edge b = new Edge(u, 0, 0, adj[u].size());
+
+        adj[u].add(a);
+        adj[v].add(b);
+    }
+
+      // Finds if more flow can be sent from s to t.
+    // Also assigns levels to nodes.
+    public boolean BFS(int s, int t) {
+        for (int i = 0; i < V; i++) {
+            level[i] = -1;
+        }
+
+        level[s] = 0;        // Level of source vertex
+
+           // Create a queue, enqueue source vertex
+        // and mark source vertex as visited here
+        // level[] array works as visited array also.
+        LinkedList<Integer> q = new LinkedList<Integer>();
+        q.add(s);
+
+        ListIterator<Edge> i;
+        while (q.size() != 0) {
+            int u = q.poll();
+
+            for (i = adj[u].listIterator(); i.hasNext();) {
+                Edge e = i.next();
+                if (level[e.v] < 0 && e.flow < e.C) {
+
+                      // Level of current vertex is -
+                      // Level of parent + 1
+                    level[e.v] = level[u] + 1;
+                    q.add(e.v);
+                }
+            }
+        }
+
+        return level[t] < 0 ? false : true;
+    }
+
+    // A DFS based function to send flow after BFS has
+    // figured out that there is a possible flow and
+    // constructed levels. This function called multiple
+    // times for a single call of BFS.
+    // flow : Current flow send by parent function call
+    // start[] : To keep track of next edge to be explored.
+    //           start[i] stores  count of edges explored
+    //           from i.
+    //  u : Current vertex
+    //  t : Sink
+    public int sendFlow(int u, int flow, int t, int start[]) {
+
+          // Sink reached
+        if (u == t) {
+            return flow;
+        }
+
+          // Traverse all adjacent edges one -by - one.
+        for (; start[u] < adj[u].size(); start[u]++) {
+
+              // Pick next edge from adjacency list of u
+            Edge e = adj[u].get(start[u]);
+
+            if (level[e.v] == level[u] + 1 && e.flow < e.C) {
+                  // find minimum flow from u to t
+                int curr_flow = Math.min(flow, e.C - e.flow);
+
+                int temp_flow = sendFlow(e.v, curr_flow, t, start);
+
+                  // flow is greater than zero
+                if (temp_flow > 0) {
+                      // add flow  to current edge
+                    e.flow += temp_flow;
+
+                      // subtract flow from reverse edge
+                    // of current edge
+                    adj[e.v].get(e.rev).flow -= temp_flow;
+                    return temp_flow;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+      // Returns maximum flow in graph
+    public int DinicMaxflow(int s, int t) {
+        if (s == t) {
+            return -1;
+        }
+
+        int total = 0;
+
+          // Augment the flow while there is path
+        // from source to sink
+        while (BFS(s, t) == true) {
+
+              // store how many edges are visited
+            // from V { 0 to V }
+            int[] start = new int[V + 1];
+
+              // while flow is not zero in graph from S to D
+            while (true) {
+                int flow = sendFlow(s, Integer.MAX_VALUE, t, start);
+                if (flow == 0) {
+                    break;
+                }
+
+                  // Add path flow to overall flow
+                total += flow;
+            }
+        }
+
+          // Return maximum flow
+        return total;
+    }
+}
+
+// Driver Code
+public class Main {
+    public static void main(String args[]) {
+        Graph g = new Graph(6);
+        g.addEdge(0, 1, 16);
+        g.addEdge(0, 2, 13);
+        g.addEdge(1, 2, 10);
+        g.addEdge(1, 3, 12);
+        g.addEdge(2, 1, 4);
+        g.addEdge(2, 4, 14);
+        g.addEdge(3, 2, 9);
+        g.addEdge(3, 5, 20);
+        g.addEdge(4, 3, 7);
+        g.addEdge(4, 5, 4);
+
+        // next exmp
+      /*g.addEdge(0, 1, 3 );
+        g.addEdge(0, 2, 7 ) ;
+        g.addEdge(1, 3, 9);
+        g.addEdge(1, 4, 9 );
+        g.addEdge(2, 1, 9 );
+        g.addEdge(2, 4, 9);
+        g.addEdge(2, 5, 4);
+        g.addEdge(3, 5, 3);
+        g.addEdge(4, 5, 7 );
+        g.addEdge(0, 4, 10);
+
+       // next exp
+       g.addEdge(0, 1, 10);
+       g.addEdge(0, 2, 10);
+       g.addEdge(1, 3, 4 );
+       g.addEdge(1, 4, 8 );
+       g.addEdge(1, 2, 2 );
+       g.addEdge(2, 4, 9 );
+       g.addEdge(3, 5, 10 );
+       g.addEdge(4, 3, 6 );
+       g.addEdge(4, 5, 10 ); */
+
+        System.out.println("Maximum flow " + g.DinicMaxflow(0, 5));
+      }
+}
+
+// This code is contributed by Amit Mangal
+
+Python3
+
+# Python implementation of Dinic's Algorithm
+class Edge:
+    def __init__(self, v, flow, C, rev):
+        self.v = v
+        self.flow = flow
+        self.C = C
+        self.rev = rev
+
+# Residual Graph
+
+class Graph:
+    def __init__(self, V):
+        self.adj = [[] for i in range(V)]
+        self.V = V
+        self.level = [0 for i in range(V)]
+
+    # add edge to the graph
+    def addEdge(self, u, v, C):
+
+        # Forward edge : 0 flow and C capacity
+        a = Edge(v, 0, C, len(self.adj[v]))
+
+        # Back edge : 0 flow and 0 capacity
+        b = Edge(u, 0, 0, len(self.adj[u]))
+        self.adj[u].append(a)
+        self.adj[v].append(b)
+
+    # Finds if more flow can be sent from s to t
+    # Also assigns levels to nodes
+    def BFS(self, s, t):
+        for i in range(self.V):
+            self.level[i] = -1
+
+        # Level of source vertex
+        self.level[s] = 0
+
+        # Create a queue, enqueue source vertex
+        # and mark source vertex as visited here
+        # level[] array works as visited array also
+        q = []
+        q.append(s)
+        while q:
+            u = q.pop(0)
+            for i in range(len(self.adj[u])):
+                e = self.adj[u][i]
+                if self.level[e.v] < 0 and e.flow < e.C:
+
+                    # Level of current vertex is
+                    # level of parent + 1
+                    self.level[e.v] = self.level[u]+1
+                    q.append(e.v)
+
+        # If we can not reach to the sink we
+        # return False else True
+        return False if self.level[t] < 0 else True
+
+# A DFS based function to send flow after BFS has
+# figured out that there is a possible flow and
+# constructed levels. This functions called multiple
+# times for a single call of BFS.
+# flow : Current flow send by parent function call
+# start[] : To keep track of next edge to be explored
+#           start[i] stores count of edges explored
+#           from i
+# u : Current vertex
+# t : Sink
+    def sendFlow(self, u, flow, t, start):
+        # Sink reached
+        if u == t:
+            return flow
+
+        # Traverse all adjacent edges one -by -one
+        while start[u] < len(self.adj[u]):
+
+            # Pick next edge from adjacency list of u
+            e = self.adj[u][start[u]]
+            if self.level[e.v] == self.level[u]+1 and e.flow < e.C:
+
+                # find minimum flow from u to t
+                curr_flow = min(flow, e.C-e.flow)
+                temp_flow = self.sendFlow(e.v, curr_flow, t, start)
+
+                # flow is greater than zero
+                if temp_flow and temp_flow > 0:
+
+                    # add flow to current edge
+                    e.flow += temp_flow
+
+                    # subtract flow from reverse edge
+                    # of current edge
+                    self.adj[e.v][e.rev].flow -= temp_flow
+                    return temp_flow
+            start[u] += 1
+
+    # Returns maximum flow in graph
+    def DinicMaxflow(self, s, t):
+
+        # Corner case
+        if s == t:
+            return -1
+
+        # Initialize result
+        total = 0
+
+        # Augument the flow while there is path
+        # from source to sink
+        while self.BFS(s, t) == True:
+
+            # store how many edges are visited
+            # from V { 0 to V }
+            start = [0 for i in range(self.V+1)]
+            while True:
+                flow = self.sendFlow(s, float('inf'), t, start)
+                if not flow:
+                    break
+
+                # Add path flow to overall flow
+                total += flow
+
+        # return maximum flow
+        return total
+
+g = Graph(6)
+g.addEdge(0, 1, 16)
+g.addEdge(0, 2, 13)
+g.addEdge(1, 2, 10)
+g.addEdge(1, 3, 12)
+g.addEdge(2, 1, 4)
+g.addEdge(2, 4, 14)
+g.addEdge(3, 2, 9)
+g.addEdge(3, 5, 20)
+g.addEdge(4, 3, 7)
+g.addEdge(4, 5, 4)
+print("Maximum flow", g.DinicMaxflow(0, 5))
+
+# This code is contributed by rupasriachanta421.
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Edge {
+    public int v;  // Vertex v (or "to" vertex)
+                 // of a directed edge u-v. "From"
+                 // vertex u can be obtained using
+                 // index in adjacent array
+
+    public int flow;  // flow of data in edge
+
+    public int C;  // capacity
+
+    public int rev; // To store index of reverse
+             // edge in adjacency list so that
+             // we can quickly find it.
+
+    public Edge(int v, int flow, int C, int rev) {
+        this.v = v;
+        this.flow = flow;
+        this.C = C;
+        this.rev = rev;
+    }
+}
+
+// Residual Graph
+class Graph {
+    private int V;       // No. of vertex
+    private int[] level;       // Stores level of graph
+    private List<Edge>[] adj;
+
+    public Graph(int V) {
+        adj = new List<Edge>[V];
+        for (int i = 0; i < V; i++) {
+            adj[i] = new List<Edge>();
+        }
+        this.V = V;
+        level = new int[V];
+    }
+
+    // Add edge to the graph
+    public void addEdge(int u, int v, int C) {
+
+        // Forward edge : 0 flow and C capacity
+        Edge a = new Edge(v, 0, C, adj[v].Count);
+
+        // Back edge : 0 flow and 0 capacity
+        Edge b = new Edge(u, 0, 0, adj[u].Count);
+        adj[u].Add(a);
+        adj[v].Add(b);
+    }
+
+    // Finds if more flow can be sent from s to t.
+    // Also assigns levels to nodes.
+    public bool BFS(int s, int t) {
+        for (int j = 0; j < V; j++) {
+            level[j] = -1;
+        }
+
+        level[s] = 0;   // Level of source vertex
+
+           // Create a queue, enqueue source vertex
+        // and mark source vertex as visited here
+        // level[] array works as visited array also.
+        Queue<int> q = new Queue<int>();
+        q.Enqueue(s);
+
+        List<Edge>.Enumerator i;
+        while (q.Count != 0) {
+            int u = q.Dequeue();
+
+            for (i = adj[u].GetEnumerator(); i.MoveNext();) {
+                Edge e = i.Current;
+                if (level[e.v] < 0 && e.flow < e.C) {
+                    // Level of current vertex is -
+                      // Level of parent + 1
+
+                    level[e.v] = level[u] + 1;
+                    q.Enqueue(e.v);
+                }
+            }
+        }
+
+        return level[t] < 0 ? false : true;
+    }
+
+    // A DFS based function to send flow after BFS has
+    // figured out that there is a possible flow and
+    // constructed levels. This function called multiple
+    // times for a single call of BFS.
+    // flow : Current flow send by parent function call
+    // start[] : To keep track of next edge to be explored.
+    //           start[i] stores  count of edges explored
+    //           from i.
+    //  u : Current vertex
+    //  t : Sink
+    public int sendFlow(int u, int flow, int t, int[] start) {
+
+        // Sink reached
+        if (u == t) {
+            return flow;
+        }
+
+        // Traverse all adjacent edges one -by - one.
+        for (; start[u] < adj[u].Count; start[u]++) {
+
+            // Pick next edge from adjacency list of u
+            Edge e = adj[u][start[u]];
+
+            if (level[e.v] == level[u] + 1 && e.flow < e.C) {
+                // find minimum flow from u to t
+                int curr_flow = Math.Min(flow, e.C - e.flow);
+                int temp_flow = sendFlow(e.v, curr_flow, t, start);
+
+                // flow is greater than zero
+                if (temp_flow > 0) {
+                    // add flow  to current edge
+                    e.flow += temp_flow;
+
+                    // subtract flow from reverse edge
+                    // of current edge
+                    adj[e.v][e.rev].flow -= temp_flow;
+                    return temp_flow;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    // Returns maximum flow in graph
+    public int DinicMaxflow(int s, int t) {
+        if (s == t) {
+            return -1;
+        }
+
+        int total = 0;
+
+        // Augment the flow while there is path
+        // from source to sink
+        while (BFS(s, t) == true) {
+
+            // store how many edges are visited
+            // from V { 0 to V }
+            int[] start = new int[V + 1];
+
+            // while flow is not zero in graph from S to D
+            while (true) {
+                int flow = sendFlow(s, int.MaxValue, t, start);
+                if (flow == 0) {
+                    break;
+                }
+
+                // Add path flow to overall flow
+                total += flow;
+            }
+        }
+
+        // Return maximum flow
+        return total;
+    }
+}
+
+// Driver Code
+public class Gfg {
+    public static void Main() {
+        Graph g = new Graph(6);
+        g.addEdge(0, 1, 16);
+        g.addEdge(0, 2, 13);
+        g.addEdge(1, 2, 10);
+        g.addEdge(1, 3, 12);
+        g.addEdge(2, 1, 4);
+        g.addEdge(2, 4, 14);
+        g.addEdge(3, 2, 9);
+        g.addEdge(3, 5, 20);
+        g.addEdge(4, 3, 7);
+        g.addEdge(4, 5, 4);
+
+        // next exmp
+      /*g.addEdge(0, 1, 3 );
+        g.addEdge(0, 2, 7 ) ;
+        g.addEdge(1, 3, 9);
+        g.addEdge(1, 4, 9 );
+        g.addEdge(2, 1, 9 );
+        g.addEdge(2, 4, 9);
+        g.addEdge(2, 5, 4);
+        g.addEdge(3, 5, 3);
+        g.addEdge(4, 5, 7 );
+        g.addEdge(0, 4, 10);
+
+       // next exp
+       g.addEdge(0, 1, 10);
+       g.addEdge(0, 2, 10);
+       g.addEdge(1, 3, 4 );
+       g.addEdge(1, 4, 8 );
+       g.addEdge(1, 2, 2 );
+       g.addEdge(2, 4, 9 );
+       g.addEdge(3, 5, 10 );
+       g.addEdge(4, 3, 6 );
+       g.addEdge(4, 5, 10 ); */
+
+        Console.Write("Maximum flow " + g.DinicMaxflow(0, 5));
+    }
+}
+
+JavaScript
+
+// Javascript implementation of Dinic's Algorithm
+
+      // A class to represent a edge between
+      // two vertex
+      class Edge {
+        constructor(v, flow, C, rev) {
+          // Vertex v (or "to" vertex)
+          // of a directed edge u-v. "From"
+          // vertex u can be obtained using
+          // index in adjacent array.
+          this.v = v;
+          // flow of data in edge
+          this.flow = flow;
+          // capacity
+          this.C = C;
+          // To store index of reverse
+          // edge in adjacency list so that
+          // we can quickly find it.
+          this.rev = rev;
+        }
+      }
+
+      // Residual Graph
+      class Graph {
+        constructor(V) {
+          this.V = V; // number of vertex
+          this.adj = Array.from(Array(V), () => new Array());
+          this.level = new Array(V); // stores level of a node
+        }
+
+        // add edge to the graph
+        addEdge(u, v, C) {
+          // Forward edge : 0 flow and C capacity
+          let a = new Edge(v, 0, C, this.adj[v].length);
+
+          // Back edge : 0 flow and 0 capacity
+          let b = new Edge(u, 0, 0, this.adj[u].length);
+
+          this.adj[u].push(a);
+          this.adj[v].push(b); // reverse edge
+        }
+
+        // Finds if more flow can be sent from s to t.
+        // Also assigns levels to nodes.
+        BFS(s, t) {
+          for (let i = 0; i < this.V; i++) this.level[i] = -1;
+
+          this.level[s] = 0; // Level of source vertex
+
+          // Create a queue, enqueue source vertex
+          // and mark source vertex as visited here
+          // level[] array works as visited array also.
+          let q = new Array();
+          q.push(s);
+
+          while (q.length != 0) {
+            let u = q[0];
+            q.shift();
+            for (let j in this.adj[u]) {
+              let e = this.adj[u][j];
+              if (this.level[e.v] < 0 && e.flow < e.C) {
+                // Level of current vertex is,
+                // level of parent + 1
+                this.level[e.v] = this.level[u] + 1;
+
+                q.push(e.v);
+              }
+            }
+          }
+
+          // IF we can not reach to the sink we
+          // return false else true
+          return this.level[t] < 0 ? false : true;
+        }
+
+        // A DFS based function to send flow after BFS has
+        // figured out that there is a possible flow and
+        // constructed levels. This function called multiple
+        // times for a single call of BFS.
+        // flow : Current flow send by parent function call
+        // start[] : To keep track of next edge to be explored.
+        //           start[i] stores  count of edges explored
+        //           from i.
+        //  u : Current vertex
+        //  t : Sink
+        sendFlow(u, flow, t, start) {
+          // Sink reached
+          if (u == t) return flow;
+
+          // Traverse all adjacent edges one -by - one.
+          while (start[u] < this.adj[u].length) {
+            // Pick next edge from adjacency list of u
+            let e = this.adj[u][start[u]];
+
+            if (this.level[e.v] == this.level[u] + 1 && e.flow < e.C) {
+              // find minimum flow from u to t
+              let curr_flow = Math.min(flow, e.C - e.flow);
+
+              let temp_flow = this.sendFlow(e.v, curr_flow, t, start);
+
+              // flow is greater than zero
+              if (temp_flow > 0) {
+                // add flow  to current edge
+                e.flow += temp_flow;
+
+                // subtract flow from reverse edge
+                // of current edge
+                this.adj[e.v][e.rev].flow -= temp_flow;
+                return temp_flow;
+              }
+            }
+            start[u] = start[u] + 1;
+          }
+
+          return 0;
+        }
+
+        // Returns maximum flow in graph
+        DinicMaxflow(s, t) {
+          // Corner case
+          if (s == t) return -1;
+
+          let total = 0; // Initialize result
+
+          // Augment the flow while there is path
+          // from source to sink
+          while (this.BFS(s, t) == true) {
+            // store how many edges are visited
+            // from V { 0 to V }
+            let start = new Array(this.V + 1);
+            start.fill(0);
+
+            // while flow is not zero in graph from S to D
+            while (true) {
+              let flow = this.sendFlow(s, Number.MAX_VALUE, t, start);
+              if (!flow) {
+                break;
+              }
+              // Add path flow to overall flow
+              total += flow;
+            }
+          }
+
+          // return maximum flow
+          return total;
+        }
+      }
+
+      // Driver Code
+
+      let g = new Graph(6);
+      g.addEdge(0, 1, 16);
+      g.addEdge(0, 2, 13);
+      g.addEdge(1, 2, 10);
+      g.addEdge(1, 3, 12);
+      g.addEdge(2, 1, 4);
+      g.addEdge(2, 4, 14);
+      g.addEdge(3, 2, 9);
+      g.addEdge(3, 5, 20);
+      g.addEdge(4, 3, 7);
+      g.addEdge(4, 5, 4);
+
+      // next exmp
+      /*g.addEdge(0, 1, 3 );
+              g.addEdge(0, 2, 7 ) ;
+              g.addEdge(1, 3, 9);
+              g.addEdge(1, 4, 9 );
+              g.addEdge(2, 1, 9 );
+              g.addEdge(2, 4, 9);
+              g.addEdge(2, 5, 4);
+              g.addEdge(3, 5, 3);
+              g.addEdge(4, 5, 7 );
+              g.addEdge(0, 4, 10);
+
+             // next exp
+             g.addEdge(0, 1, 10);
+             g.addEdge(0, 2, 10);
+             g.addEdge(1, 3, 4 );
+             g.addEdge(1, 4, 8 );
+             g.addEdge(1, 2, 2 );
+             g.addEdge(2, 4, 9 );
+             g.addEdge(3, 5, 10 );
+             g.addEdge(4, 3, 6 );
+             g.addEdge(4, 5, 10 ); */
+
+      console.log("Maximum flow " + g.DinicMaxflow(0, 5));
+
+Output
+
+Maximum flow 23
+
+Time Complexity : O (EV 2 ) .
+
+- Doing a BFS to construct level graph takes O(E) time.
+- Sending multiple more flows until a blocking flow is reached takes O(VE) time.
+- The outer loop runs at-most O(V) time.
+- In each iteration, we construct new level graph and find blocking flow. It can be proved that the number of levels increase at least by one in every iteration (Refer the below reference video for the proof). So the outer loop runs at most O(V) times.
+- Therefore overall time complexity is O(EV 2 ).
+
+Space complexity: The space complexity of Dinic’s algorithm is O(V+E), since it requires O(V) to store the level array and O(E) to store the graph's adjacency list.

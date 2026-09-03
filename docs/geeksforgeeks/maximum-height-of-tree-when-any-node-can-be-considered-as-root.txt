@@ -1,0 +1,976 @@
+Source: https://www.geeksforgeeks.org/dsa/maximum-height-of-tree-when-any-node-can-be-considered-as-root/
+Title: Maximum height of Tree when any Node can be considered as Root
+Extractor: 2
+
+Given a tree with n nodes and n-1 edges , the task is to find the maximum height of the tree when any node in the tree is considered as the root of the tree.
+
+Example:
+
+> Input: Output: 5 Explanation: The below diagram represents a tree with 11 nodes and 10 edges and the path that gives us the maximum height when node 1 is considered as a root. The maximum height is 3. Input: Output: 4 Explanation: The below diagram represents a tree with 11 nodes and 10 edges and the path that gives us the maximum height when node 2 is considered as a root.
+
+Table of Content
+
+- Using Dynamic Programming - O(n) Time and O(n) Space
+- Using Diameter of Tree - O(n) Time and O(h) Space
+
+### Using Dynamic Programming - O(n) Time and O(n) Space
+
+A n aive approach would be to traverse the tree using DFS traversal for every node and calculate the maximum height when the node is treated as the root of the tree.
+
+The above problem can be solved by using Dynamic Programming on Trees . To solve this problem , pre-calculate two things for every node. One will be the maximum height while traveling downwards via its branches to the leaves. While the other will be the maximum height when traveling upwards via its parent to any of the leaves.
+
+> Optimal Substructure: When node i is considered as a root, in[i] be the maximum height of the tree when we travel downwards via its sub-trees and leaves. out[i] be the maximum height of the tree while traveling upwards via its parent. The maximum height of a tree when node i is considered as a root will be max(in[i], out[i]) .
+
+The below is the calculation of in[i]:
+
+In the image above, values in[i] have been calculated for every node i . The maximum of every subtree is taken and added with 1 to the parent of that subtree. Add 1 for the edge between parent and subtree. Traverse the tree using DFS and calculate in[i] as max(in[i], 1+ in[child]) for every node.
+
+The below is the calculation of out[i]:
+
+The above diagram shows all the out[i] values (path for all the out[i] is shown below) . For calculation of out[i], move upwards to the parent of node i. From the parent of node i , there are two ways to move in, one will be in all the branches of the parent. The other direction is to move to the parent(call it parent2 to avoid confusion) of the parent(call it parent1) of node i. The maximum height upwards via parent2 is out[parent1] itself. Generally, out[node i] as 1+max(out[i], 1+max of all branches) . Add 1 for the edges between node and parent.
+
+- Node 1: No other way
+- Node 2: 2 -> 1 -> 3 -> 7 -> 10
+- Node 3 = 3 -> 1 -> 4 -> 8
+- Node 4 = 4 -> 1 -> 3 -> 7 -> 11
+- Node 5 = 5 -> 2 -> 1 -> 3 -> 7 -> 10
+- Node 6 = 6 -> 2 -> 1 -> 3 -> 7 -> 10
+- Node 7 = 7 -> 3 -> 1 -> 4 -> 9
+- Node 8 = 8 -> 4 -> 1 -> 3 -> 7 -> 11
+- Node 9 =  9 -> 4 -> 1 -> 3 -> 7 -> 11
+- Node 10 = 10-> 7 -> 3 -> 1 -> 2 -> 6
+- Node 11 = 11 -> 7 -> 3 -> 1 -> 4 -> 8
+
+The above diagram explains the calculation of out[i] when 2 is considered as the root o f the tree. The branches of node 2 are not taken into count since the maximum height via that path has already been calculated and stored in in[2] . Moving up, in this case, the parent of 2 , i.e., 1, has no parent. So, the branches except for the one which has the node are considered while calculating the maximum.
+
+The above diagram explains the calculation of out[10] . The parent of node 10, i.e., 7 has a parent and a branch(precisely a child in this case). So the maximum height of both has been taken to count in such cases when parent and branches exist.
+
+In case of multiple branches of a parent, take the longest of them to count(excluding the branch in which the node lies)
+
+> Calculating the maximum height of all the branches connected to parent : in[i] stores the maximum height while moving downwards . No need to store all the lengths of branches. Only the first and second maximum length among all the branches will give the answer. Since the algorithm used is based on DFS, all the branches connected to the parent will be considered, including the branch which has the node. If the first maximum path thus obtained is the same as in[i] , then maximum1 is the length of the branch in which node i lies. In this case, our longest path will be maximum2. Recurrence relation of in[i] and out[i]: in[i] = max(in[i], 1 + in[child]) out[i] = 1 + max(out[parent of i], longest path of all branches of parent of i)
+
+C++
+
+// C++ code to find the maximum path length
+// considering any node as root
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node{
+public:
+    int data;
+    vector<Node*> children;
+    Node(int x) {
+        data = x;
+    }
+};
+
+// function to pre-calculate the in[]
+// which stores the maximum height when travelled
+// via branches
+int dfs1(Node* root, unordered_map<Node*,int> &in) {
+
+    int ans = 0;
+
+    for (Node* child: root->children) {
+        ans = max(ans, 1+dfs1(child, in));
+    }
+
+    return in[root] = ans;
+}
+
+// function to pre-calculate the array out[]
+// which stores the maximum height when traveled
+// via parent
+void dfs2(Node* root, unordered_map<Node*,int> &out,
+unordered_map<Node*,int> &in) {
+
+    // stores the longest and second
+    // longest branches
+    int mx1 = -1, mx2 = -1;
+
+    // traverse in the subtrees of root
+    for (Node* child : root->children) {
+
+        // compare and store the longest
+        // and second longest
+        if (in[child] >= mx1) {
+            mx2 = mx1;
+            mx1 = in[child];
+        }
+
+        else if (in[child] > mx2)
+            mx2 = in[child];
+    }
+
+    // traverse in the subtree of root
+    for (Node* child : root->children) {
+        int longest = mx1;
+
+        // if longest branch has the node, then
+        // consider the second longest branch
+        if (mx1 == in[child])
+            longest = mx2;
+
+        // recursively calculate out[i]
+        out[child] = 1 + max(out[root], 1 + longest);
+
+        // dfs function call
+        dfs2(child, out,in);
+    }
+}
+
+// function to get maximum height.
+int maxHeight(Node* root) {
+    unordered_map<Node*,int> in, out;
+
+    // traversal to calculate in values
+    dfs1(root, in);
+
+    // traversal to calculate out values
+    dfs2(root, out, in);
+
+    int ans = 0;
+
+    for (auto p: in) {
+        Node* node = p.first;
+        ans = max({ans, in[node], out[node]});
+    }
+
+    return ans;
+}
+
+int main() {
+
+    Node* root = new Node(1);
+    Node* node1 = new Node(2);
+    Node* node2 = new Node(3);
+    Node* node3 = new Node(4);
+    Node* node4 = new Node(5);
+    Node* node5 = new Node(6);
+    Node* node6 = new Node(7);
+    Node* node7 = new Node(8);
+    Node* node8 = new Node(9);
+    Node* node9 = new Node(10);
+    Node* node10 = new Node(11);
+
+    root->children.push_back(node1);
+    root->children.push_back(node2);
+    root->children.push_back(node3);
+    node1->children.push_back(node4);
+    node1->children.push_back(node5);
+    node2->children.push_back(node6);
+    node3->children.push_back(node7);
+    node3->children.push_back(node8);
+    node6->children.push_back(node9);
+    node6->children.push_back(node10);
+
+    cout << maxHeight(root);
+
+    return 0;
+}
+
+Java
+
+// Java program to find the maximum path length
+// considering any node as root
+import java.util.*;
+
+class Node {
+    int data;
+    ArrayList<Node> children;
+
+    Node(int x) {
+        data = x;
+        children = new ArrayList<>();
+    }
+}
+
+class GfG {
+
+    // function to pre-calculate the in[]
+    // which stores the maximum height when travelled
+    // via branches
+    static int dfs1(Node root, HashMap<Node, Integer> in) {
+        int ans = 0;
+
+        for (Node child : root.children) {
+            ans = Math.max(ans, 1 + dfs1(child, in));
+        }
+
+        in.put(root, ans);
+        return ans;
+    }
+
+    // function to pre-calculate the array out[]
+    // which stores the maximum height when traveled
+    // via parent
+    static void dfs2(Node root, HashMap<Node, Integer> out,
+    HashMap<Node, Integer> in) {
+
+        // stores the longest and second
+        // longest branches
+        int mx1 = -1, mx2 = -1;
+
+        // traverse in the subtrees of root
+        for (Node child : root.children) {
+
+            // compare and store the longest
+            // and second longest
+            if (in.get(child) >= mx1) {
+                mx2 = mx1;
+                mx1 = in.get(child);
+            } else if (in.get(child) > mx2) {
+                mx2 = in.get(child);
+            }
+        }
+
+        // traverse in the subtree of root
+        for (Node child : root.children) {
+            int longest = mx1;
+
+            // if longest branch has the node, then
+            // consider the second longest branch
+            if (mx1 == in.get(child))
+                longest = mx2;
+
+            // recursively calculate out[i]
+            out.put(child, 1 + Math.max(out.getOrDefault(root, 0), 1 + longest));
+
+            // dfs function call
+            dfs2(child, out, in);
+        }
+    }
+
+    // function to get maximum height.
+    static int maxHeight(Node root) {
+        HashMap<Node, Integer> in = new HashMap<>();
+        HashMap<Node, Integer> out = new HashMap<>();
+
+        // traversal to calculate in values
+        dfs1(root, in);
+
+        // traversal to calculate out values
+        dfs2(root, out, in);
+
+        int ans = 0;
+
+        for (Node node : in.keySet()) {
+            ans = Math.max(ans,
+            Math.max(in.get(node),
+            out.getOrDefault(node, 0)));
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(1);
+        Node node1 = new Node(2);
+        Node node2 = new Node(3);
+        Node node3 = new Node(4);
+        Node node4 = new Node(5);
+        Node node5 = new Node(6);
+        Node node6 = new Node(7);
+        Node node7 = new Node(8);
+        Node node8 = new Node(9);
+        Node node9 = new Node(10);
+        Node node10 = new Node(11);
+
+        root.children.add(node1);
+        root.children.add(node2);
+        root.children.add(node3);
+        node1.children.add(node4);
+        node1.children.add(node5);
+        node2.children.add(node6);
+        node3.children.add(node7);
+        node3.children.add(node8);
+        node6.children.add(node9);
+        node6.children.add(node10);
+
+        System.out.println(maxHeight(root));
+    }
+}
+
+Python
+
+# Python program to find the maximum path length
+# considering any node as root
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.children = []
+
+# function to pre-calculate the in[]
+# which stores the maximum height when travelled
+# via branches
+def dfs1(root, in_):
+    ans = 0
+    for child in root.children:
+        ans = max(ans, 1 + dfs1(child, in_))
+    in_[root] = ans
+    return ans
+
+# function to pre-calculate the array out[]
+# which stores the maximum height when traveled
+# via parent
+def dfs2(root, out, in_):
+
+    # stores the longest and second
+    # longest branches
+    mx1, mx2 = -1, -1
+
+    # traverse in the subtrees of root
+    for child in root.children:
+
+        # compare and store the longest
+        # and second longest
+        if in_[child] >= mx1:
+            mx2 = mx1
+            mx1 = in_[child]
+        elif in_[child] > mx2:
+            mx2 = in_[child]
+
+    # traverse in the subtree of root
+    for child in root.children:
+        longest = mx1
+
+        # if longest branch has the node, then
+        # consider the second longest branch
+        if mx1 == in_[child]:
+            longest = mx2
+
+        # recursively calculate out[i]
+        out[child] = 1 + max(out.get(root, 0), 1 + longest)
+
+        # dfs function call
+        dfs2(child, out, in_)
+
+# function to get maximum height.
+def maxHeight(root):
+    in_ = {}
+    out = {}
+
+    # traversal to calculate in values
+    dfs1(root, in_)
+
+    # traversal to calculate out values
+    dfs2(root, out, in_)
+
+    ans = 0
+    for node in in_:
+        ans = max(ans, in_[node], out.get(node, 0))
+    return ans
+
+if __name__ == "__main__":
+    root = Node(1)
+    node1 = Node(2)
+    node2 = Node(3)
+    node3 = Node(4)
+    node4 = Node(5)
+    node5 = Node(6)
+    node6 = Node(7)
+    node7 = Node(8)
+    node8 = Node(9)
+    node9 = Node(10)
+    node10 = Node(11)
+
+    root.children.extend([node1, node2, node3])
+    node1.children.extend([node4, node5])
+    node2.children.append(node6)
+    node3.children.extend([node7, node8])
+    node6.children.extend([node9, node10])
+
+    print(maxHeight(root))
+
+C#
+
+// C# program to find the maximum path length
+// considering any node as root
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public List<Node> children;
+
+    public Node(int x) {
+        data = x;
+        children = new List<Node>();
+    }
+}
+
+class GfG {
+
+    // function to pre-calculate the in[]
+    // which stores the maximum height when travelled
+    // via branches
+    static int dfs1(Node root, Dictionary<Node, int> inMap) {
+        int ans = 0;
+
+        foreach (Node child in root.children) {
+            ans = Math.Max(ans, 1 + dfs1(child, inMap));
+        }
+
+        inMap[root] = ans;
+        return ans;
+    }
+
+    // function to pre-calculate the array out[]
+    // which stores the maximum height when traveled
+    // via parent
+    static void dfs2(Node root, Dictionary<Node, int>
+    outMap, Dictionary<Node, int> inMap) {
+        // stores the longest and second
+        // longest branches
+        int mx1 = -1, mx2 = -1;
+
+        // traverse in the subtrees of root
+        foreach (Node child in root.children) {
+
+            // compare and store the longest
+            // and second longest
+            if (inMap[child] >= mx1) {
+                mx2 = mx1;
+                mx1 = inMap[child];
+            } else if (inMap[child] > mx2) {
+                mx2 = inMap[child];
+            }
+        }
+
+        // traverse in the subtree of root
+        foreach (Node child in root.children) {
+            int longest = mx1;
+
+            // if longest branch has the node, then
+            // consider the second longest branch
+            if (mx1 == inMap[child])
+                longest = mx2;
+
+            // recursively calculate out[i]
+            outMap[child] = 1 +
+            Math.Max(outMap.ContainsKey(root) ?
+            outMap[root] : 0, 1 + longest);
+
+            // dfs function call
+            dfs2(child, outMap, inMap);
+        }
+    }
+
+    // function to get maximum height.
+    static int maxHeight(Node root) {
+        var inMap = new Dictionary<Node, int>();
+        var outMap = new Dictionary<Node, int>();
+
+        // traversal to calculate in values
+        dfs1(root, inMap);
+
+        // traversal to calculate out values
+        dfs2(root, outMap, inMap);
+
+        int ans = 0;
+
+        foreach (var node in inMap.Keys) {
+            ans = Math.Max(ans, Math.Max(inMap[node],
+            outMap.ContainsKey(node) ? outMap[node] : 0));
+        }
+
+        return ans;
+    }
+
+    static void Main(string[] args) {
+        Node root = new Node(1);
+        Node node1 = new Node(2);
+        Node node2 = new Node(3);
+        Node node3 = new Node(4);
+        Node node4 = new Node(5);
+        Node node5 = new Node(6);
+        Node node6 = new Node(7);
+        Node node7 = new Node(8);
+        Node node8 = new Node(9);
+        Node node9 = new Node(10);
+        Node node10 = new Node(11);
+
+        root.children.Add(node1);
+        root.children.Add(node2);
+        root.children.Add(node3);
+        node1.children.Add(node4);
+        node1.children.Add(node5);
+        node2.children.Add(node6);
+        node3.children.Add(node7);
+        node3.children.Add(node8);
+        node6.children.Add(node9);
+        node6.children.Add(node10);
+
+        Console.WriteLine(maxHeight(root));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find the maximum path length
+// considering any node as root
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.children = [];
+    }
+}
+
+// function to pre-calculate the in[]
+// which stores the maximum height when travelled
+// via branches
+function dfs1(root, inMap) {
+    let ans = 0;
+
+    for (const child of root.children) {
+        ans = Math.max(ans, 1 + dfs1(child, inMap));
+    }
+
+    inMap.set(root, ans);
+    return ans;
+}
+
+// function to pre-calculate the array out[]
+// which stores the maximum height when traveled
+// via parent
+function dfs2(root, outMap, inMap) {
+
+    // stores the longest and second
+    // longest branches
+    let mx1 = -1, mx2 = -1;
+
+    // traverse in the subtrees of root
+    for (const child of root.children) {
+
+        // compare and store the longest
+        // and second longest
+        if (inMap.get(child) >= mx1) {
+            mx2 = mx1;
+            mx1 = inMap.get(child);
+        } else if (inMap.get(child) > mx2) {
+            mx2 = inMap.get(child);
+        }
+    }
+
+    // traverse in the subtree of root
+    for (const child of root.children) {
+        let longest = mx1;
+
+        // if longest branch has the node, then
+        // consider the second longest branch
+        if (mx1 === inMap.get(child)) {
+            longest = mx2;
+        }
+
+        // recursively calculate out[i]
+        outMap.set(child, 1 +
+        Math.max(outMap.get(root) || 0, 1 + longest));
+
+        // dfs function call
+        dfs2(child, outMap, inMap);
+    }
+}
+
+// function to get maximum height.
+function maxHeight(root) {
+    const inMap = new Map();
+    const outMap = new Map();
+
+    // traversal to calculate in values
+    dfs1(root, inMap);
+
+    // traversal to calculate out values
+    dfs2(root, outMap, inMap);
+
+    let ans = 0;
+
+    for (const [node, val] of inMap) {
+        ans = Math.max(ans, val, outMap.get(node) || 0);
+    }
+
+    return ans;
+}
+
+const root = new Node(1);
+const node1 = new Node(2);
+const node2 = new Node(3);
+const node3 = new Node(4);
+const node4 = new Node(5);
+const node5 = new Node(6);
+const node6 = new Node(7);
+const node7 = new Node(8);
+const node8 = new Node(9);
+const node9 = new Node(10);
+const node10 = new Node(11);
+
+root.children.push(node1, node2, node3);
+node1.children.push(node4, node5);
+node2.children.push(node6);
+node3.children.push(node7, node8);
+node6.children.push(node9, node10);
+
+console.log(maxHeight(root));
+
+Output
+
+5
+
+### Using Diameter of Tree - O(n) Time and O(h) Space
+
+> The idea of this approach is based on the property that the maximum height of a tree, when rooted at any node, is equal to the tree's diameter (the longest path between any two nodes).
+
+C++
+
+// C++ code to find the maximum path length
+// considering any node as root
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node{
+public:
+    int data;
+    vector<Node*> children;
+    Node(int x) {
+        data = x;
+    }
+};
+
+// Function to get diameter of tree.
+int diameter(Node* root, int &ans) {
+
+    // variables to get the 2 longest
+    // paths from current node.
+    int mx1 = 0, mx2 = 0;
+
+    for (Node* child: root->children) {
+        int val = 1+diameter(child, ans);
+
+        if (val>mx1) {
+            mx2 = mx1;
+            mx1 = val;
+        }
+        else if(val>mx2) {
+            mx2 = val;
+        }
+    }
+
+    ans = max(ans, mx1+mx2);
+
+    return mx1;
+}
+
+// function to get maximum height.
+int maxHeight(Node* root) {
+    int ans = 0;
+    diameter(root, ans);
+    return ans;
+}
+
+int main() {
+    Node* root = new Node(1);
+    Node* node1 = new Node(2);
+    Node* node2 = new Node(3);
+    Node* node3 = new Node(4);
+    Node* node4 = new Node(5);
+    Node* node5 = new Node(6);
+    Node* node6 = new Node(7);
+    Node* node7 = new Node(8);
+    Node* node8 = new Node(9);
+    Node* node9 = new Node(10);
+    Node* node10 = new Node(11);
+
+    root->children.push_back(node1);
+    root->children.push_back(node2);
+    root->children.push_back(node3);
+    node1->children.push_back(node4);
+    node1->children.push_back(node5);
+    node2->children.push_back(node6);
+    node3->children.push_back(node7);
+    node3->children.push_back(node8);
+    node6->children.push_back(node9);
+    node6->children.push_back(node10);
+
+    cout << maxHeight(root);
+
+    return 0;
+}
+
+Java
+
+// Java program to find the maximum path length
+// considering any node as root
+import java.util.ArrayList;
+
+class Node {
+    int data;
+    ArrayList<Node> children;
+
+    Node(int x) {
+        data = x;
+        children = new ArrayList<>();
+    }
+}
+
+class GfG {
+
+    // Function to get diameter of tree.
+    static int diameter(Node root, int[] ans) {
+
+        // variables to get the 2 longest
+        // paths from current node.
+        int mx1 = 0, mx2 = 0;
+
+        for (Node child : root.children) {
+            int val = 1 + diameter(child, ans);
+
+            if (val > mx1) {
+                mx2 = mx1;
+                mx1 = val;
+            } else if (val > mx2) {
+                mx2 = val;
+            }
+        }
+
+        ans[0] = Math.max(ans[0], mx1 + mx2);
+
+        return mx1;
+    }
+
+    // function to get maximum height.
+    static int maxHeight(Node root) {
+        int[] ans = new int[1];
+        diameter(root, ans);
+        return ans[0];
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(1);
+        Node node1 = new Node(2);
+        Node node2 = new Node(3);
+        Node node3 = new Node(4);
+        Node node4 = new Node(5);
+        Node node5 = new Node(6);
+        Node node6 = new Node(7);
+        Node node7 = new Node(8);
+        Node node8 = new Node(9);
+        Node node9 = new Node(10);
+        Node node10 = new Node(11);
+
+        root.children.add(node1);
+        root.children.add(node2);
+        root.children.add(node3);
+        node1.children.add(node4);
+        node1.children.add(node5);
+        node2.children.add(node6);
+        node3.children.add(node7);
+        node3.children.add(node8);
+        node6.children.add(node9);
+        node6.children.add(node10);
+
+        System.out.println(maxHeight(root));
+    }
+}
+
+Python
+
+# Python program to find the maximum path length
+# considering any node as root
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.children = []
+
+# Function to get diameter of tree.
+def diameter(root, ans):
+
+    # variables to get the 2 longest
+    # paths from current node.
+    mx1 = 0
+    mx2 = 0
+
+    for child in root.children:
+        val = 1 + diameter(child, ans)
+
+        if val > mx1:
+            mx2 = mx1
+            mx1 = val
+        elif val > mx2:
+            mx2 = val
+
+    ans[0] = max(ans[0], mx1 + mx2)
+
+    return mx1
+
+# function to get maximum height.
+def maxHeight(root):
+    ans = [0]
+    diameter(root, ans)
+    return ans[0]
+
+if __name__ == "__main__":
+    root = Node(1)
+    node1 = Node(2)
+    node2 = Node(3)
+    node3 = Node(4)
+    node4 = Node(5)
+    node5 = Node(6)
+    node6 = Node(7)
+    node7 = Node(8)
+    node8 = Node(9)
+    node9 = Node(10)
+    node10 = Node(11)
+
+    root.children.extend([node1, node2, node3])
+    node1.children.extend([node4, node5])
+    node2.children.append(node6)
+    node3.children.extend([node7, node8])
+    node6.children.extend([node9, node10])
+
+    print(maxHeight(root))
+
+C#
+
+// C# program to find the maximum path length
+// considering any node as root
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public List<Node> children;
+
+    public Node(int x) {
+        data = x;
+        children = new List<Node>();
+    }
+}
+
+class GfG {
+
+    // Function to get diameter of tree.
+    static int diameter(Node root, ref int ans) {
+
+        // variables to get the 2 longest
+        // paths from current node.
+        int mx1 = 0, mx2 = 0;
+
+        foreach (Node child in root.children) {
+            int val = 1 + diameter(child, ref ans);
+
+            if (val > mx1) {
+                mx2 = mx1;
+                mx1 = val;
+            } else if (val > mx2) {
+                mx2 = val;
+            }
+        }
+
+        ans = Math.Max(ans, mx1 + mx2);
+
+        return mx1;
+    }
+
+    // function to get maximum height.
+    static int maxHeight(Node root) {
+        int ans = 0;
+        diameter(root, ref ans);
+        return ans;
+    }
+
+    static void Main(string[] args) {
+        Node root = new Node(1);
+        Node node1 = new Node(2);
+        Node node2 = new Node(3);
+        Node node3 = new Node(4);
+        Node node4 = new Node(5);
+        Node node5 = new Node(6);
+        Node node6 = new Node(7);
+        Node node7 = new Node(8);
+        Node node8 = new Node(9);
+        Node node9 = new Node(10);
+        Node node10 = new Node(11);
+
+        root.children.Add(node1);
+        root.children.Add(node2);
+        root.children.Add(node3);
+        node1.children.Add(node4);
+        node1.children.Add(node5);
+        node2.children.Add(node6);
+        node3.children.Add(node7);
+        node3.children.Add(node8);
+        node6.children.Add(node9);
+        node6.children.Add(node10);
+
+        Console.WriteLine(maxHeight(root));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find the maximum path length
+// considering any node as root
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.children = [];
+    }
+}
+
+// Function to get diameter of tree.
+function diameter(root, ans) {
+
+    // variables to get the 2 longest
+    // paths from current node.
+    let mx1 = 0, mx2 = 0;
+
+    for (const child of root.children) {
+        let val = 1 + diameter(child, ans);
+
+        if (val > mx1) {
+            mx2 = mx1;
+            mx1 = val;
+        } else if (val > mx2) {
+            mx2 = val;
+        }
+    }
+
+    ans[0] = Math.max(ans[0], mx1 + mx2);
+
+    return mx1;
+}
+
+// function to get maximum height.
+function maxHeight(root) {
+    let ans = [0];
+    diameter(root, ans);
+    return ans[0];
+}
+
+const root = new Node(1);
+const node1 = new Node(2);
+const node2 = new Node(3);
+const node3 = new Node(4);
+const node4 = new Node(5);
+const node5 = new Node(6);
+const node6 = new Node(7);
+const node7 = new Node(8);
+const node8 = new Node(9);
+const node9 = new Node(10);
+const node10 = new Node(11);
+
+root.children.push(node1, node2, node3);
+node1.children.push(node4, node5);
+node2.children.push(node6);
+node3.children.push(node7, node8);
+node6.children.push(node9, node10);
+
+console.log(maxHeight(root));
+
+Output
+
+5

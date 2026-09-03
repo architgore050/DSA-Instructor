@@ -1,0 +1,705 @@
+Source: https://www.geeksforgeeks.org/dsa/min-max-range-queries-array/
+Title: Min-Max Range Queries in Array
+Extractor: 2
+
+Given an array arr[0 . . . n-1] . We need to efficiently find the minimum and maximum value from index qs (query start) to qe (query end) where 0 <= qs <= qe <= n-1. We are given multiple queries
+
+Examples:
+
+> Input: arr[] = {1, 8, 5, 9, 6, 14, 2, 4, 3, 7}, queries = 5 qs = 0 qe = 4 qs = 3 qe = 7 qs = 1 qe = 6 qs = 2 qe = 5 qs = 0 qe = 8 Output: Minimum = 1 and Maximum = 9 Minimum = 2 and Maximum = 14 Minimum = 2 and Maximum = 14 Minimum = 5 and Maximum = 14 Minimum = 1 and Maximum = 14 Input: arr[] = {2, 5, 3, 1, 8}, queries = 2 qs = 2 qe = 3 qs = 0 qe = 2 Output: Minimum = 1 and Maximum = 3 Minimum = 2 and Maximum = 5
+
+Naive Approach: To solve the problem follow the below idea:
+
+> We solve this problem using the Tournament Method for each query. The time complexity of this approach will be O(queries * n)
+
+## Min-Max Range Queries in Array using segment trees :
+
+To solve the problem follow the below idea:
+
+> This problem can be solved more efficiently by using a Segment Tree
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ program to find minimum and maximum using segment
+// tree
+#include <bits/stdc++.h>
+using namespace std;
+
+// Node for storing minimum and maximum value of given range
+struct node {
+    int minimum;
+    int maximum;
+};
+
+// A utility function to get the middle index from corner
+// indexes.
+int getMid(int s, int e) { return s + (e - s) / 2; }
+
+/*  A recursive function to get the minimum and maximum
+   value in a given range of array indexes. The following
+   are parameters for this function.
+
+    st    --> Pointer to segment tree
+    index --> Index of current node in the segment tree.
+   Initially 0 is passed as root is always at index 0 ss &
+   se  --> Starting and ending indexes of the segment
+                  represented  by current node, i.e.,
+   st[index] qs & qe  --> Starting and ending indexes of
+   query range */
+struct node MaxMinUntill(struct node* st, int ss, int se,
+                         int qs, int qe, int index)
+{
+    // If segment of this node is a part of given range,
+    // then return
+    //  the minimum and maximum node of the segment
+    struct node tmp, left, right;
+    if (qs <= ss && qe >= se)
+        return st[index];
+
+    // If segment of this node is outside the given range
+    if (se < qs || ss > qe) {
+        tmp.minimum = INT_MAX;
+        tmp.maximum = INT_MIN;
+        return tmp;
+    }
+
+    // If a part of this segment overlaps with the given
+    // range
+    int mid = getMid(ss, se);
+    left = MaxMinUntill(st, ss, mid, qs, qe, 2 * index + 1);
+    right = MaxMinUntill(st, mid + 1, se, qs, qe,
+                         2 * index + 2);
+    tmp.minimum = min(left.minimum, right.minimum);
+    tmp.maximum = max(left.maximum, right.maximum);
+    return tmp;
+}
+
+// Return minimum and maximum of elements in range from
+// index qs (query start) to qe (query end).  It mainly uses
+// MaxMinUtill()
+struct node MaxMin(struct node* st, int n, int qs, int qe)
+{
+    struct node tmp;
+
+    // Check for erroneous input values
+    if (qs < 0 || qe > n - 1 || qs > qe) {
+        printf("Invalid Input");
+        tmp.minimum = INT_MAX;
+        tmp.maximum = INT_MIN;
+        return tmp;
+    }
+
+    return MaxMinUntill(st, 0, n - 1, qs, qe, 0);
+}
+
+// A recursive function that constructs Segment Tree for
+// array[ss..se]. si is index of current node in segment
+// tree st
+void constructSTUtil(int arr[], int ss, int se,
+                     struct node* st, int si)
+{
+    // If there is one element in array, store it in current
+    // node of segment tree and return
+    if (ss == se) {
+        st[si].minimum = arr[ss];
+        st[si].maximum = arr[ss];
+        return;
+    }
+
+    // If there are more than one elements, then recur for
+    // left and right subtrees and store the minimum and
+    // maximum of two values in this node
+    int mid = getMid(ss, se);
+    constructSTUtil(arr, ss, mid, st, si * 2 + 1);
+    constructSTUtil(arr, mid + 1, se, st, si * 2 + 2);
+
+    st[si].minimum = min(st[si * 2 + 1].minimum,
+                         st[si * 2 + 2].minimum);
+    st[si].maximum = max(st[si * 2 + 1].maximum,
+                         st[si * 2 + 2].maximum);
+}
+
+/* Function to construct segment tree from given array. This
+   function allocates memory for segment tree and calls
+   constructSTUtil() to fill the allocated memory */
+struct node* constructST(int arr[], int n)
+{
+    // Allocate memory for segment tree
+
+    // Height of segment tree
+    int x = (int)(ceil(log2(n)));
+
+    // Maximum size of segment tree
+    int max_size = 2 * (int)pow(2, x) - 1;
+
+    struct node* st = new struct node[max_size];
+
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, st, 0);
+
+    // Return the constructed segment tree
+    return st;
+}
+
+// Driver code
+int main()
+{
+    int arr[] = { 1, 8, 5, 9, 6, 14, 2, 4, 3, 7 };
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    // Build segment tree from given array
+    struct node* st = constructST(arr, n);
+
+    int qs = 0; // Starting index of query range
+    int qe = 8; // Ending index of query range
+    struct node result = MaxMin(st, n, qs, qe);
+
+    // Function call
+    printf("Minimum = %d and Maximum = %d ", result.minimum,
+           result.maximum);
+
+    return 0;
+}
+
+Java
+
+// Java program to find minimum and maximum using segment
+// tree
+import java.util.*;
+
+public class GFG {
+    public static class Node {
+        int minimum;
+        int maximum;
+        Node(int minimum, int maximum)
+        {
+            this.minimum = minimum;
+            this.maximum = maximum;
+        }
+    }
+    // Driver Code
+    public static void main(String[] args)
+    {
+        int[] arr = { 1, 8, 5, 9, 6, 14, 2, 4, 3, 7 };
+        int n = arr.length;
+        Node[] st = constructST(arr, n);
+        int qs = 0; // Starting index of query range
+        int qe = 8; // Ending index of query range
+        Node result = MaxMin(st, n, qs, qe);
+
+        System.out.println("Minimum = " + result.minimum
+                           + " and Maximum = "
+                           + result.maximum);
+    }
+    // A utility function to get the middle index from
+    // corner
+    // indexes.
+    public static int getMid(int s, int e)
+    {
+        return s + (e - s) / 2;
+    }
+
+    /*  A recursive function to get the minimum and maximum
+     value in a given range of array indexes. The following
+     are parameters for this function.
+
+      st    --> Pointer to segment tree
+      index --> Index of current node in the segment tree.
+     Initially 0 is passed as root is always at index 0 ss &
+     se  --> Starting and ending indexes of the segment
+                    represented  by current node, i.e.,
+     st[index] qs & qe  --> Starting and ending indexes of
+     query range */
+    public static Node MaxMinUntill(Node[] st, int ss,
+                                    int se, int qs, int qe,
+                                    int index)
+    {
+        // If segment of this node is a part of given range,
+        // then return
+        //  the minimum and maximum node of the segment
+        Node tmp;
+        Node left;
+        Node right;
+        if (qs <= ss && qe >= se)
+            return st[index];
+        // If segment of this node is outside the given
+        // range
+        if (se < qs || ss > qe) {
+            tmp = new Node(Integer.MAX_VALUE,
+                           Integer.MIN_VALUE);
+            return tmp;
+        }
+        // If a part of this segment overlaps with the given
+        // range
+        int mid = getMid(ss, se);
+        left = MaxMinUntill(st, ss, mid, qs, qe,
+                            2 * index + 1);
+        right = MaxMinUntill(st, mid + 1, se, qs, qe,
+                             2 * index + 2);
+        tmp = new Node(
+            Math.min(left.minimum, right.minimum),
+            Math.max(left.maximum, right.maximum));
+        return tmp;
+    }
+
+    // Return minimum and maximum of elements in range from
+    // index qs (query start) to qe (query end).  It mainly
+    // uses MaxMinUtill()
+    public static Node MaxMin(Node[] st, int n, int qs,
+                              int qe)
+    {
+        Node tmp;
+        // Check for erroneous input values
+        if (qs < 0 || qe > n - 1 || qs > qe) {
+            System.out.println("Invalid Input");
+            tmp = new Node(Integer.MAX_VALUE,
+                           Integer.MIN_VALUE);
+            return tmp;
+        }
+        return MaxMinUntill(st, 0, n - 1, qs, qe, 0);
+    }
+
+    // A recursive function that constructs Segment Tree for
+    // array[ss..se]. si is index of current node in segment
+    // tree st
+    public static void constructSTUtil(int[] arr, int ss,
+                                       int se, Node[] st,
+                                       int si)
+    {
+        // If there is one element in array, store it in
+        // current
+        // node of segment tree and return
+        if (ss == se) {
+            st[si] = new Node(arr[ss], arr[ss]);
+            return;
+        }
+
+        // If there are more than one elements, then recur
+        // for left and right subtrees and store the minimum
+        // and maximum of two values in this node
+        int mid = getMid(ss, se);
+        constructSTUtil(arr, ss, mid, st, si * 2 + 1);
+        constructSTUtil(arr, mid + 1, se, st, si * 2 + 2);
+        int min = Math.min(st[si * 2 + 1].minimum,
+                           st[si * 2 + 2].minimum);
+        int max = Math.max(st[si * 2 + 1].maximum,
+                           st[si * 2 + 2].maximum);
+        st[si] = new Node(min, max);
+    }
+
+    /* Function to construct segment tree from given array.
+     This function allocates memory for segment tree and
+     calls constructSTUtil() to fill the allocated memory */
+    public static Node[] constructST(int[] arr, int n)
+    {
+        // Allocate memory for segment tree
+        // Height of segment tree
+        int x = (int)(Math.ceil(Math.log(n) / Math.log(2)));
+        // Maximum size of segment tree
+        int max_size = 2 * (int)(Math.pow(2, x)) - 1;
+        Node[] st = new Node[max_size];
+        // Fill the allocated memory st
+        constructSTUtil(arr, 0, n - 1, st, 0);
+        return st;
+    }
+}
+
+Python3
+
+# python program to find minimum and maximum using segment
+# tree
+import math
+
+# Node for storing minimum and maximum value of given range
+class Node:
+    def __init__(self):
+        self.minimum = math.inf
+        self.maximum = -math.inf
+
+# A utility function to get the middle index from corner
+# indexes.
+def getMid(s, e):
+    return s + (e - s) // 2
+
+""" A recursive function to get the minimum and maximum
+   value in a given range of array indexes. The following
+   are parameters for this function.
+
+    st    --> Pointer to segment tree
+    index --> Index of current node in the segment tree.
+   Initially 0 is passed as root is always at index 0 ss &
+   se  --> Starting and ending indexes of the segment
+                  represented  by current node, i.e.,
+   st[index] qs & qe  --> Starting and ending indexes of
+   query range """
+
+def MaxMinUntill(st, ss, se, qs, qe, index):
+    # If segment of this node is a part of given range,
+    # then return
+    #  the minimum and maximum node of the segment
+    tmp = Node()
+    if qs <= ss and qe >= se:
+        return st[index]
+
+    # If segment of this node is outside the given range
+    if se < qs or ss > qe:
+        return tmp
+
+    # If a part of this segment overlaps with the given
+    # range
+    mid = getMid(ss, se)
+    left = MaxMinUntill(st, ss, mid, qs, qe, 2 * index + 1)
+    right = MaxMinUntill(st, mid + 1, se, qs, qe, 2 * index + 2)
+    tmp.minimum = min(left.minimum, right.minimum)
+    tmp.maximum = max(left.maximum, right.maximum)
+    return tmp
+
+# Return minimum and maximum of elements in range from
+# index qs (query start) to qe (query end).  It mainly uses
+# MaxMinUtill()
+
+def MaxMin(st, n, qs, qe):
+    tmp = Node()
+
+    # Check for erroneous input values
+    if qs < 0 or qe > n - 1 or qs > qe:
+        print("Invalid Input")
+        return tmp
+    return MaxMinUntill(st, 0, n - 1, qs, qe, 0)
+
+# A recursive function that constructs Segment Tree for
+# array[ss..se]. si is index of current node in segment
+# tree st
+
+def constructSTUtil(arr, ss, se, st, si):
+    # If there is one element in array, store it in current
+    # node of segment tree and return
+    if ss == se:
+        st[si].minimum = arr[ss]
+        st[si].maximum = arr[ss]
+        return
+
+    # If there are more than one elements, then recur for
+    # left and right subtrees and store the minimum and
+    # maximum of two values in this node
+    mid = getMid(ss, se)
+    constructSTUtil(arr, ss, mid, st, si * 2 + 1)
+    constructSTUtil(arr, mid + 1, se, st, si * 2 + 2)
+    st[si].minimum = min(st[si * 2 + 1].minimum, st[si * 2 + 2].minimum)
+    st[si].maximum = max(st[si * 2 + 1].maximum, st[si * 2 + 2].maximum)
+
+""" Function to construct segment tree from given array. This
+   function allocates memory for segment tree and calls
+   constructSTUtil() to fill the allocated memory """
+
+def constructST(arr, n):
+    # Allocate memory for segment tree
+
+    # Height of segment tree
+    x = math.ceil(math.log2(n))
+
+    # Maximum size of segment tree
+    max_size = 2 * (2 ** x) - 1
+    st = [Node() for i in range(max_size)]
+
+    # Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, st, 0)
+
+    # Return the constructed segment tree
+    return st
+
+# Driver code
+arr = [1, 8, 5, 9, 6, 14, 2, 4, 3, 7]
+n = len(arr)
+
+# Build segment tree from given array
+st = constructST(arr, n)
+qs = 0  # Starting index of query range
+qe = 8  # Ending index of query range
+result = MaxMin(st, n, qs, qe)
+
+# Function call
+print("Minimum =", result.minimum, "and Maximum =", result.maximum)
+
+C#
+
+//C# program to find minimum and maximum using segment
+// tree
+using System;
+
+public class GFG {
+    public class Node {
+        public int minimum;
+        public int maximum;
+        public Node(int minimum, int maximum)
+        {
+            this.minimum = minimum;
+            this.maximum = maximum;
+        }
+    }
+  // A utility function to get the middle index from
+    // corner
+    // indexes.
+    public static int getMid(int s, int e)
+    {
+        return s + (e - s) / 2;
+    }
+  /*  A recursive function to get the minimum and maximum
+     value in a given range of array indexes. The following
+     are parameters for this function.
+
+      st    --> Pointer to segment tree
+      index --> Index of current node in the segment tree.
+     Initially 0 is passed as root is always at index 0 ss &
+     se  --> Starting and ending indexes of the segment
+                    represented  by current node, i.e.,
+     st[index] qs & qe  --> Starting and ending indexes of
+     query range */
+    public static Node MaxMinUntill(Node[] st, int ss,
+                                    int se, int qs, int qe,
+                                    int index)
+    {
+        // If segment of this node is a part of given range,
+        // then return
+        //  the minimum and maximum node of the segment
+        Node tmp;
+        Node left;
+        Node right;
+
+        if (qs <= ss && qe >= se)
+            return st[index];
+    // If segment of this node is outside the given
+        // range
+        if (se < qs || ss > qe) {
+            tmp = new Node(int.MaxValue, int.MinValue);
+            return tmp;
+        }
+ // If a part of this segment overlaps with the given
+        // range
+        int mid = getMid(ss, se);
+        left = MaxMinUntill(st, ss, mid, qs, qe,
+                            2 * index + 1);
+        right = MaxMinUntill(st, mid + 1, se, qs, qe,
+                             2 * index + 2);
+        tmp = new Node(
+            Math.Min(left.minimum, right.minimum),
+            Math.Max(left.maximum, right.maximum));
+        return tmp;
+    }
+
+    // Return minimum and maximum of elements in range from
+    // index qs (query start) to qe (query end).  It mainly
+    // uses MaxMinUtill()
+    public static Node MaxMin(Node[] st, int n, int qs,
+                              int qe)
+    {
+        Node tmp;
+
+        // Check for erroneous input values
+        if (qs < 0 || qe > n - 1 || qs > qe) {
+            Console.WriteLine("Invalid Input");
+            tmp = new Node(int.MaxValue, int.MinValue);
+            return tmp;
+        }
+        return MaxMinUntill(st, 0, n - 1, qs, qe, 0);
+    }
+   // A recursive function that constructs Segment Tree for
+    // array[ss..se]. si is index of current node in segment
+    // tree st
+    public static void constructSTUtil(int[] arr, int ss,
+                                       int se, Node[] st,
+                                       int si)
+    {
+       // If there is one element in array, store it in
+        // current
+        // node of segment tree and return
+        if (ss == se) {
+            st[si] = new Node(arr[ss], arr[ss]);
+            return;
+        }
+  // If there are more than one elements, then recur
+        // for left and right subtrees and store the minimum
+        // and maximum of two values in this node
+        int mid = getMid(ss, se);
+        constructSTUtil(arr, ss, mid, st, si * 2 + 1);
+        constructSTUtil(arr, mid + 1, se, st, si * 2 + 2);
+        int min = Math.Min(st[si * 2 + 1].minimum,
+                           st[si * 2 + 2].minimum);
+        int max = Math.Max(st[si * 2 + 1].maximum,
+                           st[si * 2 + 2].maximum);
+        st[si] = new Node(min, max);
+    }
+ /* Function to construct segment tree from given array.
+     This function allocates memory for segment tree and
+     calls constructSTUtil() to fill the allocated memory */
+    public static Node[] constructST(int[] arr, int n)
+    {
+        // Allocate memory for segment tree
+        // Height of segment tree
+        int x = (int)(Math.Ceiling(Math.Log(n)
+                                   / Math.Log(2)));
+       // Maximum size of segment tree
+        int max_size = 2 * (int)(Math.Pow(2, x)) - 1;
+              // Fill the allocated memory st
+        Node[] st = new Node[max_size];
+        constructSTUtil(arr, 0, n - 1, st, 0);
+        return st;
+    }
+ // Driver Code
+    public static void Main(string[] args)
+    {
+        int[] arr = { 1, 8, 5, 9, 6, 14, 2, 4, 3, 7 };
+        int n = arr.Length;
+        Node[] st = constructST(arr, n);
+        int qs = 0;
+        int qe = 8;
+        Node result = MaxMin(st, n, qs, qe);
+        Console.WriteLine("Minimum = " + result.minimum
+                          + " and Maximum = "
+                          + result.maximum);
+    }
+}
+
+JavaScript
+
+// JavaScript program to find minimum and maximum using segment
+// tree
+
+// A utility function to get the middle index from corner
+// indexes.
+function getMid(s, e) {
+  return Math.floor(s + (e - s) / 2);
+}
+
+// Node for storing minimum and maximum value of given range
+class Node {
+  constructor(minimum, maximum) {
+    this.minimum = minimum;
+    this.maximum = maximum;
+  }
+}
+
+/*  A recursive function to get the minimum and maximum
+   value in a given range of array indexes. The following
+   are parameters for this function.
+
+    st    --> Pointer to segment tree
+    index --> Index of current node in the segment tree.
+   Initially 0 is passed as root is always at index 0 ss &
+   se  --> Starting and ending indexes of the segment
+                  represented  by current node, i.e.,
+   st[index] qs & qe  --> Starting and ending indexes of
+   query range */
+function MaxMinUntill(st, ss, se, qs, qe, index) {
+
+    // If segment of this node is a part of given range,
+    // then return
+    //  the minimum and maximum node of the segment
+    let tmp, left, right;
+    if (qs <= ss && qe >= se) {
+        return st[index];
+    }
+
+    // If segment of this node is outside the given range
+    if (se < qs || ss > qe) {
+        tmp = new Node(Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER);
+        return tmp;
+    }
+
+    // If a part of this segment overlaps with the given
+    // range
+    const mid = getMid(ss, se);
+    left = MaxMinUntill(st, ss, mid, qs, qe, 2 * index + 1);
+    right = MaxMinUntill(st, mid + 1, se, qs, qe, 2 * index + 2);
+    tmp = new Node(Math.min(left.minimum, right.minimum), Math.max(left.maximum, right.maximum));
+    return tmp;
+}
+
+// Return minimum and maximum of elements in range from
+// index qs (query start) to qe (query end).  It mainly uses
+// MaxMinUtill()
+function MaxMin(st, n, qs, qe) {
+    let tmp;
+
+    // Check for erroneous input values
+    if (qs < 0 || qe > n - 1 || qs > qe) {
+        console.log("Invalid Input");
+        tmp = new Node(Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER);
+        return tmp;
+    }
+
+    return MaxMinUntill(st, 0, n - 1, qs, qe, 0);
+}
+
+// A recursive function that constructs Segment Tree for
+// array[ss..se]. si is index of current node in segment
+// tree st
+function constructSTUtil(arr, ss, se, st, si) {
+
+    // If there is one element in array, store it in current
+    // node of segment tree and return
+    if (ss == se) {
+        st[si] = new Node(arr[ss], arr[ss]);
+        return;
+    }
+
+    // If there are more than one elements, then recur for
+    // left and right subtrees and store the minimum and
+    // maximum of two values in this node
+    var mid = getMid(ss, se);
+    constructSTUtil(arr, ss, mid, st, si * 2 + 1);
+    constructSTUtil(arr, mid + 1, se, st, si * 2 + 2);
+
+    st[si] = new Node(Math.min(st[si * 2 + 1].minimum, st[si * 2 + 2].minimum), Math.max(st[si * 2 + 1].maximum, st[si * 2 + 2].maximum));
+}
+
+/* Function to construct segment tree from given array. This
+   function allocates memory for segment tree and calls
+   constructSTUtil() to fill the allocated memory */
+function constructST(arr, n) {
+
+    // Allocate memory for segment tree
+
+    // Height of segment tree
+    const x = Math.ceil(Math.log2(n));
+
+    // Maximum size of segment tree
+    var max_size = 2 * Math.pow(2, x) - 1;
+
+    var st = new Array(max_size).fill(null);
+
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, st, 0);
+
+    // Return the constructed segment tree
+    return st;
+}
+
+// Driver code
+var arr = [1, 8, 5, 9, 6, 14, 2, 4, 3, 7];
+var n = arr.length;
+
+// Build segment tree from given array
+var st = constructST(arr, n);
+var qs = 0; // Starting index of query range
+var qe = 8; // Ending index of query range
+var result = MaxMin(st, n, qs, qe);
+
+// Function call
+console.log(`Minimum = ${result.minimum} and Maximum = ${result.maximum}`);
+
+// This code is contributed by prasad264
+
+Output
+
+Minimum = 1 and Maximum = 14
+
+Time Complexity: O(queries * log N) Auxiliary Space: O(N)
+
+### Can we do better if there are no updates on the array?
+
+The above segment tree-based solution also allows array updates also to happen in O(Log n) time. Assume a situation when there are no updates (or the array is static). We can actually process all queries in O(1) time with some preprocessing. One simple solution is to make a 2D table of nodes that stores all ranges minimum and maximum. This solution requires O(1) query time but requires O(N 2 ) preprocessing time and O(N 2 ) extra space which can be a problem for large N. We can solve this problem in O(1) query time, O(n Log n) space and O(n Log n) preprocessing time using the Sparse Table .
+
+This article is reviewed by team GeeksForGeeks.

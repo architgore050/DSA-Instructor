@@ -1,0 +1,959 @@
+Source: https://www.geeksforgeeks.org/dsa/tiling-problem-using-divide-and-conquer-algorithm/
+Title: Tiling Problem - L Shaped
+Extractor: 2
+
+Given an n×n board (where n = 2 k and  k≥1), with one missing cell, the task is to fill the remaining cells using L-shaped tiles. An L-shaped tile covers 3 cells in a 2x2 grid, with one cell missing. You need to tile the entire board using the L-shaped tiles, ensuring that the missing cell remains uncovered.
+
+Note: There can be multiple valid ways to tile the board based on the position of the missing cell and the order in which tiles are placed. Your solution may output any one of these valid tilings.
+
+Examples:
+
+> Input: n = 2, missing_cell = (0,0) Output: [[-1,1], [1, 1]] Explanation: Coordinate (0, 0) is marked. So, no tile is there. In the remaining three positions, a tile is placed with its number as 1. Input : n = 4, missing_cell = (0,1) Output: [[3, -1, 2, 2], [3, 3, 1, 2], [4, 1, 1, 5], [4, 4, 5, 5]] Explanation: In this 4×4 grid, the cell at position (0,1) is missing, and the rest using L-shaped tromino tiles, each marked with a unique number, ensuring all other cells are covered without overlapping.
+
+Table of Content
+
+- [Naive Approach] Using Recursion and Backtracking
+- [Expected Approach] Using Divide and Conquer algorithm
+
+### [Naive Approach] Using Recursion and Backtracking
+
+> We will exploring all possible ways to place L-shaped tiles on the grid and leaving exactly one predefined missing cell. It begins by scanning the board to find the first empty cell. For that cell, it attempts to place each of the four possible L-shaped tromino configurations. If a placement is valid, it places the tile and recursively proceeds to fill the rest of the board. If a dead-end is reached, the algorithm backtracks by removing the last placed tile and trying the next configuration. This process continues until the board is fully tiled or all possibilities are exhausted.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Define the four L-shaped configurations
+const vector<vector<pair<int, int>>> TROMINO_SHAPES = {
+    {{0, 0}, {0, 1}, {1, 0}},  // ┌
+    {{0, 0}, {0, 1}, {1, 1}},  // ┐
+    {{0, 0}, {1, 0}, {1, 1}},  // └
+    {{0, 0}, {1, 0}, {1, -1}}  // ┘
+};
+
+bool isValid(vector<vector<int>>& board, int r, int c,
+             const vector<pair<int, int>>& shape, int size) {
+    for (const auto& offset : shape) {
+        int nr = r + offset.first;
+        int nc = c + offset.second;
+        if (nr < 0 || nr >= size || nc < 0 || nc >= size || board[nr][nc] != 0)
+            return false;
+    }
+    return true;
+}
+
+void place(vector<vector<int>>& board, int r, int c,
+           const vector<pair<int, int>>& shape, int tileId) {
+    for (const auto& offset : shape) {
+        board[r + offset.first][c + offset.second] = tileId;
+    }
+}
+
+void removeL(vector<vector<int>>& board, int r, int c,
+             const vector<pair<int, int>>& shape) {
+    for (const auto& offset : shape) {
+        board[r + offset.first][c + offset.second] = 0;
+    }
+}
+
+bool findNext0(vector<vector<int>>& board, int size,
+               int& outR, int& outC) {
+    for (int r = 0; r < size; ++r) {
+        for (int c = 0; c < size; ++c) {
+            if (board[r][c] == 0) {
+                outR = r;
+                outC = c;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Main recursive function to fill
+bool tileBoard(vector<vector<int>>& board, int size, int tileId) {
+    int r, c;
+    if (!findNext0(board, size, r, c)) {
+        return true;  // All cells filled successfully
+    }
+
+    for (const auto& shape : TROMINO_SHAPES) {
+        if (isValid(board, r, c, shape, size)) {
+            place(board, r, c, shape, tileId);
+            if (tileBoard(board, size, tileId + 1)) {
+                return true;  // Found valid solution
+            }
+            removeL(board, r, c, shape);
+        }
+    }
+
+    return false;  // No valid placement, backtrack
+}
+
+vector<vector<int>> tiling(int n, pair<int, int> missing) {
+    vector<vector<int>> board(n, vector<int>(n, 0));
+    board[missing.first][missing.second] = -1;
+
+    if (tileBoard(board, n, 1))
+        return board;
+
+    return {{-1}};
+}
+
+int main() {
+    int n = 4;  // Must be 2^k
+    pair<int, int> missing = {0, 1};
+
+    vector<vector<int>> grid = tiling(n, missing);
+
+    for (const auto& row : grid) {
+        for (int cell : row) {
+            cout << cell << " ";
+        }
+        cout << "\n";
+    }
+
+    return 0;
+}
+
+Java
+
+// Import necessary packages
+import java.util.*;
+
+public class TrominoTiling {
+
+    // Define the four L-shaped configurations
+    private static final int[][][] TROMINO_SHAPES = {
+        {{0, 0}, {0, 1}, {1, 0}},  // ┌
+        {{0, 0}, {0, 1}, {1, 1}},  // ┐
+        {{0, 0}, {1, 0}, {1, 1}},  // └
+        {{0, 0}, {1, 0}, {1, -1}}  // ┘
+    };
+
+    private static boolean isValid(int[][] board, int r, int c, int[][] shape, int size) {
+        for (int[] offset : shape) {
+            int nr = r + offset[0];
+            int nc = c + offset[1];
+            if (nr < 0 || nr >= size || nc < 0 || nc >= size || board[nr][nc] != 0)
+                return false;
+        }
+        return true;
+    }
+
+    private static void place(int[][] board, int r, int c, int[][] shape, int tileId) {
+        for (int[] offset : shape) {
+            board[r + offset[0]][c + offset[1]] = tileId;
+        }
+    }
+
+    private static void removeL(int[][] board, int r, int c, int[][] shape) {
+        for (int[] offset : shape) {
+            board[r + offset[0]][c + offset[1]] = 0;
+        }
+    }
+
+    private static boolean findNext0(int[][] board, int size, int[] out) {
+        for (int r = 0; r < size; ++r) {
+            for (int c = 0; c < size; ++c) {
+                if (board[r][c] == 0) {
+                    out[0] = r;
+                    out[1] = c;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Main recursive function to fill
+    private static boolean tileBoard(int[][] board, int size, int tileId) {
+        int[] pos = new int[2];
+        if (!findNext0(board, size, pos)) {
+            return true;  // All cells filled successfully
+        }
+
+        int r = pos[0];
+        int c = pos[1];
+
+        for (int[][] shape : TROMINO_SHAPES) {
+            if (isValid(board, r, c, shape, size)) {
+                place(board, r, c, shape, tileId);
+                if (tileBoard(board, size, tileId + 1)) {
+                    return true;  // Found valid solution
+                }
+                removeL(board, r, c, shape);
+            }
+        }
+
+        return false;  // No valid placement, backtrack
+    }
+
+    public static int[][] tiling(int n, int[] missing) {
+        int[][] board = new int[n][n];
+        board[missing[0]][missing[1]] = -1;
+
+        if (tileBoard(board, n, 1))
+            return board;
+
+        return new int[][]{{-1}};
+    }
+
+    public static void main(String[] args) {
+        int n = 4;  // Must be 2^k
+        int[] missing = {0, 1};
+
+        int[][] grid = tiling(n, missing);
+
+        for (int[] row : grid) {
+            for (int cell : row) {
+                System.out.print(cell + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+
+Python
+
+# Define the four L-shaped configurations
+TROMINO_SHAPES = [
+    [(0, 0), (0, 1), (1, 0)],  # ┌
+    [(0, 0), (0, 1), (1, 1)],  # ┐
+    [(0, 0), (1, 0), (1, 1)],  # └
+    [(0, 0), (1, 0), (1, -1)]  # ┘
+]
+
+def is_valid(board, r, c, shape, size):
+    for offset in shape:
+        nr = r + offset[0]
+        nc = c + offset[1]
+        if nr < 0 or nr >= size or nc < 0 or nc >= size or board[nr][nc] != 0:
+            return False
+    return True
+
+def place(board, r, c, shape, tile_id):
+    for offset in shape:
+        board[r + offset[0]][c + offset[1]] = tile_id
+
+def remove_l(board, r, c, shape):
+    for offset in shape:
+        board[r + offset[0]][c + offset[1]] = 0
+
+def find_next_0(board, size):
+    for r in range(size):
+        for c in range(size):
+            if board[r][c] == 0:
+                return r, c
+    return None, None
+
+# Main recursive function to fill
+
+def tile_board(board, size, tile_id):
+    r, c = find_next_0(board, size)
+    if r is None:
+        return True  # All cells filled successfully
+
+    for shape in TROMINO_SHAPES:
+        if is_valid(board, r, c, shape, size):
+            place(board, r, c, shape, tile_id)
+            if tile_board(board, size, tile_id + 1):
+                return True  # Found valid solution
+            remove_l(board, r, c, shape)
+
+    return False  # No valid placement, backtrack
+
+def tiling(n, missing):
+    board = [[0] * n for _ in range(n)]
+    board[missing[0]][missing[1]] = -1
+
+    if tile_board(board, n, 1):
+        return board
+
+    return [[-1]]
+
+if __name__ == '__main__':
+    n = 4  # Must be 2^k
+    missing = (0, 1)
+
+    grid = tiling(n, missing)
+
+    for row in grid:
+        print(' '.join(map(str, row)))
+
+C#
+
+using System;
+
+public class TrominoTiling
+{
+    // Define the four L-shaped configurations
+    private static readonly int[][][] TROMINO_SHAPES = new int[][][]
+    {
+        new int[][] { new int[] {0, 0}, new int[] {0, 1}, new int[] {1, 0} }, // ┌
+        new int[][] { new int[] {0, 0}, new int[] {0, 1}, new int[] {1, 1} }, // ┐
+        new int[][] { new int[] {0, 0}, new int[] {1, 0}, new int[] {1, 1} }, // └
+        new int[][] { new int[] {0, 0}, new int[] {1, 0}, new int[] {1, -1} } // ┘
+    };
+
+    private static bool IsValid(int[,] board, int r, int c, int[][] shape, int size)
+    {
+        foreach (var offset in shape)
+        {
+            int nr = r + offset[0];
+            int nc = c + offset[1];
+            if (nr < 0 || nr >= size || nc < 0 || nc >= size || board[nr, nc] != 0)
+                return false;
+        }
+        return true;
+    }
+
+    private static void Place(int[,] board, int r, int c, int[][] shape, int tileId)
+    {
+        foreach (var offset in shape)
+        {
+            board[r + offset[0], c + offset[1]] = tileId;
+        }
+    }
+
+    private static void RemoveL(int[,] board, int r, int c, int[][] shape)
+    {
+        foreach (var offset in shape)
+        {
+            board[r + offset[0], c + offset[1]] = 0;
+        }
+    }
+
+    private static bool FindNext0(int[,] board, int size, out int r, out int c)
+    {
+        for (r = 0; r < size; ++r)
+        {
+            for (c = 0; c < size; ++c)
+            {
+                if (board[r, c] == 0)
+                    return true;
+            }
+        }
+        r = -1;
+        c = -1;
+        return false;
+    }
+
+    // Main recursive function to fill
+    private static bool TileBoard(int[,] board, int size, int tileId)
+    {
+        if (!FindNext0(board, size, out int r, out int c))
+            return true; // All cells filled successfully
+
+        foreach (var shape in TROMINO_SHAPES)
+        {
+            if (IsValid(board, r, c, shape, size))
+            {
+                Place(board, r, c, shape, tileId);
+                if (TileBoard(board, size, tileId + 1))
+                    return true; // Found valid solution
+                RemoveL(board, r, c, shape);
+            }
+        }
+
+        return false; // No valid placement, backtrack
+    }
+
+    public static int[,] Tiling(int n, int[] missing)
+    {
+        int[,] board = new int[n, n];
+        board[missing[0], missing[1]] = -1;
+
+        if (TileBoard(board, n, 1))
+            return board;
+
+        return new int[,] { { -1 } };
+    }
+
+    public static void Main()
+    {
+        int n = 4; // Must be 2^k
+        int[] missing = { 0, 1 };
+
+        int[,] grid = Tiling(n, missing);
+
+        int rows = grid.GetLength(0);
+        int cols = grid.GetLength(1);
+
+        for (int i = 0; i < rows; ++i)
+        {
+            for (int j = 0; j < cols; ++j)
+            {
+                Console.Write(grid[i, j] + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+const TROMINO_SHAPES = [
+    [[0, 0], [0, 1], [1, 0]], // ┌
+    [[0, 0], [0, 1], [1, 1]], // ┐
+    [[0, 0], [1, 0], [1, 1]], // └
+    [[0, 0], [1, 0], [1, -1]] // ┘
+];
+
+function isValid(board, r, c, shape, size) {
+    for (const offset of shape) {
+        const nr = r + offset[0];
+        const nc = c + offset[1];
+        if (nr < 0 || nr >= size || nc < 0 || nc >= size || board[nr][nc] !== 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function place(board, r, c, shape, tileId) {
+    for (const offset of shape) {
+        board[r + offset[0]][c + offset[1]] = tileId;
+    }
+}
+
+function removeL(board, r, c, shape) {
+    for (const offset of shape) {
+        board[r + offset[0]][c + offset[1]] = 0;
+    }
+}
+
+function findNextZero(board, size) {
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            if (board[r][c] === 0) {
+                return [r, c];
+            }
+        }
+    }
+    return [null, null];
+}
+
+function tileBoard(board, size, tileId) {
+    const [r, c] = findNextZero(board, size);
+    if (r === null) {
+        return true; // All cells filled successfully
+    }
+
+    for (const shape of TROMINO_SHAPES) {
+        if (isValid(board, r, c, shape, size)) {
+            place(board, r, c, shape, tileId);
+            if (tileBoard(board, size, tileId + 1)) {
+                return true; // Found valid solution
+            }
+            removeL(board, r, c, shape); // Backtrack
+        }
+    }
+
+    return false; // No valid placement
+}
+
+function tiling(n, missing) {
+    const board = Array.from({ length: n }, () => Array(n).fill(0));
+    board[missing[0]][missing[1]] = -1; // Mark missing square
+
+    if (tileBoard(board, n, 1)) {
+        return board;
+    }
+    return [[-1]];
+}
+
+// Example usage:
+const n = 4; // Must be 2^k
+const missing = [0, 1];
+
+const grid = tiling(n, missing);
+for (const row of grid) {
+    console.log(row.join(' '));
+}
+
+Output
+
+1 -1 2 2
+1 1 3 2
+4 3 3 5
+4 4 5 5
+
+Time Complexity: O(4 (n^2) ),  Since each recursive call involves trying 4 possible shapes for every empty cell, the complexity grows exponentially with the board size. Auxiliary Space: O(n 2 ), space needed to store the board.
+
+### [Expected Approach] Using Divide and Conquer algorithm
+
+- If the board size is 2x2 , fill the missing cell with a tile number and return.
+- Divide the board into four quadrants by halving the dimensions of the board (top-left, top-right, bottom-left, bottom-right).
+- Place an L-shaped tile in the three quadrants that do not contain the missing cell, and number the tiles sequentially. Now all four quadrants have a cell not to be filled. So our problem reduces from (n x n) to (n/2) x (n/2)
+- Recursively apply the same process to each of the four smaller sub-boards until the base case ( 2x2 board) is reached.
+
+> Why Above Algorithm Works: We can prove working of above algorithm using mathematical induction . Let the input square be of size n x n (or 2 k * 2 k ) where k≥1. Base Case: For k=1, the board is a 2×2 square with one missing cell, which can be directly solved by placing an L-shaped tile. Inductive Hypothesis: Assume the problem can be solved for a square of size 2 k-1 * 2 k-1 (n/2 x n/2) Inductive Step: For a square of size 2 k * 2 k divide it into four smaller 2 k-1 * 2 k-1 squares. Place an L-shaped tile in the center, covering three quadrants, and leave one quadrant with a missing cell. This reduces the problem to solving the four smaller subproblems, each of size 2 k-1 * 2 k-1 , which is possible by the Induction Hypothesis. The below diagram shows how we get 4 similar subproblems once we place the L shape in middle such that missing tile quadrant is not changed (1st quadrant in the below example), then our problem reduces to the same problem with smaller size as each quadrant now has a cell which is not supposed to be filled. Subproblems for Divide and Conquer{
+
+Illustration:
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Tile number to be filled
+int t = 0;
+
+// Function to place tiles in the sub-grids
+void place_tile(int x1, int y1, int x2, int y2, int x3, int y3,
+     vector<vector<int>> &grid){
+
+    t++;
+    grid[x1][y1] = t;
+    grid[x2][y2] = t;
+    grid[x3][y3] = t;
+}
+
+// Recursive function to fill the grid
+void solve(int sz, int r, int c, vector<vector<int>> &grid){
+
+    // Base case: when the grid size is 2x2
+    if (sz == 2){
+
+        t++;
+        for (int i = 0; i < sz; i++)
+            for (int j = 0; j < sz; j++)
+                if (grid[r + i][c + j] == 0)
+                    grid[r + i][c + j] = t;
+        return;
+    }
+
+    // To store the missing cell's coordinates
+    int mr, mc;
+
+    // Find the missing cell within the current sub-grid
+    for (int i = r; i < r + sz; i++)
+        for (int j = c; j < c + sz; j++)
+            if (grid[i][j] != 0)
+                mr = i, mc = j;
+
+    // Place tiles based on the quadrant where the missing cell is located
+    // First quadrant
+    if (mr < r + sz / 2 && mc < c + sz / 2)
+        place_tile(r + sz / 2, c + sz / 2 - 1, r + sz / 2, c + sz / 2,
+                   r + sz / 2 - 1, c + sz / 2, grid);
+    // Second quadrant
+    else if (mr >= r + sz / 2 && mc < c + sz / 2)
+        place_tile(r + sz / 2 - 1, c + sz / 2, r + sz / 2, c + sz / 2,
+                   r + sz / 2 - 1, c + sz / 2 - 1, grid);
+    // Third quadrant
+    else if (mr < r + sz / 2 && mc >= c + sz / 2)
+        place_tile(r + sz / 2, c + sz / 2 - 1, r + sz / 2, c + sz / 2,
+                   r + sz / 2 - 1, c + sz / 2 - 1, grid);
+    // Fourth quadrant
+    else
+        place_tile(r + sz / 2 - 1, c + sz / 2, r + sz / 2, c + sz / 2 - 1,
+                   r + sz / 2 - 1, c + sz / 2 - 1, grid);
+
+    // Recursively solve for the 4 sub-grids
+    // Top-right
+    solve(sz / 2, r, c + sz / 2, grid);
+    // Top-left
+    solve(sz / 2, r, c, grid);
+    // Bottom-left
+    solve(sz / 2, r + sz / 2, c, grid);
+    // Bottom-right
+    solve(sz / 2, r + sz / 2, c + sz / 2, grid);
+}
+vector<vector<int>> tiling(int n, pair<int, int> missing_cell){
+
+    vector<vector<int>> grid(n, vector<int>(n, 0));
+    grid[missing_cell.first][missing_cell.second]= -1;
+
+    solve(n, 0, 0, grid);
+    return grid;
+}
+
+int main(){
+    int n = 4;
+    pair<int,int> missing_cell = {0,1};
+    vector<vector<int>> grid = tiling(n, missing_cell);
+
+    for (const auto &row : grid)
+    {
+        for (int cell : row)
+            cout << cell << " ";
+        cout << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class Main {
+
+    // Tile number to be filled
+    static int t = 0;
+
+    // Function to place tiles in the sub-grids
+    static void place_tile(int x1, int y1, int x2, int y2,
+                           int x3, int y3, int[][] grid) {
+        t++;
+        grid[x1][y1] = t;
+        grid[x2][y2] = t;
+        grid[x3][y3] = t;
+    }
+
+    // Recursive function to fill the grid
+    static void solve(int sz, int r, int c, int[][] grid) {
+        // Base case: when the grid size is 2x2
+        if (sz == 2) {
+            t++;
+            for (int i = 0; i < sz; i++)
+                for (int j = 0; j < sz; j++)
+                    if (grid[r + i][c + j] == 0)
+                        grid[r + i][c + j] = t;
+            return;
+        }
+
+        // To store the missing cell's coordinates
+        int mr = -1, mc = -1;
+
+        // Find the missing cell within the current sub-grid
+        for (int i = r; i < r + sz; i++)
+            for (int j = c; j < c + sz; j++)
+                if (grid[i][j] != 0){
+                    mr = i;
+                    mc = j;
+                }
+
+        // First quadrant
+        if (mr < r + sz / 2 && mc < c + sz / 2)
+            place_tile(r + sz / 2, c + sz / 2 - 1, r + sz / 2, c + sz / 2,
+                       r + sz / 2 - 1, c + sz / 2, grid);
+        // Second quadrant
+        else if (mr >= r + sz / 2 && mc < c + sz / 2)
+            place_tile(r + sz / 2 - 1, c + sz / 2, r + sz / 2, c + sz / 2,
+                       r + sz / 2 - 1, c + sz / 2 - 1, grid);
+        // Third quadrant
+        else if (mr < r + sz / 2 && mc >= c + sz / 2)
+            place_tile(r + sz / 2, c + sz / 2 - 1, r + sz / 2, c + sz / 2,
+                       r + sz / 2 - 1, c + sz / 2 - 1, grid);
+        // Fourth quadrant
+        else
+            place_tile(r + sz / 2 - 1, c + sz / 2, r + sz / 2,
+                       c + sz / 2 - 1, r + sz / 2 - 1, c + sz / 2 - 1, grid);
+
+        // Top-right
+        solve(sz / 2, r, c + sz / 2, grid);
+        // Top-left
+        solve(sz / 2, r, c, grid);
+        // Bottom-left
+        solve(sz / 2, r + sz / 2, c, grid);
+        // Bottom-right
+        solve(sz / 2, r + sz / 2, c + sz / 2, grid);
+    }
+
+    // Function to start the tiling process
+    static int[][] tiling(int n, int[] missing_cell) {
+        int[][] grid = new int[n][n];
+        grid[missing_cell[0]][missing_cell[1]] = -1;
+        solve(n, 0, 0, grid);
+        return grid;
+    }
+
+    // Main method to run the program
+    public static void main(String[] args) {
+        int n = 4;
+        int[] missing_cell = {0, 1};
+        int[][] grid = tiling(n, missing_cell);
+
+        for (int[] row : grid) {
+            for (int cell : row)
+                System.out.print(cell + " ");
+            System.out.println();
+        }
+    }
+}
+
+Python
+
+# Tile number to be filled
+t = 0
+
+# Function to place tiles in the sub-grids
+def place_tile(x1, y1, x2, y2, x3, y3, grid):
+    global t
+    t += 1
+    grid[x1][y1] = t
+    grid[x2][y2] = t
+    grid[x3][y3] = t
+
+# Recursive function to fill the grid
+def solve(sz, r, c, grid):
+    global t
+
+    # Base case: when the grid size is 2x2
+    if sz == 2:
+        t += 1
+        for i in range(sz):
+            for j in range(sz):
+                if grid[r + i][c + j] == 0:
+                    grid[r + i][c + j] = t
+        return
+
+    # To store the missing cell's coordinates
+    mr, mc = -1, -1
+
+    # Find the missing cell within the current sub-grid
+    for i in range(r, r + sz):
+        for j in range(c, c + sz):
+            if grid[i][j] != 0:
+                mr, mc = i, j
+
+    # First quadrant
+    if mr < r + sz // 2 and mc < c + sz // 2:
+        place_tile(r + sz // 2, c + sz // 2 - 1, r + sz // 2, c + sz // 2,
+                   r + sz // 2 - 1, c + sz // 2, grid)
+    # Second quadrant
+    elif mr >= r + sz // 2 and mc < c + sz // 2:
+        place_tile(r + sz // 2 - 1, c + sz // 2, r + sz // 2, c + sz // 2,
+                   r + sz // 2 - 1, c + sz // 2 - 1, grid)
+    # Third quadrant
+    elif mr < r + sz // 2 and mc >= c + sz // 2:
+        place_tile(r + sz // 2, c + sz // 2 - 1, r + sz // 2, c + sz // 2,
+                   r + sz // 2 - 1, c + sz // 2 - 1, grid)
+    # Fourth quadrant
+    else:
+        place_tile(r + sz // 2 - 1, c + sz // 2, r + sz // 2,
+                   c + sz // 2 - 1, r + sz // 2 - 1, c + sz // 2 - 1, grid)
+
+    # Top-right
+    solve(sz // 2, r, c + sz // 2, grid)
+    # Top-left
+    solve(sz // 2, r, c, grid)
+    # Bottom-left
+    solve(sz // 2, r + sz // 2, c, grid)
+    # Bottom-right
+    solve(sz // 2, r + sz // 2, c + sz // 2, grid)
+
+# Function to start the tiling process
+def tiling(n, missing_cell):
+    grid = [[0 for _ in range(n)] for _ in range(n)]
+    grid[missing_cell[0]][missing_cell[1]] = -1
+    solve(n, 0, 0, grid)
+    return grid
+
+# Main execution
+n = 4
+missing_cell = (0, 1)
+grid = tiling(n, missing_cell)
+
+for row in grid:
+    print(' '.join(str(cell) for cell in row))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public class Program
+{
+    // Tile number to be filled
+    static int t = 0;
+
+    // Function to place tiles in the sub-grids
+    static void place_tile(int x1, int y1, int x2, int y2, int x3,
+                           int y3, int[,] grid){
+
+        t++;
+        grid[x1, y1] = t;
+        grid[x2, y2] = t;
+        grid[x3, y3] = t;
+    }
+
+    // Recursive function to fill the grid
+    static void solve(int sz, int r, int c, int[,] grid){
+
+        // Base case: when the grid size is 2x2
+        if (sz == 2){
+
+            t++;
+            for (int i = 0; i < sz; i++)
+                for (int j = 0; j < sz; j++)
+                    if (grid[r + i, c + j] == 0)
+                        grid[r + i, c + j] = t;
+            return;
+        }
+
+        // To store the missing cell's coordinates
+        int mr = -1, mc = -1;
+
+        // Find the missing cell within the current sub-grid
+        for (int i = r; i < r + sz; i++)
+            for (int j = c; j < c + sz; j++)
+                if (grid[i, j] != 0){
+                    mr = i;
+                    mc = j;
+                }
+        // First quadrant
+        if (mr < r + sz / 2 && mc < c + sz / 2)
+            place_tile(r + sz / 2, c + sz / 2 - 1, r + sz / 2, c + sz / 2,
+                       r + sz / 2 - 1, c + sz / 2, grid);
+        // Second quadrant
+        else if (mr >= r + sz / 2 && mc < c + sz / 2)
+            place_tile(r + sz / 2 - 1, c + sz / 2, r + sz / 2, c + sz / 2,
+                       r + sz / 2 - 1, c + sz / 2 - 1, grid);
+        // Third quadrant
+        else if (mr < r + sz / 2 && mc >= c + sz / 2)
+            place_tile(r + sz / 2, c + sz / 2 - 1, r + sz / 2, c + sz / 2,
+                       r + sz / 2 - 1, c + sz / 2 - 1, grid);
+        // Fourth quadrant
+        else
+            place_tile(r + sz / 2 - 1, c + sz / 2, r + sz / 2,
+                       c + sz / 2 - 1, r + sz / 2 - 1, c + sz / 2 - 1, grid);
+
+        // Top-right
+        solve(sz / 2, r, c + sz / 2, grid);
+        // Top-left
+        solve(sz / 2, r, c, grid);
+        // Bottom-left
+        solve(sz / 2, r + sz / 2, c, grid);
+        // Bottom-right
+        solve(sz / 2, r + sz / 2, c + sz / 2, grid);
+    }
+
+    // Function to start the tiling process
+    static List<int[]> tiling(int n, int[] missing_cell)
+    {
+        int[,] grid = new int[n, n];
+        grid[missing_cell[0], missing_cell[1]] = -1;
+
+        solve(n, 0, 0, grid);
+
+        List<int[]> result = new List<int[]>();
+
+        // Convert 2D array to List<int[]>
+        for (int i = 0; i < n; i++)
+        {
+            int[] row = new int[n];
+            for (int j = 0; j < n; j++)
+            {
+                row[j] = grid[i, j];
+            }
+            result.Add(row);
+        }
+
+        return result;
+    }
+
+    // Main method to run the program
+    public static void Main()
+    {
+        int n = 4;
+        int[] missing_cell = { 0, 1 };
+        List<int[]> grid = tiling(n, missing_cell);
+
+        foreach (var row in grid)
+        {
+            foreach (var cell in row)
+                Console.Write(cell + " ");
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+// Tile number to be filled
+let t = 0;
+
+// Function to place tiles in the sub-grids
+function place_tile(x1, y1, x2, y2, x3, y3, grid) {
+    t++;
+    grid[x1][y1] = t;
+    grid[x2][y2] = t;
+    grid[x3][y3] = t;
+}
+
+// Recursive function to fill the grid
+function solve(sz, r, c, grid) {
+    // Base case: when the grid size is 2x2
+    if (sz === 2) {
+        t++;
+        for (let i = 0; i < sz; i++) {
+            for (let j = 0; j < sz; j++) {
+                if (grid[r + i][c + j] === 0) {
+                    grid[r + i][c + j] = t;
+                }
+            }
+        }
+        return;
+    }
+
+    // To store the missing cell's coordinates
+    let mr = -1, mc = -1;
+
+    // Find the missing cell within the current sub-grid
+    for (let i = r; i < r + sz; i++) {
+        for (let j = c; j < c + sz; j++) {
+            if (grid[i][j] !== 0) {
+                mr = i;
+                mc = j;
+            }
+        }
+    }
+
+    // First quadrant
+    if (mr < r + sz / 2 && mc < c + sz / 2)
+        place_tile(r + sz / 2, c + sz / 2 - 1, r + sz / 2, c + sz / 2,
+                   r + sz / 2 - 1, c + sz / 2, grid);
+    // Second quadrant
+    else if (mr >= r + sz / 2 && mc < c + sz / 2)
+        place_tile(r + sz / 2 - 1, c + sz / 2, r + sz / 2, c + sz / 2,
+                   r + sz / 2 - 1, c + sz / 2 - 1, grid);
+    // Third quadrant
+    else if (mr < r + sz / 2 && mc >= c + sz / 2)
+        place_tile(r + sz / 2, c + sz / 2 - 1, r + sz / 2, c + sz / 2,
+                   r + sz / 2 - 1, c + sz / 2 - 1, grid);
+    // Fourth quadrant
+    else
+        place_tile(r + sz / 2 - 1, c + sz / 2, r + sz / 2, c + sz / 2 - 1,
+                   r + sz / 2 - 1, c + sz / 2 - 1, grid);
+
+    // Top-right
+    solve(sz / 2, r, c + sz / 2, grid);
+    // Top-left
+    solve(sz / 2, r, c, grid);
+    // Bottom-left
+    solve(sz / 2, r + sz / 2, c, grid);
+    // Bottom-right
+    solve(sz / 2, r + sz / 2, c + sz / 2, grid);
+}
+
+// Function to start the tiling process
+function tiling(n, missing_cell) {
+    const grid = Array.from({ length: n }, () => Array(n).fill(0));
+    grid[missing_cell[0]][missing_cell[1]] = -1;
+    solve(n, 0, 0, grid);
+    return grid;
+}
+
+// Main execution
+const n = 4;
+const missing_cell = [0, 1];
+const grid = tiling(n, missing_cell);
+
+for (const row of grid) {
+    console.log(row.join(" "));
+}
+
+Output
+
+3 -1 2 2
+3 3 1 2
+4 1 1 5
+4 4 5 5
+
+Time Complexity: O(n 2 ), where n is the size of the grid. It recursively divides the grid into four quadrants, and each cell is visited and filled exactly once. Auxiliary Space: O(n 2 )

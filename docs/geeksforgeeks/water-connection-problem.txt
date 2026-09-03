@@ -1,0 +1,527 @@
+Source: https://www.geeksforgeeks.org/dsa/water-connection-problem/
+Title: Water Connection Problem
+Extractor: 2
+
+Given n houses (numbered 1 to n) and p pipes connecting them, where each pipe is described by a[i] , b[i] , and d[i] - a pipe of diameter d[i] running from house a[i] to house b[i] .
+
+- Every house has at most one outgoing pipe and at most one incoming pipe.
+- A house with an outgoing pipe but no incoming pipe gets a tank installed (the start of a chain).
+- A house with an incoming pipe but no outgoing pipe gets a tap installed (the end of a chain).
+
+Find every tank-tap pair, along with the minimum pipe diameter along the chain connecting them.
+
+Note: Return a list of [tank, tap, minimum diameter] triples, sorted by tank number in ascending order.
+
+Examples:
+
+> Input: n = 9, p = 6, a[] = [7, 5, 4, 2, 9, 3], b[] = [4, 9, 6, 8, 7, 1], d[] = [98, 72, 10, 22, 17, 66] Output: [[2, 8, 22], [3, 1, 66], [5, 6, 10]] Explanation: There are three separate chains: 3 -> 1, 5 -> 9 -> 7 -> 4 -> 6, and 2 -> 8. Tracing each from tank to tap: chain 3 -> 1 has diameter 66, chain 5 -> 9 -> 7 -> 4 -> 6 has a minimum diameter of 10 (the 4 -> 6 pipe), and chain 2 -> 8 has diameter 22. Input: n = 4, p = 2, a[] = [1, 3], b[] = [2, 4], d[] = [60, 50] Output: [[1, 2, 60], [3, 4, 50]] Explanation: There are two separate chains: 1 -> 2 and 3 -> 4. Each chain has only one pipe, so its minimum diameter is just that pipe's diameter: 60 and 50 respectively.
+
+Table of Content
+
+- [Naive Approach] Using Linear Scan - O(n * p) Time and O(n) Space
+- [Expected Approach] Using Precomputed Lookup Arrays - O(n + p) Time and O(n) Space
+
+### [Naive Approach] Using Linear Scan - O(n * p) Time and O(n) Space
+
+> The idea is to check every house for being a tank by scanning the entire pipe list each time, instead of precomputing lookup arrays. Walking each chain forward also rescans all pipes at every step to find the next house. This repeated scanning of the same pipe list, over and over, is what drives the time up to O(n * p).
+
+Step by Step Implementation:
+
+- For each house from 1 to n, scan all p pipes to check if it has an outgoing pipe and no incoming pipe (a tank).
+- If it is a tank, start walking its chain from that house.
+- At each step, scan all p pipes again to find the pipe starting at the current house.
+- Track the minimum diameter seen so far while walking.
+- Stop when no pipe starts at the current house (the tap), and record the [tank, tap, minDiameter] triple.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <climits>
+using namespace std;
+
+vector<vector<int>> solve(int n, int p, vector<int> &a, vector<int> &b, vector<int> &d) {
+    vector<vector<int>> ans;
+
+    for (int i = 1; i <= n; i++) {
+        bool hasOutgoing = false, hasIncoming = false;
+
+        // Scan all pipes to check if house i is a tank
+        for (int j = 0; j < p; j++) {
+            if (a[j] == i) hasOutgoing = true;
+            if (b[j] == i) hasIncoming = true;
+        }
+
+        if (hasOutgoing && !hasIncoming) {
+            int cur = i, minDia = INT_MAX;
+            while (true) {
+                int next = -1, dia = -1;
+
+                // Scan all pipes again to find the next house in the chain
+                for (int j = 0; j < p; j++) {
+                    if (a[j] == cur) { next = b[j]; dia = d[j]; break; }
+                }
+
+                if (next == -1) break;
+                minDia = min(minDia, dia);
+                cur = next;
+            }
+            ans.push_back({i, cur, minDia});
+        }
+    }
+    return ans;
+}
+
+int main() {
+    int n = 9, p = 6;
+    vector<int> a = {7, 5, 4, 2, 9, 3};
+    vector<int> b = {4, 9, 6, 8, 7, 1};
+    vector<int> d = {98, 72, 10, 22, 17, 66};
+
+    vector<vector<int>> result = solve(n, p, a, b, d);
+
+    for (auto &triple : result) {
+        cout << triple[0] << " " << triple[1] << " " << triple[2] << endl;
+    }
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+class GFG {
+    static ArrayList<ArrayList<Integer>> solve(int n, int p, int[] a, int[] b, int[] d) {
+        ArrayList<ArrayList<Integer>> ans = new ArrayList<>();
+
+        for (int i = 1; i <= n; i++) {
+            boolean hasOutgoing = false, hasIncoming = false;
+
+            // Scan all pipes to check if house i is a tank
+            for (int j = 0; j < p; j++) {
+                if (a[j] == i) hasOutgoing = true;
+                if (b[j] == i) hasIncoming = true;
+            }
+
+            if (hasOutgoing && !hasIncoming) {
+                int cur = i, minDia = Integer.MAX_VALUE;
+                while (true) {
+                    int next = -1, dia = -1;
+
+                    // Scan all pipes again to find the next house in the chain
+                    for (int j = 0; j < p; j++) {
+                        if (a[j] == cur) { next = b[j]; dia = d[j]; break; }
+                    }
+
+                    if (next == -1) break;
+                    minDia = Math.min(minDia, dia);
+                    cur = next;
+                }
+                ArrayList<Integer> triple = new ArrayList<>();
+                triple.add(i); triple.add(cur); triple.add(minDia);
+                ans.add(triple);
+            }
+        }
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int n = 9, p = 6;
+        int[] a = {7, 5, 4, 2, 9, 3};
+        int[] b = {4, 9, 6, 8, 7, 1};
+        int[] d = {98, 72, 10, 22, 17, 66};
+
+        ArrayList<ArrayList<Integer>> result = solve(n, p, a, b, d);
+
+        for (ArrayList<Integer> triple : result) {
+            System.out.println(triple.get(0) + " " + triple.get(1) + " " + triple.get(2));
+        }
+    }
+}
+
+Python
+
+def solve(n, p, a, b, d):
+    ans = []
+
+    for i in range(1, n + 1):
+        has_outgoing, has_incoming = False, False
+
+        # Scan all pipes to check if house i is a tank
+        for j in range(p):
+            if a[j] == i:
+                has_outgoing = True
+            if b[j] == i:
+                has_incoming = True
+
+        if has_outgoing and not has_incoming:
+            cur, min_dia = i, float('inf')
+            while True:
+                next_house, dia = -1, -1
+
+                # Scan all pipes again to find the next house in the chain
+                for j in range(p):
+                    if a[j] == cur:
+                        next_house, dia = b[j], d[j]
+                        break
+
+                if next_house == -1:
+                    break
+                min_dia = min(min_dia, dia)
+                cur = next_house
+            ans.append([i, cur, min_dia])
+    return ans
+
+n, p = 9, 6
+a = [7, 5, 4, 2, 9, 3]
+b = [4, 9, 6, 8, 7, 1]
+d = [98, 72, 10, 22, 17, 66]
+
+result = solve(n, p, a, b, d)
+for triple in result:
+    print(triple[0], triple[1], triple[2])
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static List<List<int>> solve(int n, int p, int[] a, int[] b, int[] d) {
+        List<List<int>> ans = new List<List<int>>();
+
+        for (int i = 1; i <= n; i++) {
+            bool hasOutgoing = false, hasIncoming = false;
+
+            // Scan all pipes to check if house i is a tank
+            for (int j = 0; j < p; j++) {
+                if (a[j] == i) hasOutgoing = true;
+                if (b[j] == i) hasIncoming = true;
+            }
+
+            if (hasOutgoing && !hasIncoming) {
+                int cur = i, minDia = int.MaxValue;
+                while (true) {
+                    int next = -1, dia = -1;
+
+                    // Scan all pipes again to find the next house in the chain
+                    for (int j = 0; j < p; j++) {
+                        if (a[j] == cur) { next = b[j]; dia = d[j]; break; }
+                    }
+
+                    if (next == -1) break;
+                    minDia = Math.Min(minDia, dia);
+                    cur = next;
+                }
+                ans.Add(new List<int> { i, cur, minDia });
+            }
+        }
+        return ans;
+    }
+
+    static void Main() {
+        int n = 9, p = 6;
+        int[] a = { 7, 5, 4, 2, 9, 3 };
+        int[] b = { 4, 9, 6, 8, 7, 1 };
+        int[] d = { 98, 72, 10, 22, 17, 66 };
+
+        List<List<int>> result = solve(n, p, a, b, d);
+
+        foreach (List<int> triple in result) {
+            Console.WriteLine(triple[0] + " " + triple[1] + " " + triple[2]);
+        }
+    }
+}
+
+JavaScript
+
+function solve(n, p, a, b, d) {
+    const ans = [];
+
+    for (let i = 1; i <= n; i++) {
+        let hasOutgoing = false, hasIncoming = false;
+
+        // Scan all pipes to check if house i is a tank
+        for (let j = 0; j < p; j++) {
+            if (a[j] === i) hasOutgoing = true;
+            if (b[j] === i) hasIncoming = true;
+        }
+
+        if (hasOutgoing && !hasIncoming) {
+            let cur = i, minDia = Infinity;
+            while (true) {
+                let next = -1, dia = -1;
+
+                // Scan all pipes again to find the next house in the chain
+                for (let j = 0; j < p; j++) {
+                    if (a[j] === cur) { next = b[j]; dia = d[j]; break; }
+                }
+
+                if (next === -1) break;
+                minDia = Math.min(minDia, dia);
+                cur = next;
+            }
+            ans.push([i, cur, minDia]);
+        }
+    }
+    return ans;
+}
+
+// Driver Code
+const n = 9, p = 6;
+const a = [7, 5, 4, 2, 9, 3];
+const b = [4, 9, 6, 8, 7, 1];
+const d = [98, 72, 10, 22, 17, 66];
+
+const result = solve(n, p, a, b, d);
+for (const triple of result) {
+    console.log(triple[0], triple[1], triple[2]);
+}
+
+Output
+
+2 8 22
+3 1 66
+5 6 10
+
+### [Expected Approach] Using Precomputed Lookup Arrays - O(n + p) Time and O(n) Space
+
+> The idea is to precompute, for every house, its outgoing pipe, incoming pipe, and pipe diameter in a single pass over the pipe list. This turns the repeated lookups from the naive approach into O(1) array accesses. With these arrays ready, finding tanks and walking each chain only takes a single combined pass over the houses.
+
+Step by Step Implementation:
+
+- Build three arrays of size n+1 - outgoing, incoming, and diameter - initialized to 0.
+- For each pipe (a[i], b[i], d[i]), set outgoing[a[i]] = b[i], incoming[b[i]] = a[i], and diameter[a[i]] = d[i].
+- For each house from 1 to n, check if it's a tank: it has an outgoing pipe but no incoming pipe.
+- For every tank found, walk forward using the outgoing array, tracking the minimum diameter, until reaching a house with no outgoing pipe (the tap).
+- Record [tank, tap, minDiameter] and return all such triples.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <climits>
+using namespace std;
+
+vector<vector<int>> solve(int n, int p, vector<int> &a, vector<int> &b, vector<int> &d) {
+    vector<int> outgoing(n + 1, 0), incoming(n + 1, 0), diameter(n + 1, 0);
+
+    // Precompute each house's outgoing pipe, incoming pipe, and pipe diameter
+    for (int i = 0; i < p; i++) {
+        outgoing[a[i]] = b[i];
+        incoming[b[i]] = a[i];
+        diameter[a[i]] = d[i];
+    }
+
+    vector<vector<int>> ans;
+
+    for (int i = 1; i <= n; i++) {
+        if (outgoing[i] != 0 && incoming[i] == 0) {
+            int cur = i, minDia = INT_MAX;
+
+            // Walk the chain forward until reaching the tap
+            while (outgoing[cur] != 0) {
+                minDia = min(minDia, diameter[cur]);
+                cur = outgoing[cur];
+            }
+            ans.push_back({i, cur, minDia});
+        }
+    }
+    return ans;
+}
+
+int main() {
+    int n = 9, p = 6;
+    vector<int> a = {7, 5, 4, 2, 9, 3};
+    vector<int> b = {4, 9, 6, 8, 7, 1};
+    vector<int> d = {98, 72, 10, 22, 17, 66};
+
+    vector<vector<int>> result = solve(n, p, a, b, d);
+
+    for (auto &triple : result) {
+        cout << triple[0] << " " << triple[1] << " " << triple[2] << endl;
+    }
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+class GFG {
+    static ArrayList<ArrayList<Integer>> solve(int n, int p, int[] a, int[] b, int[] d) {
+        int[] outgoing = new int[n + 1];
+        int[] incoming = new int[n + 1];
+        int[] diameter = new int[n + 1];
+
+        // Precompute each house's outgoing pipe, incoming pipe, and pipe diameter
+        for (int i = 0; i < p; i++) {
+            outgoing[a[i]] = b[i];
+            incoming[b[i]] = a[i];
+            diameter[a[i]] = d[i];
+        }
+
+        ArrayList<ArrayList<Integer>> ans = new ArrayList<>();
+
+        for (int i = 1; i <= n; i++) {
+            if (outgoing[i] != 0 && incoming[i] == 0) {
+                int cur = i, minDia = Integer.MAX_VALUE;
+
+                // Walk the chain forward until reaching the tap
+                while (outgoing[cur] != 0) {
+                    minDia = Math.min(minDia, diameter[cur]);
+                    cur = outgoing[cur];
+                }
+                ArrayList<Integer> triple = new ArrayList<>();
+                triple.add(i); triple.add(cur); triple.add(minDia);
+                ans.add(triple);
+            }
+        }
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int n = 9, p = 6;
+        int[] a = {7, 5, 4, 2, 9, 3};
+        int[] b = {4, 9, 6, 8, 7, 1};
+        int[] d = {98, 72, 10, 22, 17, 66};
+
+        ArrayList<ArrayList<Integer>> result = solve(n, p, a, b, d);
+
+        for (ArrayList<Integer> triple : result) {
+            System.out.println(triple.get(0) + " " + triple.get(1) + " " + triple.get(2));
+        }
+    }
+}
+
+Python
+
+def solve(n, p, a, b, d):
+    outgoing = [0] * (n + 1)
+    incoming = [0] * (n + 1)
+    diameter = [0] * (n + 1)
+
+    # Precompute each house's outgoing pipe, incoming pipe, and pipe diameter
+    for i in range(p):
+        outgoing[a[i]] = b[i]
+        incoming[b[i]] = a[i]
+        diameter[a[i]] = d[i]
+
+    ans = []
+
+    for i in range(1, n + 1):
+        if outgoing[i] != 0 and incoming[i] == 0:
+            cur, min_dia = i, float('inf')
+
+            # Walk the chain forward until reaching the tap
+            while outgoing[cur] != 0:
+                min_dia = min(min_dia, diameter[cur])
+                cur = outgoing[cur]
+            ans.append([i, cur, min_dia])
+    return ans
+
+n, p = 9, 6
+a = [7, 5, 4, 2, 9, 3]
+b = [4, 9, 6, 8, 7, 1]
+d = [98, 72, 10, 22, 17, 66]
+
+result = solve(n, p, a, b, d)
+for triple in result:
+    print(triple[0], triple[1], triple[2])
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static List<List<int>> solve(int n, int p, int[] a, int[] b, int[] d) {
+        int[] outgoing = new int[n + 1];
+        int[] incoming = new int[n + 1];
+        int[] diameter = new int[n + 1];
+
+        // Precompute each house's outgoing pipe, incoming pipe, and pipe diameter
+        for (int i = 0; i < p; i++) {
+            outgoing[a[i]] = b[i];
+            incoming[b[i]] = a[i];
+            diameter[a[i]] = d[i];
+        }
+
+        List<List<int>> ans = new List<List<int>>();
+
+        for (int i = 1; i <= n; i++) {
+            if (outgoing[i] != 0 && incoming[i] == 0) {
+                int cur = i, minDia = int.MaxValue;
+
+                // Walk the chain forward until reaching the tap
+                while (outgoing[cur] != 0) {
+                    minDia = Math.Min(minDia, diameter[cur]);
+                    cur = outgoing[cur];
+                }
+                ans.Add(new List<int> { i, cur, minDia });
+            }
+        }
+        return ans;
+    }
+
+    static void Main() {
+        int n = 9, p = 6;
+        int[] a = { 7, 5, 4, 2, 9, 3 };
+        int[] b = { 4, 9, 6, 8, 7, 1 };
+        int[] d = { 98, 72, 10, 22, 17, 66 };
+
+        List<List<int>> result = solve(n, p, a, b, d);
+
+        foreach (List<int> triple in result) {
+            Console.WriteLine(triple[0] + " " + triple[1] + " " + triple[2]);
+        }
+    }
+}
+
+JavaScript
+
+function solve(n, p, a, b, d) {
+    const outgoing = new Array(n + 1).fill(0);
+    const incoming = new Array(n + 1).fill(0);
+    const diameter = new Array(n + 1).fill(0);
+
+    // Precompute each house's outgoing pipe, incoming pipe, and pipe diameter
+    for (let i = 0; i < p; i++) {
+        outgoing[a[i]] = b[i];
+        incoming[b[i]] = a[i];
+        diameter[a[i]] = d[i];
+    }
+
+    const ans = [];
+
+    for (let i = 1; i <= n; i++) {
+        if (outgoing[i] !== 0 && incoming[i] === 0) {
+            let cur = i, minDia = Infinity;
+
+            // Walk the chain forward until reaching the tap
+            while (outgoing[cur] !== 0) {
+                minDia = Math.min(minDia, diameter[cur]);
+                cur = outgoing[cur];
+            }
+            ans.push([i, cur, minDia]);
+        }
+    }
+    return ans;
+}
+
+// Driver Code
+const n = 9, p = 6;
+const a = [7, 5, 4, 2, 9, 3];
+const b = [4, 9, 6, 8, 7, 1];
+const d = [98, 72, 10, 22, 17, 66];
+
+const result = solve(n, p, a, b, d);
+for (const triple of result) {
+    console.log(triple[0], triple[1], triple[2]);
+}
+
+Output
+
+2 8 22
+3 1 66
+5 6 10

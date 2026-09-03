@@ -1,0 +1,1065 @@
+Source: https://www.geeksforgeeks.org/dsa/find-minimum-weight-cycle-undirected-graph/
+Title: Minimum Weight Cycle in a  Graph
+Extractor: 2
+
+Given an undirected, weighted graph with V vertices numbered from 0 to V-1, and E edges represented as a 2D array edges[][] , where each element edges[i] = [u, v, w] denotes an edge between nodes u and v with weight w , and all edge weights are positive integers, your task is to find the minimum weight cycle in the graph.
+
+Examples:
+
+> Input: V = 5, edges = [[0, 1, 2], [1, 2, 2], [1, 3, 1], [1, 4, 1], [0, 4, 3], [2, 3, 4]] Output: 6 Explanation: The minimum-weighted cycle is 0 → 1 → 4 → 0 with a total weight of 6 (2 + 1 + 3)
+
+Table of Content
+
+- [Naive Approach] Find all Cycles Weights
+- [Expected Approach] Dijkstra's algorithm - O(E * (V + E) log V) Time and O(V+E) Space
+
+### [Naive Approach] Find all Cycles Weights
+
+> Find all cycles in the graph using DFS, and while exploring each cycle, keep track of its total weight. Update and maintain the minimum weight found across all such cycles.
+
+C++
+
+//Driver Code Starts
+#include <algorithm>
+#include <climits>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Construct the adjacency list
+vector<vector<vector<int>>> constructAdj(int V, vector<vector<int>> &edges)
+{
+    vector<vector<vector<int>>> adj(V);
+    for (auto &edge : edges)
+    {
+        int u = edge[0], v = edge[1], w = edge[2];
+        adj[u].push_back({v, w});
+        adj[v].push_back({u, w});
+    }
+    return adj;
+}
+//Driver Code Ends
+
+int minCycle;
+
+// DFS to explore cycles and track their weights
+void dfs(int u, int parent, vector<vector<vector<int>>> &adj,
+vector<bool> &visited, vector<int> &path,vector<int> &weights, int currWeight){
+
+    visited[u] = true;
+    path.push_back(u);
+
+    for (auto &edge : adj[u]){
+
+        int v = edge[0];
+        int w = edge[1];
+        // avoid going back to the parent
+        if (v == parent)
+            continue;
+
+        if (!visited[v]){
+
+            weights.push_back(w);
+            dfs(v, u, adj, visited, path, weights, currWeight + w);
+            weights.pop_back();
+        }
+        else{
+
+            // Found a cycle
+            auto it = find(path.begin(), path.end(), v);
+            if (it != path.end()){
+
+                int cycleWeight = 0;
+                int idx = it - path.begin();
+                for (int i = idx; i < weights.size(); i++){
+
+                    cycleWeight += weights[i];
+                }
+                // add the closing edge
+                cycleWeight += w;
+                minCycle = min(minCycle, cycleWeight);
+            }
+        }
+    }
+
+    path.pop_back();
+    visited[u] = false;
+}
+
+int findMinCycle(int V, vector<vector<int>> &edges)
+{
+    vector<vector<vector<int>>> adj = constructAdj(V, edges);
+    minCycle = INT_MAX;
+
+    vector<bool> visited(V, false);
+    vector<int> path, weights;
+
+    for (int i = 0; i < V; i++)
+    {
+        dfs(i, -1, adj, visited, path, weights, 0);
+    }
+
+    return minCycle;
+}
+
+//Driver Code Starts
+
+int main()
+{
+    int V = 5;
+
+    vector<vector<int>> edges = {{0, 1, 2}, {1, 2, 2}, {1, 3, 1},
+                                {1, 4, 1}, {0, 4, 3}, {2, 3, 4}};
+
+    int result = findMinCycle(V, edges);
+    cout << result << endl;
+
+    return 0;
+}
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.*;
+
+public class Solution {
+
+    // Construct the adjacency list
+    static ArrayList<ArrayList<int[]>> constructAdj(int V, int[][] edges) {
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) adj.add(new ArrayList<>());
+
+        for (int[] edge : edges) {
+            int u = edge[0], v = edge[1], w = edge[2];
+            adj.get(u).add(new int[]{v, w});
+            adj.get(v).add(new int[]{u, w});
+        }
+        return adj;
+//Driver Code Ends
+
+    }
+
+    static int minCycle;
+    // DFS to explore cycles and track their weights
+    static void dfs(int u, int parent,ArrayList<ArrayList<int[]>> adj,
+                    boolean[] visited, ArrayList<Integer> path,
+                    ArrayList<Integer> weights,int currWeight) {
+
+        visited[u] = true;
+        path.add(u);
+
+        for (int[] edge : adj.get(u)) {
+            int v = edge[0];
+            int w = edge[1];
+
+            // avoid going back to the parent
+            if (v == parent) continue;
+
+            if (!visited[v]) {
+                weights.add(w);
+                dfs(v, u, adj, visited, path, weights, currWeight + w);
+                weights.remove(weights.size() - 1);
+            } else {
+                // Found a cycle
+                int idx = path.indexOf(v);
+                if (idx != -1) {
+                    int cycleWeight = 0;
+                    for (int i = idx; i < weights.size(); i++) {
+                        cycleWeight += weights.get(i);
+                    }
+                    // add the closing edge
+                    cycleWeight += w;
+                    minCycle = Math.min(minCycle, cycleWeight);
+                }
+            }
+        }
+
+        path.remove(path.size() - 1);
+        visited[u] = false;
+    }
+
+    static int findMinCycle(int V, int[][] edges) {
+        ArrayList<ArrayList<int[]>> adj = constructAdj(V, edges);
+        minCycle = Integer.MAX_VALUE;
+
+        boolean[] visited = new boolean[V];
+        ArrayList<Integer> path = new ArrayList<>();
+        ArrayList<Integer> weights = new ArrayList<>();
+
+        for (int i = 0; i < V; i++) {
+            dfs(i, -1, adj, visited, path, weights, 0);
+        }
+
+        return minCycle;
+    }
+
+//Driver Code Starts
+
+    public static void main(String[] args) {
+        int V = 5;
+        int[][] edges = {
+         {0, 1, 2}, {1, 2, 2}, {1, 3, 1},
+         {1, 4, 1}, {0, 4, 3}, {2, 3, 4}
+        };
+
+        int result = findMinCycle(V, edges);
+        System.out.println(result);
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+import sys
+
+# Construct the adjacency list
+def constructAdj(V, edges):
+    adj = [[] for _ in range(V)]
+    for edge in edges:
+        u, v, w = edge
+        adj[u].append([v, w])
+        adj[v].append([u, w])
+    return adj
+#Driver Code Ends
+
+minCycle = sys.maxsize
+
+# DFS to explore cycles and track their weights
+def dfs(u, parent, adj, visited, path, weights, currWeight):
+    global minCycle
+    visited[u] = True
+    path.append(u)
+
+    for edge in adj[u]:
+        v = edge[0]
+        w = edge[1]
+        # avoid going back to the parent
+        if v == parent:
+            continue
+
+        if not visited[v]:
+            weights.append(w)
+            dfs(v, u, adj, visited, path, weights, currWeight + w)
+            weights.pop()
+        else:
+            # Found a cycle
+            if v in path:
+                idx = path.index(v)
+                cycleWeight = sum(weights[idx:]) + w  # add the closing edge
+                minCycle = min(minCycle, cycleWeight)
+
+    path.pop()
+    visited[u] = False
+
+def findMinCycle(V, edges):
+    global minCycle
+    adj = constructAdj(V, edges)
+    minCycle = sys.maxsize
+
+    visited = [False] * V
+    path = []
+    weights = []
+
+    for i in range(V):
+        dfs(i, -1, adj, visited, path, weights, 0)
+
+    return minCycle
+
+#Driver Code Starts
+# Main
+V = 5
+edges = [[0, 1, 2], [1, 2, 2], [1, 3, 1],
+        [1, 4, 1], [0, 4, 3], [2, 3, 4]]
+
+result = findMinCycle(V, edges)
+print(result)
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+class GfG
+{
+    // Construct the adjacency list
+    static List<List<int[]>> constructAdj(int V, int[,] edges)
+    {
+        var adj = new List<List<int[]>>();
+        for (int i = 0; i < V; i++) adj.Add(new List<int[]>());
+
+        for (int i = 0; i < edges.GetLength(0); i++)
+        {
+            int u = edges[i, 0], v = edges[i, 1], w = edges[i, 2];
+            adj[u].Add(new int[] { v, w });
+            adj[v].Add(new int[] { u, w });
+        }
+
+        return adj;
+    }
+
+//Driver Code Ends
+
+    static int minCycle;
+    // DFS to explore cycles and track their weights
+    static void dfs(int u, int parent, List<List<int[]>> adj,
+                    bool[] visited, List<int> path, List<int> weights, int currWeight)
+    {
+        visited[u] = true;
+        path.Add(u);
+
+        foreach (var edge in adj[u])
+        {
+            int v = edge[0];
+            int w = edge[1];
+
+            // avoid going back to the parent
+            if (v == parent) continue;
+
+            if (!visited[v])
+            {
+                weights.Add(w);
+                dfs(v, u, adj, visited, path, weights, currWeight + w);
+                weights.RemoveAt(weights.Count - 1);
+            }
+            else
+            {
+                // Found a cycle
+                int idx = path.IndexOf(v);
+                if (idx != -1)
+                {
+                    int cycleWeight = 0;
+                    for (int i = idx; i < weights.Count; i++)
+                    {
+                        cycleWeight += weights[i];
+                    }
+                    // add the closing edge
+                    cycleWeight += w;
+                    minCycle = Math.Min(minCycle, cycleWeight);
+                }
+            }
+        }
+
+        path.RemoveAt(path.Count - 1);
+        visited[u] = false;
+    }
+
+    static int findMinCycle(int V, int[,] edges)
+    {
+        var adj = constructAdj(V, edges);
+        minCycle = int.MaxValue;
+
+        var visited = new bool[V];
+        var path = new List<int>();
+        var weights = new List<int>();
+
+        for (int i = 0; i < V; i++)
+        {
+            dfs(i, -1, adj, visited, path, weights, 0);
+        }
+
+        return minCycle;
+    }
+
+//Driver Code Starts
+    public static void Main()
+    {
+        int V = 5;
+
+        int[,] edges = {
+           {0, 1, 2}, {1, 2, 2}, {1, 3, 1},
+           {1, 4, 1}, {0, 4, 3}, {2, 3, 4}
+        };
+
+        int result = findMinCycle(V, edges);
+        Console.WriteLine(result);
+    }
+}
+
+//Driver Code Ends
+
+JavaScript
+
+//Driver Code Starts
+// Construct the adjacency list
+function constructAdj(V, edges) {
+    const adj = Array.from({ length: V }, () => []);
+    for (const edge of edges) {
+        const [u, v, w] = edge;
+        adj[u].push([v, w]);
+        adj[v].push([u, w]);
+    }
+    return adj;
+}
+//Driver Code Ends
+
+let minCycle = Number.MAX_SAFE_INTEGER;
+
+// DFS to explore cycles and track their weights
+function dfs(u, parent, adj, visited, path, weights, currWeight) {
+    visited[u] = true;
+    path.push(u);
+
+    for (const edge of adj[u]) {
+        const v = edge[0];
+        const w = edge[1];
+
+        // avoid going back to the parent
+        if (v === parent) continue;
+
+        if (!visited[v]) {
+            weights.push(w);
+            dfs(v, u, adj, visited, path, weights, currWeight + w);
+            weights.pop();
+        } else {
+            // Found a cycle
+            const idx = path.indexOf(v);
+            if (idx !== -1) {
+                let cycleWeight = 0;
+                for (let i = idx; i < weights.length; i++) {
+                    cycleWeight += weights[i];
+                }
+                // add the closing edge
+                cycleWeight += w;
+                minCycle = Math.min(minCycle, cycleWeight);
+            }
+        }
+    }
+
+    path.pop();
+    visited[u] = false;
+}
+
+function findMinCycle(V, edges) {
+    const adj = constructAdj(V, edges);
+    minCycle = Number.MAX_SAFE_INTEGER;
+
+    const visited = Array(V).fill(false);
+    const path = [];
+    const weights = [];
+
+    for (let i = 0; i < V; i++) {
+        dfs(i, -1, adj, visited, path, weights, 0);
+    }
+
+    return minCycle;
+}
+
+//Driver Code Starts
+// Main
+const V = 5;
+const edges = [[0, 1, 2], [1, 2, 2], [1, 3, 1],
+            [1, 4, 1], [0, 4, 3], [2, 3, 4]];
+
+const result = findMinCycle(V, edges);
+console.log(result);
+
+//Driver Code Ends
+
+Output
+
+6
+
+Time Complexity: O(2 V )The time complexity is exponential in the worst case (e.g. O(2 V )) due to the large number of simple cycles, but in typical cases, especially for sparse graphs, it may behave closer to O(V×(V + E)) Space Complexity: O(V+E), as dominated by the storage for the graph (adjacency list) and the DFS auxiliary structures (visited array, path, weights, and recursion stack).
+
+### [Expected Approach] Dijkstra's algorithm - O(E * (V + E) log V) Time and O(V+E) Space
+
+> To find the shortest cycle in the graph, we iterate over each edge (u,v,w)and temporarily remove it. The idea is that any edge might be part of the minimum weight cycle, so we check if a cycle can still be formed without it.
+
+We then use Dijkstra's algorithm (or any shortest path algorithm) to find the shortest path from u to v while excluding the removed edge. If such a path exists, adding the removed edge back completes a cycle. The total weight of this cycle is the sum of the shortest path and the weight of the removed edge.
+
+By repeating this process for every edge, we ensure that all possible cycles are considered, and we avoid redundant checks. Among all valid cycles found, we track and return the one with the minimum total weight. This method is both efficient and systematic for identifying the shortest cycle in a weighted, undirected graph.
+
+Step by step Implementation:
+
+- First, construct the adjacency list representation of the graph based on the provided edges.
+- Iterate through each edge in the graph and temporarily exclude it during the calculations.
+- For each excluded edge, use Dijkstra's algorithm to compute the shortest path between the source and destination nodes.
+- After calculating the shortest distance, if it's not infinity, it means a path exists between the source and destination even without the excluded edge, forming a potential cycle.
+- Repeat the process for all edges and track the minimum cycle weight by adding the excluded edge's weight to the shortest path found
+
+Illustration:
+
+C++
+
+//Driver Code Starts
+#include <bits/stdc++.h>
+using namespace std;
+
+// Construct adjacency list
+vector<vector<vector<int>>> constructadj(int V,
+                             vector<vector<int>>& edges) {
+
+    vector<vector<vector<int>>> adj(V);
+    for (auto& edge : edges) {
+        int u = edge[0], v = edge[1], w = edge[2];
+        adj[u].push_back({v, w});
+        adj[v].push_back({u, w});
+    }
+    return adj;
+}
+//Driver Code Ends
+
+// find sortest path between src and dest.
+int shortestPath(int V, vector<vector<vector<int>>>& adj, int src, int dest){
+
+    vector<int> dist(V, INT_MAX);
+    dist[src] = 0;
+
+    // priority queue
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+    pq.push({0, src});
+
+    while (!pq.empty()) {
+        pair<int, int> top = pq.top();
+        pq.pop();
+        int d = top.first, u = top.second;
+
+        if (d > dist[u]) continue;
+
+        for (auto& neighbor : adj[u]) {
+            int v = neighbor[0];
+            int w = neighbor[1];
+
+            // Skip the ignored edge
+            if ((u == src && v == dest) || (u == dest && v == src)) continue;
+
+            if (dist[v] > dist[u] + w) {
+                dist[v] = dist[u] + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+
+    return dist[dest];
+}
+
+// Function to find the minimum weight cycle in the graph
+int findMinCycle(int V, vector<vector<int>>& edges) {
+    vector<vector<vector<int>>> adj = constructadj(V, edges);
+    int minCycle = INT_MAX;
+
+    for (const auto& edge : edges) {
+        int u = edge[0];
+        int v = edge[1];
+        int w = edge[2];
+
+        int dist = shortestPath(V, adj, u, v);
+
+        if (dist != INT_MAX) {
+            minCycle = min(minCycle, dist + w);
+        }
+    }
+
+    return minCycle;
+}
+
+//Driver Code Starts
+
+// Driver code
+int main() {
+    int V = 5;
+
+    vector<vector<int>> edges = {
+         {0, 1, 2}, {1, 2, 2}, {1, 3, 1},
+         {1, 4, 1}, {0, 4, 3}, {2, 3, 4}
+    };
+
+    cout << findMinCycle(V, edges) << endl;
+
+    return 0;
+}
+
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.*;
+
+public class MinimumCycle {
+
+    // Construct adjacency list
+    public static ArrayList<ArrayList<int[]>> constructAdj(int V,
+                                    int[][] edges) {
+
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) adj.add(new ArrayList<>());
+
+        for (int[] edge : edges) {
+            int u = edge[0], v = edge[1], w = edge[2];
+            adj.get(u).add(new int[]{v, w});
+            adj.get(v).add(new int[]{u, w});
+        }
+
+        return adj;
+    }
+//Driver Code Ends
+
+    // shortest path from src to dest
+    public static int shortestPath(int V, ArrayList<ArrayList<int[]>> adj,
+                                        int src, int dest) {
+        int[] dist = new int[V];
+        Arrays.fill(dist, Integer.MAX_VALUE);
+
+        PriorityQueue<int[]> pq = new PriorityQueue<>
+                             (Comparator.comparingInt(a -> a[0]));
+        dist[src] = 0;
+        pq.offer(new int[]{0, src});
+
+        while (!pq.isEmpty()) {
+            int[] current = pq.poll();
+            int d = current[0];
+            int u = current[1];
+
+            if (d > dist[u]) continue;
+
+            for (int[] neighbor : adj.get(u)) {
+                int v = neighbor[0];
+                int w = neighbor[1];
+
+                // direct edge being removed to check for a cycle
+                if ((u == src && v == dest) ||
+                        (u == dest && v == src)) continue;
+
+                if (dist[v] > dist[u] + w) {
+                    dist[v] = dist[u] + w;
+                    pq.offer(new int[]{dist[v], v});
+                }
+            }
+        }
+
+        return dist[dest];
+    }
+
+    // Function to find the minimum weight cycle in the graph
+    public static int findMinCycle(int V, int[][] edges) {
+
+        ArrayList<ArrayList<int[]>> adj = constructAdj(V, edges);
+        int minCycle = Integer.MAX_VALUE;
+
+        for (int[] edge : edges) {
+            int u = edge[0], v = edge[1], w = edge[2];
+            int dist = shortestPath(V, adj, u, v);
+            if (dist != Integer.MAX_VALUE) {
+                minCycle = Math.min(minCycle, dist + w);
+            }
+        }
+
+        return minCycle;
+    }
+
+//Driver Code Starts
+    public static void main(String[] args) {
+        int V = 5;
+
+        // Graph edges represented as {u, v, weight}
+        int[][] edges = {
+            {0, 1, 2}, {1, 2, 2}, {1, 3, 1},
+             {1, 4, 1}, {0, 4, 3}, {2, 3, 4}
+        };
+
+        // Output the minimum weight cycle
+        System.out.println(findMinCycle(V, edges));
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+import heapq
+
+# Construct adjacency list using list of lists
+def constructadj(V, edges):
+    adj = [[] for _ in range(V)]
+    for edge in edges:
+        u, v, w = edge
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    return adj
+#Driver Code Ends
+
+# find shortest path from src to dest
+# while ignoring the edge between source and destination
+def shortestPath(V, adj, src, dest):
+    # Initialize distance array with infinity
+    dist = [float('inf')] * V
+    dist[src] = 0
+
+    # Priority queue to store (distance, vertex)
+    pq = [(0, src)]
+
+    while pq:
+        d, u = heapq.heappop(pq)
+
+        # If we already found a better path, skip this one
+        if d > dist[u]:
+            continue
+
+        # Traverse neighbors
+        for v, w in adj[u]:
+
+            # ignored edge from source and destination
+            if (u == src and v == dest) or (u == dest and v == src):
+                continue
+
+            # Relaxation step
+            if dist[v] > dist[u] + w:
+                dist[v] = dist[u] + w
+                heapq.heappush(pq, (dist[v], v))
+
+    return dist[dest]
+
+# Function to find the minimum weight cycle in the graph
+def findMinCycle(V, edges):
+    # Build the adjacency list once
+    adj = constructadj(V, edges)
+    minCycle = float('inf')
+
+    # Try removing each edge one by one
+    for edge in edges:
+        u, v, w = edge
+        dist = shortestPath(V, adj, u, v)
+
+        # If such a path exists, it forms a cycle with (u, v)
+        if dist != float('inf'):
+            minCycle = min(minCycle, dist + w)
+
+    # If no cycle found, return -1
+    return minCycle
+
+#Driver Code Starts
+# Driver code
+if __name__ == "__main__":
+
+    V = 5
+
+    # Graph edges represented as [u, v, weight]
+    edges = [[0, 1, 2], [1, 2, 2], [1, 3, 1],
+             [1, 4, 1], [0, 4, 3], [2, 3, 4]]
+
+    print(findMinCycle(V, edges))
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+class GfG
+{
+    // Custom Min-Heap
+    class MinHeap
+    {
+        private List<(int dist, int node)> heap = new List<(int, int)>();
+
+        private void Swap(int i, int j)
+        {
+            var temp = heap[i];
+            heap[i] = heap[j];
+            heap[j] = temp;
+        }
+
+        private void HeapifyUp(int i)
+        {
+            while (i > 0)
+            {
+                int parent = (i - 1) / 2;
+                if (heap[i].dist >= heap[parent].dist) break;
+                Swap(i, parent);
+                i = parent;
+            }
+        }
+
+        private void HeapifyDown(int i)
+        {
+            int n = heap.Count;
+            while (true)
+            {
+                int left = 2 * i + 1;
+                int right = 2 * i + 2;
+                int smallest = i;
+
+                if (left < n && heap[left].dist <
+                              heap[smallest].dist) smallest = left;
+                if (right < n && heap[right].dist <
+                             heap[smallest].dist) smallest = right;
+
+                if (smallest == i) break;
+
+                Swap(i, smallest);
+                i = smallest;
+            }
+        }
+
+        public void Push(int dist, int node)
+        {
+            heap.Add((dist, node));
+            HeapifyUp(heap.Count - 1);
+        }
+
+        public (int dist, int node) Pop(){
+
+            if (heap.Count == 0) throw new
+                    InvalidOperationException("Heap is empty");
+
+            var result = heap[0];
+            heap[0] = heap[heap.Count - 1];
+            heap.RemoveAt(heap.Count - 1);
+            HeapifyDown(0);
+            return result;
+        }
+
+        public bool IsEmpty()
+        {
+            return heap.Count == 0;
+        }
+    }
+
+    // Construct adjacency list
+    static List<List<int[]>> constructadj(int V, int[,] edges)
+    {
+        var adj = new List<List<int[]>>();
+        for (int i = 0; i < V; i++)
+            adj.Add(new List<int[]>());
+
+        int E = edges.GetLength(0);
+        for (int i = 0; i < E; i++)
+        {
+            int u = edges[i, 0], v = edges[i, 1], w = edges[i, 2];
+            adj[u].Add(new int[] { v, w });
+            adj[v].Add(new int[] { u, w });
+        }
+
+//Driver Code Ends
+
+        return adj;
+    }
+
+    // find shortest path from src to dest
+    // while ignoring the edge between source and destination
+    static int shortestPath(int V, List<List<int[]>> adj, int src, int dest)
+    {
+        int[] dist = new int[V];
+        for (int i = 0; i < V; i++) dist[i] = int.MaxValue;
+
+        var pq = new MinHeap();
+        dist[src] = 0;
+        pq.Push(0, src);
+
+        while (!pq.IsEmpty())
+        {
+            var (d, u) = pq.Pop();
+
+            if (d > dist[u]) continue;
+
+            foreach (var edge in adj[u])
+            {
+                int v = edge[0], w = edge[1];
+
+                // Skip the direct edge from src to dest
+                if ((u == src && v == dest) || (u == dest && v == src))
+                    continue;
+
+                if (dist[v] > dist[u] + w)
+                {
+                    dist[v] = dist[u] + w;
+                    pq.Push(dist[v], v);
+                }
+            }
+        }
+
+        return dist[dest];
+    }
+
+    // Find the minimum cycle weight
+    static int findMinCycle(int V, int[,] edges)
+    {
+        var adj = constructadj(V, edges);
+        int minCycle = int.MaxValue;
+
+        int E = edges.GetLength(0);
+        for (int i = 0; i < E; i++)
+        {
+            int u = edges[i, 0], v = edges[i, 1], w = edges[i, 2];
+            int dist = shortestPath(V, adj, u, v);
+            if (dist != int.MaxValue)
+            {
+                minCycle = Math.Min(minCycle, dist + w);
+            }
+        }
+
+        return minCycle;
+
+//Driver Code Starts
+    }
+
+    static void Main()
+    {
+        int V = 9;
+
+        int[,] edges = new int[,]
+        {
+            {0, 1, 2}, {1, 2, 2}, {1, 3, 1},
+            {1, 4, 1}, {0, 4, 3}, {2, 3, 4}
+        };
+
+        Console.WriteLine(findMinCycle(V, edges));
+    }
+}
+
+//Driver Code Ends
+
+JavaScript
+
+//Driver Code Starts
+// Min-Heap based Priority Queue
+class MinHeap {
+    constructor() {
+        this.heap = [];
+    }
+
+    push([dist, node]) {
+        this.heap.push([dist, node]);
+        this._bubbleUp(this.heap.length - 1);
+    }
+
+    pop() {
+        const min = this.heap[0];
+        const end = this.heap.pop();
+        if (this.heap.length > 0) {
+            this.heap[0] = end;
+            this._sinkDown(0);
+        }
+        return min;
+    }
+
+    _bubbleUp(index) {
+        const element = this.heap[index];
+        while (index > 0) {
+            const parentIdx = Math.floor((index - 1) / 2);
+            const parent = this.heap[parentIdx];
+            if (element[0] >= parent[0]) break;
+            this.heap[index] = parent;
+            this.heap[parentIdx] = element;
+            index = parentIdx;
+        }
+    }
+
+    _sinkDown(index) {
+        const length = this.heap.length;
+        const element = this.heap[index];
+
+        while (true) {
+            let leftIdx = 2 * index + 1;
+            let rightIdx = 2 * index + 2;
+            let swap = null;
+
+            if (leftIdx < length) {
+                if (this.heap[leftIdx][0] < element[0]) {
+                    swap = leftIdx;
+                }
+            }
+
+            if (rightIdx < length) {
+                if (
+                    (swap === null && this.heap[rightIdx][0] < element[0]) ||
+                    (swap !== null && this.heap[rightIdx][0] < this.heap[leftIdx][0])
+                ) {
+                    swap = rightIdx;
+                }
+            }
+
+            if (swap === null) break;
+
+            this.heap[index] = this.heap[swap];
+            this.heap[swap] = element;
+            index = swap;
+        }
+    }
+
+    isEmpty() {
+        return this.heap.length === 0;
+    }
+}
+
+// Construct adjacency list
+function constructadj(V, edges) {
+    let adj = Array.from({ length: V }, () => []);
+    for (let [u, v, w] of edges) {
+        adj[u].push([v, w]);
+        adj[v].push([u, w]);
+    }
+    return adj;
+}
+//Driver Code Ends
+
+// find shortest path from src to dest
+// while ignoring the edge between source and destination
+function shortestPath(V, adj, src, dest) {
+    let dist = new Array(V).fill(Infinity);
+    dist[src] = 0;
+
+    let pq = new MinHeap();
+    pq.push([0, src]);
+
+    while (!pq.isEmpty()) {
+        let [d, u] = pq.pop();
+
+        if (d > dist[u]) continue;
+
+        for (let [v, w] of adj[u]) {
+            // ignore direct connection between src and dest
+            if ((u === src && v === dest) ||
+                                   (u === dest && v === src)) continue;
+
+            if (dist[v] > dist[u] + w) {
+                dist[v] = dist[u] + w;
+                pq.push([dist[v], v]);
+            }
+        }
+    }
+
+    return dist[dest];
+}
+
+// Find minimum cycle in the graph
+function findMinCycle(V, edges) {
+    let adj = constructadj(V, edges);
+    let minCycle = Infinity;
+
+    for (let [u, v, w] of edges) {
+        let dist = shortestPath(V, adj, u, v);
+        if (dist !== Infinity) {
+            minCycle = Math.min(minCycle, dist + w);
+        }
+    }
+
+    return minCycle;
+}
+
+//Driver Code Starts
+// Driver code
+let V = 5;
+
+let edges = [[0, 1, 2], [1, 2, 2], [1, 3, 1],
+         [1, 4, 1], [0, 4, 3], [2, 3, 4]];
+
+console.log(findMinCycle(V, edges));
+
+//Driver Code Ends
+
+Output
+
+6
+
+Time Complexity: O(E * (V + E) log V) for iterating over each edge and running Dijkstra's algorithm, which involves creating a new adjacency list and recalculating shortest paths multiple times. Space Complexity: O(V + E)  for the adjacency list, temporary edge storage, and Dijkstra's algorithm data structures like the distance array and priority queue.

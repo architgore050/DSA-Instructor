@@ -1,0 +1,977 @@
+Source: https://www.geeksforgeeks.org/dsa/maximum-length-substring-having-all-same-characters-after-k-changes/
+Title: Longest substring having all same characters after k changes
+Extractor: 2
+
+Given a string s of length n consisting only of uppercase English letters ('A'–'Z') and an integer k (0 ≤ k ≤ n), you can change at most k characters in the string. Find the length of the longest substring that can be made of all same character after performing at most k changes.
+
+> Input : k = 2, s = ABABA Output : 5 We can get maximum length by replacing 2 B's with A's Input : k = 4, s = HHHHHH Output : 6 We get maximum length 6 without any replacement
+
+Table of Content
+
+- [Naive Approach] Check All Substrings with Frequency Count - O(n^3) Time and  O(1) Space
+- [Better Approach] Window Sliding for Every Character - O(26 * n) Time O(1) Space
+- [Expected Approach] Window Sliding with Hash Map - O(n) Time and O(1) Space
+
+### [Naive Approach] Check All Substrings with Frequency Count - O(n^3) Time and  O(1) Space
+
+> Consider all substrings by choosing start l and end r. For each substring, find the most frequent character.. If (substring length − max frequency) ≤ k, update the maximum length.
+
+Dry run for k = 1, s = "ABA"
+
+1. l=0, r=0 "A": consider substring, freq={A:1}, maxFreq = 1; no replacements needed, valid, res = 1
+2. l=0, r=1 "AB": consider substring, freq={A:1,B:1}, maxFreq = 1; 1 replacement needed (make all same), valid, res = 2
+3. l=0, r=2 "ABA": consider substring, freq={A:2,B:1}, maxFreq = 2; 1 replacement needed, valid, res = 3
+4. l=1, r=1 "B": single character, always valid, res=3
+5. l=1, r=2 "BA": freq={B:1,A:1}, maxFreq=1; 1 replacement needed, valid, res=3
+6. l=2, r=2 "A": single character, always valid, res=3
+
+For every substring, we compute the most frequent character and check if remaining characters (to be replaced) are within k; the maximum valid length obtained is 3.
+
+C++
+
+#include <iostream>
+#include <unordered_map>
+using namespace std;
+
+int getMaxFreq(string &s, int l, int r) {
+    unordered_map<char, int> m;
+    int res = 1;
+
+    // Count the frequency of each character
+    // in the substring
+    for (int i = l; i <= r; ++i)
+        m[s[i]]++;
+
+    // Find the maximum frequency of any character
+    for (auto &e : m)
+        res = max(res, e.second);
+
+    return res;
+}
+
+// function to find the maximum length of substring
+// with at most k changes
+int longestSubstr(string& s, int k)
+{
+    int maxlen = 1;
+    int n = s.size();
+
+    // Try every possible starting point of the substring
+    for (int l = 0; l < n; ++l) {
+        for (int r = l; r < n; ++r) {
+
+            // Get the maximum frequency of any
+            // character in the substring [l, r]
+            int f = getMaxFreq(s, l, r);
+
+            // If the number of changes required is <= k,
+            // update the maximum length
+            if (r - l + 1 - f <= k)
+                maxlen = max(maxlen, r - l + 1);
+        }
+    }
+
+    return maxlen;
+}
+
+int main()
+{
+    int k = 2;
+    string s = "ABABA";
+    cout << longestSubstr(s, k) << endl;
+
+    k = 4;
+    string B = "HHHHHH";
+    cout << longestSubstr(B, k) << endl;
+
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <string.h>
+
+int getMaxFreq(char s[], int l, int r) {
+    int m[256] = {0};
+    int res = 1;
+
+    // Count the frequency of each character
+    // in the substring
+    for (int i = l; i <= r; ++i)
+        m[s[i]]++;
+
+    // Find the maximum frequency of any character
+    for (int i = 0; i < 256; ++i)
+        if (m[i] > res)
+            res = m[i];
+
+    return res;
+}
+
+// Function to find the maximum length of substring
+// with at most k changes
+int longestSubstr(char s[], int k)
+{
+    int maxlen = 1;
+    int n = strlen(s);
+
+    // Try every possible starting point of the substring
+    for (int l = 0; l < n; ++l) {
+        for (int r = l; r < n; ++r) {
+
+            // Get the maximum frequency of any
+            // character in the substring [l, r]
+            int f = getMaxFreq(s, l, r);
+
+            // If the number of changes required is <= k,
+            // update the maximum length
+            if (r - l + 1 - f <= k)
+                maxlen = (r - l + 1 > maxlen) ? r - l + 1 : maxlen;
+        }
+    }
+
+    return maxlen;
+}
+
+int main() {
+    int k = 2;
+    char s[] = "ABABA";
+    printf("%d\n", longestSubstr(s, k));
+
+    k = 4;
+    char B[] = "HHHHHH";
+    printf("%d\n", longestSubstr(B, k));
+
+    return 0;
+}
+
+Java
+
+import java.util.HashMap;
+
+class GfG {
+
+    static int getMaxFreq(String s, int l, int r) {
+        HashMap<Character, Integer> m = new HashMap<>();
+        int res = 1;
+
+        // Count the frequency of each character
+        // in the substring
+        for (int i = l; i <= r; ++i)
+            m.put(s.charAt(i), m.getOrDefault(s.charAt(i), 0) + 1);
+
+        // Find the maximum frequency of any character
+        for (int value : m.values())
+            res = Math.max(res, value);
+
+        return res;
+    }
+
+    // Function to find the maximum length of substring
+    // with at most k changes
+    static int longestSubstr(String s, int k) {
+        int maxlen = 1;
+        int n = s.length();
+
+        // Try every possible starting point of the substring
+        for (int l = 0; l < n; ++l) {
+            for (int r = l; r < n; ++r) {
+
+                // Get the maximum frequency of any
+                // character in the substring [l, r]
+                int f = getMaxFreq(s, l, r);
+
+                // If the number of changes required is <= k,
+                // update the maximum length
+                if (r - l + 1 - f <= k)
+                    maxlen = Math.max(maxlen, r - l + 1);
+            }
+        }
+
+        return maxlen;
+    }
+
+    public static void main(String[] args) {
+        int k = 2;
+        String s = "ABABA";
+        System.out.println(longestSubstr(s, k));
+
+        k = 4;
+        String B = "HHHHHH";
+        System.out.println(longestSubstr(B, k));
+    }
+}
+
+Python
+
+def getMaxFreq(s, l, r):
+    m = {}
+    res = 1
+
+    # Count the frequency of each character
+    # in the substring
+    for i in range(l, r + 1):
+        m[s[i]] = m.get(s[i], 0) + 1
+
+    # Find the maximum frequency of any character
+    res = max(m.values())
+
+    return res
+
+# Function to find the maximum length of substring
+# with at most k changes
+def longestSubstr(s, k):
+    maxlen = 1
+    n = len(s)
+
+    # Try every possible starting point of the substring
+    for l in range(n):
+        for r in range(l, n):
+
+            # Get the maximum frequency of any
+            # character in the substring [l, r]
+            f = getMaxFreq(s, l, r)
+
+            # If the number of changes required is <= k,
+            # update the maximum length
+            if r - l + 1 - f <= k:
+                maxlen = max(maxlen, r - l + 1)
+
+    return maxlen
+
+if __name__ == "__main__":
+    k = 2
+    s = "ABABA"
+    print(longestSubstr(s, k))
+
+    k = 4
+    B = "HHHHHH"
+    print(longestSubstr(B, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    static int getMaxFreq(string s, int l, int r) {
+        Dictionary<char, int> m = new Dictionary<char, int>();
+        int res = 1;
+
+        // Count the frequency of each character
+        // in the substring
+        for (int i = l; i <= r; ++i) {
+            if (!m.ContainsKey(s[i]))
+                m[s[i]] = 0;
+            m[s[i]]++;
+        }
+
+        // Find the maximum frequency of any character
+        foreach (var entry in m) {
+            res = Math.Max(res, entry.Value);
+        }
+
+        return res;
+    }
+
+    // Function to find the maximum length of substring
+    // with at most k changes
+    static int longestSubstr(string s, int k) {
+        int maxlen = 1;
+        int n = s.Length;
+
+        // Try every possible starting point of the substring
+        for (int l = 0; l < n; ++l) {
+            for (int r = l; r < n; ++r) {
+
+                // Get the maximum frequency of any
+                // character in the substring [l, r]
+                int f = getMaxFreq(s, l, r);
+
+                // If the number of changes required is <= k,
+                // update the maximum length
+                if (r - l + 1 - f <= k)
+                    maxlen = Math.Max(maxlen, r - l + 1);
+            }
+        }
+
+        return maxlen;
+    }
+
+    static void Main() {
+        int k = 2;
+        string s = "ABABA";
+        Console.WriteLine(longestSubstr(s, k));
+
+        k = 4;
+        string B = "HHHHHH";
+        Console.WriteLine(longestSubstr(B, k));
+    }
+}
+
+JavaScript
+
+function getMaxFreq(s, l, r) {
+    const m = {};
+    let res = 1;
+
+    // Count the frequency of each character
+    // in the substring
+    for (let i = l; i <= r; ++i) {
+        m[s[i]] = (m[s[i]] || 0) + 1;
+    }
+
+    // Find the maximum frequency of any character
+    res = Math.max(...Object.values(m));
+
+    return res;
+}
+
+// Function to find the maximum length of substring
+// with at most k changes
+function longestSubstr(s, k) {
+    let maxlen = 1;
+    const n = s.length;
+
+    // Try every possible starting point of the substring
+    for (let l = 0; l < n; ++l) {
+        for (let r = l; r < n; ++r) {
+
+            // Get the maximum frequency of any
+            // character in the substring [l, r]
+            const f = getMaxFreq(s, l, r);
+
+            // If the number of changes required is <= k,
+            // update the maximum length
+            if (r - l + 1 - f <= k)
+                maxlen = Math.max(maxlen, r - l + 1);
+        }
+    }
+
+    return maxlen;
+}
+
+// Driver code
+let k = 2;
+let s = "ABABA";
+console.log(longestSubstr(s, k));
+
+k = 4;
+let B = "HHHHHH";
+console.log(longestSubstr(B, k));
+
+Output
+
+5
+6
+
+### [Better Approach] Window Sliding for Every Character - O(26 * n) Time O(1) Space
+
+> Check each character from 'A' to 'Z' and treat it as the target character for the substring. Use a sliding window to find the longest substring that can be converted to that character with at most k changes. If the number of different characters exceeds k, shrink the window from the left. Track the maximum substring length among all characters and return it.
+
+C++
+
+#include <iostream>
+using namespace std;
+
+int longestSubstr(string &s, int k)
+{
+    int res = 0, n = s.size();
+
+    // Try replacing other characters to form
+    // a string of each character 'A' to 'Z'
+    for (char c = 'A'; c <= 'Z'; c++)
+    {
+        int l = 0, r = 0, cnt = 0;
+
+        // Sliding window from l to r
+        while (r < n)
+        {
+            if (s[r] == c)
+                r++;
+            else if (cnt < k)
+                r++, cnt++;
+            else if (s[l] == c)
+                l++;
+            else
+                l++, cnt--;
+
+            // Update the maximum length of substring
+            res = max(res, r - l);
+        }
+    }
+    return res;
+}
+
+int main()
+{
+    int k = 2;
+    string s = "ABABA";
+    cout << longestSubstr(s, k) << endl;
+
+    k = 4;
+    s = "HHHHHH";
+    cout << longestSubstr(s, k) << endl;
+
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <string.h>
+
+int longestSubstr(char *s, int k) {
+    int res = 0;
+    int n = strlen(s);
+
+    // Try replacing other characters to form
+    // a string of each character 'A' to 'Z'
+    for (char c = 'A'; c <= 'Z'; c++) {
+        int l = 0, r = 0, cnt = 0;
+
+        // Sliding window from l to r
+        while (r < n) {
+            if (s[r] == c)
+                r++;
+            else if (cnt < k)
+                r++, cnt++;
+            else if (s[l] == c)
+                l++;
+            else
+                l++, cnt--;
+
+            // Update the maximum length of substring
+            if (r - l > res)
+                res = r - l;
+        }
+    }
+
+    return res;
+}
+
+int main() {
+    int k = 2;
+    char s[] = "ABABA";
+    printf("%d\n", longestSubstr(s, k));
+
+    k = 4;
+    char B[] = "HHHHHH";
+    printf("%d\n", longestSubstr(B, k));
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+    static int longestSubstr(String s, int k) {
+        int res = 0, n = s.length();
+
+        // Try replacing other characters to form
+        // a string of each character 'A' to 'Z'
+        for (char c = 'A'; c <= 'Z'; c++) {
+            int l = 0, r = 0, cnt = 0;
+
+            // Sliding window from l to r
+            while (r < n) {
+                if (s.charAt(r) == c) {
+                    r++;
+                } else if (cnt < k) {
+                    r++;
+                    cnt++;
+                } else if (s.charAt(l) == c) {
+                    l++;
+                } else {
+                    l++;
+                    cnt--;
+                }
+
+                // Update the maximum length of substring
+                res = Math.max(res, r - l);
+            }
+        }
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int k = 2;
+        String s = "ABABA";
+        System.out.println(longestSubstr(s, k));
+
+        k = 4;
+        String s = "HHHHHH";
+        System.out.println(longestSubstr(s, k));
+    }
+}
+
+Python
+
+def longestSubstr(s, k):
+    res = 0
+    n = len(s)
+
+    # Try replacing other characters to form
+    # a string of each character 'A' to 'Z'
+    for c in range(ord('A'), ord('Z') + 1):
+        l, r, cnt = 0, 0, 0
+
+        # Sliding window from l to r
+        while r < n:
+            if s[r] == chr(c):
+                r += 1
+            elif cnt < k:
+                r += 1
+                cnt += 1
+            elif s[l] == chr(c):
+                l += 1
+            else:
+                l += 1
+                cnt -= 1
+
+            # Update the maximum length of substring
+            res = max(res, r - l)
+
+    return res
+
+if __name__ == "__main__":
+    k = 2
+    s = "ABABA"
+    print(longestSubstr(s, k))
+
+    k = 4
+    s = "HHHHHH"
+    print(longestSubstr(s, k))
+
+C#
+
+using System;
+
+class GfG {
+
+    static int longestSubstr(string s, int k) {
+        int res = 0, n = s.Length;
+
+        // Try replacing other characters to form
+        // a string of each character 'A' to 'Z'
+        for (char c = 'A'; c <= 'Z'; c++) {
+            int l = 0, r = 0, cnt = 0;
+
+            // Sliding window from l to r
+            while (r < n) {
+                if (s[r] == c) {
+                    r++;
+                }
+                else if (cnt < k) {
+                    r++;
+                    cnt++;
+                }
+                else if (s[l] == c) {
+                    l++;
+                }
+                else {
+                    l++;
+                    cnt--;
+                }
+
+                // Update the maximum length of substring
+                res = Math.Max(res, r - l);
+            }
+        }
+        return res;
+    }
+
+    static void Main(string[] args) {
+        int k = 2;
+        string s = "ABABA";
+        Console.WriteLine(longestSubstr(s, k));
+
+        k = 4;
+        s = "HHHHHH";
+        Console.WriteLine(longestSubstr(s, k));
+    }
+}
+
+JavaScript
+
+function longestSubstr(s, k) {
+    let res = 0;
+    let n = s.length;
+
+    // Try replacing other characters to form
+    // a string of each character 'A' to 'Z'
+    for (let c = 'A'.charCodeAt(0); c <= 'Z'.charCodeAt(0); c++) {
+        let l = 0, r = 0, cnt = 0;
+
+        // Sliding window from l to r
+        while (r < n) {
+            if (s[r] === String.fromCharCode(c))
+                r++;
+            else if (cnt < k)
+                r++, cnt++;
+            else if (s[l] === String.fromCharCode(c))
+                l++;
+            else
+                l++, cnt--;
+
+            // Update the maximum length of substring
+            res = Math.max(res, r - l);
+        }
+    }
+
+    return res;
+}
+
+// Driver code
+function main() {
+    let k = 2;
+    let s = "ABABA";
+    console.log(longestSubstr(s, k));
+
+    k = 4;
+    s = "HHHHHH";
+    console.log(longestSubstr(s, k));
+}
+
+main();
+
+Output
+
+5
+6
+
+### [Expected Approach] Window Sliding with Hash Map - O(n) Time and O(1) Space
+
+> Maintain a sliding window (l, r) and store character frequencies using a hash map. Track the most frequent character (maxFreq) in the window. If (window size − maxFreq) > k, shrink the window; otherwise expand it and update the maximum length.
+
+Dry run for k = 2, s = "ABABA"
+
+- r=0 'A': include character, freq={A:1}, maxFreq = 1; window valid since (size - maxFreq) = 0 ≤ k, so expand and update res = 1
+- r=1 'B': include character, freq={A:1,B:1}, maxFreq = 1; window valid (1 ≤ k), expand and update res = 2
+- r=2 'A': include character, freq={A:2,B:1}, maxFreq = 2; window valid (1 ≤ k), expand and update res = 3
+- r=3 'B': include character, freq={A:2,B:2}, maxFreq = 2; window valid (2 ≤ k), expand and update res = 4
+- r=4 'A': include character, freq={A:3,B:2}, maxFreq = 3; window valid (2 ≤ k), expand and update res = 5
+
+Final answer is 5.
+
+C++
+
+#include <iostream>
+#include <unordered_map>
+using namespace std;
+
+int longestSubstr(string& s, int k) {
+    int n = s.size();
+    unordered_map<char, int> freq;
+    int maxFreq = 0;
+    int res = 0;
+
+    // Left boundary of the window
+    int l = 0;
+
+    // Right boundary of the window
+    for (int r = 0; r < n; ++r) {
+
+        // Increase the frequency of the
+        // current character
+        freq[s[r]]++;
+
+        // Update maxFreq with the frequency of
+        // the most frequent character in the
+        // current window
+        maxFreq = max(maxFreq, freq[s[r]]);
+
+        // Shrink the window if more than k changes
+        // required
+        if (r - l + 1 - maxFreq > k) {
+            freq[s[l]]--;
+            ++l;
+        }
+
+        // Update the maximum length of the substring
+        res = max(res, r - l + 1);
+    }
+
+    return res;
+}
+
+int main() {
+    int k = 2;
+    string s = "ABABA";
+    cout << longestSubstr(s, k) << endl;
+
+    k = 4;
+    s = "HHHHHH";
+    cout << longestSubstr(s, k) << endl;
+
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <string.h>
+
+int longestSubstr(char *s, int k) {
+    int n = strlen(s);
+
+    // Initialize character frequency array
+    int freq[256] = {0};
+    int maxFreq = 0;
+    int res = 0;
+
+    // Left boundary of the window
+    int l = 0;
+
+    // Right boundary of the window
+    for (int r = 0; r < n; ++r) {
+
+        // Increase the frequency of the
+        // current character
+        freq[(unsigned char)s[r]]++;
+
+        // Update maxFreq with the frequency of
+        // the most frequent character in the
+        // current window
+        if (freq[(unsigned char)s[r]] > maxFreq)
+            maxFreq = freq[(unsigned char)s[r]];
+
+        // Shrink the window if more than k changes
+        // required
+        if (r - l + 1 - maxFreq > k) {
+            freq[(unsigned char)s[l]]--;
+            ++l;
+        }
+
+        // Update the maximum length of the substring
+        if (r - l + 1 > res)
+            res = r - l + 1;
+    }
+
+    return res;
+}
+
+int main() {
+    int k = 2;
+    char s[] = "ABABA";
+    printf("%d\n", longestSubstr(s, k));
+
+    k = 4;
+    char B[] = "HHHHHH";
+    printf("%d\n", longestSubstr(B, k));
+
+    return 0;
+}
+
+Java
+
+import java.util.HashMap;
+
+class GfG {
+
+    static int longestSubstr(String s, int k) {
+        int n = s.length();
+        HashMap<Character, Integer> freq = new HashMap<>();
+        int maxFreq = 0;
+        int res = 0;
+
+        // Left boundary of the window
+        int l = 0;
+
+        // Right boundary of the window
+        for (int r = 0; r < n; ++r) {
+
+            // Increase the frequency of the
+            // current character
+            freq.put(s.charAt(r), freq.getOrDefault(s.charAt(r), 0) + 1);
+
+            // Update maxFreq with the frequency of
+            // the most frequent character in the
+            // current window
+            maxFreq = Math.max(maxFreq, freq.get(s.charAt(r)));
+
+            // Shrink the window if more than k changes
+            // required
+            if (r - l + 1 - maxFreq > k) {
+                freq.put(s.charAt(l), freq.get(s.charAt(l)) - 1);
+                l++;
+            }
+
+            // Update the maximum length of the substring
+            res = Math.max(res, r - l + 1);
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int k = 2;
+        String s = "ABABA";
+        System.out.println(longestSubstr(s, k));
+
+        k = 4;
+        s = "HHHHHH";
+        System.out.println(longestSubstr(s, k));
+    }
+}
+
+Python
+
+def longestSubstr(s, k):
+    n = len(s)
+    freq = {}
+    maxFreq = 0
+    res = 0
+
+    # Left boundary of the window
+    l = 0
+
+    # Right boundary of the window
+    for r in range(n):
+
+        # Increase the frequency of the
+        # current character
+        freq[s[r]] = freq.get(s[r], 0) + 1
+
+        # Update maxFreq with the frequency of
+        # the most frequent character in the
+        # current window
+        maxFreq = max(maxFreq, freq[s[r]])
+
+        # Shrink the window if more than k changes
+        # required
+        if r - l + 1 - maxFreq > k:
+            freq[s[l]] -= 1
+            l += 1
+
+        # Update the maximum length of the substring
+        res = max(res, r - l + 1)
+
+    return res
+
+if __name__ == "__main__":
+    k = 2
+    s = "ABABA"
+    print(longest_substr(s, k))
+
+    k = 4
+    s = "HHHHHH"
+    print(longest_substr(s, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG
+{
+    static int longestSubstr(string s, int k)
+    {
+        int n = s.Length;
+        Dictionary<char, int> freq = new Dictionary<char, int>();
+        int maxFreq = 0;
+        int res = 0;
+
+        // Left boundary of the window
+        int l = 0;
+
+        // Right boundary of the window
+        for (int r = 0; r < n; ++r)
+        {
+            // Increase the frequency of the
+            // current character
+            if (!freq.ContainsKey(s[r]))
+                freq[s[r]] = 0;
+            freq[s[r]]++;
+
+            // Update maxFreq with the frequency of
+            // the most frequent character in the
+            // current window
+            maxFreq = Math.Max(maxFreq, freq[s[r]]);
+
+            // Shrink the window if more than k changes
+            // required
+            if (r - l + 1 - maxFreq > k)
+            {
+                freq[s[l]]--;
+                l++;
+            }
+
+            // Update the maximum length of the substring
+            res = Math.Max(res, r - l + 1);
+        }
+
+        return res;
+    }
+
+    static void Main(string[] args)
+    {
+        int k = 2;
+        string s = "ABABA";
+        Console.WriteLine(longestSubstr(s, k));
+
+        k = 4;
+        s = "HHHHHH";
+        Console.WriteLine(longestSubstr(s, k));
+    }
+}
+
+JavaScript
+
+function longestSubstr(s, k) {
+    let n = s.length;
+    let freq = {};
+    let maxFreq = 0;
+    let res = 0;
+
+    // Left boundary of the window
+    let l = 0;
+
+    // Right boundary of the window
+    for (let r = 0; r < n; ++r) {
+
+        // Increase the frequency of the
+        // current character
+        freq[s[r]] = (freq[s[r]] || 0) + 1;
+
+        // Update maxFreq with the frequency of
+        // the most frequent character in the
+        // current window
+        maxFreq = Math.max(maxFreq, freq[s[r]]);
+
+        // Shrink the window if more than k changes
+        // required
+        if (r - l + 1 - maxFreq > k) {
+            freq[s[l]]--;
+            l++;
+        }
+
+        // Update the maximum length of the substring
+        res = Math.max(res, r - l + 1);
+    }
+
+    return res;
+}
+
+// Driver code
+function main() {
+    let k = 2;
+    let s = "ABABA";
+    console.log(longestSubstr(s, k));
+
+    k = 4;
+    s = "HHHHHH";
+    console.log(longestSubstr(s, k));
+}
+
+main();
+
+Output
+
+5
+6

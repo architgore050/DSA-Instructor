@@ -1,0 +1,429 @@
+Source: https://www.geeksforgeeks.org/dsa/find-recurring-sequence-fraction/
+Title: Recurring Sequence in a Fraction
+Extractor: 2
+
+Given a fraction, find a recurring sequence of digits if it exists, otherwise, print "No recurring sequence".
+
+Examples:
+
+> Input : Numerator = 8, Denominator = 3 Output : Recurring sequence is 6 Explanation : 8/3 = 2.66666666....... Input : Numerator = 50, Denominator = 22 Output : Recurring sequence is 27 Explanation : 50/22 = 2.272727272..... Input : Numerator = 11, Denominator = 2 Output : No recurring sequence Explanation : 11/2 = 5.5
+
+When does the fractional part repeat? Let us simulate the process of converting fractions to decimals. Let us look at the part where we have already figured out the integer part, which is floor(numerator/denominator). Now we are left with ( remainder = numerator%denominator ) / denominator.
+
+If you remember the process of converting to decimal, at each step we do the following :
+
+1. Multiply the remainder by 10.
+2. Append the remainder/denominator to the result.
+3. Remainder = remainder % denominator.
+
+At any moment, if the remainder becomes 0, we are done. However, when there is a recurring sequence, the remainder never becomes 0. For example, if you look at 1/3, the remainder never becomes 0.
+
+Below is one important observation : If we start with the remainder 'rem' and if the remainder repeats at any point in time, the digits between the two occurrences of 'rem' keep repeating. So the idea is to store seen remainders in a map. Whenever a remainder repeats, we return the sequence before the next occurrence.
+
+Below is the implementation of the above idea.
+
+C++
+
+// C++ program to find repeating
+// sequence in a fraction
+#include <bits/stdc++.h>
+using namespace std;
+
+// This function returns repeating sequence of
+// a fraction.  If repeating sequence doesn't
+// exist, then returns empty string
+string fractionToDecimal(int numr, int denr)
+{
+    string res; // Initialize result
+
+    // Create a map to store already
+    // seen remainders, remainder is used
+    // as key and its position in
+    // result is stored as value.
+    // Note that we need
+    // position for cases like 1/6.
+    // In this case,the recurring sequence
+    // doesn't start from first
+    // remainder.
+    map<int, int> mp;
+    mp.clear();
+
+    // Find first remainder
+    int rem = numr % denr;
+
+    // Keep finding remainder until either remainder
+    // becomes 0 or repeats
+    while ((rem != 0)
+           && (mp.find(rem) == mp.end()))
+    {
+        // Store this remainder
+        mp[rem] = res.length();
+
+        // Multiply remainder with 10
+        rem = rem * 10;
+
+        // Append rem / denr to result
+        int res_part = rem / denr;
+        res += to_string(res_part);
+
+        // Update remainder
+        rem = rem % denr;
+    }
+
+    return (rem == 0) ? "" : res.substr(mp[rem]);
+}
+
+// Driver code
+int main()
+{
+    int numr = 50, denr = 22;
+    string res = fractionToDecimal(numr, denr);
+    if (res == "")
+        cout << "No recurring sequence";
+    else
+        cout << "Recurring sequence is " << res;
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// This function returns repeating sequence of
+// a fraction. If repeating sequence doesn't
+// exist, then returns empty string
+char* fractionToDecimal(int numr, int denr) {
+    // Initialize result
+    char* res = (char*)malloc(1000);
+    int index = 0;
+    int rem;
+    int seen[1000] = {0}; // Array to store already seen remainders
+
+    // Find first remainder
+    rem = numr % denr;
+
+    // Keep finding remainder until either remainder
+    // becomes 0 or repeats
+    while (rem != 0 && seen[rem] == 0) {
+        // Store this remainder
+        seen[rem] = index + 1; // Store position + 1
+
+        // Multiply remainder with 10
+        rem *= 10;
+
+        // Append rem / denr to result
+        int res_part = rem / denr;
+        res[index++] = res_part + '0';
+
+        // Update remainder
+        rem = rem % denr;
+    }
+
+    if (rem == 0) {
+        res[index] = '\0';
+        return ""; // No recurring sequence
+    } else {
+        // Find the position to insert '('
+        int pos = seen[rem] - 1;
+        memmove(res + pos + 1, res + pos, index - pos);
+        res[pos] = '(';
+        res[index + 1] = ')';
+        res[index + 2] = '\0';
+        return res;
+    }
+}
+
+// Driver code
+int main() {
+    int numr = 50, denr = 22;
+    char* res = fractionToDecimal(numr, denr);
+    if (strlen(res) == 0)
+        printf("No recurring sequence");
+    else
+        printf("Recurring sequence is %s", res);
+    free(res);
+    return 0;
+}
+
+Java
+
+// Java program to find
+// repeating sequence
+// in a fraction
+import java.util.*;
+class GFG {
+
+    // This function returns repeating
+    // sequence of a fraction. If
+    // repeating sequence doesn't
+    // exist, then returns empty String
+    static String fractionToDecimal(int numr, int denr)
+    {
+        // Initialize result
+        String res = "";
+
+        // Create a map to store already
+        // seen remainders. Remainder is
+        // used as key and its position in
+        // result is stored as value.
+        // Note that we need position for
+        // cases like 1/6.  In this case,
+        // the recurring sequence doesn't
+        // start from first remainder.
+        HashMap<Integer, Integer> mp = new HashMap<>();
+        mp.clear();
+
+        // Find first remainder
+        int rem = numr % denr;
+
+        // Keep finding remainder until
+        //  either remainder becomes 0 or repeats
+        while ((rem != 0) && (!mp.containsKey(rem)))
+        {
+            // Store this remainder
+            mp.put(rem, res.length());
+
+            // Multiply remainder with 10
+            rem = rem * 10;
+
+            // Append rem / denr to result
+            int res_part = rem / denr;
+            res += String.valueOf(res_part);
+
+            // Update remainder
+            rem = rem % denr;
+        }
+
+        if (rem == 0)
+            return "";
+        else if (mp.containsKey(rem))
+            return res.substring(mp.get(rem));
+
+        return "";
+    }
+
+    // Driver code
+    public static void main(String[] args)
+    {
+        int numr = 50, denr = 22;
+        String res = fractionToDecimal(numr, denr);
+        if (res == "")
+            System.out.print("No recurring sequence");
+        else
+            System.out.print("Recurring sequence is "
+                             + res);
+    }
+}
+
+// This code is contributed by gauravrajput1
+
+Python
+
+# Python3 program to find repeating
+# sequence in a fraction
+
+# This function returns repeating sequence
+# of a fraction.If repeating sequence doesn't
+# exist, then returns empty string
+
+def fractionToDecimal(numr, denr):
+
+    # Initialize result
+    res = ""
+
+    # Create a map to store already seen
+    # remainders. Remainder is used as key
+    # and its position in result is stored
+    # as value. Note that we need position
+    # for cases like 1/6.  In this case,
+    # the recurring sequence doesn't start
+    # from first remainder.
+    mp = {}
+
+    # Find first remainder
+    rem = numr % denr
+
+    # Keep finding remainder until either
+    # remainder becomes 0 or repeats
+    while ((rem != 0) and (rem not in mp)):
+
+        # Store this remainder
+        mp[rem] = len(res)
+
+        # Multiply remainder with 10
+        rem = rem * 10
+
+        # Append rem / denr to result
+        res_part = rem // denr
+        res += str(res_part)
+
+        # Update remainder
+        rem = rem % denr
+
+    if (rem == 0):
+        return ""
+    else:
+        return res[mp[rem]:]
+
+# Driver code
+numr, denr = 50, 22
+res = fractionToDecimal(numr, denr)
+
+if (res == ""):
+    print("No recurring sequence")
+else:
+    print("Recurring sequence is", res)
+
+# This code is contributed by divyeshrabadiya07
+
+C#
+
+// C# program to find repeating sequence
+// in a fraction
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // This function returns repeating
+    // sequence of a fraction. If
+    // repeating sequence doesn't
+    // exist, then returns empty String
+    static string fractionToDecimal(int numr, int denr)
+    {
+        // Initialize result
+        string res = "";
+
+        // Create a map to store already
+        // seen remainders. Remainder is
+        // used as key and its position in
+        // result is stored as value.
+        // Note that we need position for
+        // cases like 1/6.  In this case,
+        // the recurring sequence doesn't
+        // start from first remainder.
+        Dictionary<int, int> mp
+            = new Dictionary<int, int>();
+
+        // Find first remainder
+        int rem = numr % denr;
+
+        // Keep finding remainder until
+        // either remainder becomes 0
+        // or repeats
+        while ((rem != 0) && (!mp.ContainsKey(rem)))
+        {
+
+            // Store this remainder
+            mp[rem] = res.Length;
+
+            // Multiply remainder with 10
+            rem = rem * 10;
+
+            // Append rem / denr to result
+            int res_part = rem / denr;
+            res += res_part.ToString();
+
+            // Update remainder
+            rem = rem % denr;
+        }
+
+        if (rem == 0)
+            return "";
+        else if (mp.ContainsKey(rem))
+            return res.Substring(mp[rem]);
+
+        return "";
+    }
+
+    // Driver code
+    public static void Main(string[] args)
+    {
+        int numr = 50, denr = 22;
+        string res = fractionToDecimal(numr, denr);
+
+        if (res == "")
+            Console.Write("No recurring sequence");
+        else
+            Console.Write("Recurring sequence is " + res);
+    }
+}
+
+// This code is contributed by rutvik_56
+
+JavaScript
+
+<script>
+
+// Javascript program to find
+// repeating sequence
+// in a fraction
+
+    // This function returns repeating
+    // sequence of a fraction. If
+    // repeating sequence doesn't
+    // exist, then returns empty String
+    function fractionToDecimal(numr, denr)
+    {
+        // Initialize result
+        let res = "";
+
+        // Create a map to store already
+        // seen remainders. Remainder is
+        // used as key and its position in
+        // result is stored as value.
+        // Note that we need position for
+        // cases like 1/6.  In this case,
+        // the recurring sequence doesn't
+        // start from first remainder.
+        let mp = new Map();
+        mp.clear();
+
+        // Find first remainder
+        let rem = numr % denr;
+
+        // Keep finding remainder until
+        //  either remainder becomes 0 or repeats
+        while ((rem != 0) && (!mp.has(rem)))
+        {
+            // Store this remainder
+            mp.set(rem, res.length);
+
+            // Multiply remainder with 10
+            rem = rem * 10;
+
+            // Append rem / denr to result
+            let res_part = Math.floor(rem / denr);
+            res += res_part.toString();
+
+            // Update remainder
+            rem = rem % denr;
+        }
+
+        if (rem == 0)
+            return "";
+        else if (mp.has(rem))
+            return res.substr(mp.get(rem));
+
+        return "";
+    }
+
+// Driver program
+
+      let numr = 50, denr = 22;
+      let res = fractionToDecimal(numr, denr);
+      if (res == "")
+          document.write("No recurring sequence");
+      else
+          document.write("Recurring sequence is "
+                             + res);
+
+</script>
+
+Output
+
+Recurring sequence is 27
+
+Time Complexity : O(N) Auxiliary Space : O(N) , as we use map as extra space.

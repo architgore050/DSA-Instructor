@@ -1,0 +1,1047 @@
+Source: https://www.geeksforgeeks.org/dsa/given-a-set-of-line-segments-find-if-any-two-segments-intersect/
+Title: Sweep Line Algorithm  - Find if any Two Segments Intersect
+Extractor: 2
+
+Given n line segments represented as a 3D vector points[][][], where each line segment i is defined by its endpoints stored in points[i][0] and points[i][1] (each containing 2 integers), your task is to determine if any two of these line segments intersect and find the number of intersection points.
+
+Examples:
+
+> Input: points[][][] = [ [ [1, 5], [4, 5] ], [ [2, 5], [10, 1] ], [ [3, 2], [10, 3] ], [ [6, 4], [9, 4] ], [ [7, 1], [8, 1] ] ] Output: 2 Explanation: Lines [ [1, 5], [4, 5] ] intersects with [ [2, 5], [10, 1] ] which further intersects with [ [3, 2], [10, 3] ]. Thus there are two intersection points.
+
+### [Naive Approach] - Check Every Pair - O(n^2) Time
+
+> A naive solution to solve this problem is to check every pair of lines and check if the pair intersects or not. We can check two line segments in O(1) time . Therefore, this approach takes O(n 2 ).
+
+### [Expected Approach] - Sweep Line Algorithm - O(n Log n) Time and O(n) Space
+
+> The idea is to use a sweep line method that processes the endpoints of the line segments from left to right, dynamically maintaining a set of segments currently "active" as the sweep line moves. With this approach, we only check for intersections between line segments that are close to each other in the vertical ordering, thus ensuring we handle the problem in a methodical and efficient manner. To manage the active segments, a self-balancing binary search tree (like an AVL or Red-Black Tree) or a similar data structure is used; this allows us to quickly insert new segments, remove segments once their right endpoint is passed, and find the segments immediately above and below a given segment.
+
+Below is given the step-by-step approach to solve the problem:
+
+- Begin by representing every line segment with its two endpoints and mark each endpoint to indicate whether it is the left or the right end of the segment.
+- Sort all the endpoints according to their x-coordinate values.
+- Initialize an empty self-balancing binary search tree (or min heap for dynamic endpoint processing) to keep track of the active segments along the y-axis.
+- Process each endpoint from left to right: If the current endpoint is a left endpoint, insert its segment into the active set and check for intersections with the immediate neighbors (the segment just above and the one just below) in the active set. If the current endpoint is a right endpoint, remove its segment from the active set and check if the segments that were immediately above and below (now adjacent after removal) intersect with each other.
+- Continue the process until all endpoints have been handled and all potential intersections are checked.
+
+Pseudocode:
+
+C++
+
+function sweepLineIntersection(Points):
+    // Sort the points according to their x-coordinate.
+    sort(Points)
+
+    // T: self-balancing BST to store active segments ordered by their y-coordinates.
+    T = new BST()
+
+    // Iterate over each point in the sorted array.
+    for i from 0 to length(Points) - 1:
+        currentPoint = Points[i]
+
+        if currentPoint.isLeft then:
+            // Insert the segment corresponding to the left endpoint.
+            segment = currentPoint.segment
+            T.insert(segment)
+
+            // Retrieve the immediate neighbor segments.
+            pred = T.predecessor(segment)
+            succ = T.successor(segment)
+
+            // Check intersection with the predecessor.
+            if pred is not null and doIntersect(segment, pred) then
+                return true
+            // Check intersection with the successor.
+            else if succ is not null and doIntersect(segment, succ) then
+                return true
+        else:  // currentPoint is the right endpoint of its segment.
+            segment = currentPoint.segment
+
+            // Before removing the segment, get its neighbors.
+            pred = T.predecessor(segment)
+            succ = T.successor(segment)
+
+            // Remove the segment from the tree.
+            T.delete(segment)
+
+            // After removal, if both neighbors exist, check if they intersect.
+            if pred is not null and succ is not null and doIntersect(pred, succ) then
+                return true
+
+    // No intersections found.
+    return false
+
+Example:
+
+> There are 5 line segments 1, 2, 3, 4 and 5 and the dotted green lines show sweep lines. Following are steps followed by the algorithm Process the left endpoint of segment 1. Insert segment 1 into the BST. The BST now contains: 1 No intersection is found. Process the left endpoint of segment 2 Check for intersection between segment 2 and segment 1. Insert segment 2 into the BST. Intersection of 1 and 2 is detected. (In the pseudocode, we would return here, but we continue in this example to find all possible intersections.) The BST now contains: 1, 2 Process the left endpoint of segment 3 Check for intersection between segment 3 and segment 1. No intersection is found. Insert segment 3 into the BST. The BST now contains: 1, 2, 3 Process the right endpoint of segment 1 Remove segment 1 from the BST. Check for intersection between segments 2 and 3. Intersection of 2 and 3 is found and reported. The BST now contains: 2, 3 Process the left endpoint of segment 4 Check for intersections between segment 4 and existing segments (2 and 3). No intersection is found. Insert segment 4 into the BST. The BST now contains: 2, 4, 3 Process the left endpoint of segment 5 Check for intersection between segment 5 and segment 3. No intersection is found. Insert segment 5 into the BST. The BST now contains: 2, 4, 3, 5 Process the right endpoint of segment 5 Remove segment 5 from the BST. The BST now contains: 2, 4, 3. Process the right endpoint of segment 4 Remove segment 4 from the BST. The BST now contains: 2, 3 Check for intersection between segments 2 and 3. Intersection of 2 and 3 is reported again. (Additional logic might be added to avoid duplicating the same intersection.) The BST still contains: 2, 3 Process the right endpoints of segments 2 and 3 Remove segments 2 and 3 from the BST. The BST becomes empty. After these steps, all endpoints have been processed, and all intersections have been identified (with duplicates possibly reported depending on the implementation details).
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// An event for the sweep line algorithm
+class Event {
+public:
+    int x, y;
+    bool isLeft;
+    int index;
+    Event(int x, int y, bool l, int i) {
+        this->x = x;
+        this->y = y;
+        this->isLeft = l;
+        this->index = i;
+    }
+
+    // Order events by y-coordinate, then by x-coordinate
+    bool operator<(const Event &e) const {
+        if (y == e.y)
+            return x < e.x;
+        return y < e.y;
+    }
+};
+
+// Given three collinear points p, q, r
+// the function checks if point
+// q lies on line segment 'pr'
+bool onSegment(vector<int> p, vector<int> q, vector<int> r) {
+    if (q[0] <= max(p[0], r[0]) && q[0] >= min(p[0], r[0]) &&
+        q[1] <= max(p[1], r[1]) && q[1] >= min(p[1], r[1]))
+        return true;
+    return false;
+}
+
+// To find orientation of ordered triplet (p, q, r).
+// Returns 0 if collinear, 1 if clockwise, 2 if counterclockwise.
+int orientation(vector<int> p, vector<int> q, vector<int> r) {
+    int val = (q[1] - p[1]) * (r[0] - q[0]) -
+              (q[0] - p[0]) * (r[1] - q[1]);
+
+     // collinear
+    if (val == 0)
+        return 0;
+
+    // clock- or counterclockwise
+    return (val > 0) ? 1 : 2;
+}
+
+// to find if two segments intersect
+bool doIntersect(vector<vector<int>> s1, vector<vector<int>> s2) {
+    vector<int> p1 = s1[0], q1 = s1[1], p2 = s2[0], q2 = s2[1];
+
+    int o1 = orientation(p1, q1, p2);
+    int o2 = orientation(p1, q1, q2);
+    int o3 = orientation(p2, q2, p1);
+    int o4 = orientation(p2, q2, q1);
+
+    // General case
+    if (o1 != o2 && o3 != o4)
+        return true;
+
+    // Special cases
+    if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+    if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+    if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+    if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+    return false;
+}
+
+// Returns the predecessor iterator in set s.
+set<Event>::iterator pred(set<Event> &s, set<Event>::iterator it) {
+    return it == s.begin() ? s.end() : --it;
+}
+
+// Returns the successor iterator in set s.
+set<Event>::iterator succ(set<Event> &s, set<Event>::iterator it) {
+    return ++it;
+}
+
+// Returns the number of intersections found between segments.
+int isIntersect(vector<vector<vector<int>>> &lines) {
+
+    // To avoid duplicate intersection reports.
+    unordered_map<string, int> mp;
+
+    vector<Event> events;
+    int n = lines.size();
+    for (int i = 0; i < n; ++i) {
+
+        // Create events for the left and right endpoints.
+        events.push_back(Event(lines[i][0][0], lines[i][0][1], true, i));
+        events.push_back(Event(lines[i][1][0], lines[i][1][1], false, i));
+    }
+
+    // Sort events according to x-coordinate.
+    sort(events.begin(), events.end(), [](Event &e1, Event &e2) {
+        return e1.x < e2.x;
+    });
+
+    // Set for storing active segments.
+    set<Event> active;
+    int ans = 0;
+
+    // Process all events.
+    for (int i = 0; i < 2 * n; i++) {
+        Event curr = events[i];
+        int index = curr.index;
+
+        if (curr.isLeft) {
+
+            // For the left endpoint, get neighbors in the active set.
+            auto next = active.lower_bound(curr);
+            auto prev = pred(active, next);
+
+            // Check for intersection with the next segment.
+            if (next != active.end() && doIntersect(lines[next->index], lines[index])) {
+                string key = to_string(next->index + 1) + " " + to_string(index + 1);
+                if (mp.count(key) == 0) {
+                    mp[key]++;
+                    ans++;
+                }
+            }
+
+            // Check for intersection with the previous segment.
+            if (prev != active.end() && doIntersect(lines[prev->index], lines[index])) {
+                string key = to_string(prev->index + 1) + " " + to_string(index + 1);
+                if (mp.count(key) == 0) {
+                    mp[key]++;
+                    ans++;
+                }
+            }
+
+            // To avoid counting duplicates if the same segment is both neighbor.
+            if (prev != active.end() && next != active.end() && next->index == prev->index)
+                ans--;
+
+            active.insert(curr);
+        }
+
+        else {
+
+            // For the right endpoint, find the matching left endpoint in the active set.
+            auto it = active.find(Event(lines[index][0][0], lines[index][0][1], true, index));
+            auto next = succ(active, it);
+            auto prev = pred(active, it);
+
+            // If both neighbors exist, check if they intersect.
+            if (next != active.end() && prev != active.end()) {
+                string key1 = to_string(next->index + 1) + " " + to_string(prev->index + 1);
+                string key2 = to_string(prev->index + 1) + " " + to_string(next->index + 1);
+                if (mp.count(key1) == 0 && mp.count(key2) == 0 && doIntersect(lines[prev->index], lines[next->index]))
+                    ans++;
+                mp[key1]++;
+            }
+
+            // Remove the segment from the active set.
+            active.erase(it);
+        }
+    }
+
+    // Report all intersecting pairs.
+    for (auto &pr : mp) {
+        cout << "Line: " << pr.first << "\n";
+    }
+    return ans;
+}
+
+int main() {
+    vector<vector<vector<int>>> lines = {
+        { {1, 5}, {4, 5} },
+        { {2, 5}, {10, 1} },
+        { {3, 2}, {10, 3} },
+        { {6, 4}, {9, 4} },
+        { {7, 1}, {8, 1} }
+    };
+    cout << isIntersect(lines);
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class GfG {
+
+    // An event for the sweep line algorithm
+    public static class Event implements Comparable<Event> {
+        public int x, y;
+        public boolean isLeft;
+        public int index;
+        public Event(int x, int y, boolean l, int i) {
+            this.x = x;
+            this.y = y;
+            this.isLeft = l;
+            this.index = i;
+        }
+
+        // Order events by y-coordinate, then by x-coordinate
+        public int compareTo(Event e) {
+            if (this.y == e.y)
+                return this.x - e.x;
+            return this.y - e.y;
+        }
+
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof Event))
+                return false;
+            Event e = (Event) o;
+            return this.x == e.x && this.y == e.y && this.isLeft == e.isLeft && this.index == e.index;
+        }
+
+        public int hashCode() {
+            return Objects.hash(x, y, isLeft, index);
+        }
+    }
+
+    // Given three collinear points p, q, r
+    // the function checks if point
+    // q lies on line segment 'pr'
+    public static boolean onSegment(ArrayList<Integer> p, ArrayList<Integer> q, ArrayList<Integer> r) {
+        if (q.get(0) <= Math.max(p.get(0), r.get(0)) && q.get(0) >= Math.min(p.get(0), r.get(0)) &&
+            q.get(1) <= Math.max(p.get(1), r.get(1)) && q.get(1) >= Math.min(p.get(1), r.get(1)))
+            return true;
+        return false;
+    }
+
+    // To find orientation of ordered triplet (p, q, r).
+    // Returns 0 if collinear, 1 if clockwise, 2 if counterclockwise.
+    public static int orientation(ArrayList<Integer> p, ArrayList<Integer> q, ArrayList<Integer> r) {
+        int val = (q.get(1) - p.get(1)) * (r.get(0) - q.get(0)) -
+                  (q.get(0) - p.get(0)) * (r.get(1) - q.get(1));
+
+         // collinear
+        if (val == 0)
+            return 0;
+
+         // clock- or counterclockwise
+        return (val > 0) ? 1 : 2;
+    }
+
+    // to fin dif two segments intersect
+    public static boolean doIntersect(ArrayList<ArrayList<Integer>> s1, ArrayList<ArrayList<Integer>> s2) {
+        ArrayList<Integer> p1 = s1.get(0), q1 = s1.get(1), p2 = s2.get(0), q2 = s2.get(1);
+
+        int o1 = orientation(p1, q1, p2);
+        int o2 = orientation(p1, q1, q2);
+        int o3 = orientation(p2, q2, p1);
+        int o4 = orientation(p2, q2, q1);
+
+        // General case
+        if (o1 != o2 && o3 != o4)
+            return true;
+
+        // Special cases
+        if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+        if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+        if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+        if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+        return false;
+    }
+
+    // Returns the predecessor iterator in set s.
+    public static Event pred(TreeSet<Event> s, Event e) {
+        return s.lower(e);
+    }
+
+    // Returns the successor iterator in set s.
+    public static Event succ(TreeSet<Event> s, Event e) {
+        return s.higher(e);
+    }
+
+    // Returns the number of intersections found between segments.
+    public static int isIntersect(ArrayList<ArrayList<ArrayList<Integer>>> lines) {
+
+        // To avoid duplicate intersection reports.
+        HashMap<String, Integer> mp = new HashMap<>();
+
+        ArrayList<Event> events = new ArrayList<>();
+        int n = lines.size();
+        for (int i = 0; i < n; ++i) {
+
+            // Create events for the left and right endpoints.
+            events.add(new Event(lines.get(i).get(0).get(0), lines.get(i).get(0).get(1), true, i));
+            events.add(new Event(lines.get(i).get(1).get(0), lines.get(i).get(1).get(1), false, i));
+        }
+
+        // Sort events according to x-coordinate.
+        Collections.sort(events, new Comparator<Event>() {
+            public int compare(Event e1, Event e2) {
+                return e1.x - e2.x;
+            }
+        });
+
+        // Set for storing active segments.
+        TreeSet<Event> active = new TreeSet<>();
+        int ans = 0;
+
+        // Process all events.
+        for (int i = 0; i < 2 * n; i++) {
+            Event curr = events.get(i);
+            int index = curr.index;
+
+            if (curr.isLeft) {
+
+                // For the left endpoint, get neighbors in the active set.
+                Event next = active.ceiling(curr);
+                Event prev = pred(active, curr);
+
+                // Check for intersection with the next segment.
+                if (next != null && doIntersect(lines.get(next.index), lines.get(index))) {
+                    String key = Integer.toString(next.index + 1) + " " + Integer.toString(index + 1);
+                    if (!mp.containsKey(key)) {
+                        mp.put(key, 1);
+                        ans++;
+                    }
+                }
+
+                // Check for intersection with the previous segment.
+                if (prev != null && doIntersect(lines.get(prev.index), lines.get(index))) {
+                    String key = Integer.toString(prev.index + 1) + " " + Integer.toString(index + 1);
+                    if (!mp.containsKey(key)) {
+                        mp.put(key, 1);
+                        ans++;
+                    }
+                }
+
+                // To avoid counting duplicates if the same segment is both neighbor.
+                if (prev != null && next != null && next.index == prev.index)
+                    ans--;
+
+                active.add(curr);
+            }
+            else {
+
+                // For the right endpoint, find the matching left endpoint in the active set.
+                Event temp = new Event(lines.get(index).get(0).get(0), lines.get(index).get(0).get(1), true, index);
+                Event it = null;
+                for (Event e : active) {
+                    if (e.equals(temp)) {
+                        it = e;
+                        break;
+                    }
+                }
+                Event next = succ(active, it);
+                Event prev = pred(active, it);
+
+                // If both neighbors exist, check if they intersect.
+                if (next != null && prev != null) {
+                    String key1 = Integer.toString(next.index + 1) + " " + Integer.toString(prev.index + 1);
+                    String key2 = Integer.toString(prev.index + 1) + " " + Integer.toString(next.index + 1);
+                    if (!mp.containsKey(key1) && !mp.containsKey(key2) && doIntersect(lines.get(prev.index), lines.get(next.index)))
+                        ans++;
+                    mp.put(key1, 1);
+                }
+
+                // Remove the segment from the active set.
+                active.remove(it);
+            }
+        }
+
+        // Report all intersecting pairs.
+        for (Map.Entry<String, Integer> pr : mp.entrySet()) {
+            System.out.println("Line: " + pr.getKey());
+        }
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        ArrayList<ArrayList<ArrayList<Integer>>> lines = new ArrayList<>();
+        lines.add(new ArrayList<ArrayList<Integer>>(Arrays.asList(new ArrayList<Integer>(Arrays.asList(1, 5)), new ArrayList<Integer>(Arrays.asList(4, 5)))));
+        lines.add(new ArrayList<ArrayList<Integer>>(Arrays.asList(new ArrayList<Integer>(Arrays.asList(2, 5)), new ArrayList<Integer>(Arrays.asList(10, 1)))));
+        lines.add(new ArrayList<ArrayList<Integer>>(Arrays.asList(new ArrayList<Integer>(Arrays.asList(3, 2)), new ArrayList<Integer>(Arrays.asList(10, 3)))));
+        lines.add(new ArrayList<ArrayList<Integer>>(Arrays.asList(new ArrayList<Integer>(Arrays.asList(6, 4)), new ArrayList<Integer>(Arrays.asList(9, 4)))));
+        lines.add(new ArrayList<ArrayList<Integer>>(Arrays.asList(new ArrayList<Integer>(Arrays.asList(7, 1)), new ArrayList<Integer>(Arrays.asList(8, 1)))));
+        System.out.println(isIntersect(lines));
+    }
+}
+
+Python
+
+import bisect
+
+# An event for the sweep line algorithm
+class Event:
+    def __init__(self, x, y, isLeft, index):
+        self.x = x
+        self.y = y
+        self.isLeft = isLeft
+        self.index = index
+
+    # Order events by y-coordinate, then by x-coordinate
+    def __lt__(self, e):
+        if self.y == e.y:
+            return self.x < e.x
+        return self.y < e.y
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y and self.isLeft == other.isLeft and self.index == other.index
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.isLeft, self.index))
+
+# Given three collinear points p, q, r
+# the function checks if point
+# q lies on line segment 'pr'
+def onSegment(p, q, r):
+    if q[0] <= max(p[0], r[0]) and q[0] >= min(p[0], r[0]) and \
+       q[1] <= max(p[1], r[1]) and q[1] >= min(p[1], r[1]):
+        return True
+    return False
+
+# To find orientation of ordered triplet (p, q, r).
+# Returns 0 if collinear, 1 if clockwise, 2 if counterclockwise.
+def orientation(p, q, r):
+    val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
+
+    # collinear
+    if val == 0:
+        return 0
+
+    # clock- or counterclockwise
+    return 1 if val > 0 else 2
+
+# to fin dif two segments intersect
+def doIntersect(s1, s2):
+    p1, q1 = s1[0], s1[1]
+    p2, q2 = s2[0], s2[1]
+
+    o1 = orientation(p1, q1, p2)
+    o2 = orientation(p1, q1, q2)
+    o3 = orientation(p2, q2, p1)
+    o4 = orientation(p2, q2, q1)
+
+    # General case
+    if o1 != o2 and o3 != o4:
+        return True
+
+    # Special cases
+    if o1 == 0 and onSegment(p1, p2, q1):
+        return True
+    if o2 == 0 and onSegment(p1, q2, q1):
+        return True
+    if o3 == 0 and onSegment(p2, p1, q2):
+        return True
+    if o4 == 0 and onSegment(p2, q1, q2):
+        return True
+
+    return False
+
+# Returns the predecessor element in list s given index pos.
+def pred(s, pos):
+    return s[pos - 1] if pos > 0 else None
+
+# Returns the successor element in list s given index pos.
+def succ(s, pos):
+    return s[pos + 1] if pos + 1 < len(s) else None
+
+# Returns the number of intersections found between segments.
+def isIntersect(lines):
+
+    # To avoid duplicate intersection reports.
+    mp = {}
+
+    events = []
+    n = len(lines)
+    for i in range(n):
+
+        # Create events for the left and right endpoints.
+        events.append(Event(lines[i][0][0], lines[i][0][1], True, i))
+        events.append(Event(lines[i][1][0], lines[i][1][1], False, i))
+
+    # Sort events according to x-coordinate.
+    events.sort(key=lambda e: e.x)
+
+    # List for storing active segments.
+    active = []
+    ans = 0
+
+    # Process all events.
+    for i in range(2 * n):
+        curr = events[i]
+        index = curr.index
+
+        if curr.isLeft:
+
+            # For the left endpoint, get neighbors in the active set.
+            pos = bisect.bisect_left(active, curr)
+            nextElem = active[pos] if pos < len(active) else None
+            prevElem = pred(active, pos)
+
+            # Check for intersection with the next segment.
+            if nextElem is not None and doIntersect(lines[nextElem.index], lines[index]):
+                key = str(nextElem.index + 1) + " " + str(index + 1)
+                if key not in mp:
+                    mp[key] = 1
+                    ans += 1
+
+            # Check for intersection with the previous segment.
+            if prevElem is not None and doIntersect(lines[prevElem.index], lines[index]):
+                key = str(prevElem.index + 1) + " " + str(index + 1)
+                if key not in mp:
+                    mp[key] = 1
+                    ans += 1
+
+            # To avoid counting duplicates if the same segment is both neighbor.
+            if prevElem is not None and nextElem is not None and nextElem.index == prevElem.index:
+                ans -= 1
+
+            bisect.insort(active, curr)
+        else:
+
+            # For the right endpoint, find the matching left endpoint in the active set.
+            temp = Event(lines[index][0][0], lines[index][0][1], True, index)
+            pos = 0
+            for j in range(len(active)):
+                if active[j] == temp:
+                    pos = j
+                    break
+            nextElem = succ(active, pos)
+            prevElem = pred(active, pos)
+
+            # If both neighbors exist, check if they intersect.
+            if nextElem is not None and prevElem is not None:
+                key1 = str(nextElem.index + 1) + " " + str(prevElem.index + 1)
+                key2 = str(prevElem.index + 1) + " " + str(nextElem.index + 1)
+                if key1 not in mp and key2 not in mp and doIntersect(lines[prevElem.index], lines[nextElem.index]):
+                    ans += 1
+                mp[key1] = 1
+
+            active.pop(pos)
+    for pr in mp:
+        print("Line: " + pr)
+    return ans
+
+if __name__ == "__main__":
+    lines = [
+        [[1, 5], [4, 5]],
+        [[2, 5], [10, 1]],
+        [[3, 2], [10, 3]],
+        [[6, 4], [9, 4]],
+        [[7, 1], [8, 1]]
+    ]
+    print(isIntersect(lines))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public class GfG {
+
+    // An event for the sweep line algorithm
+    public class Event : IComparable<Event> {
+        public int x, y;
+        public bool isLeft;
+        public int index;
+        public Event(int x, int y, bool l, int i) {
+            this.x = x;
+            this.y = y;
+            this.isLeft = l;
+            this.index = i;
+        }
+
+        // Order events by y-coordinate, then by x-coordinate
+        public int CompareTo(Event e) {
+            if(this.y == e.y)
+                return this.x - e.x;
+            return this.y - e.y;
+        }
+
+        public override bool Equals(object obj) {
+            if(obj == null || GetType() != obj.GetType())
+                return false;
+            Event e = (Event)obj;
+            return this.x == e.x && this.y == e.y && this.isLeft == e.isLeft && this.index == e.index;
+        }
+
+        public override int GetHashCode() {
+            return Tuple.Create(x, y, isLeft, index).GetHashCode();
+        }
+    }
+
+    // Given three collinear points p, q, r
+    // the function checks if point
+    // q lies on line segment 'pr'
+    public static bool onSegment(List<int> p, List<int> q, List<int> r) {
+        if (q[0] <= Math.Max(p[0], r[0]) && q[0] >= Math.Min(p[0], r[0]) &&
+            q[1] <= Math.Max(p[1], r[1]) && q[1] >= Math.Min(p[1], r[1]))
+            return true;
+        return false;
+    }
+
+    // To find orientation of ordered triplet (p, q, r).
+    // Returns 0 if collinear, 1 if clockwise, 2 if counterclockwise.
+    public static int orientation(List<int> p, List<int> q, List<int> r) {
+        int val = (q[1] - p[1]) * (r[0] - q[0]) -
+                  (q[0] - p[0]) * (r[1] - q[1]);
+
+         // collinear
+        if (val == 0)
+            return 0;
+
+         // clock- or counterclockwise
+        return (val > 0) ? 1 : 2;
+    }
+
+    // to fin dif two segments intersect
+    public static bool doIntersect(List<List<int>> s1, List<List<int>> s2) {
+        List<int> p1 = s1[0], q1 = s1[1], p2 = s2[0], q2 = s2[1];
+
+        int o1 = orientation(p1, q1, p2);
+        int o2 = orientation(p1, q1, q2);
+        int o3 = orientation(p2, q2, p1);
+        int o4 = orientation(p2, q2, q1);
+
+        // General case
+        if (o1 != o2 && o3 != o4)
+            return true;
+
+        // Special cases
+        if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+        if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+        if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+        if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+        return false;
+    }
+
+    // Returns the predecessor iterator in set s.
+    public static Event pred(SortedSet<Event> s, Event e) {
+        Event result = null;
+        foreach (var item in s) {
+            if (item.CompareTo(e) < 0)
+                result = item;
+            else
+                break;
+        }
+        return result;
+    }
+
+    // Returns the successor iterator in set s.
+    public static Event succ(SortedSet<Event> s, Event e) {
+        bool found = false;
+        foreach (var item in s) {
+            if (found)
+                return item;
+            if (item.Equals(e))
+                found = true;
+        }
+        return null;
+    }
+
+    // Returns the number of intersections found between segments.
+    public static int isIntersect(List<List<List<int>>> lines) {
+
+        // To avoid duplicate intersection reports.
+        Dictionary<string, int> mp = new Dictionary<string, int>();
+
+        List<Event> events = new List<Event>();
+        int n = lines.Count;
+        for (int i = 0; i < n; ++i) {
+
+            // Create events for the left and right endpoints.
+            events.Add(new Event(lines[i][0][0], lines[i][0][1], true, i));
+            events.Add(new Event(lines[i][1][0], lines[i][1][1], false, i));
+        }
+
+        // Sort events according to x-coordinate.
+        events.Sort((e1, e2) => e1.x - e2.x);
+
+        // Set for storing active segments.
+        SortedSet<Event> active = new SortedSet<Event>();
+        int ans = 0;
+
+        // Process all events.
+        for (int i = 0; i < 2 * n; i++) {
+            Event curr = events[i];
+            int index = curr.index;
+
+            if (curr.isLeft) {
+
+                // For the left endpoint, get neighbors in the active set.
+                Event next = null;
+                foreach(var ev in active)
+                {
+                    if(ev.CompareTo(curr) >= 0) { next = ev; break; }
+                }
+                Event prev = pred(active, curr);
+
+                // Check for intersection with the next segment.
+                if (next != null && doIntersect(lines[next.index], lines[index])) {
+                    string key = (next.index + 1).ToString() + " " + (index + 1).ToString();
+                    if (!mp.ContainsKey(key)) {
+                        mp[key] = 1;
+                        ans++;
+                    }
+                }
+
+                // Check for intersection with the previous segment.
+                if (prev != null && doIntersect(lines[prev.index], lines[index])) {
+                    string key = (prev.index + 1).ToString() + " " + (index + 1).ToString();
+                    if (!mp.ContainsKey(key)) {
+                        mp[key] = 1;
+                        ans++;
+                    }
+                }
+
+                // To avoid counting duplicates if the same segment is both neighbor.
+                if (prev != null && next != null && next.index == prev.index)
+                    ans--;
+
+                active.Add(curr);
+            }
+            else {
+
+                // For the right endpoint, find the matching left endpoint in the active set.
+                Event temp = new Event(lines[index][0][0], lines[index][0][1], true, index);
+                Event it = null;
+                foreach (var ev in active) {
+                    if (ev.Equals(temp)) {
+                        it = ev;
+                        break;
+                    }
+                }
+                Event next = succ(active, it);
+                Event prev = pred(active, it);
+
+                // If both neighbors exist, check if they intersect.
+                if (next != null && prev != null) {
+                    string key1 = (next.index + 1).ToString() + " " + (prev.index + 1).ToString();
+                    string key2 = (prev.index + 1).ToString() + " " + (next.index + 1).ToString();
+                    if (!mp.ContainsKey(key1) && !mp.ContainsKey(key2) && doIntersect(lines[prev.index], lines[next.index]))
+                        ans++;
+                    mp[key1] = 1;
+                }
+
+                // Remove the segment from the active set.
+                active.Remove(it);
+            }
+        }
+
+        // Report all intersecting pairs.
+        foreach (var pr in mp) {
+            Console.WriteLine("Line: " + pr.Key);
+        }
+        return ans;
+    }
+
+    public static void Main(string[] args) {
+        List<List<List<int>>> lines = new List<List<List<int>>>();
+        lines.Add(new List<List<int>>{ new List<int>{1, 5}, new List<int>{4, 5} });
+        lines.Add(new List<List<int>>{ new List<int>{2, 5}, new List<int>{10, 1} });
+        lines.Add(new List<List<int>>{ new List<int>{3, 2}, new List<int>{10, 3} });
+        lines.Add(new List<List<int>>{ new List<int>{6, 4}, new List<int>{9, 4} });
+        lines.Add(new List<List<int>>{ new List<int>{7, 1}, new List<int>{8, 1} });
+        Console.WriteLine(isIntersect(lines));
+    }
+}
+
+JavaScript
+
+class Event {
+    constructor(x, y, isLeft, index) {
+        this.x = x;
+        this.y = y;
+        this.isLeft = isLeft;
+        this.index = index;
+    }
+
+    // Order events by y-coordinate, then by x-coordinate
+    compareTo(e) {
+        if (this.y === e.y)
+            return this.x - e.x;
+        return this.y - e.y;
+    }
+}
+
+function onSegment(p, q, r) {
+
+    // Given three collinear points p, q, r
+    // the function checks if point
+    // q lies on line segment 'pr'
+    if (q[0] <= Math.max(p[0], r[0]) && q[0] >= Math.min(p[0], r[0]) &&
+        q[1] <= Math.max(p[1], r[1]) && q[1] >= Math.min(p[1], r[1]))
+        return true;
+    return false;
+}
+
+function orientation(p, q, r) {
+
+    // To find orientation of ordered triplet (p, q, r).
+    // Returns 0 if collinear, 1 if clockwise, 2 if counterclockwise.
+    let val = (q[1] - p[1]) * (r[0] - q[0]) -
+              (q[0] - p[0]) * (r[1] - q[1]);
+
+    // collinear
+    if (val === 0)
+        return 0;
+
+    // clock- or counterclockwise
+    return (val > 0) ? 1 : 2;
+}
+
+function doIntersect(s1, s2) {
+
+    // to fin dif two segments intersect
+    let p1 = s1[0], q1 = s1[1], p2 = s2[0], q2 = s2[1];
+
+    let o1 = orientation(p1, q1, p2);
+    let o2 = orientation(p1, q1, q2);
+    let o3 = orientation(p2, q2, p1);
+    let o4 = orientation(p2, q2, q1);
+
+    // General case
+    if (o1 !== o2 && o3 !== o4)
+        return true;
+
+    // Special cases
+    if (o1 === 0 && onSegment(p1, p2, q1)) return true;
+    if (o2 === 0 && onSegment(p1, q2, q1)) return true;
+    if (o3 === 0 && onSegment(p2, p1, q2)) return true;
+    if (o4 === 0 && onSegment(p2, q1, q2)) return true;
+
+    return false;
+}
+
+function pred(arr, pos) {
+
+    // Returns the predecessor iterator in set s.
+    return pos > 0 ? arr[pos - 1] : null;
+}
+
+function succ(arr, pos) {
+
+    // Returns the successor iterator in set s.
+    return (pos + 1 < arr.length) ? arr[pos + 1] : null;
+}
+
+function lowerBound(arr, elem) {
+
+    // Binary search to find the first element not less than elem.
+    let low = 0, high = arr.length;
+    while (low < high) {
+        let mid = Math.floor((low + high) / 2);
+        if (arr[mid].compareTo(elem) < 0)
+            low = mid + 1;
+        else
+            high = mid;
+    }
+    return low;
+}
+
+function findIndex(arr, elem) {
+
+    // Finds index of elem in arr.
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i].x === elem.x && arr[i].y === elem.y && arr[i].isLeft === elem.isLeft && arr[i].index === elem.index)
+            return i;
+    }
+    return -1;
+}
+
+function isIntersect(lines) {
+
+    // Returns the number of intersections found between segments.
+    // To avoid duplicate intersection reports.
+    let mp = {};
+
+    let events = [];
+    let n = lines.length;
+    for (let i = 0; i < n; ++i) {
+
+        // Create events for the left and right endpoints.
+        events.push(new Event(lines[i][0][0], lines[i][0][1], true, i));
+        events.push(new Event(lines[i][1][0], lines[i][1][1], false, i));
+    }
+
+    // Sort events according to x-coordinate.
+    events.sort((e1, e2) => e1.x - e2.x);
+
+    // Set for storing active segments.
+    let active = [];
+    let ans = 0;
+
+    // Process all events.
+    for (let i = 0; i < 2 * n; i++) {
+        let curr = events[i];
+        let index = curr.index;
+
+        if (curr.isLeft) {
+
+            // For the left endpoint, get neighbors in the active set.
+            let pos = lowerBound(active, curr);
+            let next = pos < active.length ? active[pos] : null;
+            let prev = pred(active, pos);
+
+            // Check for intersection with the next segment.
+            if (next !== null && doIntersect(lines[next.index], lines[index])) {
+                let key = (next.index + 1).toString() + " " + (index + 1).toString();
+                if (!(key in mp)) {
+                    mp[key] = 1;
+                    ans++;
+                }
+            }
+
+            // Check for intersection with the previous segment.
+            if (prev !== null && doIntersect(lines[prev.index], lines[index])) {
+                let key = (prev.index + 1).toString() + " " + (index + 1).toString();
+                if (!(key in mp)) {
+                    mp[key] = 1;
+                    ans++;
+                }
+            }
+
+            // To avoid counting duplicates if the same segment is both neighbor.
+            if (prev !== null && next !== null && next.index === prev.index)
+                ans--;
+
+            active.splice(lowerBound(active, curr), 0, curr);
+        }
+        else {
+
+            // For the right endpoint, find the matching left endpoint in the active set.
+            let temp = new Event(lines[index][0][0], lines[index][0][1], true, index);
+            let pos = findIndex(active, temp);
+            let next = succ(active, pos);
+            let prev = pred(active, pos);
+
+            // If both neighbors exist, check if they intersect.
+            if (next !== null && prev !== null) {
+                let key1 = (next.index + 1).toString() + " " + (prev.index + 1).toString();
+                let key2 = (prev.index + 1).toString() + " " + (next.index + 1).toString();
+                if (!(key1 in mp) && !(key2 in mp) && doIntersect(lines[prev.index], lines[next.index]))
+                    ans++;
+                mp[key1] = 1;
+            }
+
+            active.splice(pos, 1);
+        }
+    }
+    for (let key in mp) {
+        console.log("Line: " + key);
+    }
+    return ans;
+}
+
+let lines = [
+    [ [1, 5], [4, 5] ],
+    [ [2, 5], [10, 1] ],
+    [ [3, 2], [10, 3] ],
+    [ [6, 4], [9, 4] ],
+    [ [7, 1], [8, 1] ]
+];
+console.log(isIntersect(lines));
+
+Output
+
+Line: 2 3
+Line: 1 2
+2
+
+Note: The above code does not handle cases when segments share end points (Same starting points or same ending points or same starting and ending points) because we handle all points in the same way without considering the line segment number. We have done that way to keep the code simple. The Event class currently compares events based only on y and x , and does not distinguish between segments with the same start point. To handle the common end points, we need to d ifferentiate events more clearly in the comparator to avoid ambiguity between events with the same coordinates.
+
+Time Complexity: O(n * log n), initially, sorting the points requires O(n log n) time. Next, each point is processed in O(log n) time, so processing all 2n points takes O(2n log n) time. This simplifies to an overall time complexity of O(n log n). Space Complexity: O(n)

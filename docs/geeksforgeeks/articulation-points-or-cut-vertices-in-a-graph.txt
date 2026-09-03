@@ -1,0 +1,1486 @@
+Source: https://www.geeksforgeeks.org/dsa/articulation-points-or-cut-vertices-in-a-graph/
+Title: Articulation Points (or Cut Vertices) in a Graph
+Extractor: 2
+
+Given an undirected graph consisting of V vertices and E edges. The graph is represented as a 2D array edges[][] , where each element edges[i] = [u, v] denotes an undirected edge between vertices u and v. Find all the articulation points in the graph. If no such points exist, return {-1}.
+
+An articulation point is a vertex whose removal, along with all its connected edges, increases the number of connected components in the graph.
+
+Note: The graph may be disconnected, meaning it can consist of multiple connected components.
+
+Examples:
+
+> Input: V = 5, edges[][] = [[0, 1], [1, 4], [4, 3], [4, 2], [2, 3]] Output: [1, 4] Explanation: Removing vertex 1 or 4 disconnects the graph, as illustrated below: Input: V = 4, edges[][] = [[0, 1], [0, 2]] Output: [0] Explanation: Removing the vertex 0 will increase the number of disconnected components to 3.
+
+Table of Content
+
+- [Naive Approach] - Using DFS  - O(V × (V + E)) Time and O(V) Space
+- [Better Approach] - Using Tarjan's Algorithm  - O(V + E) Time and O(V) Space
+- [Expected Approach] - Using Tarjan’s Algorithm (Iterative Method) - O(V + E) Time and O(V) Space
+
+### [Naive Approach] - Using DFS  - O(V × (V + E)) Time and O(V) Space
+
+> The idea is to traverse all the vertices and check whether it could be an articulation point or not. For that, remove the chosen vertex and call DFS ( Depth First Search ) on its neighbors. If DFS needs to be called more than once (i.e., multiple disconnected components are formed), then removing that vertex increases the number of components, so it is an articulation point.
+
+C++
+
+#include <iostream>
+#include<vector>
+
+using namespace std;
+
+// Builds adjacency list from edge list
+vector<vector<int>> constructadj(int V, vector<vector<int>> &edges) {
+
+    vector<vector<int>> adj(V);
+
+    for (auto it : edges) {
+        adj[it[0]].push_back(it[1]);
+        adj[it[1]].push_back(it[0]);
+    }
+    return adj;
+}
+
+// Standard DFS to mark all reachable nodes
+void dfs(int node, vector<vector<int>> &adj, vector<bool> &visited) {
+    visited[node] = true;
+
+    for (int neighbor : adj[node]) {
+
+        if (!visited[neighbor]) {
+            dfs(neighbor, adj, visited);
+        }
+    }
+}
+
+// Finds articulation points using naive DFS approach
+vector<int> articulationPoints(int V, vector<vector<int>>& adj ) {
+
+    vector<int> res;
+
+    // Try removing each node one by one
+    for (int i = 0; i < V; ++i) {
+        vector<bool> visited(V, false);
+        visited[i] = true;
+
+        // count DFS calls from i's neighbors
+        int comp = 0;
+        for (auto it : adj[i]) {
+
+            // early stop if already more than 1 component
+            if (comp > 1) break;
+
+            if (!visited[it]) {
+
+                // explore connected part
+                dfs(it, adj, visited);
+                comp++;
+            }
+        }
+
+        // if more than one component forms, it's an articulation point
+        if (comp > 1)
+            res.push_back(i);
+    }
+
+    if (res.empty())
+        return {-1};
+
+    return res;
+}
+
+int main() {
+    int V = 5;
+    vector<vector<int>> edges = {{0, 1}, {1, 4}, {2, 3}, {2, 4}, {3, 4}};
+    vector<vector<int>> adj = constructadj(V, edges);
+    vector<int> ans = articulationPoints(V, adj);
+
+    for (auto it : ans) {
+        cout << it << " ";
+    }
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+class GFG {
+
+    // Builds adjacency list from edge list
+    static ArrayList<ArrayList<Integer>> constructadj(int V, int[][] edges) {
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) {
+            adj.add(new ArrayList<>());
+        }
+
+        for (int[] edge : edges) {
+            adj.get(edge[0]).add(edge[1]);
+            adj.get(edge[1]).add(edge[0]);
+        }
+        return adj;
+    }
+
+    // Standard DFS to mark all reachable nodes
+    static void dfs(int node,
+    ArrayList<ArrayList<Integer>> adj, boolean[] visited) {
+
+        visited[node] = true;
+
+        for (int neighbor : adj.get(node)) {
+            if (!visited[neighbor]) {
+                dfs(neighbor, adj, visited);
+            }
+        }
+    }
+
+    // Finds articulation points using naive DFS approach
+    static ArrayList<Integer> articulationPoints(int V, ArrayList<ArrayList<Integer>> adj) {
+
+        ArrayList<Integer> res = new ArrayList<>();
+
+        // Try removing each node one by one
+        for (int i = 0; i < V; ++i) {
+            boolean[] visited = new boolean[V];
+            visited[i] = true;
+
+            // count DFS calls from i's neighbors
+            int comp = 0;
+            for (int it : adj.get(i)) {
+
+                // early stop if already more than 1 component
+                if (comp > 1) break;
+
+                if (!visited[it]) {
+
+                    // explore connected part
+                    dfs(it, adj, visited);
+                    comp++;
+                }
+            }
+
+            // if more than one component forms, it's an articulation point
+            if (comp > 1)
+                res.add(i);
+        }
+
+        if (res.isEmpty())
+            return new ArrayList<>(Arrays.asList(-1));
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int V = 5;
+        int[][] edges = {{0, 1}, {1, 4}, {2, 3}, {2, 4}, {3, 4}};
+
+        ArrayList<ArrayList<Integer>> adj = constructadj(V, edges);
+        ArrayList<Integer> ans = articulationPoints(V, adj);
+        for (int it : ans) {
+            System.out.print(it + " ");
+        }
+    }
+}
+
+Python
+
+def constructadj(V, edges):
+
+    # Builds adjacency list from edge list
+    adj = [[] for _ in range(V)]
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    return adj
+
+# Standard DFS to mark all reachable nodes
+def dfs(node, adj, visited):
+
+    # Standard DFS to mark all reachable nodes
+    visited[node] = True
+
+    for neighbor in adj[node]:
+        if not visited[neighbor]:
+            dfs(neighbor, adj, visited)
+
+def articulationPoints(V, adj):
+    res = []
+
+    # Try removing each node one by one
+    for i in range(V):
+        visited = [False] * V
+        visited[i] = True
+
+        # count DFS calls from i's neighbors
+        comp = 0
+        for it in adj[i]:
+            if comp > 1:
+                break
+            if not visited[it]:
+
+                # explore connected part
+                dfs(it, adj, visited)
+                comp += 1
+
+        # if more than one component forms, it's an articulation point
+        if comp > 1:
+            res.append(i)
+
+    if not res:
+        return [-1]
+
+    return res
+
+if __name__ == "__main__":
+    V = 5
+    edges = [[0, 1], [1, 4], [2, 3], [2, 4], [3, 4]]
+
+    # Finds articulation points using naive DFS approach
+    adj = constructadj(V, edges)
+    ans = articulationPoints(V, adj)
+    for it in ans:
+        print(it, end=" ")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+ class GFG {
+
+    // Builds adjacency list from edge list
+    static List<List<int>> constructAdj(int V, int[,] edges) {
+
+        List<List<int>> adj = new List<List<int>>();
+        for (int i = 0; i < V; i++) {
+            adj.Add(new List<int>());
+        }
+
+        int E = edges.GetLength(0);
+        for (int i = 0; i < E; i++) {
+            int u = edges[i, 0];
+            int v = edges[i, 1];
+            adj[u].Add(v);
+            adj[v].Add(u);
+        }
+
+        return adj;
+    }
+
+    // Standard DFS to mark all reachable nodes
+    static void DFS(int node, List<List<int>> adj, bool[] visited) {
+        visited[node] = true;
+
+        foreach (int neighbor in adj[node]) {
+            if (!visited[neighbor]) {
+                DFS(neighbor, adj, visited);
+            }
+        }
+    }
+
+    // Finds articulation points using naive DFS approach
+    static List<int> articulationPoints(int V, List<List<int>>adj) {
+
+        List<int> res = new List<int>();
+
+        // Try removing each node one by one
+        for (int i = 0; i < V; ++i) {
+            bool[] visited = new bool[V];
+            visited[i] = true;
+
+            // count DFS calls from i's neighbors
+            int comp = 0;
+            foreach (int it in adj[i]) {
+
+                // early stop if already more than 1 component
+                if (comp > 1) break;
+
+                if (!visited[it]) {
+                    // explore connected part
+                    DFS(it, adj, visited);
+                    comp++;
+                }
+            }
+
+            // if more than one component forms, it's an articulation point
+            if (comp > 1)
+                res.Add(i);
+        }
+
+        if (res.Count == 0)
+            return new List<int> { -1 };
+
+        return res;
+    }
+
+    public static void Main(string[] args) {
+        int V = 5;
+        int[,] edges = new int[,] { { 0, 1 }, { 1, 4 }, { 2, 3 }, { 2, 4 }, { 3, 4 } };
+
+        List<List<int>> adj = constructAdj(V, edges);
+        List<int> ans = articulationPoints(V, adj);
+        foreach (int it in ans) {
+            Console.Write(it + " ");
+        }
+    }
+}
+
+JavaScript
+
+// Builds adjacency list from edge list
+function constructadj(V, edges) {
+    let adj = Array.from({ length: V }, () => []);
+
+    for (let [u, v] of edges) {
+        adj[u].push(v);
+        adj[v].push(u);
+    }
+
+    return adj;
+}
+
+// Standard DFS to mark all reachable nodes
+function dfs(node, adj, visited) {
+    visited[node] = true;
+
+    for (let neighbor of adj[node]) {
+        if (!visited[neighbor]) {
+            dfs(neighbor, adj, visited);
+        }
+    }
+}
+
+// Finds articulation points using naive DFS approach
+function articulationPoints(V, adj) {
+
+    const res = [];
+
+    // Try removing each node one by one
+    for (let i = 0; i < V; ++i) {
+        let visited = Array(V).fill(false);
+        visited[i] = true;
+
+        // count DFS calls from i's neighbors
+        let comp = 0;
+        for (let it of adj[i]) {
+
+            // early stop if already more than 1 component
+            if (comp > 1) break;
+
+            if (!visited[it]) {
+
+                // explore connected part
+                dfs(it, adj, visited);
+                comp++;
+            }
+        }
+
+        // if more than one component forms, it's an articulation point
+        if (comp > 1)
+            res.push(i);
+    }
+
+    if (res.length === 0)
+        return [-1];
+
+    return res;
+}
+
+// Driver Code
+const V = 5;
+const edges = [[0, 1], [1, 4], [2, 3], [2, 4], [3, 4]];
+
+const adj = constructadj(V, edges);
+const ans = articulationPoints(V, adj);
+console.log(ans.join(" "));
+
+Output
+
+1 4
+
+### [Better Approach] - Using Tarjan's Algorithm  - O(V + E) Time and O(V) Space
+
+> The idea is to use DFS to track how each node connects to its ancestors using discovery time and low values. Here, discovery time records when a node is first visited, and the low value represents the earliest (smallest) discovery time reachable from that node, including via back edges. For every node, we try to determine whether its subtree has an alternative path to reach an ancestor. If such a path does not exist for a child subtree, then the current node becomes a critical connection point, and removing it would disconnect that subtree from the rest of the graph. By propagating these low values during DFS, we can efficiently identify all nodes whose removal increases the number of connected components, i.e., the articulation points.
+
+Let's understand with an example:
+
+> For the vertex 3 (which is not the root), vertex 4 is the child of vertex 3. No vertex in the subtree rooted at vertex 4 has a back edge to one of ancestors of vertex 3. Thus on removal of vertex 3 and its associated edges the graph will get disconnected or the number of components in the graph will increase as the subtree rooted at vertex  4 will form a separate component. Hence vertex 3 is an articulation point.
+
+Now consider the following graph:
+
+> Again the vertex 4 is the child of vertex 3. For the subtree rooted at vertex 4, vertex 7 in this subtree has a back edge to one of the ancestors of vertex 3 (which is vertex 1). Thus this subtree will not get disconnected on the removal of vertex 3 because of this back edge. Since there is no child v of vertex 3, such that subtree rooted at vertex v does not have a back edge to one of the ancestors of vertex 3. Hence vertex 3 is not an articulation point in this case.
+
+Step by Step implementation:
+
+Maintain these arrays and integers and perform a DFS traversal.
+
+- disc[]: Discovery time of each vertex during DFS.
+- low[]: The lowest discovery time reachable from the subtree rooted at that vertex (via tree or back edges).
+- parent: To keep track of each node’s parent in the DFS tree.
+- visited[]: To mark visited nodes.
+
+Root Node Case:
+
+- For the root node of DFS (i.e., parent[u] == -1), check how many child DFS calls it makes.
+- If the root has two or more children, it is an articulation point
+
+For any non-root node u, check all its adjacent nodes:
+
+- If v is an unvisited child, recur for v, and after returning update low[u] = min(low[u], low[v]) .
+- If low[v] >= disc[u], then u is an articulation point because v and its subtree cannot reach any ancestor of u, so removing u would disconnect v.
+
+Back Edge Case
+
+- If v is already visited and is not the parent of u then It’s a back edge. Update low[u] = min(low[u], disc[v])
+- This helps bubble up the lowest reachable ancestor through a back edge.
+
+After DFS traversal completes, all nodes marked as articulation points are stored in result array.
+
+C++
+
+#include <iostream>
+#include<vector>
+using namespace std;
+
+vector<vector<int>> constructAdj(int V, vector<vector<int>> &edges) {
+    vector<vector<int>> adj(V);
+
+    for (auto &edge : edges) {
+
+        adj[edge[0]].push_back(edge[1]);
+        adj[edge[1]].push_back(edge[0]);
+    }
+    return adj;
+}
+
+// Helper function to perform DFS and find articulation points
+// using Tarjan's algorithm.
+void findPoints(vector<vector<int>> &adj, int u, vector<int> &visited,
+                vector<int> &disc, vector<int> &low,
+                int &time, int parent, vector<int> &isAP) {
+
+    // Mark vertex u as visited and assign discovery
+    // time and low value
+    visited[u] = 1;
+    disc[u] = low[u] = ++time;
+    int children = 0;
+
+    // Process all adjacent vertices of u
+    for (int v : adj[u]) {
+
+        // If v is not visited, then recursively visit it
+        if (!visited[v]) {
+            children++;
+            findPoints(adj, v, visited, disc, low, time, u, isAP);
+
+            // Check if the subtree rooted at v has a
+            // connection to one of the ancestors of u
+            low[u] = min(low[u], low[v]);
+
+            // If u is not a root and low[v] is greater than or equal to disc[u],
+            // then u is an articulation point
+            if (parent != -1 && low[v] >= disc[u]) {
+                isAP[u] = 1;
+            }
+        }
+
+        // Update low value of u for back edge
+        else if (v != parent) {
+            low[u] = min(low[u], disc[v]);
+        }
+    }
+
+    // If u is root of DFS tree and has more than
+    // one child, it is an articulation point
+    if (parent == -1 && children > 1) {
+        isAP[u] = 1;
+    }
+}
+
+// Main function to find articulation points in the graph
+vector<int> articulationPoints(int V, vector<vector<int>>& adj) {
+
+    vector<int> disc(V, 0), low(V, 0), visited(V, 0), isAP(V, 0);
+    int time = 0;
+
+    // Run DFS from each vertex if not
+    // already visited (to handle disconnected graphs)
+    for (int u = 0; u < V; u++) {
+        if (!visited[u]) {
+            findPoints(adj, u, visited, disc, low, time, -1, isAP);
+        }
+    }
+
+    // Collect all vertices that are articulation points
+    vector<int> result;
+    for (int u = 0; u < V; u++) {
+        if (isAP[u]) {
+            result.push_back(u);
+        }
+    }
+
+    // If no articulation points are found, return vector containing -1
+    return result.empty() ? vector<int>{-1} : result;
+}
+
+int main() {
+    int V = 5;
+    vector<vector<int>> edges = {{0, 1}, {1, 4}, {2, 3}, {2, 4}, {3, 4}};
+
+    vector<vector<int>> adj = constructAdj(V, edges);
+    vector<int> ans = articulationPoints(V,adj);
+
+    for (int u : ans) {
+        cout << u << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+ class GFG {
+
+     static ArrayList<ArrayList<Integer>> constructAdj(int V, int[][] edges) {
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) adj.add(new ArrayList<>());
+
+        for (int[] edge : edges) {
+            adj.get(edge[0]).add(edge[1]);
+            adj.get(edge[1]).add(edge[0]);
+        }
+        return adj;
+    }
+
+    // Helper function to perform DFS and find articulation points
+    // using Tarjan's algorithm.
+     static void findPoints(ArrayList<ArrayList<Integer>> adj, int u, int[] visited,
+                                  int[] disc, int[] low,
+                                  int[] time, int parent, int[] isAP) {
+
+        // Mark vertex u as visited and assign discovery
+        // time and low value
+        visited[u] = 1;
+        disc[u] = low[u] = ++time[0];
+        int children = 0;
+
+        // Process all adjacent vertices of u
+        for (int v : adj.get(u)) {
+
+            // If v is not visited, then recursively visit it
+            if (visited[v] == 0) {
+                children++;
+                findPoints(adj, v, visited, disc, low, time, u, isAP);
+
+                // Check if the subtree rooted at v has a
+                // connection to one of the ancestors of u
+                low[u] = Math.min(low[u], low[v]);
+
+                // If u is not a root and low[v] is greater
+                // than or equal to disc[u],
+                // then u is an articulation point
+                if (parent != -1 && low[v] >= disc[u]) {
+                    isAP[u] = 1;
+                }
+            }
+
+            // Update low value of u for back edge
+            else if (v != parent) {
+                low[u] = Math.min(low[u], disc[v]);
+            }
+        }
+
+        // If u is root of DFS tree and has more than
+        // one child, it is an articulation point
+        if (parent == -1 && children > 1) {
+            isAP[u] = 1;
+        }
+    }
+
+    // Main function to find articulation points in the graph
+     static ArrayList<Integer> articulationPoints(int V, ArrayList<ArrayList<Integer>> adj) {
+
+        int[] disc = new int[V], low = new int[V],
+        visited = new int[V], isAP = new int[V];
+        int[] time = {0};
+
+        // Run DFS from each vertex if not
+        // already visited (to handle disconnected graphs)
+        for (int u = 0; u < V; u++) {
+            if (visited[u] == 0) {
+                findPoints(adj, u, visited, disc, low, time, -1, isAP);
+            }
+        }
+
+        // Collect all vertices that are articulation points
+        ArrayList<Integer> result = new ArrayList<>();
+        for (int u = 0; u < V; u++) {
+            if (isAP[u] == 1) {
+                result.add(u);
+            }
+        }
+
+        // If no articulation points are found, return list containing -1
+        if (result.isEmpty()) result.add(-1);
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int V = 5;
+        int[][] edges = {{0, 1}, {1, 4}, {2, 3}, {2, 4}, {3, 4}};
+
+        ArrayList<ArrayList<Integer>> adj = constructAdj(V, edges);
+        ArrayList<Integer> ans = articulationPoints(V, adj);
+
+        for (int u : ans) {
+            System.out.print(u + " ");
+        }
+        System.out.println();
+    }
+}
+
+Python
+
+def constructAdj(V, edges):
+    adj = [[] for _ in range(V)]
+
+    for edge in edges:
+        adj[edge[0]].append(edge[1])
+        adj[edge[1]].append(edge[0])
+    return adj
+
+# Helper function to perform DFS and find articulation points
+# using Tarjan's algorithm.
+def findPoints(adj, u, visited, disc, low, time, parent, isAP):
+
+    # Mark vertex u as visited and assign discovery
+    # time and low value
+    visited[u] = 1
+    time[0] += 1
+    disc[u] = low[u] = time[0]
+    children = 0
+
+    # Process all adjacent vertices of u
+    for v in adj[u]:
+
+        # If v is not visited, then recursively visit it
+        if not visited[v]:
+            children += 1
+            findPoints(adj, v, visited, disc, low, time, u, isAP)
+
+            # Check if the subtree rooted at v has a
+            # connection to one of the ancestors of u
+            low[u] = min(low[u], low[v])
+
+            # If u is not a root and low[v] is greater than or equal to disc[u],
+            # then u is an articulation point
+            if parent != -1 and low[v] >= disc[u]:
+                isAP[u] = 1
+
+        # Update low value of u for back edge
+        elif v != parent:
+            low[u] = min(low[u], disc[v])
+
+    # If u is root of DFS tree and has more than
+    # one child, it is an articulation point
+    if parent == -1 and children > 1:
+        isAP[u] = 1
+
+# Main function to find articulation points in the graph
+def articulationPoints(V, adj):
+
+    disc = [0] * V
+    low = [0] * V
+    visited = [0] * V
+    isAP = [0] * V
+    time = [0]
+
+    # Run DFS from each vertex if not
+    # already visited (to handle disconnected graphs)
+    for u in range(V):
+        if not visited[u]:
+            findPoints(adj, u, visited, disc, low, time, -1, isAP)
+
+    # Collect all vertices that are articulation points
+    result = [u for u in range(V) if isAP[u]]
+
+    # If no articulation points are found, return list containing -1
+    return result if result else [-1]
+
+if __name__ == "__main__":
+    V = 5
+    edges = [[0, 1], [1, 4], [2, 3], [2, 4], [3, 4]]
+
+    adj = constructAdj(V, edges)
+    ans = articulationPoints(V, adj)
+
+    for u in ans:
+        print(u, end=' ')
+    print()
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static List<List<int>> constructAdj(int V, int[,] edges) {
+        List<List<int>> adj = new List<List<int>>();
+        for (int i = 0; i < V; i++) {
+            adj.Add(new List<int>());
+        }
+
+        int M = edges.GetLength(0);
+        for (int i = 0; i < M; i++) {
+            int u = edges[i, 0];
+            int v = edges[i, 1];
+            adj[u].Add(v);
+            adj[v].Add(u);
+        }
+
+        return adj;
+    }
+
+    // Helper function to perform DFS and find articulation points
+    // using Tarjan's algorithm.
+    static void findPoints(List<List<int>> adj, int u, List<int> visited,
+                           List<int> disc, List<int> low,
+                           ref int time, int parent, List<int> isAP) {
+
+        // Mark vertex u as visited and assign discovery
+        // time and low value
+        visited[u] = 1;
+        disc[u] = low[u] = ++time;
+        int children = 0;
+
+        // Process all adjacent vertices of u
+        foreach (int v in adj[u])
+        {
+            // If v is not visited, then recursively visit it
+            if (visited[v] == 0)
+            {
+                children++;
+                findPoints(adj, v, visited, disc, low, ref time, u, isAP);
+
+                // Check if the subtree rooted at v has a
+                // connection to one of the ancestors of u
+                low[u] = Math.Min(low[u], low[v]);
+
+                // If u is not a root and low[v] is greater
+                // than or equal to disc[u],
+                // then u is an articulation point
+                if (parent != -1 && low[v] >= disc[u])
+                {
+                    isAP[u] = 1;
+                }
+            }
+
+            // Update low value of u for back edge
+            else if (v != parent)
+            {
+                low[u] = Math.Min(low[u], disc[v]);
+            }
+        }
+
+        // If u is root of DFS tree and has more than
+        // one child, it is an articulation point
+        if (parent == -1 && children > 1)
+        {
+            isAP[u] = 1;
+        }
+    }
+
+    // Main function to find articulation points in the graph
+    static List<int> articulationPoints(int V, List<List<int>> adj)
+    {
+
+        List<int> disc = new List<int>(new int[V]);
+        List<int> low = new List<int>(new int[V]);
+        List<int> visited = new List<int>(new int[V]);
+        List<int> isAP = new List<int>(new int[V]);
+        int time = 0;
+
+        // Run DFS from each vertex if not
+        // already visited (to handle disconnected graphs)
+        for (int u = 0; u < V; u++)
+        {
+            if (visited[u] == 0)
+            {
+                findPoints(adj, u, visited, disc, low, ref time, -1, isAP);
+            }
+        }
+
+        // Collect all vertices that are articulation points
+        List<int> result = new List<int>();
+        for (int u = 0; u < V; u++)
+        {
+            if (isAP[u] == 1)
+            {
+                result.Add(u);
+            }
+        }
+
+        // If no articulation points are found, return list containing -1
+        return result.Count == 0 ? new List<int> { -1 } : result;
+    }
+
+    static void Main()
+    {
+        int V = 5;
+        int[,] edges = {
+            {0, 1},
+            {1, 4},
+            {2, 3},
+            {2, 4},
+            {3, 4}
+        };
+
+        List<List<int>> adj = constructAdj(V, edges);
+        List<int> ans = articulationPoints(V, adj);
+
+        foreach (int u in ans)
+        {
+            Console.Write(u + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+// Build adjacency list from edge list
+function constructAdj(V, edges) {
+    const adj = Array.from({ length: V }, () => []);
+
+    for (let i = 0; i < edges.length; i++) {
+        const [u, v] = edges[i];
+        adj[u].push(v);
+        adj[v].push(u);
+    }
+
+    return adj;
+}
+
+// Helper function to perform DFS and find articulation points
+// using Tarjan's algorithm.
+function findPoints(adj, u, visited, disc, low, timeRef, parent, isAP) {
+
+    // Mark vertex u as visited and assign discovery
+    // time and low value
+    visited[u] = 1;
+    disc[u] = low[u] = ++timeRef.value;
+    let children = 0;
+
+    // Process all adjacent vertices of u
+    for (let v of adj[u]) {
+
+        // If v is not visited, then recursively visit it
+        if (!visited[v]) {
+            children++;
+            findPoints(adj, v, visited, disc, low, timeRef, u, isAP);
+
+            // Check if the subtree rooted at v has a
+            // connection to one of the ancestors of u
+            low[u] = Math.min(low[u], low[v]);
+
+            // If u is not a root and low[v] is greater
+            // than or equal to disc[u],
+            // then u is an articulation point
+            if (parent !== -1 && low[v] >= disc[u]) {
+                isAP[u] = 1;
+            }
+        }
+
+        // Update low value of u for back edge
+        else if (v !== parent) {
+            low[u] = Math.min(low[u], disc[v]);
+        }
+    }
+
+    // If u is root of DFS tree and has more than
+    // one child, it is an articulation point
+    if (parent === -1 && children > 1) {
+        isAP[u] = 1;
+    }
+}
+
+// Main function to find articulation points in the graph
+function articulationPoints(V, adj) {
+
+    const disc = Array(V).fill(0);
+    const low = Array(V).fill(0);
+    const visited = Array(V).fill(0);
+    const isAP = Array(V).fill(0);
+    const timeRef = { value: 0 };
+
+    // Run DFS from each vertex if not
+    // already visited (to handle disconnected graphs)
+    for (let u = 0; u < V; u++) {
+        if (!visited[u]) {
+            findPoints(adj, u, visited, disc, low, timeRef, -1, isAP);
+        }
+    }
+
+    // Collect all vertices that are articulation points
+    const result = [];
+    for (let u = 0; u < V; u++) {
+        if (isAP[u]) {
+            result.push(u);
+        }
+    }
+
+    // If no articulation points are found, return array containing -1
+    return result.length === 0 ? [-1] : result;
+}
+
+// Driver Code
+const V = 5;
+const edges = [
+    [0, 1],
+    [1, 4],
+    [2, 3],
+    [2, 4],
+    [3, 4]
+];
+
+const adj = constructAdj(V, edges);
+const ans = articulationPoints(V, adj);
+console.log(ans.join(' '));
+
+Output
+
+1 4
+
+### [Expected Approach] - Using Tarjan’s Algorithm (Iterative Method) - O(V + E) Time and O(V) Space
+
+> We can use Tarjan’s algorithm with an explicit stack to manage the traversal state instead of relying on the system’s call stack. The logic remains the same that we maintain disc, low, parent, and childrenCount but we manually control how nodes are processed. For each node, we store its current state, including which neighbor to visit next and whether the node is in the entering or exiting phase.
+
+With this approach, we preserve the core idea of Tarjan’s algorithm while making it more suitable for large or deep graphs.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+void tarjan(int start, vector<vector<int>>& adj, vector<bool>& visited,
+                  vector<int>& disc, vector<int>& low, vector<int>& parent,
+                  vector<int>& childrenCount, vector<bool>& ap) {
+
+    // Stack stores {node, neighborIndex, state}
+    int n = adj.size();
+    vector<array<int, 3>> stack(n * 2);
+    int top = 0, time = 0;
+
+    stack[top++] = {start, 0, 0};
+
+    while (top > 0) {
+        int u = stack[top - 1][0], idx = stack[top - 1][1], state = stack[top - 1][2];
+        top--;
+
+        if (state == 0) {
+
+            // First visit: mark discovery and low
+            if (!visited[u]) {
+                visited[u] = true;
+                disc[u] = low[u] = ++time;
+            }
+
+            // Process neighbors
+            if (idx < (int)adj[u].size()) {
+                int v = adj[u][idx];
+
+                // Push current node with next neighbor
+                stack[top++] = {u, idx + 1, 0};
+
+                // Visit child
+                if (!visited[v]) {
+                    parent[v] = u;
+                    childrenCount[u]++;
+                    stack[top++] = {v, 0, 0};
+                }
+                // Back edge
+                else if (v != parent[u]) {
+                    low[u] = min(low[u], disc[v]);
+                }
+            }
+            // Finished neighbors, push exit state
+            else {
+                stack[top++] = {u, 0, 1};
+            }
+        }
+        else {
+
+            // Update parent low and mark articulation
+            if (top > 0) {
+                int p = stack[top - 1][0];
+                low[p] = min(low[p], low[u]);
+                if (parent[p] != -1 && low[u] >= disc[p]) ap[p] = true;
+            }
+            // Root articulation check
+            else if (childrenCount[start] > 1) {
+                ap[start] = true;
+            }
+        }
+    }
+}
+
+// Main function to find articulation points
+vector<int> articulationPoints(int V, vector<vector<int>>& adj) {
+
+    // Initialize arrays
+    vector<int> disc(V, 0), low(V, 0), parent(V, -1), childrenCount(V, 0);
+    vector<bool> visited(V, false), ap(V, false);
+
+    // Run iterative DFS for each component
+    for (int i = 0; i < V; i++) {
+        if (!visited[i]) tarjan(i, adj, visited, disc, low, parent, childrenCount, ap);
+    }
+
+    // Collect articulation points
+    vector<int> result;
+    for (int i = 0; i < V; i++) if (ap[i]) result.push_back(i);
+    if (result.empty()) result.push_back(-1);
+    return result;
+}
+
+int main() {
+    int V = 5;
+    int edges[5][2] = {{0, 1}, {1, 4}, {2, 3}, {2, 4}, {3, 4}};
+
+    // Build adjacency list
+    vector<vector<int>> adj(V);
+    for (auto &e : edges) {
+        adj[e[0]].push_back(e[1]);
+        adj[e[1]].push_back(e[0]);
+    }
+
+    vector<int> ans = articulationPoints(V, adj);
+    for (int x : ans) cout << x << " ";
+    cout << "\n";
+}
+
+Java
+
+import java.util.ArrayList;
+
+class GFG {
+
+    static ArrayList<Integer> articulationPoints(int V, ArrayList<ArrayList<Integer>> adj) {
+
+        int[] disc = new int[V], low = new int[V], parent = new int[V], childrenCount = new int[V];
+        boolean[] visited = new boolean[V], ap = new boolean[V];
+        for (int i = 0; i < V; i++) parent[i] = -1;
+
+        // Run iterative DFS for each component
+        for (int i = 0; i < V; i++) {
+            if (!visited[i]) tarjan(i, adj, visited, disc, low, parent, childrenCount, ap);
+        }
+
+        // Collect articulation points
+        ArrayList<Integer> result = new ArrayList<>();
+        for (int i = 0; i < V; i++) if (ap[i]) result.add(i);
+        if (result.isEmpty()) result.add(-1);
+        return result;
+    }
+
+    private static void tarjan(int start, ArrayList<ArrayList<Integer>> adj, boolean[] visited,
+                                     int[] disc, int[] low, int[] parent, int[] childrenCount, boolean[] ap) {
+
+        // Stack stores {node, neighborIndex, state}
+        int[][] stack = new int[visited.length * 2][3];
+        int top = 0, time = 0;
+
+        stack[top++] = new int[]{start, 0, 0};
+
+        while (top > 0) {
+            int u = stack[top - 1][0], idx = stack[top - 1][1], state = stack[top - 1][2];
+            top--;
+
+            if (state == 0) {
+
+                // First visit: mark discovery and low
+                if (!visited[u]) {
+                    visited[u] = true;
+                    disc[u] = low[u] = ++time;
+                }
+
+                // Process neighbors
+                if (idx < adj.get(u).size()) {
+                    int v = adj.get(u).get(idx);
+
+                    // Push current node with next neighbor
+                    stack[top++] = new int[]{u, idx + 1, 0};
+
+                    // Visit child
+                    if (!visited[v]) {
+                        parent[v] = u;
+                        childrenCount[u]++;
+                        stack[top++] = new int[]{v, 0, 0};
+                    }
+
+                    // Back edge
+                    else if (v != parent[u]) {
+                        low[u] = Math.min(low[u], disc[v]);
+                    }
+                }
+
+                // Finished neighbors, push exit state
+                else {
+                    stack[top++] = new int[]{u, 0, 1};
+                }
+            }
+
+            // Exiting node
+            else {
+
+                // Update parent low and mark articulation
+                if (top > 0) {
+                    int p = stack[top - 1][0];
+                    low[p] = Math.min(low[p], low[u]);
+                    if (parent[p] != -1 && low[u] >= disc[p]) ap[p] = true;
+                }
+
+                // Root articulation check
+                else if (childrenCount[start] > 1) {
+                    ap[start] = true;
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        int V = 5;
+
+        // Build adjacency list
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+        for (int i = 0; i < V; i++) adj.add(new ArrayList<>());
+        int[][] edges = {{0, 1}, {1, 4}, {2, 3}, {2, 4}, {3, 4}};
+        for (int[] e : edges) {
+            adj.get(e[0]).add(e[1]);
+            adj.get(e[1]).add(e[0]);
+        }
+
+        ArrayList<Integer> ans = articulationPoints(V, adj);
+
+        for (int x : ans) {
+            System.out.print(x + " ");
+        }
+    }
+}
+
+Python
+
+def articulation_points(V, adj):
+
+    # discovery times
+    disc = [0] * V
+
+    # low values
+    low = [0] * V
+    parent = [-1] * V
+    children_count = [0] * V
+    visited = [False] * V
+    ap = [False] * V
+
+    # Run iterative DFS for each component
+    for i in range(V):
+        if not visited[i]:
+            tarjan(i, adj, visited, disc, low, parent, children_count, ap)
+
+    # Collect articulation points
+    result = [i for i in range(V) if ap[i]]
+    return result if result else [-1]
+
+def tarjan(start, adj, visited, disc, low, parent, children_count, ap):
+
+    # Stack stores {node, neighborIndex, state}
+    # state 0 = entering, 1 = exiting
+    stack = [[start, 0, 0]]
+    time = 0
+
+    while stack:
+        u, idx, state = stack.pop()
+
+        if state == 0:
+
+            # First visit: mark discovery and low
+            if not visited[u]:
+                visited[u] = True
+                time += 1
+                disc[u] = low[u] = time
+
+            # Process neighbors
+            if idx < len(adj[u]):
+                v = adj[u][idx]
+
+                # Push current node with next neighbor
+                stack.append([u, idx + 1, 0])
+
+                # Visit child
+                if not visited[v]:
+                    parent[v] = u
+                    children_count[u] += 1
+                    stack.append([v, 0, 0])
+
+                # Back edge
+                elif v != parent[u]:
+                    low[u] = min(low[u], disc[v])
+            else:
+                # Finished neighbors, push exit state
+                stack.append([u, 0, 1])
+
+        else:
+
+            # Update parent low and mark articulation
+            if stack:
+                p = stack[-1][0]
+                low[p] = min(low[p], low[u])
+                if parent[p] != -1 and low[u] >= disc[p]:
+                    ap[p] = True
+
+            # Root articulation check
+            else:
+                if children_count[start] > 1:
+                    ap[start] = True
+
+if __name__ == "__main__":
+    V = 5
+
+    # Build adjacency list
+    adj = [[] for _ in range(V)]
+    edges = [(0, 1), (1, 4), (2, 3), (2, 4), (3, 4)]
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+
+    print(*articulation_points(V, adj))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+    private void tarjan(int start, List<List<int>> adj, bool[] visited,
+                              int[] disc, int[] low, int[] parent, int[] childrenCount, bool[] ap)
+    {
+        // Stack stores {node, neighborIndex, state}
+        int n = adj.Count;
+        var stack = new List<int[]>(n * 2);
+        int time = 0;
+
+        stack.Add(new int[] { start, 0, 0 });
+
+        while (stack.Count > 0)
+        {
+            var topElem = stack[stack.Count - 1];
+            stack.RemoveAt(stack.Count - 1);
+            int u = topElem[0], idx = topElem[1], state = topElem[2];
+
+            if (state == 0)
+            {
+                // First visit: mark discovery and low
+                if (!visited[u])
+                {
+                    visited[u] = true;
+                    disc[u] = low[u] = ++time;
+                }
+
+                // Process neighbors
+                if (idx < adj[u].Count)
+                {
+                    int v = adj[u][idx];
+
+                    // Push current node with next neighbor
+                    stack.Add(new int[] { u, idx + 1, 0 });
+
+                    // Visit child
+                    if (!visited[v])
+                    {
+                        parent[v] = u;
+                        childrenCount[u]++;
+                        stack.Add(new int[] { v, 0, 0 });
+                    }
+                    // Back edge
+                    else if (v != parent[u])
+                    {
+                        low[u] = Math.Min(low[u], disc[v]);
+                    }
+                }
+                // Finished neighbors, push exit state
+                else
+                {
+                    stack.Add(new int[] { u, 0, 1 });
+                }
+            }
+            else
+            {
+                // Update parent low and mark articulation
+                if (stack.Count > 0)
+                {
+                    int p = stack[stack.Count - 1][0];
+                    low[p] = Math.Min(low[p], low[u]);
+                    if (parent[p] != -1 && low[u] >= disc[p]) ap[p] = true;
+                }
+                // Root articulation check
+                else if (childrenCount[start] > 1)
+                {
+                    ap[start] = true;
+                }
+            }
+        }
+    }
+
+    // Main function to find articulation points
+    public List<int> articulationPoints(int V, List<List<int>> adj)
+    {
+        // Initialize arrays
+        int[] disc = new int[V], low = new int[V], parent = new int[V], childrenCount = new int[V];
+        bool[] visited = new bool[V], ap = new bool[V];
+        for (int i = 0; i < V; i++) parent[i] = -1;
+
+        // Run iterative DFS for each component
+        for (int i = 0; i < V; i++)
+        {
+            if (!visited[i])
+            {
+                tarjan(i, adj, visited, disc, low, parent, childrenCount, ap);
+            }
+        }
+
+        // Collect articulation points
+        var result = new List<int>();
+        for (int i = 0; i < V; i++) if (ap[i]) result.Add(i);
+        if (result.Count == 0) result.Add(-1);
+        return result;
+    }
+
+    static void Main()
+    {
+        int V = 5;
+
+        // Build adjacency list
+        var adj = new List<List<int>>();
+        for (int i = 0; i < V; i++) adj.Add(new List<int>());
+        int[][] edges = new int[][]
+        {
+            new int[]{0,1}, new int[]{1,4}, new int[]{2,3}, new int[]{2,4}, new int[]{3,4}
+        };
+        foreach (var e in edges)
+        {
+            adj[e[0]].Add(e[1]);
+            adj[e[1]].Add(e[0]);
+        }
+
+        var sol = new GFG();
+        var ans = sol.articulationPoints(V, adj);
+        Console.WriteLine(string.Join(" ", ans));
+    }
+}
+
+JavaScript
+
+function articulationPoints(V, adj) {
+    // Initialize arrays
+    const disc = Array(V).fill(0);
+    const low = Array(V).fill(0);
+    const parent = Array(V).fill(-1);
+    const childrenCount = Array(V).fill(0);
+    const visited = Array(V).fill(false);
+    const ap = Array(V).fill(false);
+
+    // Run iterative DFS for each component
+    for (let i = 0; i < V; i++) {
+        if (!visited[i]) {
+            tarjan(i, adj, visited, disc, low, parent, childrenCount, ap);
+        }
+    }
+
+    // Collect articulation points
+    const result = [];
+    for (let i = 0; i < V; i++) if (ap[i]) result.push(i);
+    if (result.length === 0) result.push(-1);
+    return result;
+}
+
+function tarjan(start, adj, visited, disc, low, parent, childrenCount, ap) {
+    // Stack stores {node, neighborIndex, state}
+    const stack = [];
+    let time = 0;
+
+    stack.push([start, 0, 0]); // state 0 = entering, 1 = exiting
+
+    while (stack.length > 0) {
+        const [u, idx, state] = stack.pop();
+
+        if (state === 0) {
+
+            // First visit: mark discovery and low
+            if (!visited[u]) {
+                visited[u] = true;
+                disc[u] = low[u] = ++time;
+            }
+
+            // Process neighbors
+            if (idx < adj[u].length) {
+                const v = adj[u][idx];
+
+                // Push current node with next neighbor
+                stack.push([u, idx + 1, 0]);
+
+                // Visit child
+                if (!visited[v]) {
+                    parent[v] = u;
+                    childrenCount[u]++;
+                    stack.push([v, 0, 0]);
+                }
+                // Back edge
+                else if (v !== parent[u]) {
+                    low[u] = Math.min(low[u], disc[v]);
+                }
+            }
+            // Finished neighbors, push exit state
+            else {
+                stack.push([u, 0, 1]);
+            }
+        }
+        // Exiting node
+        else {
+
+            // Update parent low and mark articulation
+            if (stack.length > 0) {
+                const p = stack[stack.length - 1][0];
+                low[p] = Math.min(low[p], low[u]);
+                if (parent[p] !== -1 && low[u] >= disc[p]) ap[p] = true;
+            }
+            // Root articulation check
+            else if (childrenCount[start] > 1) {
+                ap[start] = true;
+            }
+        }
+    }
+}
+
+// Driver code
+const V = 5;
+
+// Build adjacency list
+const adj = Array.from({ length: V }, () => []);
+const edges = [[0, 1], [1, 4], [2, 3], [2, 4], [3, 4]];
+for (const [u, v] of edges) {
+    adj[u].push(v);
+    adj[v].push(u);
+}
+
+console.log(articulationPoints(V, adj).join(" "));
+
+Output
+
+1 4

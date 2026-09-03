@@ -1,0 +1,903 @@
+Source: https://www.geeksforgeeks.org/dsa/find-longest-path-directed-acyclic-graph/
+Title: Longest Path in a Directed Acyclic Graph
+Extractor: 2
+
+Given a weighted Directed Acyclic Graph (DAG) with V vertices numbered from 0 to V - 1, represented by edges[][] , where edges[i] = [u, v, w] denotes a directed edge from u to v with weight w , and a source vertex src .
+
+- Return the distance array, where the value at index i represents the longest distance from src to vertex i.
+- If a vertex is unreachable from s, store INT_MIN for that vertex. The driver code will automatically display INT_MIN as INF .
+
+Examples :
+
+> Input: V = 4, src = 0, edges[][] = [[0, 1, 1], [0, 2, 1], [1, 2, 5], [3, 1, 2], [3, 2, -1]] Output: [0, 1, 6, INF] Explanation: The longest distance of vertex 1 from 0 is 1, vertex 2 is 6 and vertex 3 is unreachable so INF. Input: V = 5, src = 1, edges[][] = [[0, 1, 1], [0, 2, 2], [1, 4, 4], [3, 2, -1], [4, 2, 3], [4, 3, 6]] Output: [INF, 0, 9, 10, 4] Explanation: The vertex 0 is not reachable from vertex 1 so its distance is INF, for 2 it is 9, for 3 it is 10, and for 4 it is 4.
+
+Table of Content
+
+- [Naive Approach] DFS Traversal of All Possible Paths - O(2 ^ V) Time and O(V) Space
+- [Expected Approach] Kahn's Topological Sort with Dynamic Programming - O(V + E) Time and O(V + E) Space
+
+### [Naive Approach] DFS Traversal of All Possible Paths - O(2 ^ V) Time and O(V) Space
+
+> The idea is to start a DFS from the source vertex and explore every possible path in the DAG. For each path, maintain the current path sum and update the maximum distance of every reachable vertex. Since a DAG can contain exponentially many paths, this approach is inefficient for large graphs.
+
+Working of Approach:
+
+- Build an adjacency list from the given edge list to represent the directed graph.
+- Initialize a distance array with INT_MIN to mark all vertices as unreachable, and start DFS from the source with distance 0.
+- During DFS, update the current node's distance with the maximum distance reached so far.
+- Recursively visit every outgoing neighbor, passing the accumulated distance (current distance + edge weight).
+- Since the graph is a DAG, DFS explores all possible paths, and each node stores the maximum path distance from the source.
+- Finally, return the distance array, where INT_MIN values are displayed as INF for unreachable vertices.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <limits>
+using namespace std;
+
+void dfs(int node, int currDist, vector<vector<pair<int, int>>> &adj, vector<int> &dist)
+{
+    dist[node] = max(dist[node], currDist);
+
+    for (auto &it : adj[node])
+    {
+        int v = it.first;
+        int wt = it.second;
+
+        dfs(v, currDist + wt, adj, dist);
+    }
+}
+
+vector<int> maxDistance(int V, int src, vector<vector<int>> &edges)
+{
+    // Build adjacency list
+    vector<vector<pair<int, int>>> adj(V);
+
+    for (auto &edge : edges)
+    {
+        int u = edge[0];
+        int v = edge[1];
+        int wt = edge[2];
+
+        adj[u].push_back({v, wt});
+    }
+
+    // Initialize distances
+    vector<int> dist(V, INT_MIN);
+
+    // Start DFS from source
+    dfs(src, 0, adj, dist);
+
+    return dist;
+}
+
+int main()
+{
+    int V = 5, src = 1;
+
+    vector<vector<int>> edges = {{0, 1, 1}, {0, 2, 2}, {1, 4, 4}, {3, 2, -1}, {4, 2, 3}, {4, 3, 6}};
+
+    vector<int> ans = maxDistance(V, src, edges);
+
+    cout << "[";
+
+    for (int i = 0; i < ans.size(); i++)
+    {
+        if (ans[i] == INT_MIN)
+            cout << "INF";
+        else
+            cout << ans[i];
+
+        if (i!= ans.size() - 1)
+            cout << ",";
+    }
+
+    cout << "]";
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+class GFG {
+
+    void dfs(int node, int currDist,
+             ArrayList<ArrayList<int[]>> adj, int[] dist) {
+        dist[node] = Math.max(dist[node], currDist);
+
+        for (int[] it : adj.get(node)) {
+            int v = it[0];
+            int wt = it[1];
+
+            dfs(v, currDist + wt, adj, dist);
+        }
+    }
+
+    ArrayList<Integer> maxDistance(int V, int src, int[][] edges) {
+        // Build adjacency list
+        ArrayList<ArrayList<int[]>> adj
+            = new ArrayList<>();
+
+        for (int i = 0; i < V; i++) {
+            adj.add(new ArrayList<>());
+        }
+
+        for (int[] edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
+            int wt = edge[2];
+
+            adj.get(u).add(new int[] { v, wt });
+        }
+
+        // Initialize distances
+        int[] dist = new int[V];
+        Arrays.fill(dist, Integer.MIN_VALUE);
+
+        // Start DFS from source
+        dfs(src, 0, adj, dist);
+
+        ArrayList<Integer> result = new ArrayList<>();
+        for (int d : dist) {
+            result.add(d == Integer.MIN_VALUE ? Integer.MAX_VALUE : d);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        GFG m = new GFG();
+
+        int V = 5, src = 1;
+
+        int[][] edges = {
+            {0, 1, 1},
+            {0, 2, 2},
+            {1, 4, 4},
+            {3, 2, -1},
+            {4, 2, 3},
+            {4, 3, 6}
+        };
+
+        ArrayList<Integer> ans = m.maxDistance(V, src, edges);
+
+        System.out.print("[");
+
+        for (int i = 0; i < ans.size(); i++) {
+            if (ans.get(i) == Integer.MAX_VALUE) {
+                System.out.print("INF");
+            }
+            else {
+                System.out.print(ans.get(i));
+            }
+
+            if (i!= ans.size() - 1) {
+                System.out.print(", ");
+            }
+        }
+
+        System.out.print("]");
+    }
+}
+
+Python
+
+def dfs(node, currDist, adj, dist):
+
+    dist[node] = max(dist[node], currDist)
+
+    for v, wt in adj[node]:
+        dfs(v, currDist + wt, adj, dist)
+
+def maxDistance(V, src, edges):
+
+    # Build adjacency list
+    adj = [[] for _ in range(V)]
+
+    for edge in edges:
+        u = edge[0]
+        v = edge[1]
+        wt = edge[2]
+
+        adj[u].append((v, wt))
+
+    # Initialize distances
+    dist = [-(2 ** 31)] * V
+
+    # Start DFS from source
+    dfs(src, 0, adj, dist)
+
+    return dist
+
+if __name__ == "__main__":
+
+    V = 5
+    src = 1
+
+    edges = [
+        [0, 1, 1],
+        [0, 2, 2],
+        [1, 4, 4],
+        [3, 2, -1],
+        [4, 2, 3],
+        [4, 3, 6]
+    ]
+
+    ans = maxDistance(V, src, edges)
+
+    print("[", end="")
+
+    for i in range(len(ans)):
+        if ans[i] == -(2 ** 31):
+            print("INF", end="")
+        else:
+            print(ans[i], end="")
+
+        if i!= len(ans) - 1:
+            print(", ", end="")
+
+    print("]")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static void dfs(int node, int currDist,
+                    List<List<Tuple<int, int> > > adj,
+                    int[] dist)
+    {
+        dist[node] = Math.Max(dist[node], currDist);
+
+        foreach(var it in adj[node])
+        {
+            int v = it.Item1;
+            int wt = it.Item2;
+
+            dfs(v, currDist + wt, adj, dist);
+        }
+    }
+
+    static int[] maxDistance(int V, int src,
+                             int[,] edges)
+    {
+        // Build adjacency list.
+        List<List<Tuple<int, int> > > adj
+            = new List<List<Tuple<int, int> > >();
+
+        for (int i = 0; i < V; i++) {
+            adj.Add(new List<Tuple<int, int> >());
+        }
+
+        for (int i = 0; i < edges.GetLength(0); i++)
+        {
+            int u = edges[i, 0];
+            int v = edges[i, 1];
+            int wt = edges[i, 2];
+
+            adj[u].Add(new Tuple<int, int>(v, wt));
+        }
+
+        // Initialize distances
+        int[] dist = new int[V];
+        Array.Fill(dist, int.MinValue);
+
+        // Start DFS from source
+        dfs(src, 0, adj, dist);
+
+        return dist;
+    }
+
+    static void Main(string[] args)
+    {
+        int V = 5, src = 1;
+
+        int[,] edges = new int[,] {
+            { 0, 1, 1 },
+            { 0, 2, 2 },
+            { 1, 4, 4 },
+            { 3, 2, -1 },
+            { 4, 2, 3 },
+            { 4, 3, 6 }
+        };
+
+        int[] ans = maxDistance(V, src, edges);
+
+        Console.Write("[");
+
+        for (int i = 0; i < ans.Length; i++) {
+            if (ans[i] == int.MinValue)
+                Console.Write("INF");
+            else
+                Console.Write(ans[i]);
+
+            if (i!= ans.Length - 1)
+                Console.Write(", ");
+        }
+
+        Console.Write("]");
+    }
+}
+
+JavaScript
+
+function dfs(node, currDist, adj, dist)
+{
+
+    dist[node] = Math.max(dist[node], currDist);
+
+    for (let [v, wt] of adj[node]) {
+        dfs(v, currDist + wt, adj, dist);
+    }
+}
+
+function maxDistance(V, src, edges)
+{
+
+    // Build adjacency list
+    let adj = Array.from({length : V}, () => []);
+
+    for (let edge of edges) {
+        let u = edge[0];
+        let v = edge[1];
+        let wt = edge[2];
+
+        adj[u].push([ v, wt ]);
+    }
+
+    // Initialize distances
+    let dist = new Array(V).fill(-2147483648);
+
+    // Start DFS from source
+    dfs(src, 0, adj, dist);
+
+    return dist;
+}
+
+// Driver code
+let V = 5;
+let src = 1;
+
+let edges = [
+    [ 0, 1, 1 ], [ 0, 2, 2 ], [ 1, 4, 4 ], [ 3, 2, -1 ],
+    [ 4, 2, 3 ], [ 4, 3, 6 ]
+];
+
+let ans = maxDistance(V, src, edges);
+
+process.stdout.write("[");
+
+for (let i = 0; i < ans.length; i++) {
+    if (ans[i] === -2147483648)
+        process.stdout.write("INF");
+    else
+        process.stdout.write(ans[i].toString());
+
+    if (i !== ans.length - 1)
+        process.stdout.write(", ");
+}
+
+process.stdout.write("]");
+
+Output
+
+[INF, 0, 9, 10, 4]
+
+### [Expected Approach] Kahn's Topological Sort with Dynamic Programming - O(V + E) Time and O(V + E) Space
+
+The key observation is the property of a topological ordering. All predecessors (incoming neighbors) of a vertex are processed before the vertex itself.
+
+> The idea is to first obtain a topological ordering of the DAG using Kahn's Algorithm . Then process vertices in topological order and relax all outgoing edges. Since every vertex appears after its predecessors in the ordering, the longest distance to a vertex is already computed before it is processed.
+
+Why this Approach works?
+
+Consider the DAG:
+
+One valid topological order is: 0 -> 1 -> 2 -> 3
+
+- Process 0: dist[1] = 2, dist[2] = 3
+- Process 1: dist[3] = 2 + 4 = 6
+- Process 2: dist[3] = max(6, 3 + 5) = 8
+- Process 3
+
+Now, you will notice that when vertex 3 is processed, both of its predecessors (1 and 2) have already been processed. Therefore, the longest distance to 3 has already been determined (8), and no future vertex can provide another path to 3 because that would violate the topological ordering. This is exactly why processing vertices in topological order guarantees that the longest distance to a vertex is finalized before the vertex itself is processed.
+
+Let us understand with example: Input : V = 5, src = 1, edges[][] = [[0, 1, 1], [0, 2, 2], [1, 4, 4], [3, 2, -1], [4, 2, 3], [4, 3, 6]]
+
+- The topological order of the DAG is obtained as [0, 1, 4, 3, 2].
+- Initialize the distance array with INT_MIN and set the source distance: dist = [-INF, 0, -INF, -INF, -INF].
+- Vertex 0 is unreachable from the source, so it is skipped.
+- Process vertex 1 and relax edge (1 -> 4): dist[4] = 4.
+- Process vertex 4 and relax edges (4 -> 2) and (4 -> 3): dist = [-INF, 0, 7, 10, 4].
+- Process vertex 3 and relax edge (3 -> 2), updating dist[2] from 7 to 9.
+
+After replacing unreachable values ( INT_MIN ) with INF for display, the final output becomes [INF, 0, 9, 10, 4].
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <climits>
+using namespace std;
+
+vector<int> maxDistance(int V, int src, vector<vector<int>> &edges)
+{
+    // Build the adjacency list and indegree array
+    vector<vector<pair<int, int>>> g(V);
+    vector<int> indegree(V, 0);
+
+    for (auto &ed : edges)
+    {
+        int u = ed[0];
+        int v = ed[1];
+        int wt = ed[2];
+
+        g[u].push_back({v, wt});
+        indegree[v]++;
+    }
+
+    // Kahn's Algorithm to obtain a topological ordering
+    queue<int> q;
+
+    for (int i = 0; i < V; i++)
+    {
+        if (indegree[i] == 0)
+            q.push(i);
+    }
+
+    vector<int> topoOrder;
+
+    while (!q.empty())
+    {
+        int node = q.front();
+        q.pop();
+
+        topoOrder.push_back(node);
+
+        for (auto &it : g[node])
+        {
+            int v = it.first;
+
+            if (--indegree[v] == 0)
+                q.push(v);
+        }
+    }
+
+    // Initialize all distances as unreachable
+    vector<int> dist(V, INT_MIN);
+    dist[src] = 0;
+
+    // Process vertices in topological order and
+    // relax outgoing edges to compute longest paths
+    for (int node : topoOrder)
+    {
+        // Skip unreachable vertices
+        if (dist[node] == INT_MIN)
+            continue;
+
+        for (auto &it : g[node])
+        {
+            int v = it.first;
+            int wt = it.second;
+
+            dist[v] = max(dist[v], dist[node] + wt);
+        }
+    }
+
+    return dist;
+}
+
+int main()
+{
+    int V = 5, src = 1;
+
+    vector<vector<int>> edges = {{0, 1, 1}, {0, 2, 2}, {1, 4, 4}, {3, 2, -1}, {4, 2, 3}, {4, 3, 6}};
+
+    vector<int> ans = maxDistance(V, src, edges);
+
+    cout << "[";
+
+    for (int i = 0; i < ans.size(); i++)
+    {
+        if (ans[i] == INT_MIN)
+            cout << "INF";
+        else
+            cout << ans[i];
+
+        if (i!= ans.size() - 1)
+            cout << ", ";
+    }
+
+    cout << "]";
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    static int[] maxDistance(
+        int V, int src,
+        ArrayList<ArrayList<Integer> > edges)
+    {
+
+        ArrayList<ArrayList<int[]> > g = new ArrayList<>();
+        int[] indegree = new int[V];
+
+        for (int i = 0; i < V; i++) {
+            g.add(new ArrayList<>());
+        }
+
+        for (ArrayList<Integer> ed : edges) {
+            int u = ed.get(0);
+            int v = ed.get(1);
+            int wt = ed.get(2);
+
+            g.get(u).add(new int[] { v, wt });
+            indegree[v]++;
+        }
+
+        Queue<Integer> q = new LinkedList<>();
+
+        for (int i = 0; i < V; i++) {
+            if (indegree[i] == 0) {
+                q.offer(i);
+            }
+        }
+
+        ArrayList<Integer> topoOrder = new ArrayList<>();
+
+        while (!q.isEmpty()) {
+            int node = q.poll();
+            topoOrder.add(node);
+
+            for (int[] it : g.get(node)) {
+                int v = it[0];
+
+                if (--indegree[v] == 0) {
+                    q.offer(v);
+                }
+            }
+        }
+
+        int[] dist = new int[V];
+        Arrays.fill(dist, Integer.MIN_VALUE);
+        dist[src] = 0;
+
+        for (int node : topoOrder) {
+
+            if (dist[node] == Integer.MIN_VALUE)
+                continue;
+
+            for (int[] it : g.get(node)) {
+                int v = it[0];
+                int wt = it[1];
+
+                dist[v]
+                    = Math.max(dist[v], dist[node] + wt);
+            }
+        }
+
+        return dist;
+    }
+
+    public static void main(String[] args)
+    {
+
+        int V = 5;
+        int src = 1;
+
+        ArrayList<ArrayList<Integer> > edges
+            = new ArrayList<>();
+
+        edges.add(new ArrayList<>(Arrays.asList(0, 1, 1)));
+        edges.add(new ArrayList<>(Arrays.asList(0, 2, 2)));
+        edges.add(new ArrayList<>(Arrays.asList(1, 4, 4)));
+        edges.add(new ArrayList<>(Arrays.asList(3, 2, -1)));
+        edges.add(new ArrayList<>(Arrays.asList(4, 2, 3)));
+        edges.add(new ArrayList<>(Arrays.asList(4, 3, 6)));
+
+        int[] ans = maxDistance(V, src, edges);
+
+        System.out.print("[");
+
+        for (int i = 0; i < ans.length; i++) {
+            if (ans[i] == Integer.MIN_VALUE)
+                System.out.print("INF");
+            else
+                System.out.print(ans[i]);
+
+            if (i != ans.length - 1)
+                System.out.print(", ");
+        }
+
+        System.out.println("]");
+    }
+}
+
+Python
+
+from collections import deque
+
+def maxDistance(V, src, edges):
+
+    # Build the adjacency list and indegree array
+    g = [[] for _ in range(V)]
+    indegree = [0] * V
+
+    for u, v, wt in edges:
+        g[u].append((v, wt))
+        indegree[v] += 1
+
+    # Kahn's Algorithm to obtain a topological ordering
+    q = deque()
+
+    for i in range(V):
+        if indegree[i] == 0:
+            q.append(i)
+
+    topoOrder = []
+
+    while q:
+        node = q.popleft()
+
+        topoOrder.append(node)
+
+        for v, wt in g[node]:
+            indegree[v] -= 1
+
+            if indegree[v] == 0:
+                q.append(v)
+
+    # Initialize all distances as unreachable
+    INT_MIN = -(2 ** 31)
+    dist = [INT_MIN] * V
+    dist[src] = 0
+
+    # Process vertices in topological order and
+    # relax outgoing edges to compute longest paths
+    for node in topoOrder:
+
+        # Skip unreachable vertices
+        if dist[node] == INT_MIN:
+            continue
+
+        for v, wt in g[node]:
+            dist[v] = max(dist[v], dist[node] + wt)
+
+    return dist
+
+if __name__ == "__main__":
+
+    V = 5
+    src = 1
+
+    edges = [
+        [0, 1, 1],
+        [0, 2, 2],
+        [1, 4, 4],
+        [3, 2, -1],
+        [4, 2, 3],
+        [4, 3, 6]
+    ]
+
+    ans = maxDistance(V, src, edges)
+
+    print("[", end="")
+
+    for i in range(len(ans)):
+        if ans[i] == -(2 ** 31):
+            print("INF", end="")
+        else:
+            print(ans[i], end="")
+
+        if i != len(ans) - 1:
+            print(", ", end="")
+
+    print("]")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    static int[] maxDistance(int V, int src,
+                             List<List<int> > edges)
+    {
+        List<List<Tuple<int, int> > > g
+            = new List<List<Tuple<int, int> > >();
+        int[] indegree = new int[V];
+
+        for (int i = 0; i < V; i++)
+            g.Add(new List<Tuple<int, int> >());
+
+        foreach(var ed in edges)
+        {
+            int u = ed[0];
+            int v = ed[1];
+            int wt = ed[2];
+
+            g[u].Add(new Tuple<int, int>(v, wt));
+            indegree[v]++;
+        }
+
+        Queue<int> q = new Queue<int>();
+
+        for (int i = 0; i < V; i++)
+            if (indegree[i] == 0)
+                q.Enqueue(i);
+
+        List<int> topoOrder = new List<int>();
+
+        while (q.Count > 0) {
+            int node = q.Dequeue();
+            topoOrder.Add(node);
+
+            foreach(var it in g[node])
+            {
+                int v = it.Item1;
+                if (--indegree[v] == 0)
+                    q.Enqueue(v);
+            }
+        }
+
+        int[] dist = new int[V];
+        Array.Fill(dist, int.MinValue);
+        dist[src] = 0;
+
+        foreach(int node in topoOrder)
+        {
+            if (dist[node] == int.MinValue)
+                continue;
+
+            foreach(var it in g[node])
+            {
+                int v = it.Item1;
+                int wt = it.Item2;
+
+                dist[v]
+                    = Math.Max(dist[v], dist[node] + wt);
+            }
+        }
+
+        return dist;
+    }
+
+    static void Main()
+    {
+        int V = 5, src = 1;
+
+        List<List<int> > edges = new List<List<int> >{
+            new List<int>{ 0, 1, 1 },
+            new List<int>{ 0, 2, 2 },
+            new List<int>{ 1, 4, 4 },
+            new List<int>{ 3, 2, -1 },
+            new List<int>{ 4, 2, 3 },
+            new List<int>{ 4, 3, 6 }
+        };
+
+        int[] ans = maxDistance(V, src, edges);
+
+        Console.Write("[");
+        for (int i = 0; i < ans.Length; i++) {
+            if (ans[i] == int.MinValue)
+                Console.Write("INF");
+            else
+                Console.Write(ans[i]);
+
+            if (i != ans.Length - 1)
+                Console.Write(", ");
+        }
+        Console.WriteLine("]");
+    }
+}
+
+JavaScript
+
+function maxDistance(V, src, edges)
+{
+
+    // Build the adjacency list and indegree array
+    let g = Array.from({length : V}, () => []);
+    let indegree = new Array(V).fill(0);
+
+    for (let ed of edges) {
+        let u = ed[0];
+        let v = ed[1];
+        let wt = ed[2];
+
+        g[u].push([ v, wt ]);
+        indegree[v]++;
+    }
+
+    // Kahn's Algorithm to obtain a topological ordering
+    let q = [];
+
+    for (let i = 0; i < V; i++) {
+        if (indegree[i] === 0) {
+            q.push(i);
+        }
+    }
+
+    let topoOrder = [];
+    let front = 0;
+
+    while (front < q.length) {
+        let node = q[front++];
+
+        topoOrder.push(node);
+
+        for (let [nxt, wt] of g[node]) {
+            indegree[nxt]--;
+
+            if (indegree[nxt] === 0) {
+                q.push(nxt);
+            }
+        }
+    }
+
+    // Initialize all distances as unreachable
+    const INT_MIN = -2147483648;
+    let dist = new Array(V).fill(INT_MIN);
+    dist[src] = 0;
+
+    // Process vertices in topological order and
+    // relax outgoing edges to compute longest paths
+    for (let node of topoOrder) {
+
+        // Skip unreachable vertices
+        if (dist[node] === INT_MIN) {
+            continue;
+        }
+
+        for (let [nxt, wt] of g[node]) {
+            dist[nxt]
+                = Math.max(dist[nxt], dist[node] + wt);
+        }
+    }
+
+    return dist;
+}
+
+// Driver code
+let V = 5;
+let src = 1;
+
+let edges = [
+    [ 0, 1, 1 ], [ 0, 2, 2 ], [ 1, 4, 4 ], [ 3, 2, -1 ],
+    [ 4, 2, 3 ], [ 4, 3, 6 ]
+];
+
+let ans = maxDistance(V, src, edges);
+
+process.stdout.write("[");
+
+for (let i = 0; i < ans.length; i++) {
+    if (ans[i] === -2147483648) {
+        process.stdout.write("INF");
+    }
+    else {
+        process.stdout.write(ans[i].toString());
+    }
+
+    if (i !== ans.length - 1) {
+        process.stdout.write(", ");
+    }
+}
+
+process.stdout.write("]");
+
+Output
+
+[INF, 0, 9, 10, 4]

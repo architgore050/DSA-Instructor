@@ -1,0 +1,1284 @@
+Source: https://www.geeksforgeeks.org/dsa/transform-bst-sum-tree/
+Title: Transform a BST to greater sum tree
+Extractor: 2
+
+Given the root of Binary Search Tree, transform it into a greater sum tree where each node contains the sum of all nodes greater than that node.
+
+Example:
+
+> Input : Output: [[119], [137, 75], [139, 130, 104, 0], [N, N, N, N, N, N, 40, N]] Explanation: Every Node contains the sum of nodes greater then current node's value.
+
+Table of Content
+
+- [Naive Approach] By Calculating Sum for Each Node - O(n^2) Time and O(n) Space
+- [Expected Approach] Using Single Traversal - O(n) Time and O(n) Space
+
+### [Naive Approach] By Calculating Sum for Each Node - O(n^2) Time and O(n) Space
+
+> The idea is to traverse the tree, and for each node, calculate the sum of all nodes greater than the current node and store this sum for that node. Then, traverse the tree again and replace each node’s value with its corresponding sum.
+
+C++
+
+//Driver Code Starts
+#include <iostream>
+#include<queue>
+#include<unordered_map>
+using namespace std;
+
+// Node structure
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int value) {
+        data = value;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Calculate Height
+int getHeight(Node* root, int h) {
+    if (root == nullptr) return h - 1;
+    return max(getHeight(root->left, h + 1), getHeight(root->right, h + 1));
+}
+
+// Print Level Order
+void levelOrder(Node* root) {
+    queue<pair<Node*, int>> q;
+    q.push({root, 0});
+
+    int lastLevel = 0;
+
+    // function to get the height of tree
+    int height = getHeight(root, 0);
+
+    // printing the level order of tree
+    while (!q.empty()) {
+        auto [node, lvl] = q.front();
+        q.pop();
+
+        if (lvl > lastLevel) {
+            cout << "
+";
+            lastLevel = lvl;
+        }
+
+        // all levels are printed
+        if (lvl > height) break;
+
+        // printing null node
+        if (node->data != -1) cout << node->data << " ";
+        else cout << "N ";
+
+        // null node has no children
+        if (node->data == -1) continue;
+
+        if (node->left == nullptr) q.push({new Node(-1), lvl + 1});
+        else q.push({node->left, lvl + 1});
+
+        if (node->right == nullptr) q.push({new Node(-1), lvl + 1});
+        else q.push({node->right, lvl + 1});
+    }
+}
+//Driver Code Ends
+
+// Function to find nodes having greater value than current node.
+void findGreaterNodes(Node* root, Node* curr, unordered_map<Node*,int> &map) {
+    if (root == nullptr) return;
+
+    // if value is greater than node, then increment
+    // it in the map
+    if (root->data > curr->data)
+        map[curr] += root->data;
+
+    findGreaterNodes(root->left, curr, map);
+    findGreaterNodes(root->right, curr, map);
+}
+
+// update the node value with sum of nodes
+void transformToGreaterSumTree(Node* curr, Node* root,
+                               unordered_map<Node*,int>&map) {
+    if (curr == nullptr) {
+        return;
+    }
+
+    // Find all nodes greater than current node
+    findGreaterNodes(root, curr, map);
+
+    // Recursively check for left and right subtree.
+    transformToGreaterSumTree(curr->left, root, map);
+    transformToGreaterSumTree(curr->right, root, map);
+}
+
+// Function to update value of each node.
+void preOrderTrav(Node* root, unordered_map<Node*, int> &map) {
+    if (root == nullptr) return;
+
+    root->data = map[root];
+
+    preOrderTrav(root->left, map);
+    preOrderTrav(root->right, map);
+}
+
+void transformTree(Node* root) {
+
+  	// map to store greater sum for each node.
+  	unordered_map<Node*, int> map;
+    transformToGreaterSumTree(root, root, map);
+
+    // update the value of nodes
+    preOrderTrav(root, map);
+}
+
+//Driver Code Starts
+int main() {
+
+    // Constructing the BST
+    //     11
+    //    /  \
+    //   2    29
+    //  / \   / \
+    // 1   7 15  40
+    //             \
+    //              50
+
+    Node* root = new Node(11);
+    root->left = new Node(2);
+    root->right = new Node(29);
+    root->left->left = new Node(1);
+    root->left->right = new Node(7);
+    root->right->left = new Node(15);
+    root->right->right = new Node(40);
+    root->right->right->right = new Node(50);
+
+    transformTree(root);
+    levelOrder(root);
+
+    return 0;
+}
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.HashMap;
+import java.util.List;
+import java.util.Queue;
+import java.util.LinkedList;
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int value) {
+        data = value;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Calculate Height
+     static int getHeight( Node root, int h ) {
+        if( root == null ) return h-1;
+
+        return Math.max(getHeight(root.left, h+1), getHeight(root.right, h+1));
+    }
+
+// Print Level Order
+    static void levelOrder(Node root) {
+        Queue<List<Object>> queue = new LinkedList<>();
+        queue.offer(List.of(root, 0));
+
+        int lastLevel = 0;
+
+        // function to get the height of tree
+        int height = getHeight(root, 0);
+
+        // printing the level order of tree
+        while( !queue.isEmpty()) {
+            List<Object> top = queue.poll();
+
+            Node node = (Node) top.get(0);
+            int lvl = (int) top.get(1);
+
+            if( lvl > lastLevel ) {
+                System.out.println();
+                lastLevel = lvl;
+            }
+
+            // all levels are printed
+            if( lvl > height ) break;
+
+            // printing null node
+            System.out.print((node.data == -1 ? "N" : node.data) + " ");
+
+            // null node has no children
+            if( node.data == -1 ) continue;
+
+            if( node.left == null ) queue.offer(List.of(new Node(-1), lvl+1));
+            else queue.offer(List.of(node.left, lvl+1));
+
+            if( node.right == null ) queue.offer(List.of(new Node(-1), lvl+1));
+            else queue.offer(List.of(node.right, lvl+1));
+        }
+    }
+
+//Driver Code Ends
+
+    // Function to find nodes having greater value than
+   // current node.
+    static void findGreaterNodes(Node root, Node curr,
+                                 HashMap<Node, Integer> map) {
+        if (root == null) return;
+
+        // if value is greater than node, then increment
+        // it in the map
+        if (root.data > curr.data)
+            map.put(curr, map.getOrDefault(curr, 0) + root.data);
+
+        findGreaterNodes(root.left, curr, map);
+        findGreaterNodes(root.right, curr, map);
+    }
+
+    static void transformToGreaterSumTree(Node curr, Node root,
+                                          HashMap<Node, Integer> map) {
+        if (curr == null) {
+            return;
+        }
+
+        // Find all nodes greater than current node
+        findGreaterNodes(root, curr, map);
+
+        // Recursively check for left and right subtree.
+        transformToGreaterSumTree(curr.left, root, map);
+        transformToGreaterSumTree(curr.right, root, map);
+    }
+
+    // Function to update value of each node.
+    static void preOrderTrav(Node root, HashMap<Node, Integer> map) {
+        if (root == null) return;
+
+        root.data = map.getOrDefault(root, 0);
+
+        preOrderTrav(root.left, map);
+        preOrderTrav(root.right, map);
+    }
+
+    static void transformTree(Node root) {
+
+        // map to store greater sum for each node.
+        HashMap<Node, Integer> map = new HashMap<>();
+        transformToGreaterSumTree(root, root, map);
+
+        // update the value of nodes
+        preOrderTrav(root, map);
+    }
+
+//Driver Code Starts
+
+    public static void main(String[] args) {
+
+        // Constructing the BST
+        //     11
+        //    /  \
+        //   2    29
+        //  / \   / \
+        // 1   7 15  40
+        //             \
+        //              50
+        Node root = new Node(11);
+        root.left = new Node(2);
+        root.right = new Node(29);
+        root.left.left = new Node(1);
+        root.left.right = new Node(7);
+        root.right.left = new Node(15);
+        root.right.right = new Node(40);
+        root.right.right.right = new Node(50);
+
+        transformTree(root);
+        levelOrder(root);
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+from collections import deque
+
+class Node:
+    def __init__(self, value):
+        self.data = value
+        self.left = None
+        self.right = None
+
+# Calculate height
+def getHeight(root, h):
+    if root is None:
+        return h - 1
+    return max(getHeight(root.left, h + 1), getHeight(root.right, h + 1))
+
+# Print Level Order
+def levelOrder(root):
+    queue = deque([[root, 0]])
+    lastLevel = 0
+
+    # function to get the height of tree
+    height = getHeight(root, 0)
+
+    # printing the level order of tree
+    while queue:
+        node, lvl = queue.popleft()
+
+        if lvl > lastLevel:
+            print()
+            lastLevel = lvl
+
+        # all levels are printed
+        if lvl > height:
+            break
+
+        # printing null node
+        print("N" if node.data == -1 else node.data, end=" ")
+
+        # null node has no children
+        if node.data == -1:
+            continue
+
+        if node.left is None:
+            queue.append([Node(-1), lvl + 1])
+        else:
+            queue.append([node.left, lvl + 1])
+
+        if node.right is None:
+            queue.append([Node(-1), lvl + 1])
+        else:
+            queue.append([node.right, lvl + 1])
+
+#Driver Code Ends
+
+# Function to find nodes having greater
+# value than current node.
+def findGreaterNodes(root, curr, map):
+    if root is None:
+        return
+
+    # if value is greater than node, then increment
+    # it in the map
+    if root.data > curr.data:
+        map[curr] += root.data
+
+    findGreaterNodes(root.left, curr, map)
+    findGreaterNodes(root.right, curr, map)
+
+def transformToGreaterSumTree(curr, root, map):
+    if curr is None:
+        return
+
+    # Find all nodes greater than current node
+    map[curr] = 0
+    findGreaterNodes(root, curr, map)
+
+    # Recursively check for left and right subtree.
+    transformToGreaterSumTree(curr.left, root, map)
+    transformToGreaterSumTree(curr.right, root, map)
+
+# Function to update value of each node.
+def preOrderTrav(root, map):
+    if root is None:
+        return
+
+    root.data = map.get(root, root.data)
+
+    preOrderTrav(root.left, map)
+    preOrderTrav(root.right, map)
+
+def transformTree(root):
+
+    # map to store greater sum for each node.
+    map = {}
+    transformToGreaterSumTree(root, root, map)
+
+    # update the value of nodes
+    preOrderTrav(root, map)
+
+#Driver Code Starts
+
+if __name__ == "__main__":
+
+    # Constructing the BST
+    #     11
+    #    /  \
+    #   2    29
+    #  / \   / \
+    # 1   7 15  40
+    #             \
+    #              50
+    root = Node(11)
+    root.left = Node(2)
+    root.right = Node(29)
+    root.left.left = Node(1)
+    root.left.right = Node(7)
+    root.right.left = Node(15)
+    root.right.right = Node(40)
+    root.right.right.right = Node(50)
+
+    transformTree(root)
+    levelOrder(root)
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+// C# program to transform a BST
+// to sum tree
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int value) {
+        data = value;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+       // Calculate height
+     static int getHeight(Node root, int h) {
+        if (root == null) return h - 1;
+        return Math.Max(getHeight(root.left, h + 1), getHeight(root.right, h + 1));
+    }
+
+// Print Level Order
+    static void levelOrder(Node root) {
+        Queue<(Node, int)> queue = new Queue<(Node, int)>();
+        queue.Enqueue((root, 0));
+
+        int lastLevel = 0;
+
+        // function to get the height of tree
+        int height = getHeight(root, 0);
+
+        // printing the level order of tree
+        while (queue.Count > 0) {
+            var (node, lvl) = queue.Dequeue();
+
+            if (lvl > lastLevel) {
+                Console.WriteLine();
+                lastLevel = lvl;
+            }
+
+            // all levels are printed
+            if (lvl > height) break;
+
+            // printing null node
+            Console.Write((node.data == -1 ? "N" : node.data.ToString()) + " ");
+
+            // null node has no children
+            if (node.data == -1) continue;
+
+            if (node.left == null) queue.Enqueue((new Node(-1), lvl + 1));
+            else queue.Enqueue((node.left, lvl + 1));
+
+            if (node.right == null) queue.Enqueue((new Node(-1), lvl + 1));
+            else queue.Enqueue((node.right, lvl + 1));
+        }
+    }
+
+//Driver Code Ends
+
+    // Function to find nodes having greater value
+  	// than current node.
+    static void findGreaterNodes(Node root, Node curr,
+                                 Dictionary<Node, int> map) {
+        if (root == null) return;
+
+        // if value is greater than node, then increment
+        // it in the map
+        if (root.data > curr.data)
+            map[curr] += root.data;
+
+        findGreaterNodes(root.left, curr, map);
+        findGreaterNodes(root.right, curr, map);
+    }
+
+    static void transformToGreaterSumTree(Node curr, Node root,
+                                          Dictionary<Node, int> map) {
+        if (curr == null) {
+            return;
+        }
+
+        // Find all nodes greater than
+      	// current node
+        map[curr] = 0;
+        findGreaterNodes(root, curr, map);
+
+        // Recursively check for left and right subtree.
+        transformToGreaterSumTree(curr.left, root, map);
+        transformToGreaterSumTree(curr.right, root, map);
+    }
+
+    // Function to update value of each node.
+    static void preOrderTrav(Node root, Dictionary<Node, int> map) {
+        if (root == null) return;
+
+        root.data = map.ContainsKey(root) ? map[root] : root.data;
+
+        preOrderTrav(root.left, map);
+        preOrderTrav(root.right, map);
+    }
+
+    static void transformTree(Node root) {
+
+        // map to store greater sum for each node.
+        Dictionary<Node, int> map = new Dictionary<Node, int>();
+        transformToGreaterSumTree(root, root, map);
+
+        // update the value of nodes
+        preOrderTrav(root, map);
+    }
+
+//Driver Code Starts
+    static void Main(string[] args) {
+
+        // Constructing the BST
+        //     11
+        //    /  \
+        //   2    29
+        //  / \   / \
+        // 1   7 15  40
+        //             \
+        //              50
+        Node root = new Node(11);
+        root.left = new Node(2);
+        root.right = new Node(29);
+        root.left.left = new Node(1);
+        root.left.right = new Node(7);
+        root.right.left = new Node(15);
+        root.right.right = new Node(40);
+        root.right.right.right = new Node(50);
+
+        transformTree(root);
+        levelOrder(root);
+    }
+}
+
+//Driver Code Ends
+
+JavaScript
+
+//Driver Code Starts
+// JavaScript program to transform
+// a BST to sum tree
+class Node {
+    constructor(value) {
+        this.data = value;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Calculate Height
+function getHeight(root, h) {
+    if (root === null) return h - 1;
+    return Math.max(getHeight(root.left, h + 1), getHeight(root.right, h + 1));
+}
+
+// Print Level Order
+function levelOrder(root) {
+    let queue = [];
+    queue.push([root, 0]);
+    let lastLevel = 0;
+
+    // function to get the height of tree
+    let height = getHeight(root, 0);
+
+    // printing the level order of tree
+    while (queue.length > 0) {
+        let [node, lvl] = queue.shift();
+
+        if (lvl > lastLevel) {
+            console.log("");
+            lastLevel = lvl;
+        }
+
+        // all levels are printed
+        if (lvl > height) break;
+
+        // printing null node
+        process.stdout.write((node.data === -1 ? "N" : node.data) + " ");
+
+        // null node has no children
+        if (node.data === -1) continue;
+
+        if (node.left === null) queue.push([new Node(-1), lvl + 1]);
+        else queue.push([node.left, lvl + 1]);
+
+        if (node.right === null) queue.push([new Node(-1), lvl + 1]);
+        else queue.push([node.right, lvl + 1]);
+    }
+}
+//Driver Code Ends
+
+// Function to find nodes having greater value
+// than current node.
+function findGreaterNodes(root, curr, map) {
+    if (root === null) return;
+
+    // if value is greater than node, then increment
+    // it in the map
+    if (root.data > curr.data) {
+        map.set(curr, (map.get(curr) || 0) + root.data);
+    }
+
+    findGreaterNodes(root.left, curr, map);
+    findGreaterNodes(root.right, curr, map);
+}
+
+function transformToGreaterSumTree(curr, root, map) {
+    if (curr === null) {
+        return;
+    }
+
+    // Find all nodes greater than current node
+    findGreaterNodes(root, curr, map);
+
+    // Recursively check for left and right subtree.
+    transformToGreaterSumTree(curr.left, root, map);
+    transformToGreaterSumTree(curr.right, root, map);
+}
+
+// Function to update value of each node.
+function preOrderTrav(root, map) {
+    if (root === null) return;
+
+    root.data = map.has(root) ? map.get(root) : 0;
+
+    preOrderTrav(root.left, map);
+    preOrderTrav(root.right, map);
+}
+
+function transformTree(root) {
+
+    // map to store greater sum for each node.
+    const map = new Map();
+    transformToGreaterSumTree(root, root, map);
+
+    // update the value of nodes
+    preOrderTrav(root, map);
+}
+
+//Driver Code Starts
+// Constructing the BST
+const root = new Node(11);
+root.left = new Node(2);
+root.right = new Node(29);
+root.left.left = new Node(1);
+root.left.right = new Node(7);
+root.right.left = new Node(15);
+root.right.right = new Node(40);
+root.right.right.right = new Node(50);
+
+transformTree(root);
+levelOrder(root);
+
+//Driver Code Ends
+
+Output
+
+134
+152 90
+154 145 119 50
+N N N N N N N 0
+
+### [Expected Approach] Using Single Traversal - O(n) Time and O(n) Space
+
+> The idea is to optimize the above approach. Rather than calculating the sum for each node separately, we traverse the tree in reverse in-order ( right → root → left ) while keeping a running sum of all previously visited nodes. Each node’s value is updated to this running sum, ensuring it contains the sum of all nodes greater than itself.
+
+C++
+
+//Driver Code Starts
+#include <iostream>
+#include<queue>
+#include<unordered_map>
+using namespace std;
+
+// Node structure
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int value) {
+        data = value;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Calculate height
+int getHeight(Node* root, int h) {
+    if (root == nullptr) return h - 1;
+    return max(getHeight(root->left, h + 1), getHeight(root->right, h + 1));
+}
+// Print Level order
+void levelOrder(Node* root) {
+    queue<pair<Node*, int>> q;
+    q.push({root, 0});
+
+    int lastLevel = 0;
+
+    // function to get the height of tree
+    int height = getHeight(root, 0);
+
+    // printing the level order of tree
+    while (!q.empty()) {
+        auto [node, lvl] = q.front();
+        q.pop();
+
+        if (lvl > lastLevel) {
+            cout << "
+";
+            lastLevel = lvl;
+        }
+
+        // all levels are printed
+        if (lvl > height) break;
+
+        // printing null node
+        if (node->data != -1) cout << node->data << " ";
+        else cout << "N ";
+
+        // null node has no children
+        if (node->data == -1) continue;
+
+        if (node->left == nullptr) q.push({new Node(-1), lvl + 1});
+        else q.push({node->left, lvl + 1});
+
+        if (node->right == nullptr) q.push({new Node(-1), lvl + 1});
+        else q.push({node->right, lvl + 1});
+    }
+}
+//Driver Code Ends
+
+// Function to update the tree
+void updateTree(Node* root, int& sum) {
+    if (root == nullptr) {
+        return;
+    }
+
+    // Traverse the right subtree first (larger values)
+    updateTree(root->right, sum);
+
+    // Update the sum and the current node's value
+    sum += root->data;
+    root->data = sum - root->data;
+
+    // Traverse the left subtree (smaller values)
+    updateTree(root->left, sum);
+}
+
+// Return the updated tree
+void transformTree(Node* root) {
+
+  	// Initialize the cumulative sum
+    int sum = 0;
+    updateTree(root, sum);
+}
+
+//Driver Code Starts
+
+int main() {
+
+    // Constructing the BST
+    //     11
+    //    /  \
+    //   2    29
+    //  / \   / \
+    // 1   7 15  40
+    //           /
+    //          35
+
+    Node* root = new Node(11);
+    root->left = new Node(2);
+    root->right = new Node(29);
+    root->left->left = new Node(1);
+    root->left->right = new Node(7);
+    root->right->left = new Node(15);
+    root->right->right = new Node(40);
+    root->right->right->left = new Node(35);
+
+    transformTree(root);
+    levelOrder(root);
+
+    return 0;
+}
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.List;
+import java.util.Queue;
+import java.util.LinkedList;
+
+// Node structure
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int value) {
+        data = value;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+// Calculate height
+    static int getHeight( Node root, int h ) {
+        if( root == null ) return h-1;
+
+        return Math.max(getHeight(root.left, h+1), getHeight(root.right, h+1));
+    }
+
+// Print level Order
+    static void levelOrder(Node root) {
+        Queue<List<Object>> queue = new LinkedList<>();
+        queue.offer(List.of(root, 0));
+
+        int lastLevel = 0;
+
+        // function to get the height of tree
+        int height = getHeight(root, 0);
+
+        // printing the level order of tree
+        while( !queue.isEmpty()) {
+            List<Object> top = queue.poll();
+
+            Node node = (Node) top.get(0);
+            int lvl = (int) top.get(1);
+
+            if( lvl > lastLevel ) {
+                System.out.println();
+                lastLevel = lvl;
+            }
+
+            // all levels are printed
+            if( lvl > height ) break;
+
+            // printing null node
+            System.out.print((node.data == -1 ? "N" : node.data) + " ");
+
+            // null node has no children
+            if( node.data == -1 ) continue;
+
+            if( node.left == null ) queue.offer(List.of(new Node(-1), lvl+1));
+            else queue.offer(List.of(node.left, lvl+1));
+
+            if( node.right == null ) queue.offer(List.of(new Node(-1), lvl+1));
+            else queue.offer(List.of(node.right, lvl+1));
+        }
+    }
+
+//Driver Code Ends
+
+// Function to update the tree
+    static void updateTree(Node root, int[] sum) {
+        if (root == null) {
+            return;
+        }
+
+        // Traverse the right subtree first (larger values)
+        updateTree(root.right, sum);
+
+        // Update the sum and the current node's value
+        sum[0] += root.data;
+        root.data = sum[0] - root.data;
+
+        // Traverse the left subtree (smaller values)
+        updateTree(root.left, sum);
+    }
+
+ // Return the updated tree
+    static void transformTree(Node root) {
+
+      	// Initialize the cumulative sum
+        int[] sum = {0};
+        updateTree(root, sum);
+    }
+
+//Driver Code Starts
+    public static void main(String[] args) {
+
+        // Constructing the BST
+        //     11
+        //    /  \
+        //   2    29
+        //  / \   / \
+        // 1   7 15  40
+        //             \
+        //              50
+
+        Node root = new Node(11);
+        root.left = new Node(2);
+        root.right = new Node(29);
+        root.left.left = new Node(1);
+        root.left.right = new Node(7);
+        root.right.left = new Node(15);
+        root.right.right = new Node(40);
+        root.right.right.left = new Node(35);
+
+        transformTree(root);
+        levelOrder(root);
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+from collections import deque
+
+# Node structure
+class Node:
+    def __init__(self, value):
+        self.data = value
+        self.left = None
+        self.right = None
+
+# Calculate Height
+def getHeight(root, h):
+    if root is None:
+        return h - 1
+    return max(getHeight(root.left, h + 1), getHeight(root.right, h + 1))
+
+# Print Level Order
+def levelOrder(root):
+    queue = deque([[root, 0]])
+    lastLevel = 0
+
+    # function to get the height of tree
+    height = getHeight(root, 0)
+
+    # printing the level order of tree
+    while queue:
+        node, lvl = queue.popleft()
+
+        if lvl > lastLevel:
+            print()
+            lastLevel = lvl
+
+        # all levels are printed
+        if lvl > height:
+            break
+
+        # printing null node
+        print("N" if node.data == -1 else node.data, end=" ")
+
+        # null node has no children
+        if node.data == -1:
+            continue
+
+        if node.left is None:
+            queue.append([Node(-1), lvl + 1])
+        else:
+            queue.append([node.left, lvl + 1])
+
+        if node.right is None:
+            queue.append([Node(-1), lvl + 1])
+        else:
+            queue.append([node.right, lvl + 1])
+
+#Driver Code Ends
+
+# Function to update the tree
+def updateTree(root, sum):
+    if root is None:
+        return
+
+    # Traverse the right subtree first (larger values)
+    updateTree(root.right, sum)
+
+    # Update the sum and the current node's value
+    sum[0] += root.data
+    root.data = sum[0] - root.data
+
+    # Traverse the left subtree (smaller values)
+    updateTree(root.left, sum)
+
+# Return the updated tree
+def transformTree(root):
+
+    # Initialize the cumulative sum
+    sum = [0]
+    updateTree(root, sum)
+
+#Driver Code Starts
+if __name__ == "__main__":
+
+    #   Constructing the BST
+    #      11
+    #     /  \
+    #    2    29
+    #   / \   / \
+    #  1   7 15  40
+    #            /
+    #           35
+
+    root = Node(11)
+    root.left = Node(2)
+    root.right = Node(29)
+    root.left.left = Node(1)
+    root.left.right = Node(7)
+    root.right.left = Node(15)
+    root.right.right = Node(40)
+    root.right.right.left = Node(35)
+
+    transformTree(root)
+    levelOrder(root)
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+// Node  structure
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int value)
+    {
+        data = value;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+// Calculate height
+     static int getHeight(Node root, int h) {
+        if (root == null) return h - 1;
+        return Math.Max(getHeight(root.left, h + 1), getHeight(root.right, h + 1));
+    }
+
+// Print Level Order
+    static void levelOrder(Node root) {
+        Queue<(Node, int)> queue = new Queue<(Node, int)>();
+        queue.Enqueue((root, 0));
+
+        int lastLevel = 0;
+
+        // function to get the height of tree
+        int height = getHeight(root, 0);
+
+        // printing the level order of tree
+        while (queue.Count > 0) {
+            var (node, lvl) = queue.Dequeue();
+
+            if (lvl > lastLevel) {
+                Console.WriteLine();
+                lastLevel = lvl;
+            }
+
+            // all levels are printed
+            if (lvl > height) break;
+
+            // printing null node
+            Console.Write((node.data == -1 ? "N" : node.data.ToString()) + " ");
+
+            // null node has no children
+            if (node.data == -1) continue;
+
+            if (node.left == null) queue.Enqueue((new Node(-1), lvl + 1));
+            else queue.Enqueue((node.left, lvl + 1));
+
+            if (node.right == null) queue.Enqueue((new Node(-1), lvl + 1));
+            else queue.Enqueue((node.right, lvl + 1));
+        }
+//Driver Code Ends
+
+    }
+
+    //   Function to update the tree
+    static void updateTree(Node root,
+                                          ref int sum)
+    {
+        if (root == null) {
+            return;
+        }
+
+        // Traverse the right subtree first (larger values)
+        updateTree(root.right, ref sum);
+
+        // Update the sum and the current node's value
+        sum += root.data;
+        root.data = sum - root.data;
+
+        // Traverse the left subtree (smaller values)
+        updateTree(root.left, ref sum);
+    }
+
+    // Return the updated tree
+    static void transformTree(Node root)
+    {
+
+        // Initialize the cumulative sum
+        int sum = 0;
+        updateTree(root, ref sum);
+    }
+
+//Driver Code Starts
+    static void Main()
+    {
+
+        // Constructing the BST
+        //     11
+        //    /  \
+        //   2    29
+        //  / \   / \
+        // 1   7 15  40
+        //           /
+        //          35
+
+        Node root = new Node(11);
+        root.left = new Node(2);
+        root.right = new Node(29);
+        root.left.left = new Node(1);
+        root.left.right = new Node(7);
+        root.right.left = new Node(15);
+        root.right.right = new Node(40);
+        root.right.right.left = new Node(35);
+
+        transformTree(root);
+        levelOrder(root);
+    }
+}
+//Driver Code Ends
+
+JavaScript
+
+//Driver Code Starts
+// Node structure
+class Node {
+    constructor(value) {
+        this.data = value;
+        this.left = null;
+        this.right = null;
+    }
+}
+// Calculate Height
+function getHeight(root, h) {
+    if (root === null) return h - 1;
+    return Math.max(getHeight(root.left, h + 1), getHeight(root.right, h + 1));
+}
+
+// Print Level Order
+function levelOrder(root) {
+    let queue = [];
+    queue.push([root, 0]);
+    let lastLevel = 0;
+
+    // function to get the height of tree
+    let height = getHeight(root, 0);
+
+    // printing the level order of tree
+    while (queue.length > 0) {
+        let [node, lvl] = queue.shift();
+
+        if (lvl > lastLevel) {
+            console.log("");
+            lastLevel = lvl;
+        }
+
+        // all levels are printed
+        if (lvl > height) break;
+
+        // printing null node
+        process.stdout.write((node.data === -1 ? "N" : node.data) + " ");
+
+        // null node has no children
+        if (node.data === -1) continue;
+
+        if (node.left === null) queue.push([new Node(-1), lvl + 1]);
+        else queue.push([node.left, lvl + 1]);
+
+        if (node.right === null) queue.push([new Node(-1), lvl + 1]);
+        else queue.push([node.right, lvl + 1]);
+    }
+}
+
+//Driver Code Ends
+
+// Function to update the tree
+function updateTree(root, sum) {
+    if (root === null) {
+        return;
+    }
+
+    // Traverse the right subtree first (larger values)
+    updateTree(root.right, sum);
+
+    // Update the sum and the current node's value
+    sum[0] += root.data;
+    root.data = sum[0] - root.data;
+
+    // Traverse the left subtree (smaller values)
+    updateTree(root.left, sum);
+}
+
+// Return the Updated tree
+function transformTree(root) {
+
+    // Initialize the cumulative sum
+    let sum = [0];
+    updateTree(root, sum);
+}
+
+//Driver Code Starts
+// Constructing the BST
+//     11
+//    /  \
+//   2    29
+//  / \   / \
+// 1   7 15  40
+//           /
+//          35
+
+let root = new Node(11);
+root.left = new Node(2);
+root.right = new Node(29);
+root.left.left = new Node(1);
+root.left.right = new Node(7);
+root.right.left = new Node(15);
+root.right.right = new Node(40);
+root.right.right.left = new Node(35);
+
+transformTree(root);
+levelOrder(root);
+
+//Driver Code Ends
+
+Output
+
+119
+137 75
+139 130 104 0
+N N N N N N 40 N

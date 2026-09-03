@@ -1,0 +1,1122 @@
+Source: https://www.geeksforgeeks.org/dsa/check-binary-tree-contains-duplicate-subtrees-size-2/
+Title: Duplicate Subtree Check
+Extractor: 2
+
+Given a binary tree, determine whether the tree contains any duplicate subtree of size two or more. Two subtrees are considered duplicates if they have the same structure and identical node values. Return true if such a duplicate subtree exists; otherwise, return false .
+
+Note: Subtrees consisting of only a single leaf node are not considered duplicate subtrees.
+
+Example:
+
+> Input: root = [1, 2, 3, 4, 5, N, 2, N, N, N, N, 4, 5] Output: True Explanation: The duplicate subtree is shown below. Input : root = [1, 2, 3] Output : False Explanation : There is no duplicate sub-tree in the given binary tree.
+
+Table of Content
+
+- [Naive Approach] Generating All Subtrees - O(n ^ 2) Time and O(n ^ 2) Space
+- [Optimized Approach] Early Termination DFS - O(n ^ 2) Time and O(n ^ 2) Space
+
+### [Naive Approach] Generating All Subtrees - O(n ^ 2) Time and O(n ^ 2) Space
+
+> The idea is to generate all subtrees (of size greater than 1) of the binary tree and store their Serialized Form in an array or hash map . Then iterate through the array/map to check for duplicate subtrees.
+
+- Traverse the binary tree recursively in postorder fashion.
+- Serialize every subtree into a unique string representation.
+- For null nodes return "N" and for leaf nodes return their value.
+- Combine current node, left subtree, and right subtree strings to form the serialized subtree.
+- Store the frequency of every serialized subtree in a hash map.
+- After traversal, if any subtree frequency is greater than 1, return true; otherwise return false.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node
+{
+  public:
+    int data;
+    Node *left, *right;
+
+    Node(int x)
+    {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Function which generates all the subtrees
+// and stores their serialized form in map
+string dupSubRecur(Node *root, unordered_map<string, int> &map)
+{
+    // Base Case:
+    // For null nodes
+    if (root == nullptr)
+    {
+        return "N";
+    }
+
+    // Base Case:
+    // For leaf nodes,
+    // return node value as string
+    if (root->left == nullptr && root->right == nullptr)
+    {
+        return to_string(root->data);
+    }
+
+    // Process left subtree
+    string left = dupSubRecur(root->left, map);
+
+    // Process right subtree
+    string right = dupSubRecur(root->right, map);
+
+    // Generate serialized subtree
+    string curr = "";
+
+    curr += to_string(root->data);
+    curr += '*';
+    curr += left;
+    curr += '*';
+    curr += right;
+
+    // Store subtree frequency
+    map[curr]++;
+
+    return curr;
+}
+
+bool dupSub(Node *root)
+{
+    unordered_map<string, int> map;
+
+    // Generate all subtree serializations
+    dupSubRecur(root, map);
+
+    // Check duplicate subtree
+    for (auto p : map)
+    {
+        // If subtree occurs more than once
+        if (p.second > 1)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int main()
+{
+    //         1
+    //       /   \
+    //      2     3
+    //     / \     \
+    //    4   5     2
+    //              / \
+    //             4   5
+
+    Node *root = new Node(1);
+
+    root->left = new Node(2);
+    root->right = new Node(3);
+
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+
+    root->right->right = new Node(2);
+    root->right->right->left = new Node(4);
+    root->right->right->right = new Node(5);
+
+    // Function Call
+    if (dupSub(root) == true)
+    {
+        cout << "True" << endl;
+    }
+    else
+    {
+        cout << "False" << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.HashMap;
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int x)
+    {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+public class GFG {
+    // Function which generates all the subtrees
+    // and stores their serialized form in map
+    static String dupSubRecur(Node root, HashMap<String, Integer> map)
+    {
+        // Base Case:
+        // For null nodes
+        if (root == null) {
+            return "N";
+        }
+
+        // Base Case:
+        // For leaf nodes,
+        // return node value as string
+        if (root.left == null && root.right == null) {
+            return Integer.toString(root.data);
+        }
+
+        // Process left subtree
+        String left = dupSubRecur(root.left, map);
+
+        // Process right subtree
+        String right = dupSubRecur(root.right, map);
+
+        // Generate serialized subtree
+        String curr = "";
+
+        curr += Integer.toString(root.data);
+        curr += '*';
+        curr += left;
+        curr += '*';
+        curr += right;
+
+        // Store subtree frequency
+        map.put(curr, map.getOrDefault(curr, 0) + 1);
+
+        return curr;
+    }
+
+    static boolean dupSub(Node root)
+    {
+        HashMap<String, Integer> map = new HashMap<>();
+
+        // Generate all subtree serializations
+        dupSubRecur(root, map);
+
+        // Check duplicate subtree
+        for (String key : map.keySet()) {
+            // If subtree occurs more than once
+            if (map.get(key) > 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static void main(String[] args)
+    {
+        //         1
+        //       /   \
+        //      2     3
+        //     / \     \
+        //    4   5     2
+        //              / \
+        //             4   5
+
+        Node root = new Node(1);
+
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+
+        root.right.right = new Node(2);
+        root.right.right.left = new Node(4);
+        root.right.right.right = new Node(5);
+
+        // Function Call
+        if (dupSub(root) == true) {
+            System.out.println("True");
+        }
+        else {
+            System.out.println("False");
+        }
+    }
+}
+
+Python
+
+class Node:
+
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+# Function which generates all the subtrees
+# and stores their serialized form in map
+def dupSubRecur(root, mp):
+
+    # Base Case:
+    # For null nodes
+    if root is None:
+        return "N"
+
+    # Base Case:
+    # For leaf nodes,
+    # return node value as string
+    if root.left is None and root.right is None:
+        return str(root.data)
+
+    # Process left subtree
+    left = dupSubRecur(root.left, mp)
+
+    # Process right subtree
+    right = dupSubRecur(root.right, mp)
+
+    # Generate serialized subtree
+    curr = ""
+
+    curr += str(root.data)
+    curr += '*'
+    curr += left
+    curr += '*'
+    curr += right
+
+    # Store subtree frequency
+    mp[curr] = mp.get(curr, 0) + 1
+
+    return curr
+
+def dupSub(root):
+
+    mp = {}
+
+    # Generate all subtree serializations
+    dupSubRecur(root, mp)
+
+    # Check duplicate subtree
+    for key in mp:
+
+        # If subtree occurs more than once
+        if mp[key] > 1:
+            return True
+
+    return False
+
+# Driver Code
+
+if __name__ == "__main__":
+    #         1
+    #       /   \
+    #      2     3
+    #     / \     \
+    #    4   5     2
+    #              / \
+    #             4   5
+
+    root = Node(1)
+
+    root.left = Node(2)
+    root.right = Node(3)
+
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+
+    root.right.right = Node(2)
+    root.right.right.left = Node(4)
+    root.right.right.right = Node(5)
+
+    # Function Call
+    if dupSub(root) == True:
+        print("True")
+    else:
+        print("False")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int x)
+    {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GFG {
+    // Function which generates all the subtrees
+    // and stores their serialized form in map
+    static string DupSubRecur(Node root, Dictionary<string, int> map)
+    {
+        // Base Case:
+        // For null nodes
+        if (root == null) {
+            return "N";
+        }
+
+        // Base Case:
+        // For leaf nodes,
+        // return node value as string
+        if (root.left == null && root.right == null) {
+            return root.data.ToString();
+        }
+
+        // Process left subtree
+        string left = DupSubRecur(root.left, map);
+
+        // Process right subtree
+        string right = DupSubRecur(root.right, map);
+
+        // Generate serialized subtree
+        string curr = "";
+
+        curr += root.data.ToString();
+        curr += '*';
+        curr += left;
+        curr += '*';
+        curr += right;
+
+        // Store subtree frequency
+        if (map.ContainsKey(curr)) {
+            map[curr]++;
+        }
+        else {
+            map[curr] = 1;
+        }
+
+        return curr;
+    }
+
+    static bool dupSub(Node root)
+    {
+        Dictionary<string, int> map
+            = new Dictionary<string, int>();
+
+        // Generate all subtree serializations
+        DupSubRecur(root, map);
+
+        // Check duplicate subtree
+        foreach(var p in map)
+        {
+            // If subtree occurs more than once
+            if (p.Value > 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static void Main()
+    {
+        //         1
+        //       /   \
+        //      2     3
+        //     / \     \
+        //    4   5     2
+        //              / \
+        //             4   5
+
+        Node root = new Node(1);
+
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+
+        root.right.right = new Node(2);
+        root.right.right.left = new Node(4);
+        root.right.right.right = new Node(5);
+
+        // Function Call
+        if (dupSub(root) == true) {
+            Console.WriteLine("True");
+        }
+        else {
+            Console.WriteLine("False");
+        }
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(x)
+    {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Function which generates all the subtrees
+// and stores their serialized form in map
+function dupSubRecur(root, map)
+{
+    // Base Case:
+    // For null nodes
+    if (root === null) {
+        return "N";
+    }
+
+    // Base Case:
+    // For leaf nodes,
+    // return node value as string
+    if (root.left === null && root.right === null) {
+        return root.data.toString();
+    }
+
+    // Process left subtree
+    let left = dupSubRecur(root.left, map);
+
+    // Process right subtree
+    let right = dupSubRecur(root.right, map);
+
+    // Generate serialized subtree
+    let curr = "";
+
+    curr += root.data.toString();
+    curr += "*";
+    curr += left;
+    curr += "*";
+    curr += right;
+
+    // Store subtree frequency
+    if (map.has(curr)) {
+        map.set(curr, map.get(curr) + 1);
+    }
+    else {
+        map.set(curr, 1);
+    }
+
+    return curr;
+}
+
+function dupSub(root)
+{
+    let map = new Map();
+
+    // Generate all subtree serializations
+    dupSubRecur(root, map);
+
+    // Check duplicate subtree
+    for (let [key, value] of map) {
+        // If subtree occurs more than once
+        if (value > 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Driver Code
+
+//         1
+//       /   \
+//      2     3
+//     / \     \
+//    4   5     2
+//              / \
+//             4   5
+
+let root = new Node(1);
+
+root.left = new Node(2);
+root.right = new Node(3);
+
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+
+root.right.right = new Node(2);
+root.right.right.left = new Node(4);
+root.right.right.right = new Node(5);
+
+// Function Call
+if (dupSub(root) === true) {
+    console.log("True");
+}
+else {
+    console.log("False");
+}
+
+Output
+
+True
+
+### [Optimized Approach] Early Termination DFS - O(n ^ 2) Time and O(n ^ 2) Space
+
+> The idea is to use a hash set to store the subtrees in Serialized String Form . For a given subtree of size greater than 1, if its equivalent serialized string already exists, then return true. If all subtrees are unique, return false.
+
+- Traverse the binary tree using recursion in postorder fashion.
+- Serialize every subtree into a unique string representation.
+- For null nodes, return "N" and for leaf nodes return their value.
+- Combine current node, left subtree, and right subtree strings to form the serialization.
+- Check whether the serialized subtree already exists in the hash set.
+- If it already exists, return true; otherwise store it in the set and continue traversal.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node
+{
+  public:
+    int data;
+    Node *left, *right;
+
+    Node(int x)
+    {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Function to serialize subtree
+string dupSubRecur(Node *root, unordered_set<string> &s)
+{
+    // Base Case:
+    // For null nodes
+    if (root == nullptr)
+    {
+        return "N";
+    }
+
+    // Base Case:
+    // For leaf nodes
+    if (root->left == nullptr && root->right == nullptr)
+    {
+        return to_string(root->data);
+    }
+
+    // Process left subtree
+    string left = dupSubRecur(root->left, s);
+
+    // If duplicate already found,
+    // stop further recursion
+    if (left == "#")
+    {
+        return "#";
+    }
+
+    // Process right subtree
+    string right = dupSubRecur(root->right, s);
+
+    // If duplicate already found,
+    // stop further recursion
+    if (right == "#")
+    {
+        return "#";
+    }
+
+    // Create serialization string
+    string curr = "";
+    curr += to_string(root->data);
+    curr += '*';
+    curr += left;
+    curr += '*';
+    curr += right;
+
+    // If subtree already exists,
+    // duplicate subtree found
+    if (s.find(curr) != s.end())
+    {
+        return "#";
+    }
+
+    // Store subtree serialization
+    s.insert(curr);
+
+    return curr;
+}
+
+bool dupSub(Node *root)
+{
+    unordered_set<string> s;
+
+    // If duplicate found,
+    // function returns "#"
+    return (dupSubRecur(root, s) == "#");
+}
+
+int main()
+{
+    //         1
+    //       /   \
+    //      2     3
+    //     / \     \
+    //    4   5     2
+    //              / \
+    //             4   5
+
+    Node *root = new Node(1);
+
+    root->left = new Node(2);
+    root->right = new Node(3);
+
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+
+    root->right->right = new Node(2);
+    root->right->right->left = new Node(4);
+    root->right->right->right = new Node(5);
+
+    // Function Call
+    if (dupSub(root) == true)
+    {
+        cout << "True" << endl;
+    }
+    else
+    {
+        cout << "False" << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.HashSet;
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int x)
+    {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+public class GFG {
+    // Function to serialize subtree
+    static String dupSubRecur(Node root, HashSet<String> set)
+    {
+        // Base Case:
+        // For null nodes
+        if (root == null) {
+            return "N";
+        }
+
+        // Base Case:
+        // For leaf nodes
+        if (root.left == null && root.right == null) {
+            return Integer.toString(root.data);
+        }
+
+        // Process left subtree
+        String left = dupSubRecur(root.left, set);
+
+        // If duplicate already found,
+        // stop further recursion
+        if (left.equals("#")) {
+            return "#";
+        }
+
+        // Process right subtree
+        String right = dupSubRecur(root.right, set);
+
+        // If duplicate already found,
+        // stop further recursion
+        if (right.equals("#")) {
+            return "#";
+        }
+
+        // Create serialization string
+        String curr = "";
+
+        curr += Integer.toString(root.data);
+        curr += '*';
+        curr += left;
+        curr += '*';
+        curr += right;
+
+        // If subtree already exists,
+        // duplicate subtree found
+        if (set.contains(curr)) {
+            return "#";
+        }
+
+        // Store subtree serialization
+        set.add(curr);
+
+        return curr;
+    }
+
+    static boolean dupSub(Node root)
+    {
+        HashSet<String> set = new HashSet<>();
+
+        // If duplicate found,
+        // function returns "#"
+        return dupSubRecur(root, set).equals("#");
+    }
+
+    public static void main(String[] args)
+    {
+        //         1
+        //       /   \
+        //      2     3
+        //     / \     \
+        //    4   5     2
+        //              / \
+        //             4   5
+
+        Node root = new Node(1);
+
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+
+        root.right.right = new Node(2);
+        root.right.right.left = new Node(4);
+        root.right.right.right = new Node(5);
+
+        // Function Call
+        if (dupSub(root) == true) {
+            System.out.println("True");
+        }
+        else {
+            System.out.println("False");
+        }
+    }
+}
+
+Python
+
+class Node:
+
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+# Function to serialize subtree
+def dupSubRecur(root, s):
+
+    # Base Case:
+    # For null nodes
+    if root is None:
+        return "N"
+
+    # Base Case:
+    # For leaf nodes
+    if root.left is None and root.right is None:
+        return str(root.data)
+
+    # Process left subtree
+    left = dupSubRecur(root.left, s)
+
+    # If duplicate already found,
+    # stop further recursion
+    if left == "#":
+        return "#"
+
+    # Process right subtree
+    right = dupSubRecur(root.right, s)
+
+    # If duplicate already found,
+    # stop further recursion
+    if right == "#":
+        return "#"
+
+    # Create serialization string
+    curr = ""
+    curr += str(root.data)
+    curr += '*'
+    curr += left
+    curr += '*'
+    curr += right
+
+    # If subtree already exists,
+    # duplicate subtree found
+    if curr in s:
+        return "#"
+
+    # Store subtree serialization
+    s.add(curr)
+
+    return curr
+
+def dupSub(root):
+
+    s = set()
+
+    # If duplicate found,
+    # function returns "#"
+    return dupSubRecur(root, s) == "#"
+
+# Driver Code
+
+if __name__ == "__main__":
+    #         1
+    #       /   \
+    #      2     3
+    #     / \     \
+    #    4   5     2
+    #              / \
+    #             4   5
+
+    root = Node(1)
+
+    root.left = Node(2)
+    root.right = Node(3)
+
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+
+    root.right.right = Node(2)
+    root.right.right.left = Node(4)
+    root.right.right.right = Node(5)
+
+    # Function Call
+    if dupSub(root) == True:
+        print("True")
+    else:
+        print("False")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Node
+{
+    public int data;
+    public Node left, right;
+
+    public Node(int x)
+    {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GFG
+{
+    // Function to serialize subtree
+    static string DupSubRecur(Node root, HashSet<string> set)
+    {
+        // Base Case:
+        // For null nodes
+        if (root == null)
+        {
+            return "N";
+        }
+
+        // Base Case:
+        // For leaf nodes
+        if (root.left == null &&
+            root.right == null)
+        {
+            return root.data.ToString();
+        }
+
+        // Process left subtree
+        string left = DupSubRecur(root.left, set);
+
+        // If duplicate already found,
+        // stop further recursion
+        if (left == "#")
+        {
+            return "#";
+        }
+
+        // Process right subtree
+        string right = DupSubRecur(root.right, set);
+
+        // If duplicate already found,
+        // stop further recursion
+        if (right == "#")
+        {
+            return "#";
+        }
+
+        // Create serialization string
+        string curr = "";
+
+        curr += root.data.ToString();
+        curr += '*';
+        curr += left;
+        curr += '*';
+        curr += right;
+
+        // If subtree already exists,
+        // duplicate subtree found
+        if (set.Contains(curr))
+        {
+            return "#";
+        }
+
+        // Store subtree serialization
+        set.Add(curr);
+
+        return curr;
+    }
+
+    static bool dupSub(Node root)
+    {
+        HashSet<string> set = new HashSet<string>();
+
+        // If duplicate found,
+        // function returns "#"
+        return DupSubRecur(root, set) == "#";
+    }
+
+    static void Main()
+    {
+        //         1
+        //       /   \
+        //      2     3
+        //     / \     \
+        //    4   5     2
+        //              / \
+        //             4   5
+
+        Node root = new Node(1);
+
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+
+        root.right.right = new Node(2);
+        root.right.right.left = new Node(4);
+        root.right.right.right = new Node(5);
+
+        // Function Call
+        if (dupSub(root) == true)
+        {
+            Console.WriteLine("True");
+        }
+        else
+        {
+            Console.WriteLine("False");
+        }
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(x)
+    {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Function to serialize subtree
+function dupSubRecur(root, set)
+{
+    // Base Case:
+    // For null nodes
+    if (root === null) {
+        return "N";
+    }
+
+    // Base Case:
+    // For leaf nodes
+    if (root.left === null && root.right === null) {
+        return root.data.toString();
+    }
+
+    // Process left subtree
+    let left = dupSubRecur(root.left, set);
+
+    // If duplicate already found,
+    // stop further recursion
+    if (left === "#") {
+        return "#";
+    }
+
+    // Process right subtree
+    let right = dupSubRecur(root.right, set);
+
+    // If duplicate already found,
+    // stop further recursion
+    if (right === "#") {
+        return "#";
+    }
+
+    // Create serialization string
+    let curr = "";
+
+    curr += root.data.toString();
+    curr += "*";
+    curr += left;
+    curr += "*";
+    curr += right;
+
+    // If subtree already exists,
+    // duplicate subtree found
+    if (set.has(curr)) {
+        return "#";
+    }
+
+    // Store subtree serialization
+    set.add(curr);
+
+    return curr;
+}
+
+function dupSub(root)
+{
+    let set = new Set();
+
+    // If duplicate found,
+    // function returns "#"
+    return dupSubRecur(root, set) === "#";
+}
+
+// Driver Code
+
+//         1
+//       /   \
+//      2     3
+//     / \     \
+//    4   5     2
+//              / \
+//             4   5
+
+let root = new Node(1);
+
+root.left = new Node(2);
+root.right = new Node(3);
+
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+
+root.right.right = new Node(2);
+root.right.right.left = new Node(4);
+root.right.right.right = new Node(5);
+
+// Function Call
+if (dupSub(root) === true) {
+    console.log("True");
+}
+else {
+    console.log("False");
+}
+
+Output
+
+True

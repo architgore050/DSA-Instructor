@@ -1,0 +1,534 @@
+Source: https://www.geeksforgeeks.org/dsa/find-minimum-in-k-dimensional-tree/
+Title: Find minimum in K Dimensional Tree
+Extractor: 2
+
+We strongly recommend to refer below post as a prerequisite of this. K Dimensional Tree | Set 1 (Search and Insert) In this post find minimum is discussed. The operation is to find minimum in the given dimension. This is especially needed in delete operation. For example, consider below KD Tree, if given dimension is x, then output should be 5 and if given dimensions is y, then output should be 12.
+
+In KD tree, points are divided dimension by dimension. For example, root divides keys by dimension 0, level next to root divides by dimension 1, next level by dimension 2 if k is more than 2 (else by dimension 0), and so on.
+
+To find minimum we traverse nodes starting from root. If dimension of current level is same as given dimension, then required minimum lies on left side if there is left child . This is same as Binary Search Tree Minimum . Above is simple, what to do when current level's dimension is different. When dimension of current level is different, minimum may be either in left subtree or right subtree or current node may also be minimum . So we take minimum of three and return. This is different from Binary Search tree.
+
+Below is C++ implementation of find minimum operation.
+
+Cpp
+
+// A C++ program to demonstrate find minimum on KD tree
+#include <bits/stdc++.h>
+using namespace std;
+
+const int k = 2;
+
+// A structure to represent node of kd tree
+struct Node {
+    int point[k]; // To store k dimensional point
+    Node *left, *right;
+};
+
+// A method to create a node of K D tree
+struct Node* newNode(int arr[])
+{
+    struct Node* temp = new Node;
+
+    for (int i = 0; i < k; i++)
+        temp->point[i] = arr[i];
+
+    temp->left = temp->right = NULL;
+    return temp;
+}
+
+// Inserts a new node and returns root of modified tree
+// The parameter depth is used to decide axis of comparison
+Node* insertRec(Node* root, int point[], unsigned depth)
+{
+    // Tree is empty?
+    if (root == NULL)
+        return newNode(point);
+
+    // Calculate current dimension (cd) of comparison
+    unsigned cd = depth % k;
+
+    // Compare the new point with root on current dimension 'cd'
+    // and decide the left or right subtree
+    if (point[cd] < (root->point[cd]))
+        root->left = insertRec(root->left, point, depth + 1);
+    else
+        root->right = insertRec(root->right, point, depth + 1);
+
+    return root;
+}
+
+// Function to insert a new point with given point in
+// KD Tree and return new root. It mainly uses above recursive
+// function "insertRec()"
+Node* insert(Node* root, int point[])
+{
+    return insertRec(root, point, 0);
+}
+
+// A utility function to find minimum of three integers
+int min(int x, int y, int z)
+{
+    return min(x, min(y, z));
+}
+
+// Recursively finds minimum of d'th dimension in KD tree
+// The parameter depth is used to determine current axis.
+int findMinRec(Node* root, int d, unsigned depth)
+{
+    // Base cases
+    if (root == NULL)
+        return INT_MAX;
+
+    // Current dimension is computed using current depth and total
+    // dimensions (k)
+    unsigned cd = depth % k;
+
+    // Compare point with root with respect to cd (Current dimension)
+    if (cd == d) {
+        if (root->left == NULL)
+            return root->point[d];
+        return min(root->point[d], findMinRec(root->left, d, depth + 1));
+    }
+
+    // If current dimension is different then minimum can be anywhere
+    // in this subtree
+    return min(root->point[d],
+               findMinRec(root->left, d, depth + 1),
+               findMinRec(root->right, d, depth + 1));
+}
+
+// A wrapper over findMinRec(). Returns minimum of d'th dimension
+int findMin(Node* root, int d)
+{
+    // Pass current level or depth as 0
+    return findMinRec(root, d, 0);
+}
+
+// Driver program to test above functions
+int main()
+{
+    struct Node* root = NULL;
+    int points[][k] = { { 30, 40 }, { 5, 25 },
+       { 70, 70 }, { 10, 12 }, { 50, 30 }, { 35, 45 } };
+
+    int n = sizeof(points) / sizeof(points[0]);
+
+    for (int i = 0; i < n; i++)
+        root = insert(root, points[i]);
+
+    cout << "Minimum of 0'th dimension is " << findMin(root, 0) << endl;
+    cout << "Minimum of 1'th dimension is " << findMin(root, 1) << endl;
+
+    return 0;
+}
+
+Java
+
+// A Java program to demonstrate find minimum on KD tree
+import java.util.Arrays;
+
+class Node {
+  int[] point;
+  Node left, right;
+
+  Node(int[] point) {
+    this.point = point;
+    left = right = null;
+  }
+}
+
+class KDTree {
+  int k = 2;
+
+  Node newNode(int[] point) {
+    return new Node(point);
+  }
+
+  Node insertRec(Node root, int[] point, int depth) {
+    if (root == null) {
+      return newNode(point);
+    }
+
+    int cd = depth % k;
+    if (point[cd] < root.point[cd]) {
+      root.left = insertRec(root.left, point, depth + 1);
+    } else {
+      root.right = insertRec(root.right, point, depth + 1);
+    }
+
+    return root;
+  }
+
+  Node insert(Node root, int[] point) {
+    return insertRec(root, point, 0);
+  }
+
+  int min3(int x, int y, int z) {
+    return Math.min(Math.min(x, y), z);
+  }
+
+  int findMinRec(Node root, int d, int depth) {
+    if (root == null) {
+      return Integer.MAX_VALUE;
+    }
+
+    int cd = depth % k;
+    if (cd == d) {
+      if (root.left == null) {
+        return root.point[d];
+      }
+      return min3(root.point[d], findMinRec(root.left, d, depth + 1), findMinRec(root.right, d, depth + 1));
+    }
+
+    return min3(root.point[d], findMinRec(root.left, d, depth + 1), findMinRec(root.right, d, depth + 1));
+  }
+
+  int findMin(Node root, int d) {
+    return findMinRec(root, d, 0);
+  }
+
+  public static void main(String[] args) {
+    KDTree tree = new KDTree();
+    Node root = null;
+    int[][] points = {{30, 40}, {5, 25}, {70, 70}, {10, 12}, {50, 30}, {35, 45}};
+
+    for (int[] point : points) {
+      root = tree.insert(root, point);
+    }
+
+    System.out.println("Minimum of 0'th dimension is " + tree.findMin(root, 0));
+    System.out.println("Minimum of 1'th dimension is " + tree.findMin(root, 1));
+  }
+}
+
+// This code is contributed y shivamsharma215
+
+Python3
+
+# A python program to demonstrate find minimum on KD tree
+
+# Number of dimensions
+k = 2
+
+class Node:
+    def __init__(self, point):
+        self.point = point
+        self.left = None
+        self.right = None
+
+# A method to create a node of K D tree
+def newNode(arr):
+    temp = Node(arr)
+    return temp
+
+# Inserts a new node and returns root of modified tree
+# The parameter depth is used to decide axis of comparison
+def insertRec(root, point, depth):
+    # Tree is empty?
+    if root is None:
+        return newNode(point)
+
+    # Calculate current dimension (cd) of comparison
+    cd = depth % k
+
+    # Compare the new point with root on current dimension 'cd'
+    # and decide the left or right subtree
+    if point[cd] < root.point[cd]:
+        root.left = insertRec(root.left, point, depth + 1)
+    else:
+        root.right = insertRec(root.right, point, depth + 1)
+
+    return root
+
+# Function to insert a new point with given point in
+# KD Tree and return new root. It mainly uses above recursive
+# function "insertRec()"
+def insert(root, point):
+    return insertRec(root, point, 0)
+
+# A utility function to find minimum of three integers
+def min_3(x, y, z):
+    return min(x, y, z)
+
+# Recursively finds minimum of d'th dimension in KD tree
+# The parameter depth is used to determine current axis.
+def findMinRec(root, d, depth):
+    # Base cases
+    if root is None:
+        return float('inf')
+
+    # Current dimension is computed using current depth and total
+    # dimensions (k)
+    cd = depth % k
+
+    # Compare point with root with respect to cd (Current dimension)
+    if cd == d:
+        if root.left is None:
+            return root.point[d]
+        return min(root.point[d], findMinRec(root.left, d, depth + 1),findMinRec(root.right, d, depth + 1))
+
+    # If current dimension is different then minimum can be anywhere
+    # in this subtree
+    return min_3(root.point[d], findMinRec(root.left, d, depth + 1), findMinRec(root.right, d, depth + 1))
+
+# A wrapper over findMinRec(). Returns minimum of d'th dimension
+def findMin(root, d):
+    # Pass current level or depth as 0
+    return findMinRec(root, d, 0)
+
+# Driver program to test above functions
+if __name__ == "__main__":
+    root = None
+    points = [ [30, 40], [5, 25], [70, 70], [10, 12], [50, 30], [35, 45] ]
+
+    n = len(points)
+
+    for i in range(n):
+        root = insert(root, points[i])
+
+    print("Minimum of 0'th dimension is", findMin(root, 0))
+    print("Minimum of 1'th dimension is", findMin(root, 1))
+
+# This code is contributed by Vikram_Shirsat
+
+C#
+
+using System;
+public class Node
+{
+  public int[] Point { get; set; }
+  public Node Left { get; set; }
+  public Node Right { get; set; }
+
+  public Node(int[] point)
+  {
+    Point = point;
+    Left = null;
+    Right = null;
+  }
+}
+
+class Program
+{
+  const int k = 2;
+
+  // A structure to represent node of kd tree
+  class Node
+  {
+    public int[] point = new int[k]; // To store k dimensional point
+    public Node left, right;
+  };
+
+  // A method to create a node of K D tree
+  static Node NewNode(int[] arr)
+  {
+    Node temp = new Node();
+
+    for (int i = 0; i < k; i++)
+      temp.point[i] = arr[i];
+
+    temp.left = temp.right = null;
+    return temp;
+  }
+
+  // Inserts a new node and returns root of modified tree
+  // The parameter depth is used to decide axis of comparison
+  static Node InsertRec(Node root, int[] point, uint depth)
+  {
+    // Tree is empty?
+    if (root == null)
+      return NewNode(point);
+
+    // Calculate current dimension (cd) of comparison
+    uint cd = depth % k;
+
+    // Compare the new point with root on current dimension 'cd'
+    // and decide the left or right subtree
+    if (point[cd] < root.point[cd])
+      root.left = InsertRec(root.left, point, depth + 1);
+    else
+      root.right = InsertRec(root.right, point, depth + 1);
+
+    return root;
+  }
+
+  // Function to insert a new point with given point in
+  // KD Tree and return new root. It mainly uses above recursive
+  // function "InsertRec()"
+  static Node Insert(Node root, int[] point)
+  {
+    return InsertRec(root, point, 0);
+  }
+
+  // A utility function to find minimum of three integers
+  static int Min(int x, int y, int z)
+  {
+    return Math.Min(x, Math.Min(y, z));
+  }
+
+  // Recursively finds minimum of d'th dimension in KD tree
+  // The parameter depth is used to determine current axis.
+  static int FindMinRec(Node root, int d, uint depth)
+  {
+    // Base cases
+    if (root == null)
+      return int.MaxValue;
+
+    // Current dimension is computed using current depth and total
+    // dimensions (k)
+    uint cd = depth % k;
+
+    // Compare point with root with respect to cd (Current dimension)
+    if (cd == d)
+    {
+      if (root.left == null)
+        return root.point[d];
+      return Math.Min(root.point[d], FindMinRec(root.left, d, depth + 1));
+    }
+
+    // If current dimension is different then minimum can be anywhere
+    // in this subtree
+    return Min(root.point[d],
+               FindMinRec(root.left, d, depth + 1),
+               FindMinRec(root.right, d, depth + 1));
+  }
+
+  // A wrapper over FindMinRec(). Returns minimum of d'th dimension
+  static int FindMin(Node root, int d)
+  {
+    // Pass current level or depth as 0
+    return FindMinRec(root, d, 0);
+  }
+
+  static void Main(string[] args)
+  {
+    Node root = null;
+    int[][] points = new int[][] { new int[] { 30, 40 }, new int[] { 5, 25 },
+                                  new int[] { 70, 70 }, new int[] { 10, 12 }, new int[] { 50, 30 }, new int[] { 35, 45 } };
+
+    int n = points.Length;
+
+    for (int i = 0; i < n; i++)
+      root = Insert(root, points[i]);
+
+    Console.WriteLine("Minimum of 0'th dimension is " + FindMin(root, 0));
+    Console.WriteLine("Minimum of 1'th dimension is " + FindMin(root, 1));
+
+    Console.ReadLine();
+  }
+}
+
+// This code is contributed by ratiagrawal.
+
+JavaScript
+
+// A Javascript program to demonstrate find minimum on KD tree
+
+// Number of dimensions
+let k = 2;
+
+class Node {
+constructor(point) {
+this.point = point;
+this.left = null;
+this.right = null;
+}
+}
+
+// A method to create a node of K D tree
+function newNode(arr) {
+let temp = new Node(arr);
+return temp;
+}
+
+// Inserts a new node and returns root of modified tree
+// The parameter depth is used to decide axis of comparison
+function insertRec(root, point, depth) {
+// Tree is empty?
+if (root == null) {
+return newNode(point);
+}
+// Calculate current dimension (cd) of comparison
+let cd = depth % k;
+
+// Compare the new point with root on current dimension 'cd'
+// and decide the left or right subtree
+if (point[cd] < root.point[cd]) {
+    root.left = insertRec(root.left, point, depth + 1);
+} else {
+    root.right = insertRec(root.right, point, depth + 1);
+}
+
+return root;
+}
+
+// Function to insert a new point with given point in
+// KD Tree and return new root. It mainly uses above recursive
+// function "insertRec()"
+function insert(root, point) {
+return insertRec(root, point, 0);
+}
+
+// A utility function to find minimum of three integers
+function min_3(x, y, z) {
+return Math.min(x, y, z);
+}
+
+// Recursively finds minimum of d'th dimension in KD tree
+// The parameter depth is used to determine current axis.
+function findMinRec(root, d, depth) {
+// Base cases
+if (root == null) {
+return Number.POSITIVE_INFINITY;
+}
+// Current dimension is computed using current depth and total
+// dimensions (k)
+let cd = depth % k;
+
+// Compare point with root with respect to cd (Current dimension)
+if (cd == d) {
+    if (root.left == null) {
+        return root.point[d];
+    }
+    return min_3(root.point[d], findMinRec(root.left, d, depth + 1), findMinRec(root.right, d, depth + 1));
+}
+
+// If current dimension is different then minimum can be anywhere
+// in this subtree
+return min_3(root.point[d], findMinRec(root.left, d, depth + 1), findMinRec(root.right, d, depth + 1));
+}
+
+// A wrapper over findMinRec(). Returns minimum of d'th dimension
+function findMin(root, d) {
+// Pass current level or depth as 0
+return findMinRec(root, d, 0);
+}
+
+// Driver program to test above functions
+if (true) {
+let root = null;
+let points = [[30, 40], [5, 25], [70, 70], [10, 12], [50, 30], [35, 45]];
+let n = points.length;
+
+for (let i = 0; i < n; i++) {
+    root = insert(root, points[i]);
+}
+
+console.log("Minimum of 0'th dimension is", findMin(root, 0));
+console.log("Minimum of 1'th dimension is", findMin(root, 1));
+}
+
+//This code is contributed by shivamsharma215
+
+Output:
+
+Minimum of 0'th dimension is 5
+Minimum of 1'th dimension is 12
+
+Time complexity- The time complexity of inserting a point into a k-dimensional tree is O(k log n), where n is the number of points already in the tree. This is because at each level of the tree, we compare the point to be inserted with the current node and recursively move down the left or right subtree based on the comparison. We stop when we reach a null node, and create a new node for the point to be inserted.
+
+The time complexity of finding the minimum value in a given dimension of the k-dimensional tree is O(log n), as we start at the root of the tree and recursively move down the left or right subtree based on the comparison of the given dimension of the point with the current node. We stop when we reach a leaf node or a node with a null subtree.
+
+Space complexity - The space complexity of the k-dimensional tree is O(n), where n is the number of points in the tree. This is because we store a Node structure for each point in the tree, which contains the k-dimensional point and pointers to its left and right subtrees.
+
+Source: https://www.cs.umd.edu/class/spring2008/cmsc420/L19.kd-trees.pdf

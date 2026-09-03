@@ -1,0 +1,1152 @@
+Source: https://www.geeksforgeeks.org/dsa/delete-operation-in-b-tree/
+Title: Delete Operation in B-Tree
+Extractor: 2
+
+A B Tree is a type of data structure commonly known as a Balanced Tree that stores multiple data items very easily. B Trees are one of the most useful data structures that provide ordered access to the data in the database. In this article, we will see the delete operation in the B-Tree. B-Trees are self-balancing trees.
+
+## Deletion Process in B-Trees
+
+Deletion from a B-tree is more complicated than insertion because we can delete a key from any node-not just a leaf—and when we delete a key from an internal node, we will have to rearrange the node’s children.
+
+As in insertion, we must make sure the deletion doesn't violate the B-tree properties . Just as we had to ensure that a node didn't get too big due to insertion, we must ensure that a node doesn't get too small during deletion (except that the root is allowed to have fewer than the minimum number t-1 of keys). Just as a simple insertion algorithm might have to back up if a node on the path to where the key was to be inserted was full, a simple approach to deletion might have to back up if a node (other than the root) along the path to where the key is to be deleted has the minimum number of keys.
+
+The deletion procedure deletes the key k from the subtree rooted at x. This procedure guarantees that whenever it calls itself recursively on a node x, the number of keys in x is at least the minimum degree t. Note that this condition requires one more key than the minimum required by the usual B-tree conditions, so sometimes a key may have to be moved into a child node before recursion descends to that child. This strengthened condition allows us to delete a key from the tree in one downward pass without having to "back up" (with one exception, which we’ll explain). You should interpret the following specification for deletion from a B-tree with the understanding that if the root node x ever becomes an internal node having no keys (this situation can occur in cases 2c and 3b then we delete x, and x’s only child x.c1 becomes the new root of the tree, decreasing the height of the tree by one and preserving the property that the root of the tree contains at least one key (unless the tree is empty).
+
+## Various Cases of Deletion
+
+Case 1: If the key k is in node x and x is a leaf, delete the key k from x.
+
+Case 2: If the key k is in node x and x is an internal node, do the following.
+
+- If the child y that precedes k in node x has at least t keys, then find the predecessor k0 of k in the sub-tree rooted at y. Recursively delete k0, and replace k with k0 in x. (We can find k0 and delete it in a single downward pass.)
+- If y has fewer than t keys, then, symmetrically, examine the child z that follows k in node x. If z has at least t keys, then find the successor k0 of k in the subtree rooted at z. Recursively delete k0, and replace k with k0 in x. (We can find k0 and delete it in a single downward pass.)
+- Otherwise, if both y and z have only t-1 keys, merge k and all of z into y, so that x loses both k and the pointer to z, and y now contains 2t-1 keys. Then free z and recursively delete k from y.
+
+Case 3: If the key k is not present in internal node x, determine the root x.c(i) of the appropriate subtree that must contain k, if k is in the tree at all. If x.c(i) has only t-1 keys, execute steps 3a or 3b as necessary to guarantee that we descend to a node containing at least t keys. Then finish by recursing on the appropriate child of x.
+
+- If x.c(i) has only t-1 keys but has an immediate sibling with at least t keys, give x.c(i) an extra key by moving a key from x down into x.c(i), moving a key from x.c(i) ’s immediate left or right sibling up into x, and moving the appropriate child pointer from the sibling into x.c(i).
+- If x.c(i) and both of x.c(i)'s immediate siblings have t-1 keys, merge x.c(i) with one sibling, which involves moving a key from x down into the new merged node to become the median key for that node.
+
+Since most of the keys in a B-tree are in the leaves, deletion operations are most often used to delete keys from leaves. The recursive delete procedure then acts in one downward pass through the tree, without having to back up. When deleting a key in an internal node, however, the procedure makes a downward pass through the tree but may have to return to the node from which the key was deleted to replace the key with its predecessor or successor (cases 2a and 2b).
+
+The following figures explain the deletion process.
+
+Deletion Operation in B+ Trees
+
+The next processes are shown below in the figure.
+
+Deletion Operation in B+ Trees
+
+## Implementation
+
+Following is the implementation of the deletion process.
+
+C++
+
+#include <iostream>
+using namespace std;
+
+// A BTree Node
+struct BTreeNode {
+    int *keys, t, n;
+    BTreeNode **C;
+    bool leaf;
+
+    BTreeNode(int _t, bool _leaf) : t(_t), leaf(_leaf), n(0) {
+
+        keys = new int[2*t-1];
+        C = new BTreeNode*[2*t];
+    }
+
+    // Helper to find the first key greater than or equal to k
+    int findKey(int k) {
+
+        int idx = 0;
+        while (idx < n && keys[idx] < k) ++idx;
+        return idx;
+    }
+
+    /* --- INSERTION LOGIC --- */
+
+    // Splits the child y of this node. y must be full (2t-1 keys)
+    void splitChild(int i, BTreeNode *y) {
+
+        BTreeNode *z = new BTreeNode(y->t, y->leaf);
+        z->n = t - 1;
+
+        // Copy the last (t-1) keys and children of y to z
+        for (int j = 0; j < t-1; j++) z->keys[j] = y->keys[j+t];
+
+        if (!y->leaf)
+            for (int j = 0; j < t; j++) z->C[j] = y->C[j+t];
+
+        y->n = t - 1; // Reduce key count in y
+        for (int j = n; j >= i+1; j--) C[j+1] = C[j]; // Shift children to make room for z
+        C[i+1] = z;
+
+        for (int j = n-1; j >= i; j--) keys[j+1] = keys[j]; // Shift keys to make room for y's middle key
+        keys[i] = y->keys[t-1];
+        n++;
+    }
+
+    void insertNonFull(int k) {
+        int i = n - 1;
+        if (leaf) {
+
+            // Find location and shift keys
+            while (i >= 0 && keys[i] > k) { keys[i+1] = keys[i]; i--; }
+            keys[i+1] = k; n++;
+        }
+        else {
+
+            while (i >= 0 && keys[i] > k) i--;
+            if (C[i+1]->n == 2*t-1) {
+
+                splitChild(i+1, C[i+1]);
+                if (keys[i+1] < k) i++;
+            }
+            C[i+1]->insertNonFull(k);
+        }
+    }
+
+    /* --- DELETION LOGIC --- */
+
+    // Rebalances child C[idx] if it has fewer than t-1 keys
+    void fill(int idx) {
+
+        // Case A: Borrow from left sibling
+        if (idx != 0 && C[idx-1]->n >= t) {
+
+            BTreeNode *child = C[idx], *sib = C[idx-1];
+            for (int i=child->n-1; i>=0; --i) child->keys[i+1] = child->keys[i];
+            if (!child->leaf) for(int i=child->n; i>=0; --i) child->C[i+1] = child->C[i];
+
+            child->keys[0] = keys[idx-1];
+
+            if (!child->leaf) child->C[0] = sib->C[sib->n];
+            keys[idx-1] = sib->keys[sib->n-1];
+            child->n++; sib->n--;
+        }
+
+        // Case B: Borrow from right sibling
+        else if (idx != n && C[idx+1]->n >= t) {
+            BTreeNode *child = C[idx], *sib = C[idx+1];
+            child->keys[child->n] = keys[idx];
+
+            if (!child->leaf) child->C[child->n+1] = sib->C[0];
+
+            keys[idx] = sib->keys[0];
+
+            for (int i=1; i<sib->n; ++i) sib->keys[i-1] = sib->keys[i];
+            if (!sib->leaf) for(int i=1; i<=sib->n; ++i) sib->C[i-1] = sib->C[i];
+            child->n++; sib->n--;
+        }
+
+        // Case C: Merge with a sibling
+        else {
+            int i = (idx != n) ? idx : idx-1;
+            BTreeNode *child = C[i], *sib = C[i+1];
+            child->keys[t-1] = keys[i];
+
+            for (int j=0; j<sib->n; ++j) child->keys[j+t] = sib->keys[j];
+            if (!child->leaf) for(int j=0; j<=sib->n; ++j) child->C[j+t] = sib->C[j];
+
+            for (int j=i+1; j<n; ++j) keys[j-1] = keys[j];
+            for (int j=i+2; j<=n; ++j) C[j-1] = C[j];
+
+            child->n += sib->n + 1; n--; delete sib;
+        }
+    }
+
+    void remove(int k) {
+        int idx = findKey(k);
+
+        if (idx < n && keys[idx] == k) {
+            if (leaf) {
+
+                // Delete from leaf
+                for (int i=idx+1; i<n; ++i) keys[i-1] = keys[i];
+                n--;
+            }
+            else {
+
+                // Delete from internal node
+                if (C[idx]->n >= t) {
+
+                    // Use predecessor
+                    BTreeNode *cur = C[idx]; while (!cur->leaf) cur = cur->C[cur->n];
+                    int pred = cur->keys[cur->n-1]; keys[idx] = pred; C[idx]->remove(pred);
+                }
+                else if (C[idx+1]->n >= t) {
+
+                    // Use successor
+                    BTreeNode *cur = C[idx+1]; while (!cur->leaf) cur = cur->C[0];
+                    int succ = cur->keys[0]; keys[idx] = succ; C[idx+1]->remove(succ);
+                }
+                else {
+
+                    // Merge and then delete
+                    fill(idx); remove(k);
+                }
+            }
+        } else {
+
+            // Key not in this node
+            if (leaf) return;
+            bool flag = (idx == n);
+
+            if (C[idx]->n < t) fill(idx);
+
+            if (flag && idx > n) C[idx-1]->remove(k);
+            else C[idx]->remove(k);
+        }
+    }
+
+    void traverse() {
+        int i;
+        for (i = 0; i < n; i++) {
+
+            if (!leaf) C[i]->traverse();
+            cout << " " << keys[i];
+        }
+
+        if (!leaf) C[i]->traverse();
+    }
+};
+
+class BTree {
+    BTreeNode *root; int t;
+public:
+    BTree(int _t) : root(nullptr), t(_t) {}
+
+    void insert(int k) {
+        if (!root) {
+
+            root = new BTreeNode(t, true);
+            root->keys[0] = k; root->n = 1;
+        }
+        else {
+            if (root->n == 2*t-1) {
+
+                BTreeNode *s = new BTreeNode(t, false);
+                s->C[0] = root; s->splitChild(0, root);
+
+                int i = (s->keys[0] < k) ? 1 : 0;
+                s->C[i]->insertNonFull(k); root = s;
+            }
+            else root->insertNonFull(k);
+        }
+    }
+
+    void remove(int k) {
+        if (!root) return;
+        root->remove(k);
+
+        if (root->n == 0) {
+
+            // Shrink tree height
+            BTreeNode *tmp = root;
+            root = root->leaf ? nullptr : root->C[0];
+            delete tmp;
+        }
+    }
+
+    void traverse() { if (root) root->traverse(); cout << endl; }
+};
+
+int main() {
+
+    BTree tree(3);
+
+    tree.insert(10);
+    tree.insert(5);
+    tree.insert(15);
+    tree.insert(2);
+    tree.insert(7);
+    tree.insert(12);
+    tree.insert(20);
+
+    cout << "Tree traversal:"; tree.traverse();
+    tree.remove(5); cout << "After removing 5:"; tree.traverse();
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+// A BTree Node
+class BTreeNode {
+    int[] keys;
+    int t, n;
+    BTreeNode[] C;
+    boolean leaf;
+
+    BTreeNode(int _t, boolean _leaf) {
+        t = _t;
+        leaf = _leaf;
+        n = 0;
+        keys = new int[2*t-1];
+        C = new BTreeNode[2*t];
+    }
+
+    // Helper to find the first key greater than or equal to k
+    int findKey(int k) {
+        int idx = 0;
+        while (idx < n && keys[idx] < k) ++idx;
+        return idx;
+    }
+
+    /* --- INSERTION LOGIC --- */
+
+    // Splits the child y of this node. y must be full (2t-1 keys)
+    void splitChild(int i, BTreeNode y) {
+        BTreeNode z = new BTreeNode(y.t, y.leaf);
+        z.n = t - 1;
+
+        // Copy the last (t-1) keys and children of y to z
+        System.arraycopy(y.keys, t, z.keys, 0, t-1);
+        if (!y.leaf) System.arraycopy(y.C, t, z.C, 0, t);
+
+        y.n = t - 1; // Reduce key count in y
+        System.arraycopy(C, i, C, i+1, n-i);
+        C[i+1] = z;
+
+        System.arraycopy(keys, i, keys, i+1, n-i);
+        keys[i] = y.keys[t-1];
+        n++;
+    }
+
+    void insertNonFull(int k) {
+        int i = n - 1;
+        if (leaf) {
+            // Find location and shift keys
+            while (i >= 0 && keys[i] > k) { keys[i+1] = keys[i]; i--; }
+            keys[i+1] = k; n++;
+        } else {
+            while (i >= 0 && keys[i] > k) i--;
+            if (C[i+1].n == 2*t-1) {
+                splitChild(i+1, C[i+1]);
+                if (keys[i+1] < k) i++;
+            }
+            C[i+1].insertNonFull(k);
+        }
+    }
+
+    /* --- DELETION LOGIC --- */
+
+    // Rebalances child C[idx] if it has fewer than t-1 keys
+    void fill(int idx) {
+        // Case A: Borrow from left sibling
+        if (idx!= 0 && C[idx-1].n >= t) {
+            BTreeNode child = C[idx], sib = C[idx-1];
+            System.arraycopy(child.keys, 0, child.keys, 1, child.n);
+            if (!child.leaf) System.arraycopy(child.C, 0, child.C, 1, child.n+1);
+            child.keys[0] = keys[idx-1];
+            if (!child.leaf) child.C[0] = sib.C[sib.n];
+            keys[idx-1] = sib.keys[sib.n-1];
+            child.n++; sib.n--;
+        } else if (idx!= n && C[idx+1].n >= t) {
+            BTreeNode child = C[idx], sib = C[idx+1];
+            child.keys[child.n] = keys[idx];
+            if (!child.leaf) child.C[child.n+1] = sib.C[0];
+            keys[idx] = sib.keys[0];
+            System.arraycopy(sib.keys, 1, sib.keys, 0, sib.n-1);
+            if (!sib.leaf) System.arraycopy(sib.C, 1, sib.C, 0, sib.n);
+            child.n++; sib.n--;
+        } else {
+            int i = (idx!= n) ? idx : idx-1;
+            BTreeNode child = C[i], sib = C[i+1];
+            child.keys[t-1] = keys[i];
+            System.arraycopy(sib.keys, 0, child.keys, t, sib.n);
+            if (!child.leaf) System.arraycopy(sib.C, 0, child.C, t, sib.n+1);
+            System.arraycopy(keys, i+1, keys, i, n-i-1);
+            System.arraycopy(C, i+2, C, i+1, n-i-1);
+            child.n += sib.n + 1; n--;
+        }
+    }
+
+    void remove(int k) {
+        int idx = findKey(k);
+        if (idx < n && keys[idx] == k) {
+            if (leaf) {
+                // Delete from leaf
+                System.arraycopy(keys, idx+1, keys, idx, n-idx-1);
+                n--;
+            } else {
+                // Delete from internal node
+                if (C[idx].n >= t) {
+                    // Use predecessor
+                    BTreeNode cur = C[idx]; while (!cur.leaf) cur = cur.C[cur.n];
+                    int pred = cur.keys[cur.n-1]; keys[idx] = pred; C[idx].remove(pred);
+                } else if (C[idx+1].n >= t) {
+                    // Use successor
+                    BTreeNode cur = C[idx+1]; while (!cur.leaf) cur = cur.C[0];
+                    int succ = cur.keys[0]; keys[idx] = succ; C[idx+1].remove(succ);
+                } else {
+                    // Merge and then delete
+                    fill(idx); remove(k);
+                }
+            }
+        } else {
+            // Key not in this node
+            if (leaf) return;
+            boolean flag = (idx == n);
+            if (C[idx].n < t) fill(idx);
+            if (flag && idx > n) C[idx-1].remove(k);
+            else C[idx].remove(k);
+        }
+    }
+
+    void traverse() {
+        for (int i = 0; i < n; i++) {
+            if (!leaf) C[i].traverse();
+            System.out.print(" " + keys[i]);
+        }
+        if (!leaf) C[n].traverse();
+    }
+}
+
+class BTree {
+    BTreeNode root; int t;
+    public BTree(int _t) { root = null; t = _t; }
+
+    void insert(int k) {
+        if (root == null) {
+            root = new BTreeNode(t, true);
+            root.keys[0] = k; root.n = 1;
+        } else {
+            if (root.n == 2*t-1) {
+                BTreeNode s = new BTreeNode(t, false);
+                s.C[0] = root; s.splitChild(0, root);
+                int i = (s.keys[0] < k)? 1 : 0;
+                s.C[i].insertNonFull(k); root = s;
+            } else root.insertNonFull(k);
+        }
+    }
+
+    void remove(int k) {
+        if (root == null) return;
+        root.remove(k);
+        if (root.n == 0) {
+            // Shrink tree height
+            BTreeNode tmp = root;
+            root = root.leaf? null : root.C[0];
+        }
+    }
+
+    void traverse() { if (root!= null) root.traverse(); System.out.println(); }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        BTree tree = new BTree(3);
+        tree.insert(10);
+        tree.insert(5);
+        tree.insert(15);
+        tree.insert(2);
+        tree.insert(7);
+        tree.insert(12);
+        tree.insert(20);
+        System.out.print("Tree traversal:");
+        tree.traverse();
+        tree.remove(5); System.out.print("After removing 5:");
+        tree.traverse();
+    }
+}
+
+Python
+
+import sys
+
+# A BTree Node
+class BTreeNode:
+    def __init__(self, t, leaf):
+        self.keys = [0] * (2*t-1)
+        self.t = t
+        self.leaf = leaf
+        self.n = 0
+        self.C = [None] * (2*t)
+
+    def findKey(self, k):
+        idx = 0
+        while idx < self.n and self.keys[idx] < k:
+            idx += 1
+        return idx
+
+    # Splits the child y of this node. y must be full (2t-1 keys)
+    def splitChild(self, i, y):
+        z = BTreeNode(y.t, y.leaf)
+        z.n = self.t - 1
+        for j in range(self.t-1):
+            z.keys[j] = y.keys[j + self.t]
+        if not y.leaf:
+            for j in range(self.t):
+                z.C[j] = y.C[j + self.t]
+        y.n = self.t - 1
+        for j in range(self.n, i, -1):
+            self.C[j+1] = self.C[j]
+        self.C[i+1] = z
+        for j in range(self.n-1, i-1, -1):
+            self.keys[j+1] = self.keys[j]
+        self.keys[i] = y.keys[self.t-1]
+        self.n += 1
+
+    def insertNonFull(self, k):
+        i = self.n - 1
+        if self.leaf:
+            while i >= 0 and self.keys[i] > k:
+                self.keys[i+1] = self.keys[i]
+                i -= 1
+            self.keys[i+1] = k
+            self.n += 1
+        else:
+            while i >= 0 and self.keys[i] > k:
+                i -= 1
+            if self.C[i+1].n == 2*self.t-1:
+                self.splitChild(i+1, self.C[i+1])
+                if self.keys[i+1] < k:
+                    i += 1
+            self.C[i+1].insertNonFull(k)
+
+    # Rebalances child C[idx] if it has fewer than t-1 keys
+    def fill(self, idx):
+        if idx!= 0 and self.C[idx-1].n >= self.t:
+            child = self.C[idx]
+            sib = self.C[idx-1]
+            for j in range(child.n-1, -1, -1):
+                child.keys[j+1] = child.keys[j]
+            if not child.leaf:
+                for j in range(child.n):
+                    child.C[j+1] = child.C[j]
+            child.keys[0] = self.keys[idx-1]
+            if not child.leaf:
+                child.C[0] = sib.C[sib.n]
+            self.keys[idx-1] = sib.keys[sib.n-1]
+            child.n += 1
+            sib.n -= 1
+        elif idx!= self.n and self.C[idx+1].n >= self.t:
+            child = self.C[idx]
+            sib = self.C[idx+1]
+            child.keys[child.n] = self.keys[idx]
+            if not child.leaf:
+                child.C[child.n+1] = sib.C[0]
+            self.keys[idx] = sib.keys[0]
+            for j in range(sib.n-1):
+                sib.keys[j] = sib.keys[j+1]
+            if not sib.leaf:
+                for j in range(sib.n):
+                    sib.C[j] = sib.C[j+1]
+            child.n += 1
+            sib.n -= 1
+        else:
+            i = idx if idx!= self.n else idx-1
+            child = self.C[i]
+            sib = self.C[i+1]
+            child.keys[self.t-1] = self.keys[i]
+            for j in range(sib.n):
+                child.keys[self.t + j] = sib.keys[j]
+            if not child.leaf:
+                for j in range(sib.n+1):
+                    child.C[self.t + j] = sib.C[j]
+            for j in range(self.n-i-2):
+                self.keys[i + j] = self.keys[i + j + 1]
+            for j in range(self.n-i-1):
+                self.C[i + j] = self.C[i + j + 1]
+            child.n += sib.n + 1
+            self.n -= 1
+
+    def remove(self, k):
+        idx = self.findKey(k)
+        if idx < self.n and self.keys[idx] == k:
+            if self.leaf:
+                for j in range(idx, self.n-1):
+                    self.keys[j] = self.keys[j+1]
+                self.n -= 1
+            else:
+                if self.C[idx].n >= self.t:
+                    cur = self.C[idx]
+                    while not cur.leaf:
+                        cur = cur.C[cur.n]
+                    pred = cur.keys[cur.n-1]
+                    self.keys[idx] = pred
+                    self.C[idx].remove(pred)
+                elif self.C[idx+1].n >= self.t:
+                    cur = self.C[idx+1]
+                    while not cur.leaf:
+                        cur = cur.C[0]
+                    succ = cur.keys[0]
+                    self.keys[idx] = succ
+                    self.C[idx+1].remove(succ)
+                else:
+                    self.fill(idx)
+                    self.remove(k)
+        else:
+            if self.leaf:
+                return
+            flag = (idx == self.n)
+            if self.C[idx].n < self.t:
+                self.fill(idx)
+            if flag and idx > self.n:
+                self.C[idx-1].remove(k)
+            else:
+                self.C[idx].remove(k)
+
+    def traverse(self):
+        for i in range(self.n):
+            if not self.leaf:
+                self.C[i].traverse()
+            print(" {}".format(self.keys[i]), end='')
+        if not self.leaf:
+            self.C[self.n].traverse()
+
+class BTree:
+    def __init__(self, t):
+        self.root = None
+        self.t = t
+
+    def insert(self, k):
+        if self.root is None:
+            self.root = BTreeNode(self.t, True)
+            self.root.keys[0] = k
+            self.root.n = 1
+        else:
+            if self.root.n == 2*self.t-1:
+                s = BTreeNode(self.t, False)
+                s.C[0] = self.root
+                s.splitChild(0, self.root)
+                i = 1 if s.keys[0] < k else 0
+                s.C[i].insertNonFull(k)
+                self.root = s
+            else:
+                self.root.insertNonFull(k)
+
+    def remove(self, k):
+        if self.root is None:
+            return
+        self.root.remove(k)
+        if self.root.n == 0:
+            self.root = None if self.root.leaf else self.root.C[0]
+
+    def traverse(self):
+        if self.root is not None:
+            self.root.traverse()
+        print()
+
+if __name__ == '__main__':
+    tree = BTree(3)
+    tree.insert(10)
+    tree.insert(5)
+    tree.insert(15)
+    tree.insert(2)
+    tree.insert(7)
+    tree.insert(12)
+    tree.insert(20)
+    print('Tree traversal:', end='')
+    tree.traverse()
+    tree.remove(5)
+    print('After removing 5:', end='')
+    tree.traverse()
+
+C#
+
+using System;
+
+namespace BTreeImplementation
+{
+    // A BTree Node
+    public class BTreeNode
+    {
+        public int[] keys;
+        public int t; // Minimum degree
+        public BTreeNode[] C; // Child pointers
+        public int n; // Current number of keys
+        public bool leaf;
+
+        public BTreeNode(int t, bool leaf)
+        {
+            this.t = t;
+            this.leaf = leaf;
+            this.keys = new int[2 * t - 1];
+            this.C = new BTreeNode[2 * t];
+            this.n = 0;
+        }
+
+        // Helper to find the first key greater than or equal to k
+        public int FindKey(int k)
+        {
+            int idx = 0;
+            while (idx < n && keys[idx] < k) ++idx;
+            return idx;
+        }
+
+        /* --- INSERTION LOGIC --- */
+
+        // Splits child y of this node. y must be full
+        public void SplitChild(int i, BTreeNode y)
+        {
+            BTreeNode z = new BTreeNode(y.t, y.leaf);
+            z.n = t - 1;
+
+            // Copy the last (t-1) keys of y to z
+            for (int j = 0; j < t - 1; j++)
+                z.keys[j] = y.keys[j + t];
+
+            // Copy the last t children of y to z
+            if (!y.leaf)
+            {
+                for (int j = 0; j < t; j++)
+                    z.C[j] = y.C[j + t];
+            }
+
+            y.n = t - 1;
+
+            // Shift children of this node to make room for z
+            for (int j = n; j >= i + 1; j--)
+                C[j + 1] = C[j];
+            C[i + 1] = z;
+
+            // Shift keys of this node and pull middle key from y
+            for (int j = n - 1; j >= i; j--)
+                keys[j + 1] = keys[j];
+            keys[i] = y.keys[t - 1];
+
+            n++;
+        }
+
+        public void InsertNonFull(int k)
+        {
+            int i = n - 1;
+            if (leaf)
+            {
+                while (i >= 0 && keys[i] > k)
+                {
+                    keys[i + 1] = keys[i];
+                    i--;
+                }
+                keys[i + 1] = k;
+                n++;
+            }
+            else
+            {
+                while (i >= 0 && keys[i] > k) i--;
+                if (C[i + 1].n == 2 * t - 1)
+                {
+                    SplitChild(i + 1, C[i + 1]);
+                    if (keys[i + 1] < k) i++;
+                }
+                C[i + 1].InsertNonFull(k);
+            }
+        }
+
+        /* --- DELETION LOGIC --- */
+
+        // Rebalances child C[idx] if it has fewer than t-1 keys
+        public void Fill(int idx)
+        {
+            if (idx != 0 && C[idx - 1].n >= t)
+                BorrowFromPrev(idx);
+            else if (idx != n && C[idx + 1].n >= t)
+                BorrowFromNext(idx);
+            else
+            {
+                if (idx != n) Merge(idx);
+                else Merge(idx - 1);
+            }
+        }
+
+        private void BorrowFromPrev(int idx)
+        {
+            BTreeNode child = C[idx];
+            BTreeNode sib = C[idx - 1];
+
+            for (int i = child.n - 1; i >= 0; --i) child.keys[i + 1] = child.keys[i];
+            if (!child.leaf)
+            {
+                for (int i = child.n; i >= 0; --i) child.C[i + 1] = child.C[i];
+            }
+
+            child.keys[0] = keys[idx - 1];
+            if (!child.leaf) child.C[0] = sib.C[sib.n];
+
+            keys[idx - 1] = sib.keys[sib.n - 1];
+            child.n++; sib.n--;
+        }
+
+        private void BorrowFromNext(int idx)
+        {
+            BTreeNode child = C[idx];
+            BTreeNode sib = C[idx + 1];
+
+            child.keys[child.n] = keys[idx];
+            if (!child.leaf) child.C[child.n + 1] = sib.C[0];
+
+            keys[idx] = sib.keys[0];
+
+            for (int i = 1; i < sib.n; ++i) sib.keys[i - 1] = sib.keys[i];
+            if (!sib.leaf)
+            {
+                for (int i = 1; i <= sib.n; ++i) sib.C[i - 1] = sib.C[i];
+            }
+
+            child.n++; sib.n--;
+        }
+
+        private void Merge(int idx)
+        {
+            BTreeNode child = C[idx];
+            BTreeNode sib = C[idx + 1];
+
+            child.keys[t - 1] = keys[idx];
+
+            for (int j = 0; j < sib.n; ++j) child.keys[j + t] = sib.keys[j];
+            if (!child.leaf)
+            {
+                for (int j = 0; j <= sib.n; ++j) child.C[j + t] = sib.C[j];
+            }
+
+            for (int j = idx + 1; j < n; ++j) keys[j - 1] = keys[j];
+            for (int j = idx + 2; j <= n; ++j) C[j - 1] = C[j];
+
+            child.n += sib.n + 1;
+            n--;
+        }
+
+        public void Remove(int k)
+        {
+            int idx = FindKey(k);
+            if (idx < n && keys[idx] == k)
+            {
+                if (leaf)
+                {
+                    for (int i = idx + 1; i < n; ++i) keys[i - 1] = keys[i];
+                    n--;
+                }
+                else
+                {
+                    if (C[idx].n >= t)
+                    {
+                        BTreeNode cur = C[idx];
+                        while (!cur.leaf) cur = cur.C[cur.n];
+                        int pred = cur.keys[cur.n - 1];
+                        keys[idx] = pred;
+                        C[idx].Remove(pred);
+                    }
+                    else if (C[idx + 1].n >= t)
+                    {
+                        BTreeNode cur = C[idx + 1];
+                        while (!cur.leaf) cur = cur.C[0];
+                        int succ = cur.keys[0];
+                        keys[idx] = succ;
+                        C[idx + 1].Remove(succ);
+                    }
+                    else
+                    {
+                        Fill(idx);
+                        Remove(k);
+                    }
+                }
+            }
+            else
+            {
+                if (leaf) return;
+                bool flag = (idx == n);
+                if (C[idx].n < t) Fill(idx);
+                if (flag && idx > n) C[idx - 1].Remove(k);
+                else C[idx].Remove(k);
+            }
+        }
+
+        public void Traverse()
+        {
+            int i;
+            for (i = 0; i < n; i++)
+            {
+                if (!leaf) C[i].Traverse();
+                Console.Write(" " + keys[i]);
+            }
+            if (!leaf) C[i].Traverse();
+        }
+    }
+
+    public class BTree
+    {
+        private BTreeNode root;
+        private int t;
+
+        public BTree(int t)
+        {
+            this.root = null;
+            this.t = t;
+        }
+
+        public void Insert(int k)
+        {
+            if (root == null)
+            {
+                root = new BTreeNode(t, true);
+                root.keys[0] = k;
+                root.n = 1;
+            }
+            else
+            {
+                if (root.n == 2 * t - 1)
+                {
+                    BTreeNode s = new BTreeNode(t, false);
+                    s.C[0] = root;
+                    s.SplitChild(0, root);
+                    int i = (s.keys[0] < k) ? 1 : 0;
+                    s.C[i].InsertNonFull(k);
+                    root = s;
+                }
+                else root.InsertNonFull(k);
+            }
+        }
+
+        public void Remove(int k)
+        {
+            if (root == null) return;
+            root.Remove(k);
+            if (root.n == 0)
+            {
+                root = root.leaf ? null : root.C[0];
+            }
+        }
+
+        public void Traverse()
+        {
+            if (root != null) root.Traverse();
+            Console.WriteLine();
+        }
+    }
+
+    class Program
+    {
+        static void Main()
+        {
+            BTree tree = new BTree(3);
+            int[] vals = { 10, 5, 15, 2, 7, 12, 20 };
+            foreach (int v in vals) tree.Insert(v);
+
+            Console.Write("Tree traversal:");
+            tree.Traverse();
+
+            tree.Remove(5);
+            Console.Write("After removing 5:");
+            tree.Traverse();
+        }
+    }
+}
+
+JavaScript
+
+// A BTree Node
+class BTreeNode {
+    constructor(_t, _leaf) {
+        this.t = _t;
+        this.leaf = _leaf;
+        this.keys = new Array(2 * _t - 1);
+        this.C = new Array(2 * _t);
+        this.n = 0;
+    }
+
+    // Helper to find the first key greater than or equal to k
+    findKey(k) {
+        let idx = 0;
+        while (idx < this.n && this.keys[idx] < k) ++idx;
+        return idx;
+    }
+
+    /* --- INSERTION LOGIC --- */
+
+    // Splits the child y of this node. y must be full (2t-1 keys)
+    splitChild(i, y) {
+        const z = new BTreeNode(y.t, y.leaf);
+        z.n = this.t - 1;
+
+        // Copy the last (t-1) keys of y to z
+        for (let j = 0; j < this.t - 1; j++) {
+            z.keys[j] = y.keys[j + this.t];
+        }
+
+        // Copy the last t children of y to z
+        if (!y.leaf) {
+            for (let j = 0; j < this.t; j++) {
+                z.C[j] = y.C[j + this.t];
+            }
+        }
+
+        y.n = this.t - 1; // Reduce key count in y
+
+        // Shift children of this node to make room for z
+        for (let j = this.n; j >= i + 1; j--) {
+            this.C[j + 1] = this.C[j];
+        }
+        this.C[i + 1] = z;
+
+        // Shift keys of this node to make room for y's middle key
+        for (let j = this.n - 1; j >= i; j--) {
+            this.keys[j + 1] = this.keys[j];
+        }
+        this.keys[i] = y.keys[this.t - 1];
+        this.n++;
+    }
+
+    insertNonFull(k) {
+        let i = this.n - 1;
+        if (this.leaf) {
+            while (i >= 0 && this.keys[i] > k) {
+                this.keys[i + 1] = this.keys[i];
+                i--;
+            }
+            this.keys[i + 1] = k;
+            this.n++;
+        } else {
+            while (i >= 0 && this.keys[i] > k) i--;
+            if (this.C[i + 1].n == 2 * this.t - 1) {
+                this.splitChild(i + 1, this.C[i + 1]);
+                if (this.keys[i + 1] < k) i++;
+            }
+            this.C[i + 1].insertNonFull(k);
+        }
+    }
+
+    /* --- DELETION LOGIC --- */
+
+    fill(idx) {
+        if (idx != 0 && this.C[idx - 1].n >= this.t) {
+            this.borrowFromPrev(idx);
+        } else if (idx != this.n && this.C[idx + 1].n >= this.t) {
+            this.borrowFromNext(idx);
+        } else {
+            if (idx != this.n) this.merge(idx);
+            else this.merge(idx - 1);
+        }
+    }
+
+    borrowFromPrev(idx) {
+        const child = this.C[idx], sib = this.C[idx - 1];
+        for (let i = child.n - 1; i >= 0; --i) child.keys[i + 1] = child.keys[i];
+        if (!child.leaf) {
+            for (let i = child.n; i >= 0; --i) child.C[i + 1] = child.C[i];
+        }
+        child.keys[0] = this.keys[idx - 1];
+        if (!child.leaf) child.C[0] = sib.C[sib.n];
+        this.keys[idx - 1] = sib.keys[sib.n - 1];
+        child.n++; sib.n--;
+    }
+
+    borrowFromNext(idx) {
+        const child = this.C[idx], sib = this.C[idx + 1];
+        child.keys[child.n] = this.keys[idx];
+        if (!child.leaf) child.C[child.n + 1] = sib.C[0];
+        this.keys[idx] = sib.keys[0];
+        for (let i = 1; i < sib.n; ++i) sib.keys[i - 1] = sib.keys[i];
+        if (!sib.leaf) {
+            for (let i = 1; i <= sib.n; ++i) sib.C[i - 1] = sib.C[i];
+        }
+        child.n++; sib.n--;
+    }
+
+    merge(idx) {
+        const child = this.C[idx], sib = this.C[idx + 1];
+        child.keys[this.t - 1] = this.keys[idx];
+        for (let j = 0; j < sib.n; ++j) child.keys[j + this.t] = sib.keys[j];
+        if (!child.leaf) {
+            for (let j = 0; j <= sib.n; ++j) child.C[j + this.t] = sib.C[j];
+        }
+        for (let j = idx + 1; j < this.n; ++j) this.keys[j - 1] = this.keys[j];
+        for (let j = idx + 2; j <= this.n; ++j) this.C[j - 1] = this.C[j];
+        child.n += sib.n + 1;
+        this.n--;
+    }
+
+    remove(k) {
+        const idx = this.findKey(k);
+        if (idx < this.n && this.keys[idx] == k) {
+            if (this.leaf) {
+                for (let i = idx + 1; i < this.n; ++i) this.keys[i - 1] = this.keys[i];
+                this.n--;
+            } else {
+                if (this.C[idx].n >= this.t) {
+                    let cur = this.C[idx]; while (!cur.leaf) cur = cur.C[cur.n];
+                    const pred = cur.keys[cur.n - 1];
+                    this.keys[idx] = pred;
+                    this.C[idx].remove(pred);
+                } else if (this.C[idx + 1].n >= this.t) {
+                    let cur = this.C[idx + 1]; while (!cur.leaf) cur = cur.C[0];
+                    const succ = cur.keys[0];
+                    this.keys[idx] = succ;
+                    this.C[idx + 1].remove(succ);
+                } else {
+                    this.fill(idx);
+                    this.remove(k);
+                }
+            }
+        } else {
+            if (this.leaf) return;
+            const flag = (idx == this.n);
+            if (this.C[idx].n < this.t) this.fill(idx);
+            if (flag && idx > this.n) this.C[idx - 1].remove(k);
+            else this.C[idx].remove(k);
+        }
+    }
+
+    traverse() {
+        let i;
+        for (i = 0; i < this.n; i++) {
+            if (!this.leaf) this.C[i].traverse();
+            process.stdout.write(" " + this.keys[i]);
+        }
+        if (!this.leaf) this.C[i].traverse();
+    }
+}
+
+class BTree {
+    constructor(_t) { this.root = null; this.t = _t; }
+
+    insert(k) {
+        if (this.root == null) {
+            this.root = new BTreeNode(this.t, true);
+            this.root.keys[0] = k; this.root.n = 1;
+        } else {
+            if (this.root.n == 2 * this.t - 1) {
+                const s = new BTreeNode(this.t, false);
+                s.C[0] = this.root;
+                s.splitChild(0, this.root);
+                const i = (s.keys[0] < k) ? 1 : 0;
+                s.C[i].insertNonFull(k);
+                this.root = s;
+            } else this.root.insertNonFull(k);
+        }
+    }
+
+    remove(k) {
+        if (this.root == null) return;
+        this.root.remove(k);
+        if (this.root.n == 0) {
+            this.root = this.root.leaf ? null : this.root.C[0];
+        }
+    }
+
+    traverse() {
+        if (this.root != null) this.root.traverse();
+        console.log("");
+    }
+}
+
+// Main Execution
+const tree = new BTree(3);
+[10, 5, 15, 2, 7, 12, 20].forEach(k => tree.insert(k));
+
+console.log("Tree traversal:");
+tree.traverse();
+
+tree.remove(5);
+console.log("After removing 5:");
+tree.traverse();
+
+Output
+
+Tree traversal: 2 5 7 10 12 15 20
+After removing 5: 2 7 10 12 15 20

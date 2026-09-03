@@ -1,0 +1,992 @@
+Source: https://www.geeksforgeeks.org/dsa/range-sum-and-update-in-array-segment-tree-using-stack/
+Title: Range Sum and Update in Array : Segment Tree using Stack
+Extractor: 2
+
+Given an array arr[] of N integers. The task is to do the following operations:
+
+1. Add a value X to all the element from index A to B where 0 ? A ? B ? N-1 .
+2. Find the sum of the element from index L to R where 0 ? L ? R ? N-1 before and after the update given to the array above.
+
+Example:
+
+> Input: arr[] = {1, 3, 5, 7, 9, 11}, L = 1, R = 3, A = 1, B = 5, X = 10 Output: Sum of values in given range = 15 Updated sum of values in given range = 45 Explanation: Sum of values in the range 1 to 3 is 3 + 5 + 7 = 15. arr[] after adding 10 from index 1 to 5 is arr[] = {1, 13, 15, 17, 19, 21} Sum of values in the range 1 to 3 after update is 13 + 15 + 17 = 45. Input: arr[] = { 11, 32, 5, 7, 19, 11, 8}, L = 2, R = 6, A = 1, B = 5, X = 16 Output: Sum of values in given range = 50 Updated sum of values in given range = 114 Explanation: Sum of values in the range 2 to 6 is 5 + 7 + 19 + 11 + 8 = 50. arr[] after adding 16 from index 1 to 5 is arr[] = {11, 48, 21, 23, 35, 27, 8} Sum of values in the range 2 to 6 after update is 21 + 23 + 35 + 27 + 8 = 114.
+
+Approach: The recursive approach using a Segment Tree for the given problem is discussed in this article. In this post we will discussed an approach using Stack Data Structure to avoid recursion . Below are the steps to implement Segment Tree using Stack :
+
+1. The idea is to use tuple to store the state which has Node number and range indexes in the Stack .
+2. For Building Segment Tree : Push the root Node to the stack as a tuple:
+
+Stack S;start = 0, end = arr_size - 1S.emplace(1, start, end)
+
+- Pop the element from the stack and do the following until stack becomes empty: If starting index equals to ending index, then we reach the leaf node and update the value at Segment tree array as value at current index in the given array. Else insert the flag tuple with the current Node as S.emplace(current_node, INF, INF) to inverse the order of evaluation and insert the tuple with value for left and right child as:
+
+> mid = (start + end) / 2 st.emplace(curr_node * 2, start, mid) st.emplace(curr_node * 2 + 1, mid + 1, end)
+
+1. If start index and end index is same as INF , then update the Segment Tree value at current index as:
+
+> Value at current index is updated as value at left child and right child: tree[curr_node] = tree[2*curr_node] + tree[2*curr_node + 1]
+
+1. For Update Tree : Push the root node to the stack as done for building Segment Tree . Pop the element from the stack and do the following until stack becomes empty: If the current node has any pending update then first update to the current node. If the current node ranges lies completely in the update query range, then update the current node with that value. If the current node ranges overlap with the update query range, then follow the above approach and push the tuple for left child and right child in the Stack . Update the query using the result of left and right child above.
+2. For Update Query : Push the root node to the stack as done for building Segment Tree . Pop the element from the stack and do the following until stack becomes empty: If the current node ranges lies outside the given query, then continue with the next iteration. If the current node ranges lies completely in the update query range, then update the result with the current node value. If the current node ranges overlap with the update query range, then follow the above approach and push the tuple for left child and right child in the Stack . Update the result using the value obtained from left and right child Node.
+
+Below is the implementation of the above approach:
+
+CPP
+
+#include "bits/stdc++.h"
+using namespace std;
+
+constexpr static int MAXSIZE = 1000;
+constexpr static int INF = numeric_limits<int>::max();
+
+// Segment Tree array
+int64_t tree[MAXSIZE];
+
+// Lazy Update array
+int64_t lazy[MAXSIZE];
+
+// This tuple will hold tree state
+// the stacks
+using QueryAdaptor = tuple<int64_t, int64_t, int64_t>;
+
+// Build our segment tree
+void build_tree(int64_t* arr, int64_t arr_size)
+{
+
+    // Stack will use to update
+    // the tree value
+    stack<QueryAdaptor> st;
+
+    // Emplace the root of the tree
+    st.emplace(1, 0, arr_size - 1);
+
+    // Repeat until empty
+    while (!st.empty()) {
+
+        // Take the indexes at the
+        // top of the stack
+        int64_t currnode, curra, currb;
+
+        // value at the top of the
+        // stack
+        tie(currnode, curra, currb) = st.top();
+
+        // Pop the value from the
+        // stack
+        st.pop();
+
+        // Flag with INF ranges are merged
+        if (curra == INF && currb == INF) {
+            tree[currnode] = tree[currnode * 2]
+                             + tree[currnode * 2 + 1];
+        }
+
+        // Leaf node
+        else if (curra == currb) {
+            tree[currnode] = arr[curra];
+        }
+
+        else {
+
+            // Insert flag node inverse
+            // order of evaluation
+            st.emplace(currnode, INF, INF);
+            int64_t mid = (curra + currb) / 2;
+
+            // Push children
+            st.emplace(currnode * 2, curra, mid);
+            st.emplace(currnode * 2 + 1, mid + 1, currb);
+        }
+    }
+}
+
+// A utility function that propagates
+// updates lazily down the tree
+inline void push_down(int64_t node, int64_t a, int64_t b)
+{
+    if (lazy[node] != 0) {
+        tree[node] += lazy[node] * (b - a + 1);
+
+        if (a != b) {
+            lazy[2 * node] += lazy[node];
+            lazy[2 * node + 1] += lazy[node];
+        }
+
+        lazy[node] = 0;
+    }
+}
+
+// Iterative Range_Update function to
+// add val to all elements in the
+// range i-j (inclusive)
+void update_tree(int64_t arr_size, int64_t i, int64_t j,
+                 int64_t val)
+{
+
+    // Initialize the stack
+    stack<QueryAdaptor> st;
+
+    // Emplace the root of the tree
+    st.emplace(1, 0, arr_size - 1);
+
+    // Work until empty
+    while (!st.empty()) {
+
+        // Take the indexes at the
+        // top of the stack
+        int64_t currnode, curra, currb;
+        tie(currnode, curra, currb) = st.top();
+        st.pop();
+
+        // Flag with INF ranges are merged
+        if (curra == INF && currb == INF) {
+            tree[currnode] = tree[currnode * 2]
+                             + tree[currnode * 2 + 1];
+        }
+
+        // Traverse the previous updates
+        // down the tree
+        else {
+            push_down(currnode, curra, currb);
+
+            // No overlap condition
+            if (curra > currb || curra > j || currb < i) {
+                continue;
+            }
+
+            // Total overlap condition
+            else if (curra >= i && currb <= j) {
+
+                // Update lazy array
+                tree[currnode] += val * (currb - curra + 1);
+
+                if (curra != currb) {
+                    lazy[currnode * 2] += val;
+                    lazy[currnode * 2 + 1] += val;
+                }
+            }
+
+            // Partial Overlap
+            else {
+
+                // Insert flag node inverse
+                // order of evaluation
+                st.emplace(currnode, INF, INF);
+
+                int64_t mid = (curra + currb) / 2;
+
+                // Push children
+                st.emplace(currnode * 2, curra, mid);
+                st.emplace(currnode * 2 + 1, mid + 1,
+                           currb);
+            }
+        }
+    }
+}
+
+// A function that find the sum of
+// all elements in the range i-j
+int64_t query(int64_t arr_size, int64_t i, int64_t j)
+{
+
+    // Initialize stack
+    stack<QueryAdaptor> st;
+
+    // Emplace root of the tree
+    st.emplace(1, 0, arr_size - 1);
+
+    int64_t result = 0;
+
+    while (!st.empty()) {
+
+        // Take the indexes at the
+        // top of the stack
+        int64_t currnode, curra, currb;
+        tie(currnode, curra, currb) = st.top();
+        st.pop();
+
+        // Traverse the previous updates
+        // down the tree
+        push_down(currnode, curra, currb);
+
+        // No overlap
+        if (curra > currb || curra > j || currb < i) {
+            continue;
+        }
+
+        // Total Overlap
+        else if (curra >= i && currb <= j) {
+            result += tree[currnode];
+        }
+
+        // Partial Overlap
+        else {
+            std::int64_t mid = (curra + currb) / 2;
+
+            // Push children
+            st.emplace(currnode * 2, curra, mid);
+            st.emplace(currnode * 2 + 1, mid + 1, currb);
+        }
+    }
+
+    return result;
+}
+
+// Driver Code
+int main()
+{
+
+    // Initialize our trees with 0
+    memset(tree, 0, sizeof(int64_t) * MAXSIZE);
+    memset(lazy, 0, sizeof(int64_t) * MAXSIZE);
+
+    int64_t arr[] = { 1, 3, 5, 7, 9, 11 };
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    // Build segment tree from given array
+    build_tree(arr, n);
+
+    // Print sum of values in array
+    // from index 1 to 3
+    cout << "Sum of values in given range = "
+         << query(n, 1, 3) << endl;
+
+    // Add 10 to all nodes at indexes
+    // from 1 to 5
+    update_tree(n, 1, 5, 10);
+
+    // Find sum after the value is updated
+    cout << "Updated sum of values in given range = "
+         << query(n, 1, 3) << endl;
+
+    return 0;
+}
+
+Java
+
+// Java implementation of the approach
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
+class GFG {
+
+    static final int MAXSIZE = 1000;
+    static final int INF = (int)Double.POSITIVE_INFINITY;
+
+    // Segment Tree array
+    static int[] tree = new int[MAXSIZE];
+
+    // Lazy Update array
+    static int[] lazy = new int[MAXSIZE];
+
+    // Build our segment tree
+    static void build_tree(int[] arr, int arr_size)
+    {
+
+        // Stack will use to update
+        // the tree value
+        Stack<List<Integer> > st = new Stack<>();
+
+        // push the root of the tree
+        st.push(Arrays.asList(1, 0, arr_size - 1));
+
+        // Repeat until empty
+        while (!st.isEmpty()) {
+
+            // Take the indexes at the
+            // top of the stack
+            int currnode, curra, currb;
+
+            // value at the top of the
+            // stack
+            List<Integer> temp = st.peek();
+            currnode = temp.get(0);
+            curra = temp.get(1);
+            currb = temp.get(2);
+
+            // Pop the value from the
+            // stack
+            st.pop();
+
+            // Flag with INF ranges are merged
+            if (curra == INF && currb == INF) {
+                tree[currnode] = tree[currnode * 2]
+                                 + tree[currnode * 2 + 1];
+            }
+
+            // Leaf node
+            else if (curra == currb) {
+                tree[currnode] = arr[curra];
+            }
+
+            else {
+
+                // Insert flag node inverse
+                // order of evaluation
+                st.push(Arrays.asList(currnode, INF, INF));
+
+                int mid = (curra + currb) / 2;
+
+                // Push children
+                st.push(Arrays.asList(currnode * 2, curra,
+                                      mid));
+                st.push(Arrays.asList(currnode * 2 + 1,
+                                      mid + 1, currb));
+            }
+        }
+    }
+
+    // A utility function that propagates
+    // updates lazily down the tree
+    static void push_down(int node, int a, int b)
+    {
+        if (lazy[node] != 0) {
+            tree[node] += lazy[node] * (b - a + 1);
+
+            if (a != b) {
+                lazy[2 * node] += lazy[node];
+                lazy[2 * node + 1] += lazy[node];
+            }
+
+            lazy[node] = 0;
+        }
+    }
+
+    // Iterative Range_Update function to
+    // add val to all elements in the
+    // range i-j (inclusive)
+    static void update_tree(int arr_size, int i, int j,
+                            int val)
+    {
+
+        // Initialize the stack
+        Stack<List<Integer> > st = new Stack<>();
+
+        // push the root of the tree
+        st.push(Arrays.asList(1, 0, arr_size - 1));
+
+        // Work until empty
+        while (!st.isEmpty()) {
+
+            // Take the indexes at the
+            // top of the stack
+            int currnode, curra, currb;
+            List<Integer> temp = st.peek();
+            currnode = temp.get(0);
+            curra = temp.get(1);
+            currb = temp.get(2);
+            st.pop();
+
+            // Flag with INF ranges are merged
+            if (curra == INF && currb == INF) {
+                tree[currnode] = tree[currnode * 2]
+                                 + tree[currnode * 2 + 1];
+            }
+
+            // Traverse the previous updates
+            // down the tree
+            else {
+                push_down(currnode, curra, currb);
+
+                // No overlap condition
+                if (curra > currb || curra > j
+                    || currb < i) {
+                    continue;
+                }
+
+                // Total overlap condition
+                else if (curra >= i && currb <= j) {
+
+                    // Update lazy array
+                    tree[currnode]
+                        += val * (currb - curra + 1);
+
+                    if (curra != currb) {
+                        lazy[currnode * 2] += val;
+                        lazy[currnode * 2 + 1] += val;
+                    }
+                }
+
+                // Partial Overlap
+                else {
+
+                    // Insert flag node inverse
+                    // order of evaluation
+                    st.push(
+                        Arrays.asList(currnode, INF, INF));
+
+                    int mid = (curra + currb) / 2;
+
+                    // Push children
+                    st.push(Arrays.asList(currnode * 2,
+                                          curra, mid));
+                    st.push(Arrays.asList(currnode * 2 + 1,
+                                          mid + 1, currb));
+                }
+            }
+        }
+    }
+
+    // A function that find the sum of
+    // all elements in the range i-j
+    static int query(int arr_size, int i, int j)
+    {
+
+        // Initialize stack
+        Stack<List<Integer> > st = new Stack<>();
+
+        // push root of the tree
+        st.push(Arrays.asList(1, 0, arr_size - 1));
+
+        int result = 0;
+
+        while (!st.isEmpty()) {
+
+            // Take the indexes at the
+            // top of the stack
+            int currnode, curra, currb;
+            List<Integer> temp = st.peek();
+            currnode = temp.get(0);
+            curra = temp.get(1);
+            currb = temp.get(2);
+            st.pop();
+
+            // Traverse the previous updates
+            // down the tree
+            push_down(currnode, curra, currb);
+
+            // No overlap
+            if (curra > currb || curra > j || currb < i) {
+                continue;
+            }
+
+            // Total Overlap
+            else if (curra >= i && currb <= j) {
+                result += tree[currnode];
+            }
+
+            // Partial Overlap
+            else {
+                int mid = (curra + currb) / 2;
+
+                // Push children
+                st.push(Arrays.asList(currnode * 2, curra,
+                                      mid));
+                st.push(Arrays.asList(currnode * 2 + 1,
+                                      mid + 1, currb));
+            }
+        }
+
+        return result;
+    }
+
+    // Driver Code
+    public static void main(String[] args)
+    {
+
+        // Initialize our trees with 0
+        Arrays.fill(tree, 0);
+        Arrays.fill(lazy, 0);
+
+        int arr[] = { 1, 3, 5, 7, 9, 11 };
+        int n = arr.length;
+
+        // Build segment tree from given array
+        build_tree(arr, n);
+
+        // Print sum of values in array
+        // from index 1 to 3
+        System.out.printf(
+            "Sum of values in given range = %d\n",
+            query(n, 1, 3));
+
+        // Add 10 to all nodes at indexes
+        // from 1 to 5
+        update_tree(n, 1, 5, 10);
+
+        // Find sum after the value is updated
+        System.out.printf(
+            "Updated sum of values in given range = %d\n",
+            query(n, 1, 3));
+    }
+}
+
+// This code is contributed by sanjeev2552
+
+Python3
+
+MAXSIZE = 1000
+INF = float('inf')
+
+# Segment Tree array
+tree = [0] * MAXSIZE
+
+# Lazy Update array
+lazy = [0] * MAXSIZE
+
+# This tuple will hold tree state
+# the stacks
+QueryAdaptor = (int, int, int)
+
+# Build our segment tree
+
+def build_tree(arr, arr_size):
+    st = []
+    st.append((1, 0, arr_size - 1))
+
+    while st:
+        currnode, curra, currb = st.pop()
+
+        if curra == INF and currb == INF:
+            tree[currnode] = tree[currnode * 2] + tree[currnode * 2 + 1]
+        elif curra == currb:
+            tree[currnode] = arr[curra]
+        else:
+            st.append((currnode, INF, INF))
+            mid = (curra + currb) // 2
+            st.append((currnode * 2, curra, mid))
+            st.append((currnode * 2 + 1, mid + 1, currb))
+
+# A utility function that propagates
+# updates lazily down the tree
+
+def push_down(node, a, b):
+    if lazy[node] != 0:
+        tree[node] += lazy[node] * (b - a + 1)
+
+        if a != b:
+            lazy[2 * node] += lazy[node]
+            lazy[2 * node + 1] += lazy[node]
+
+        lazy[node] = 0
+
+# Iterative Range_Update function to
+# add val to all elements in the
+# range i-j (inclusive)
+
+def update_tree(arr_size, i, j, val):
+    st = []
+    st.append((1, 0, arr_size - 1))
+
+    while st:
+        currnode, curra, currb = st.pop()
+
+        if curra == INF and currb == INF:
+            tree[currnode] = tree[currnode * 2] + tree[currnode * 2 + 1]
+        else:
+            push_down(currnode, curra, currb)
+
+            if curra > currb or curra > j or currb < i:
+                continue
+            elif curra >= i and currb <= j:
+                tree[currnode] += val * (currb - curra + 1)
+
+                if curra != currb:
+                    lazy[currnode * 2] += val
+                    lazy[currnode * 2 + 1] += val
+            else:
+                st.append((currnode, INF, INF))
+                mid = (curra + currb) // 2
+                st.append((currnode * 2, curra, mid))
+                st.append((currnode * 2 + 1, mid + 1, currb))
+
+# A function that finds the sum of
+# all elements in the range i-j
+
+def query(arr_size, i, j):
+    st = []
+    st.append((1, 0, arr_size - 1))
+    result = 0
+
+    while st:
+        currnode, curra, currb = st.pop()
+
+        push_down(currnode, curra, currb)
+
+        if curra > currb or curra > j or currb < i:
+            continue
+        elif curra >= i and currb <= j:
+            result += tree[currnode]
+        else:
+            mid = (curra + currb) // 2
+            st.append((currnode * 2, curra, mid))
+            st.append((currnode * 2 + 1, mid + 1, currb))
+
+    return result
+
+# Driver Code
+
+def main():
+    global tree, lazy
+
+    # Initialize our trees with 0
+    tree = [0] * MAXSIZE
+    lazy = [0] * MAXSIZE
+
+    arr = [1, 3, 5, 7, 9, 11]
+    n = len(arr)
+
+    # Build segment tree from given array
+    build_tree(arr, n)
+
+    # Print sum of values in array
+    # from index 1 to 3
+    print("Sum of values in given range =", query(n, 1, 3))
+
+    # Add 10 to all nodes at indexes
+    # from 1 to 5
+    update_tree(n, 1, 5, 10)
+
+    # Find sum after the value is updated
+    print("Updated sum of values in given range =", query(n, 1, 3))
+
+if __name__ == "__main__":
+    main()
+
+# This code is contributed by arindam369
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class SegmentTree
+{
+    const int MAXSIZE = 1000;
+    const long INF = long.MaxValue;
+
+    static long[] tree = new long[MAXSIZE];
+    static long[] lazy = new long[MAXSIZE];
+
+    // Build our segment tree
+    static void BuildTree(long[] arr, int arrSize)
+    {
+        Stack<(long, long, long)> st = new Stack<(long, long, long)>();
+        st.Push((1, 0, arrSize - 1));
+
+        while (st.Count > 0)
+        {
+            (long currNode, long curra, long currb) = st.Pop();
+
+            if (curra == INF && currb == INF)
+                tree[currNode] = tree[currNode * 2] + tree[currNode * 2 + 1];
+            else if (curra == currb)
+                tree[currNode] = arr[curra];
+            else
+            {
+                st.Push((currNode, INF, INF));
+                long mid = (curra + currb) / 2;
+                st.Push((currNode * 2, curra, mid));
+                st.Push((currNode * 2 + 1, mid + 1, currb));
+            }
+        }
+    }
+
+    // A utility function that propagates
+    // updates lazily down the tree
+    static void PushDown(long node, long a, long b)
+    {
+        if (lazy[node] != 0)
+        {
+            tree[node] += lazy[node] * (b - a + 1);
+
+            if (a != b)
+            {
+                lazy[2 * node] += lazy[node];
+                lazy[2 * node + 1] += lazy[node];
+            }
+
+            lazy[node] = 0;
+        }
+    }
+
+    // Iterative Range_Update function to
+    // add val to all elements in the
+    // range i-j (inclusive)
+    static void UpdateTree(int arrSize, long i, long j, long val)
+    {
+        Stack<(long, long, long)> st = new Stack<(long, long, long)>();
+        st.Push((1, 0, arrSize - 1));
+
+        while (st.Count > 0)
+        {
+            (long currNode, long curra, long currb) = st.Pop();
+
+            if (curra == INF && currb == INF)
+                tree[currNode] = tree[currNode * 2] + tree[currNode * 2 + 1];
+            else
+            {
+                PushDown(currNode, curra, currb);
+
+                if (curra > currb || curra > j || currb < i)
+                    continue;
+                else if (curra >= i && currb <= j)
+                {
+                    tree[currNode] += val * (currb - curra + 1);
+
+                    if (curra != currb)
+                    {
+                        lazy[currNode * 2] += val;
+                        lazy[currNode * 2 + 1] += val;
+                    }
+                }
+                else
+                {
+                    st.Push((currNode, INF, INF));
+                    long mid = (curra + currb) / 2;
+                    st.Push((currNode * 2, curra, mid));
+                    st.Push((currNode * 2 + 1, mid + 1, currb));
+                }
+            }
+        }
+    }
+
+    // A function that finds the sum of
+    // all elements in the range i-j
+    static long Query(int arrSize, long i, long j)
+    {
+        Stack<(long, long, long)> st = new Stack<(long, long, long)>();
+        st.Push((1, 0, arrSize - 1));
+        long result = 0;
+
+        while (st.Count > 0)
+        {
+            (long currNode, long curra, long currb) = st.Pop();
+
+            PushDown(currNode, curra, currb);
+
+            if (curra > currb || curra > j || currb < i)
+                continue;
+            else if (curra >= i && currb <= j)
+                result += tree[currNode];
+            else
+            {
+                long mid = (curra + currb) / 2;
+                st.Push((currNode * 2, curra, mid));
+                st.Push((currNode * 2 + 1, mid + 1, currb));
+            }
+        }
+
+        return result;
+    }
+
+    // Driver Code
+    static void Main()
+    {
+        // Initialize our trees with 0
+        Array.Clear(tree, 0, MAXSIZE);
+        Array.Clear(lazy, 0, MAXSIZE);
+
+        long[] arr = { 1, 3, 5, 7, 9, 11 };
+        int n = arr.Length;
+
+        // Build segment tree from given array
+        BuildTree(arr, n);
+
+        // Print sum of values in array
+        // from index 1 to 3
+        Console.WriteLine("Sum of values in given range = " + Query(n, 1, 3));
+
+        // Add 10 to all nodes at indexes
+        // from 1 to 5
+        UpdateTree(n, 1, 5, 10);
+
+        // Find sum after the value is updated
+        Console.WriteLine("Updated sum of values in given range = " + Query(n, 1, 3));
+    }
+}
+
+JavaScript
+
+const MAXSIZE = 1000;
+const INF = Number.MAX_SAFE_INTEGER;
+
+// Segment Tree array
+let tree = Array(MAXSIZE).fill(0);
+
+// Lazy Update array
+let lazy = Array(MAXSIZE).fill(0);
+
+// This tuple will hold tree state
+// the stacks
+// Using an array instead of a tuple
+// since JavaScript does not have built-in tuple support
+// [currnode, curra, currb]
+let QueryAdaptor;
+
+// Build our segment tree
+function build_tree(arr, arr_size) {
+    // Stack will use to update
+    // the tree value
+    let st = [];
+
+    // Emplace the root of the tree
+    st.push([1, 0, arr_size - 1]);
+
+    // Repeat until empty
+    while (st.length > 0) {
+        // Take the indexes at the
+        // top of the stack
+        let [currnode, curra, currb] = st.pop();
+
+        // Flag with INF ranges are merged
+        if (curra === INF && currb === INF) {
+            tree[currnode] = tree[currnode * 2] + tree[currnode * 2 + 1];
+        }
+        // Leaf node
+        else if (curra === currb) {
+            tree[currnode] = arr[curra];
+        } else {
+            // Insert flag node inverse
+            // order of evaluation
+            st.push([currnode, INF, INF]);
+            let mid = Math.floor((curra + currb) / 2);
+
+            // Push children
+            st.push([currnode * 2, curra, mid]);
+            st.push([currnode * 2 + 1, mid + 1, currb]);
+        }
+    }
+}
+
+// A utility function that propagates
+// updates lazily down the tree
+function push_down(node, a, b) {
+    if (lazy[node] !== 0) {
+        tree[node] += lazy[node] * (b - a + 1);
+
+        if (a !== b) {
+            lazy[2 * node] += lazy[node];
+            lazy[2 * node + 1] += lazy[node];
+        }
+
+        lazy[node] = 0;
+    }
+}
+
+// Iterative Range_Update function to
+// add val to all elements in the
+// range i-j (inclusive)
+function update_tree(arr_size, i, j, val) {
+    // Initialize the stack
+    let st = [];
+
+    // Emplace the root of the tree
+    st.push([1, 0, arr_size - 1]);
+
+    // Work until empty
+    while (st.length > 0) {
+        // Take the indexes at the
+        // top of the stack
+        let [currnode, curra, currb] = st.pop();
+
+        // Flag with INF ranges are merged
+        if (curra === INF && currb === INF) {
+            tree[currnode] = tree[currnode * 2] + tree[currnode * 2 + 1];
+        } else {
+            push_down(currnode, curra, currb);
+
+            // No overlap condition
+            if (curra > currb || curra > j || currb < i) {
+                continue;
+            }
+            // Total overlap condition
+            else if (curra >= i && currb <= j) {
+                // Update lazy array
+                tree[currnode] += val * (currb - curra + 1);
+
+                if (curra !== currb) {
+                    lazy[currnode * 2] += val;
+                    lazy[currnode * 2 + 1] += val;
+                }
+            }
+            // Partial Overlap
+            else {
+                // Insert flag node inverse
+                // order of evaluation
+                st.push([currnode, INF, INF]);
+                let mid = Math.floor((curra + currb) / 2);
+
+                // Push children
+                st.push([currnode * 2, curra, mid]);
+                st.push([currnode * 2 + 1, mid + 1, currb]);
+            }
+        }
+    }
+}
+
+// A function that find the sum of
+// all elements in the range i-j
+function query(arr_size, i, j) {
+    // Initialize stack
+    let st = [];
+
+    // Emplace root of the tree
+    st.push([1, 0, arr_size - 1]);
+
+    let result = 0;
+
+    while (st.length > 0) {
+        // Take the indexes at the
+        // top of the stack
+        let [currnode, curra, currb] = st.pop();
+
+        // Traverse the previous updates
+        // down the tree
+        push_down(currnode, curra, currb);
+
+        // No overlap
+        if (curra > currb || curra > j || currb < i) {
+            continue;
+        }
+        // Total Overlap
+        else if (curra >= i && currb <= j) {
+            result += tree[currnode];
+        }
+        // Partial Overlap
+        else {
+            let mid = Math.floor((curra + currb) / 2);
+
+            // Push children
+            st.push([currnode * 2, curra, mid]);
+            st.push([currnode * 2 + 1, mid + 1, currb]);
+        }
+    }
+
+    return result;
+}
+
+// Driver Code
+// Initialize our trees with 0
+tree.fill(0);
+lazy.fill(0);
+
+let arr = [1, 3, 5, 7, 9, 11];
+let n = arr.length;
+
+// Build segment tree from given array
+build_tree(arr, n);
+
+// Print sum of values in array
+// from index 1 to 3
+console.log("Sum of values in given range =", query(n, 1, 3));
+
+// Add 10 to all nodes at indexes
+// from 1 to 5
+update_tree(n, 1, 5, 10);
+
+// Find sum after the value is updated
+console.log("Updated sum of values in given range =", query(n, 1, 3));
+
+Output
+
+Sum of values in given range = 15
+Updated sum of values in given range = 45
+
+Time Complexity:
+
+- For Tree Construction : O(N), There are (2n-1) nodes in the tree and value of every node is calculated once.
+- For Query : O(log N), To query a sum we processed atmost four nodes at every level and number of level is log N.
+- For Update : O(log N), To update the tree with lazy propagation is O(Log N) as we update the root of the tree and then update only that part of the tree whose ranges overlaps at each level.
+
+Related Topic: Segment Tree

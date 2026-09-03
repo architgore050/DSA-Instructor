@@ -1,0 +1,987 @@
+Source: https://www.geeksforgeeks.org/dsa/water-jug-problem-using-bfs/
+Title: The Water Jug Problem - Count Min Steps
+Extractor: 2
+
+Given a m litre jug and a n litre jug where 0 < m < n , both initially empty and without any markings to measure intermediate quantities. You need  to measure d litres of water where d < n .  The operations you can perform are:
+
+1. Empty a Jug
+2. Fill a Jug (You may assume that you have unlimited supply of water)
+3. Pour water from one jug to the other until one of the jugs is either empty or full
+
+Find the minimum number of operations required to obtain exactly d litres of water in either of the two jugs. If it is not possible, return -1.
+
+Examples:
+
+> Input: m = 2, n = 3, d = 1 Output: 2 Explanation: 1. Fill up the 3 litre jug 2. Pour 2 litre of water from the 3 litre jug to 2 litre Jug, Now the 3 litre jug has 1 litre water. Input: m = 3, n = 5, d = 4 Output: 6 Explanation: Explained in the above images. Input: m = 2, n = 3, d = 5 Output: -1 Explanation: As d > n here, i t is not possible to measure exactly 5 litres using the given jugs. Input: m = 2, n = 4, d = 3 Output: -1 Explanation: Not possible since gcd(2, 4) = 2 does not divide 3.
+
+Table of Content
+
+- [Naive] Using BFS
+- [Expected] Mathematical Approach
+
+### [Naive] Using BFS
+
+> To solve this problem, we can think like it as a state exploration problem where each state represents the amount of water in both jugs at a particular point in time. From any given state, a set of possible operations can be performed to move to a new state and this continues until we either reach the desired amount d in one of the jugs or determining that it's not possible.
+
+For this problem, the state is represented as a pair (x, y) , where x is the amount of water in the first jug and y is the amount in the second jug. The initial state is (0, 0) because both jugs start empty. Since we're looking for the minimum number of operations, Breadth-First Search (BFS) is a good choice as it explores all possible states level by level and this make sure that the first time we find the solution, it's with the minimum number of steps.
+
+There are six possible operations that can be applied at any given state:
+
+1. Fill Jug 1: Fill the first jug to its maximum capacity (m liters).
+2. Fill Jug 2: Fill the second jug to its maximum capacity (n liters).
+3. Empty Jug 1: Completely empty the first jug.
+4. Empty Jug 2: Completely empty the second jug.
+5. Pour Jug 1 into Jug 2: Pour as much water as possible from the first jug into the second jug until the second jug is full or the first jug is empty.
+6. Pour Jug 2 into Jug 1: Pour as much water as possible from the second jug into the first jug until the first jug is full or the second jug is empty.
+
+> For m = 2, n = 3, d = 1 the approach is: Start at (0,0) where both jugs are empty. Fill either jug and reach (2,0) (fill 2L jug) or (0,3) (fill 3L jug). From (2,0) pour into jug2 to get (0,2), or from (0,3) pour into jug1 to get (2,1). At (2,1), jug2 contains 1 litre, so the target is achieved and the total number of steps is 2.
+
+C++
+
+#include <iostream>
+#include <queue>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Function to find the minimum operations to obtain d litres
+// in one jug
+int minSteps(int m, int n, int d)
+{
+    // Check if the target is achievable
+    if (d > max(m, n)) return -1;
+
+    // Queue for BFS: each state is (jug1, jug2, steps)
+    queue<vector<int>> q;
+
+    // For tracking the visited states
+    vector<vector<bool>> visited(m + 1,
+                                vector<bool>(n + 1, false));
+
+    // Start with both jugs empty
+    q.push({0, 0, 0});  // (jug1, jug2, steps)
+    visited[0][0] = true;
+
+    while (!q.empty()){
+
+        auto curr = q.front();
+        q.pop();
+
+        int jug1 = curr[0];
+        int jug2 = curr[1];
+        int steps = curr[2];
+
+        // If we have found the solution
+        if (jug1 == d || jug2 == d) return steps;
+
+        // All Possible operations are:
+
+        // 1: Fill jug1
+        if (!visited[m][jug2]){
+            visited[m][jug2] = true;
+            q.push({m, jug2, steps + 1});
+        }
+
+        // 2: Fill jug2
+        if (!visited[jug1][n]){
+            visited[jug1][n] = true;
+            q.push({jug1, n, steps + 1});
+        }
+
+        // 3: Empty jug1
+        if (!visited[0][jug2]){
+            visited[0][jug2] = true;
+            q.push({0, jug2, steps + 1});
+        }
+
+        // 4: Empty jug2
+        if (!visited[jug1][0]){
+            visited[jug1][0] = true;
+            q.push({jug1, 0, steps + 1});
+        }
+
+        // 5: Pour jug1 into jug2
+        int pour1to2 = min(jug1, n - jug2);
+        if (!visited[jug1 - pour1to2][jug2 + pour1to2]){
+            visited[jug1 - pour1to2][jug2 + pour1to2] = true;
+            q.push({jug1 - pour1to2, jug2 + pour1to2,
+                                                steps + 1});
+        }
+
+        // 6: Pour jug2 into jug1
+        int pour2to1 = min(jug2, m - jug1);
+        if (!visited[jug1 + pour2to1][jug2 - pour2to1]){
+            visited[jug1 + pour2to1][jug2 - pour2to1] = true;
+            q.push({jug1 + pour2to1, jug2 - pour2to1,
+                                                steps + 1});
+        }
+    }
+
+    // If no solution is found
+    return -1;
+}
+
+int main(){
+
+    int m = 3, n = 5, d = 4;
+    cout << minSteps(m, n, d);
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+// Function to find the minimum operations to obtain
+// d liters in one jug
+int minSteps(int m, int n, int d) {
+
+    // Check if the target is achievable
+    if (d > (m > n ? m : n)) return -1;
+
+  	//  Queue for BFS: each state is (jug1, jug2, steps)
+    int q[10000][3], front = 0, rear = 0;
+
+    // For tracking the visited states, initialized to false
+    bool visited[m + 1][n + 1];
+    for (int i = 0; i <= m; i++) {
+        for (int j = 0; j <= n; j++) {
+            visited[i][j] = false;
+        }
+    }
+
+    // Start with both jugs empty, pushing the initial
+    // state (0, 0, 0)
+    q[rear][0] = 0;
+    q[rear][1] = 0;
+    q[rear][2] = 0;
+    rear++;
+    visited[0][0] = true;
+
+    while (front != rear) {
+
+        // Extract the front of the queue
+        int jug1 = q[front][0];
+        int jug2 = q[front][1];
+        int steps = q[front][2];
+        front++;
+
+        if (jug1 == d || jug2 == d) return steps;
+
+        // 1: Fill jug1 to its maximum capacity
+        if (!visited[m][jug2]) {
+            visited[m][jug2] = true;
+            q[rear][0] = m;
+            q[rear][1] = jug2;
+            q[rear][2] = steps + 1;
+            rear++;
+        }
+
+        // 2: Fill jug2 to its maximum capacity
+        if (!visited[jug1][n]) {
+            visited[jug1][n] = true;
+            q[rear][0] = jug1;
+            q[rear][1] = n;
+            q[rear][2] = steps + 1;
+            rear++;
+        }
+
+        // 3: Empty jug1
+        if (!visited[0][jug2]) {
+            visited[0][jug2] = true;
+            q[rear][0] = 0;
+            q[rear][1] = jug2;
+            q[rear][2] = steps + 1;
+            rear++;
+        }
+
+        // 4: Empty jug2
+        if (!visited[jug1][0]) {
+            visited[jug1][0] = true;
+            q[rear][0] = jug1;
+            q[rear][1] = 0;
+            q[rear][2] = steps + 1;
+            rear++;
+        }
+
+        // 5: Pour jug1 into jug2
+        int pour1to2 = jug1 < (n - jug2) ? jug1 : (n - jug2);
+        if (!visited[jug1 - pour1to2][jug2 + pour1to2]) {
+            visited[jug1 - pour1to2][jug2 + pour1to2] = true;
+            q[rear][0] = jug1 - pour1to2;
+            q[rear][1] = jug2 + pour1to2;
+            q[rear][2] = steps + 1;
+            rear++;
+        }
+
+        // 6: Pour jug2 into jug1
+        int pour2to1 = jug2 < (m - jug1) ? jug2 : (m - jug1);
+        if (!visited[jug1 + pour2to1][jug2 - pour2to1]) {
+            visited[jug1 + pour2to1][jug2 - pour2to1] = true;
+            q[rear][0] = jug1 + pour2to1;
+            q[rear][1] = jug2 - pour2to1;
+            q[rear][2] = steps + 1;
+            rear++;
+        }
+    }
+
+    return -1;
+}
+
+int main() {
+
+    int m = 3, n = 5, d = 4;
+    int result = minSteps(m, n, d);
+    printf("%d\n", result);
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+	// Function to find the minimum operations to obtain
+    // d liters in one jug
+    static int minSteps(int m, int n, int d) {
+        if (d > Math.max(m, n)) return -1;
+
+        // Queue for BFS: each state is (jug1, jug2, steps)
+        Queue<int[]> q = new LinkedList<>();
+
+        // Tracking visited states
+        boolean[][] visited = new boolean[m + 1][n + 1];
+
+        // Start with both jugs empty
+        q.add(new int[] {0, 0, 0});
+        visited[0][0] = true;
+
+        while (!q.isEmpty()) {
+            int[] curr = q.poll();
+            int jug1 = curr[0], jug2 = curr[1], steps = curr[2];
+
+            if (jug1 == d || jug2 == d) return steps;
+
+            // All possible operations:
+
+            // 1: Fill jug1
+            if (!visited[m][jug2]) {
+                visited[m][jug2] = true;
+                q.add(new int[] {m, jug2, steps + 1});
+            }
+
+            // 2: Fill jug2
+            if (!visited[jug1][n]) {
+                visited[jug1][n] = true;
+                q.add(new int[] {jug1, n, steps + 1});
+            }
+
+            // 3: Empty jug1
+            if (!visited[0][jug2]) {
+                visited[0][jug2] = true;
+                q.add(new int[] {0, jug2, steps + 1});
+            }
+
+            // 4: Empty jug2
+            if (!visited[jug1][0]) {
+                visited[jug1][0] = true;
+                q.add(new int[] {jug1, 0, steps + 1});
+            }
+
+            // 5: Pour jug1 into jug2
+            int pour1to2 = Math.min(jug1, n - jug2);
+            if (!visited[jug1 - pour1to2][jug2 + pour1to2]) {
+                visited[jug1 - pour1to2][jug2 + pour1to2] = true;
+                q.add(new int[] {jug1 - pour1to2, jug2
+                                       + pour1to2, steps + 1});
+            }
+
+            // 6: Pour jug2 into jug1
+            int pour2to1 = Math.min(jug2, m - jug1);
+            if (!visited[jug1 + pour2to1][jug2 - pour2to1]) {
+                visited[jug1 + pour2to1][jug2 - pour2to1] = true;
+                q.add(new int[] {jug1 + pour2to1, jug2
+                                        - pour2to1, steps + 1});
+            }
+        }
+
+        return -1;
+    }
+
+    public static void main(String[] args) {
+
+        int m = 3, n = 5, d = 4;
+        System.out.println(minSteps(m, n, d));
+    }
+}
+
+Python
+
+from collections import deque
+
+# Function to find the minimum operations to obtain
+# d liters in one jug
+def min_steps(m, n, d):
+    if d > max(m, n):
+        return -1
+
+    # Queue for BFS: (jug1, jug2, steps)
+    q = deque([(0, 0, 0)])
+
+    # For tracking the visited states
+    visited = [[False] * (n + 1) for _ in range(m + 1)]
+    visited[0][0] = True
+
+    while q:
+        jug1, jug2, steps = q.popleft()
+
+        if jug1 == d or jug2 == d:
+            return steps
+
+        # 1: Fill jug1
+        if not visited[m][jug2]:
+            visited[m][jug2] = True
+            q.append((m, jug2, steps + 1))
+
+        # 2: Fill jug2
+        if not visited[jug1][n]:
+            visited[jug1][n] = True
+            q.append((jug1, n, steps + 1))
+
+        # 3: Empty jug1
+        if not visited[0][jug2]:
+            visited[0][jug2] = True
+            q.append((0, jug2, steps + 1))
+
+        # 4: Empty jug2
+        if not visited[jug1][0]:
+            visited[jug1][0] = True
+            q.append((jug1, 0, steps + 1))
+
+        # 5: Pour jug1 into jug2
+        pour1to2 = min(jug1, n - jug2)
+        if not visited[jug1 - pour1to2][jug2 + pour1to2]:
+            visited[jug1 - pour1to2][jug2 + pour1to2] = True
+            q.append((jug1 - pour1to2, jug2 + pour1to2, steps + 1))
+
+        # 6: Pour jug2 into jug1
+        pour2to1 = min(jug2, m - jug1)
+        if not visited[jug1 + pour2to1][jug2 - pour2to1]:
+            visited[jug1 + pour2to1][jug2 - pour2to1] = True
+            q.append((jug1 + pour2to1, jug2 - pour2to1, steps + 1))
+
+    return -1
+
+if __name__ == "__main__":
+
+    # jug1 = 4 litre, jug2 = 3 litre
+    m, n, d = 3, 5, 4
+    print(min_steps(m, n, d))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+// Function to find the minium mumber of step
+class GfG {
+
+    // Function to find the minimum operations to obtain
+    // d liters in one jug
+    static int MinSteps(int m, int n, int d) {
+        if (d > Math.Max(m, n)) return -1;
+
+        // Queue for BFS: each state is (jug1, jug2, steps)
+        Queue<int[]> q = new Queue<int[]>();
+
+        // Tracking visited states
+        bool[,] visited = new bool[m + 1, n + 1];
+
+        // Start with both jugs empty
+        q.Enqueue(new int[] {0, 0, 0});
+        visited[0, 0] = true;
+
+        while (q.Count > 0) {
+            int[] curr = q.Dequeue();
+            int jug1 = curr[0], jug2 = curr[1], steps = curr[2];
+
+            if (jug1 == d || jug2 == d) return steps;
+
+            // 1: Fill jug1
+            if (!visited[m, jug2]) {
+                visited[m, jug2] = true;
+                q.Enqueue(new int[] {m, jug2, steps + 1});
+            }
+
+            // 2: Fill jug2
+            if (!visited[jug1, n]) {
+                visited[jug1, n] = true;
+                q.Enqueue(new int[] {jug1, n, steps + 1});
+            }
+
+            // 3: Empty jug1
+            if (!visited[0, jug2]) {
+                visited[0, jug2] = true;
+                q.Enqueue(new int[] {0, jug2, steps + 1});
+            }
+
+            // 4: Empty jug2
+            if (!visited[jug1, 0]) {
+                visited[jug1, 0] = true;
+                q.Enqueue(new int[] {jug1, 0, steps + 1});
+            }
+
+            // 5: Pour jug1 into jug2
+            int pour1to2 = Math.Min(jug1, n - jug2);
+            if (!visited[jug1 - pour1to2, jug2 + pour1to2]) {
+                visited[jug1 - pour1to2, jug2 + pour1to2] = true;
+                q.Enqueue(new int[] {jug1 - pour1to2, jug2
+                                           + pour1to2, steps + 1});
+            }
+
+            // 6: Pour jug2 into jug1
+            int pour2to1 = Math.Min(jug2, m - jug1);
+            if (!visited[jug1 + pour2to1, jug2 - pour2to1]) {
+                visited[jug1 + pour2to1, jug2 - pour2to1] = true;
+                q.Enqueue(new int[] {jug1 + pour2to1, jug2
+                                           - pour2to1, steps + 1});
+            }
+        }
+
+        return -1;
+    }
+
+    static void Main(string[] args) {
+
+        int m = 3, n = 5, d = 4;
+        Console.WriteLine(MinSteps(m, n, d));
+    }
+}
+
+JavaScript
+
+function minSteps(m, n, d) {
+    if (d > Math.max(m, n)) return -1;
+
+    // Queue for BFS: each state is (jug1, jug2, steps)
+    let queue = [[0, 0, 0]];
+
+    // Tracking visited states
+    let visited = Array.from({ length: m + 1 },
+                            () => Array(n + 1).fill(false));
+    visited[0][0] = true;
+
+    while (queue.length > 0) {
+        let [jug1, jug2, steps] = queue.shift();
+
+        if (jug1 === d || jug2 === d) return steps;
+
+        // 1: Fill jug1
+        if (!visited[m][jug2]) {
+            visited[m][jug2] = true;
+            queue.push([m, jug2, steps + 1]);
+        }
+
+        // 2: Fill jug2
+        if (!visited[jug1][n]) {
+            visited[jug1][n] = true;
+            queue.push([jug1, n, steps + 1]);
+        }
+
+        // 3: Empty jug1
+        if (!visited[0][jug2]) {
+            visited[0][jug2] = true;
+            queue.push([0, jug2, steps + 1]);
+        }
+
+        // 4: Empty jug2
+        if (!visited[jug1][0]) {
+            visited[jug1][0] = true;
+            queue.push([jug1, 0, steps + 1]);
+        }
+
+        // 5: Pour jug1 into jug2
+        let pour1to2 = Math.min(jug1, n - jug2);
+        if (!visited[jug1 - pour1to2][jug2 + pour1to2]) {
+            visited[jug1 - pour1to2][jug2 + pour1to2] = true;
+            queue.push([jug1 - pour1to2, jug2 + pour1to2,
+                                                 steps + 1]);
+        }
+
+        // 6: Pour jug2 into jug1
+        let pour2to1 = Math.min(jug2, m - jug1);
+        if (!visited[jug1 + pour2to1][jug2 - pour2to1]) {
+            visited[jug1 + pour2to1][jug2 - pour2to1] = true;
+            queue.push([jug1 + pour2to1, jug2 - pour2to1,
+                                                steps + 1]);
+        }
+    }
+
+    return -1;
+}
+
+// Driver Code
+let m = 3, n = 5, d = 4;
+console.log(minSteps(m, n, d));
+
+Time Complexity: O(m * n), Each possible state (x, y) is visited at most once, and total states are bounded by m * n. Auxiliary Space: O(m * n), Space is used by the visited array and queue, which can store up to m * n states.
+
+### [Expected] Mathematical Approach
+
+> The problem can be represented using a Diophantine equation of the form: m × x + n × y = d Here m litre jug is used x times and n litre jug is used y times. Also x , y can be negative because of emptying A solution exists only if gcd(m, n) divides d. The Extended Euclidean Algorithm can be used to find values of x and y, which indicate how many times each jug is filled or emptied. However, this does not directly give the minimum number of steps. When solving the water jug problem, we are repeatedly: Adding water in chunks of m or n (filling a jug). Removing water in chunks of m or n (emptying a jug). Therefore, the final amount d is essentially formed by combining multiples of m and n.
+
+To find the minimum number of operations, simulate two possible strategies and take the minimum:
+
+Strategy 1: Pour from m to n
+
+1. Fill the m litre jug and pour it into the n litre jug.
+2. If the m litre jug becomes empty, refill it.
+3. If the n litre jug becomes full, empty it.
+4. Repeat the above steps until either jug contains d litres.
+
+Strategy 2: Pour from n to m
+
+1. Fill the n litre jug and pour it into the m litre jug.
+2. If the n litre jug becomes empty, refill it.
+3. If the m litre jug becomes full, empty it.
+4. Repeat the above steps until either jug contains d litres.
+
+The final answer is the minimum number of steps obtained from both strategies.
+
+> Suppose there is a 3 litre jug and a 5 litre jug, and we need to measure 4 litres of water. So, m = 3, n = 5, and d = 4. The associated Diophantine equation will be: 3x + 5y = 4 We use the pair (x, y) to represent the amount of water in the 3 litre jug and 5 litre jug respectively at each step. Using Strategy 1 (pour from 3 litre jug to 5 litre jug) Successive states are: (0,0)->(3,0)->(0,3)->(3,3)->(1,5)->(1,0)->(0,1)->(3,1)->(0,4) Number of operations = 8 Using Strategy 2 (pour from 5 litre jug to 3 litre jug) Successive states are: (0,0)->(0,5)->(3,2)->(0,2)->(2,0)->(2,5)->(3,4) Number of operations = 6
+
+Therefore, the minimum number of operations required is 6, so Strategy 2 is the optimal approach.
+
+Why mixing of the two would not lead to minimum steps?
+
+- The problem reduces to Bézout's identity. You can form d using: d = k·m - l·n   or   d = l·n - k·m.  These correspond to exactly two processes . Pour m to n or pour n to m.
+- Other way to look at it is, each direction builds a strict decreasing remainder sequence.
+
+C++
+
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
+int gcd(int a, int b)
+{
+    if (b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+/* fromCap -- Capacity of jug from which
+              water is poured
+   toCap   -- Capacity of jug to which
+              water is poured
+   d       -- Amount to be measured */
+int pour(int fromCap, int toCap, int d)
+{
+    int from = fromCap, to = 0;
+
+    // initial fill
+    int step = 1;
+
+    // Break the loop when either of the two
+    // jugs has d litre water
+    while (from != d && to != d)
+    {
+        int temp = min(from, toCap - to);
+
+        to += temp;
+        from -= temp;
+        step++;
+
+        if (from == d || to == d)
+            break;
+
+        // refill source
+        if (from == 0)
+        {
+            from = fromCap;
+            step++;
+        }
+
+        // empty destination
+        if (to == toCap)
+        {
+            to = 0;
+            step++;
+        }
+    }
+    return step;
+}
+
+// Returns minimum steps required
+int minSteps(int m, int n, int d)
+{
+    // To make sure that m is smaller than n
+    if (m > n)
+        swap(m, n);
+
+    // If d > n, it is not possible to measure the water
+    if (d > n)
+        return -1;
+
+    // If gcd of m and n does not divide d
+    // then solution is not possible
+    if (d % gcd(m, n) != 0)
+        return -1;
+
+    // Try both directions and take minimum:
+    // 1. Pour from n to m
+    // 2. Pour from m to n
+    return min(pour(n, m, d), pour(m, n, d));
+}
+
+int main()
+{
+    int m = 3, n = 5, d = 4;
+
+    cout << minSteps(m, n, d);
+
+    return 0;
+}
+
+Java
+
+import java.io.*;
+
+class GFG {
+
+    public static int gcd(int a, int b) {
+        if (b == 0)
+            return a;
+        return gcd(b, a % b);
+    }
+
+    /* fromCap -- Capacity of jug from which
+                  water is poured
+       toCap   -- Capacity of jug to which
+                  water is poured
+       d       -- Amount to be measured */
+    public static int pour(int fromCap, int toCap, int d) {
+
+        int from = fromCap, to = 0;
+
+        // initial fill
+        int step = 1;
+
+        // Break the loop when either of the two
+        // jugs has d litre water
+        while (from != d && to != d) {
+
+            int temp = Math.min(from, toCap - to);
+
+            to += temp;
+            from -= temp;
+            step++;
+
+            if (from == d || to == d)
+                break;
+
+            // refill source
+            if (from == 0) {
+                from = fromCap;
+                step++;
+            }
+
+            // empty destination
+            if (to == toCap) {
+                to = 0;
+                step++;
+            }
+        }
+        return step;
+    }
+
+    // Returns minimum steps required
+    public static int minSteps(int m, int n, int d) {
+
+        // To make sure that m is smaller than n
+        if (m > n) {
+            int temp = m;
+            m = n;
+            n = temp;
+        }
+
+        // If d > n, it is not possible to measure the water
+        if (d > n)
+            return -1;
+
+        // If gcd of m and n does not divide d
+        // then solution is not possible
+        if (d % gcd(m, n) != 0)
+            return -1;
+
+        // Try both directions and take minimum:
+        // 1. Pour from n to m
+        // 2. Pour from m to n
+        return Math.min(pour(n, m, d), pour(m, n, d));
+    }
+
+    public static void main(String[] args) {
+
+        int m = 3, n = 5, d = 4;
+
+        System.out.println(minSteps(m, n, d));
+    }
+}
+
+Python
+
+def gcd(a, b):
+    if b == 0:
+        return a
+    return gcd(b, a % b)
+
+''' fromCap -- Capacity of jug from which
+              water is poured
+   toCap   -- Capacity of jug to which
+              water is poured
+   d       -- Amount to be measured '''
+def pour(fromCap, toCap, d):
+
+    fromJug = fromCap
+    toJug = 0
+
+    # initial fill
+    step = 1
+
+    # Break the loop when either of the two
+    # jugs has d litre water
+    while (fromJug != d) and (toJug != d):
+
+        temp = min(fromJug, toCap - toJug)
+
+        toJug += temp
+        fromJug -= temp
+        step += 1
+
+        if fromJug == d or toJug == d:
+            break
+
+        # refill source
+        if fromJug == 0:
+            fromJug = fromCap
+            step += 1
+
+        # empty destination
+        if toJug == toCap:
+            toJug = 0
+            step += 1
+
+    return step
+
+# Returns minimum steps required
+def minSteps(m, n, d):
+
+    # To make sure that m is smaller than n
+    if m > n:
+        m, n = n, m
+
+    # If d > n, it is not possible to measure the water
+    if d > n:
+        return -1
+
+    # If gcd of m and n does not divide d
+    # then solution is not possible
+    if d % gcd(m, n) != 0:
+        return -1
+
+    # Try both directions and take minimum:
+    # 1. Pour from n to m
+    # 2. Pour from m to n
+    return min(pour(n, m, d), pour(m, n, d))
+
+if __name__ == '__main__':
+
+    m = 3
+    n = 5
+    d = 4
+
+    print(minSteps(m, n, d))
+
+C#
+
+using System;
+
+class GFG
+{
+    public static int gcd(int a, int b)
+    {
+        if (b == 0)
+            return a;
+
+        return gcd(b, a % b);
+    }
+
+    /* fromCap -- Capacity of jug from which
+                  water is poured
+       toCap   -- Capacity of jug to which
+                  water is poured
+       d       -- Amount to be measured */
+    public static int pour(int fromCap, int toCap, int d)
+    {
+        int from = fromCap;
+        int to = 0;
+
+        // initial fill
+        int step = 1;
+
+        // Break the loop when either of the two
+        // jugs has d litre water
+        while (from != d && to != d)
+        {
+            int temp = Math.Min(from, toCap - to);
+
+            to += temp;
+            from -= temp;
+            step++;
+
+            if (from == d || to == d)
+                break;
+
+            // refill source
+            if (from == 0)
+            {
+                from = fromCap;
+                step++;
+            }
+
+            // empty destination
+            if (to == toCap)
+            {
+                to = 0;
+                step++;
+            }
+        }
+        return step;
+    }
+
+    // Returns minimum steps required
+    public static int minSteps(int m, int n, int d)
+    {
+        // To make sure that m is smaller than n
+        if (m > n)
+        {
+            int temp = m;
+            m = n;
+            n = temp;
+        }
+
+        // If d > n, it is not possible to measure the water
+        if (d > n)
+            return -1;
+
+        // If gcd of m and n does not divide d
+        // then solution is not possible
+        if (d % gcd(m, n) != 0)
+            return -1;
+
+        // Try both directions and take minimum:
+        // 1. Pour from n to m
+        // 2. Pour from m to n
+        return Math.Min(pour(n, m, d), pour(m, n, d));
+    }
+
+    public static void Main()
+    {
+        int m = 3, n = 5, d = 4;
+
+        Console.WriteLine(minSteps(m, n, d));
+    }
+}
+
+JavaScript
+
+function gcd(a, b) {
+    if (b == 0)
+        return a;
+
+    return gcd(b, a % b);
+}
+
+/* fromCap -- Capacity of jug from which
+              water is poured
+   toCap   -- Capacity of jug to which
+              water is poured
+   d       -- Amount to be measured */
+function pour(fromCap, toCap, d) {
+
+    let from = fromCap;
+    let to = 0;
+
+    // initial fill
+    let step = 1;
+
+    // Break the loop when either of the two
+    // jugs has d litre water
+    while (from != d && to != d) {
+
+        let temp = Math.min(from, toCap - to);
+
+        to += temp;
+        from -= temp;
+        step++;
+
+        if (from == d || to == d)
+            break;
+
+        // refill source
+        if (from == 0) {
+            from = fromCap;
+            step++;
+        }
+
+        // empty destination
+        if (to == toCap) {
+            to = 0;
+            step++;
+        }
+    }
+    return step;
+}
+
+// Returns minimum steps required
+function minSteps(m, n, d) {
+
+    // To make sure that m is smaller than n
+    if (m > n) {
+        let temp = m;
+        m = n;
+        n = temp;
+    }
+
+    // If d > n, it is not possible to measure the water
+    if (d > n)
+        return -1;
+
+    // If gcd of m and n does not divide d
+    // then solution is not possible
+    if (d % gcd(m, n) != 0)
+        return -1;
+
+    // Try both directions and take minimum:
+    // 1. Pour from n to m
+    // 2. Pour from m to n
+    return Math.min(pour(n, m, d), pour(m, n, d));
+}
+
+// Driver code
+let m = 3, n = 5, d = 4;
+
+console.log(minSteps(m, n, d));
+
+Output
+
+6
+
+Time Complexity: O(m + n), because operations are bounded by jug capacities Auxiliary Space: O(1)
+
+### Related Links:
+
+- Water Jug - Complete Tutorial

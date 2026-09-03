@@ -1,0 +1,619 @@
+Source: https://www.geeksforgeeks.org/dsa/find-the-maximum-subarray-xor-in-a-given-array/
+Title: Maximum Subarray XOR
+Extractor: 2
+
+Given an array arr[] of size, N. Find the subarray with maximum XOR. A subarray is a contiguous part of the array.
+
+Examples:
+
+> Input: arr[] = [1, 2, 3, 4] Output: 7 Explanation : The subarray [3, 4] has maximum XOR value Input: arr[] = [8, 1, 2, 12, 7, 6] Output: 15 Explanation : The subarray [1, 2, 12] has maximum XOR value Input: arr[] = [4, 6] Output: 6 Explanation: The subarray [6] has maximum XOR value
+
+Table of Content
+
+- [Naive Approach] Consider all Subarrays - O(n²) Time and O(1) Space
+- [Optimal Approach] Using Trie and Prefix XOR - O(n * 32) Time and O(n * 32) Space
+
+### [Naive Approach] Consider all Subarrays - O(n²) Time and O(1) Space
+
+> Consider all possible subarrays and calculate their XORs. The maximum among them will be the required answer.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <climits>
+using namespace std;
+
+// Function to find max subarray XOR
+int maxSubarrayXOR(vector<int>& arr)
+{
+    int ans = INT_MIN;
+    int n = arr.size();
+
+    // Pick starting points of subarrays
+    for (int i = 0; i < n; i++)
+    {
+        // to store xor of current subarray
+        int curr_xor = 0;
+
+        // Pick ending points of subarrays starting with i
+        for (int j = i; j < n; j++)
+        {
+            curr_xor = curr_xor ^ arr[j];
+            ans = max(ans, curr_xor);
+        }
+    }
+    return ans;
+}
+
+// Driver program
+int main()
+{
+    vector<int> arr = {8, 1, 2, 12};
+
+    cout<< maxSubarrayXOR(arr);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    // Function to find max subarray XOR
+    static int maxSubarrayXOR(int[] arr)
+    {
+        int ans = Integer.MIN_VALUE;     // Initialize result
+        int n = arr.length;
+
+        // Pick starting points of subarrays
+        for (int i = 0; i < n; i++)
+        {
+            int curr_xor = 0; // to store xor of current subarray
+
+            // Pick ending points of subarrays starting with i
+            for (int j = i; j < n; j++)
+            {
+                curr_xor = curr_xor ^ arr[j];
+                ans = Math.max(ans, curr_xor);
+            }
+        }
+        return ans;
+    }
+
+    public static void main(String[] args)
+    {
+        int[] arr = {8, 1, 2, 12};
+        System.out.println(maxSubarrayXOR(arr));
+    }
+}
+
+Python
+
+# Function to find max subarray XOR
+def maxSubarrayXOR(arr):
+    ans = float('-inf')     # Initialize result
+    n = len(arr)
+
+    # Pick starting points of subarrays
+    for i in range(n):
+        curr_xor = 0  # to store xor of current subarray
+
+        # Pick ending points of subarrays starting with i
+        for j in range(i, n):
+            curr_xor = curr_xor ^ arr[j]
+            ans = max(ans, curr_xor)
+
+    return ans
+
+# Driver program
+arr = [8, 1, 2, 12]
+print(maxSubarrayXOR(arr))
+
+C#
+
+using System;
+
+class GFG {
+
+    // Function to find max subarray XOR
+    static int maxSubarrayXOR(int[] arr)
+    {
+        int ans = int.MinValue;     // Initialize result
+        int n = arr.Length;
+
+        // Pick starting points of subarrays
+        for (int i = 0; i < n; i++)
+        {
+            int curr_xor = 0; // to store xor of current subarray
+
+            // Pick ending points of subarrays starting with i
+            for (int j = i; j < n; j++)
+            {
+                curr_xor = curr_xor ^ arr[j];
+                ans = Math.Max(ans, curr_xor);
+            }
+        }
+        return ans;
+    }
+
+    public static void Main()
+    {
+        int[] arr = {8, 1, 2, 12};
+        Console.WriteLine(maxSubarrayXOR(arr));
+    }
+}
+
+JavaScript
+
+// Function to find max subarray XOR
+function maxSubarrayXOR(arr)
+{
+    let ans = Number.MIN_SAFE_INTEGER;     // Initialize result
+    let n = arr.length;
+
+    // Pick starting points of subarrays
+    for (let i = 0; i < n; i++)
+    {
+        let curr_xor = 0; // to store xor of current subarray
+
+        // Pick ending points of subarrays starting with i
+        for (let j = i; j < n; j++)
+        {
+            curr_xor = curr_xor ^ arr[j];
+            ans = Math.max(ans, curr_xor);
+        }
+    }
+    return ans;
+}
+
+// Driver program
+let arr = [8, 1, 2, 12];
+console.log(maxSubarrayXOR(arr));
+
+Output
+
+15
+
+### [Optimal Approach] Using Trie and Prefix XOR - O(n * 32) Time and O(n * 32) Space
+
+> Any subarray XOR can be written as XOR of two prefix XORs. So instead of checking all subarrays, we store prefix XORs and try to find another prefix that gives maximum XOR with the current one. A Trie helps us maximize XOR greedily by choosing opposite bits on a path from Trie root.
+
+- Use property : XOR(i, j) = prefix[j] ^ prefix[i-1]
+- Create a Trie to store prefix XOR values
+- Insert 0 initially to handle subarrays starting from index 0
+- Maintain prefix XOR and update it while traversing the array
+- Insert each updated prefix XOR into the Trie
+- Query the Trie for maximum XOR by traversing opposite bits
+
+Illustration:
+
+> It can be observed from the above algorithm that we build a Trie that contains XOR of all prefixes of given array. To find the maximum XOR subarray ending with arr[i], there may be two cases. The prefix itself has the maximum XOR value ending with arr[i]. For example if i=2 in [8, 2, 1, 12], then the maximum subarray xor ending with arr[2] is the whole prefix. Remove some prefix (ending at index from 0 to i-1). For example if i=3 in [8, 2, 1, 12], then the maximum subarray xor ending with arr[3] starts with arr[1] and we need to remove arr[0]. To find the prefix to be removed, find the entry in Trie that has maximum XOR value with current prefix. If we do XOR of such previous prefix with current prefix, get the maximum XOR value ending with arr[i]. If there is no prefix to be removed (case i), then we return 0 (that's why we inserted 0 in Trie).
+
+Below is the implementation of the above idea :
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <climits>
+using namespace std;
+
+// Assumed int size
+#define INT_SIZE 32
+
+// A Trie Node
+struct TrieNode
+{
+    int value;  // Only used in leaf nodes
+    TrieNode *arr[2];
+
+    TrieNode() {
+        value = 0;
+        arr[0] = arr[1] = NULL;
+    }
+};
+
+// Trie Class
+class Trie {
+    TrieNode* root;
+
+public:
+    // Constructor to initialize Trie
+    Trie() {
+        root = new TrieNode();
+    }
+
+    // Inserts pre_xor to trie with given root
+    void insert(int pre_xor)
+    {
+        TrieNode *temp = root;
+
+        // Start from the msb, insert all bits of
+        // pre_xor into Trie
+        for (int i = INT_SIZE - 1; i >= 0; i--)
+        {
+            // Find current bit in given prefix
+            bool val = pre_xor & (1 << i);
+
+            // Create a new node if needed
+            if (temp->arr[val] == NULL)
+                temp->arr[val] = new TrieNode();
+
+            temp = temp->arr[val];
+        }
+
+        // Store value at leaf node
+        temp->value = pre_xor;
+    }
+
+    // Finds the maximum XOR ending with last number in
+    // prefix XOR 'pre_xor'
+    int query(int pre_xor)
+    {
+        TrieNode *temp = root;
+
+        for (int i = INT_SIZE - 1; i >= 0; i--)
+        {
+            // Find current bit in given prefix
+            bool val = pre_xor & (1 << i);
+
+            // Traverse Trie, first look for a
+            // prefix that has opposite bit
+            if (temp->arr[1 - val] != NULL)
+                temp = temp->arr[1 - val];
+
+            // If there is no prefix with opposite
+            // bit, then look for same bit.
+            else if (temp->arr[val] != NULL)
+                temp = temp->arr[val];
+        }
+
+        return pre_xor ^ (temp->value);
+    }
+};
+
+// Returns maximum XOR value of a subarray
+int maxSubarrayXOR(vector<int> &arr)
+{
+    // Create a Trie and insert 0 into it
+    Trie trie;
+    trie.insert(0);
+
+    // Initialize answer and xor of current prefix
+    int result = INT_MIN, pre_xor = 0;
+
+    // Traverse all input array element
+    for (int i = 0; i < arr.size(); i++)
+    {
+        // update current prefix xor and insert it into Trie
+        pre_xor = pre_xor ^ arr[i];
+        trie.insert(pre_xor);
+
+        // Query for current prefix xor in Trie and update
+        // result if required
+        result = max(result, trie.query(pre_xor));
+    }
+    return result;
+}
+
+// Driver program to test above functions
+int main()
+{
+    vector<int> arr = {8, 1, 2, 12};
+
+    cout << maxSubarrayXOR(arr);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    // Assumed int size
+    static final int INT_SIZE = 32;
+
+    // A Trie Node
+    static class TrieNode {
+        int value;  // Only used in leaf nodes
+        TrieNode[] arr;
+
+        TrieNode() {
+            value = 0;
+            arr = new TrieNode[2];
+        }
+    }
+
+    // Trie Class
+    static class Trie {
+        TrieNode root;
+
+        // Constructor to initialize Trie
+        Trie() {
+            root = new TrieNode();
+        }
+
+        // Inserts pre_xor to trie with given root
+        void insert(int pre_xor)
+        {
+            TrieNode temp = root;
+
+            // Start from the msb, insert all bits of
+            // pre_xor into Trie
+            for (int i = INT_SIZE - 1; i >= 0; i--)
+            {
+                int val = (pre_xor & (1 << i)) != 0 ? 1 : 0;
+
+                // Create a new node if needed
+                if (temp.arr[val] == null)
+                    temp.arr[val] = new TrieNode();
+
+                temp = temp.arr[val];
+            }
+
+            // Store value at leaf node
+            temp.value = pre_xor;
+        }
+
+        // Finds the maximum XOR ending with last number
+        int query(int pre_xor)
+        {
+            TrieNode temp = root;
+
+            for (int i = INT_SIZE - 1; i >= 0; i--)
+            {
+                int val = (pre_xor & (1 << i)) != 0 ? 1 : 0;
+
+                // Traverse Trie, first look for opposite bit
+                if (temp.arr[1 - val] != null)
+                    temp = temp.arr[1 - val];
+                else
+                    temp = temp.arr[val];
+            }
+
+            return pre_xor ^ temp.value;
+        }
+    }
+
+    // Returns maximum XOR value of a subarray
+    static int maxSubarrayXOR(int[] arr)
+    {
+        Trie trie = new Trie();
+        trie.insert(0);
+
+        int result = Integer.MIN_VALUE, pre_xor = 0;
+
+        for (int i = 0; i < arr.length; i++)
+        {
+            pre_xor ^= arr[i];
+            trie.insert(pre_xor);
+            result = Math.max(result, trie.query(pre_xor));
+        }
+        return result;
+    }
+
+    public static void main(String[] args)
+    {
+        int[] arr = {8, 1, 2, 12};
+        System.out.println(maxSubarrayXOR(arr));
+    }
+}
+
+Python
+
+# Assumed int size
+INT_SIZE = 32
+
+# A Trie Node
+class TrieNode:
+    def __init__(self):
+        self.value = 0
+        self.arr = [None, None]
+
+# Trie Class
+class Trie:
+
+    # Constructor to initialize Trie
+    def __init__(self):
+        self.root = TrieNode()
+
+    # Inserts pre_xor to trie with given root
+    def insert(self, pre_xor):
+        temp = self.root
+
+        # Start from the msb
+        for i in range(INT_SIZE - 1, -1, -1):
+            val = (pre_xor >> i) & 1
+
+            if temp.arr[val] is None:
+                temp.arr[val] = TrieNode()
+
+            temp = temp.arr[val]
+
+        temp.value = pre_xor
+
+    # Finds the maximum XOR
+    def query(self, pre_xor):
+        temp = self.root
+
+        for i in range(INT_SIZE - 1, -1, -1):
+            val = (pre_xor >> i) & 1
+
+            if temp.arr[1 - val]:
+                temp = temp.arr[1 - val]
+            else:
+                temp = temp.arr[val]
+
+        return pre_xor ^ temp.value
+
+# Returns maximum XOR value of a subarray
+def maxSubarrayXOR(arr):
+    trie = Trie()
+    trie.insert(0)
+
+    result = float('-inf')
+    pre_xor = 0
+
+    for num in arr:
+        pre_xor ^= num
+        trie.insert(pre_xor)
+        result = max(result, trie.query(pre_xor))
+
+    return result
+
+# Driver program
+arr = [8, 1, 2, 12]
+print(maxSubarrayXOR(arr))
+
+C#
+
+using System;
+
+class GFG {
+
+    static int INT_SIZE = 32;
+
+    class TrieNode {
+        public int value;
+        public TrieNode[] arr = new TrieNode[2];
+    }
+
+    class Trie {
+        TrieNode root;
+
+        public Trie() {
+            root = new TrieNode();
+        }
+
+        public void insert(int pre_xor) {
+            TrieNode temp = root;
+
+            for (int i = INT_SIZE - 1; i >= 0; i--) {
+                int val = (pre_xor & (1 << i)) != 0 ? 1 : 0;
+
+                if (temp.arr[val] == null)
+                    temp.arr[val] = new TrieNode();
+
+                temp = temp.arr[val];
+            }
+
+            temp.value = pre_xor;
+        }
+
+        public int query(int pre_xor) {
+            TrieNode temp = root;
+
+            for (int i = INT_SIZE - 1; i >= 0; i--) {
+                int val = (pre_xor & (1 << i)) != 0 ? 1 : 0;
+
+                if (temp.arr[1 - val] != null)
+                    temp = temp.arr[1 - val];
+                else
+                    temp = temp.arr[val];
+            }
+
+            return pre_xor ^ temp.value;
+        }
+    }
+
+    static int maxSubarrayXOR(int[] arr) {
+        Trie trie = new Trie();
+        trie.insert(0);
+
+        int result = int.MinValue, pre_xor = 0;
+
+        foreach (int num in arr) {
+            pre_xor ^= num;
+            trie.insert(pre_xor);
+            result = Math.Max(result, trie.query(pre_xor));
+        }
+
+        return result;
+    }
+
+    static void Main() {
+        int[] arr = {8, 1, 2, 12};
+        Console.WriteLine(maxSubarrayXOR(arr));
+    }
+}
+
+JavaScript
+
+const INT_SIZE = 32;
+
+// A Trie Node
+class TrieNode {
+    constructor() {
+        this.value = 0;
+        this.arr = [null, null];
+    }
+}
+
+// Trie Class
+class Trie {
+
+    constructor() {
+        this.root = new TrieNode();
+    }
+
+    insert(pre_xor) {
+        let temp = this.root;
+
+        for (let i = INT_SIZE - 1; i >= 0; i--) {
+            let val = (pre_xor >> i) & 1;
+
+            if (!temp.arr[val])
+                temp.arr[val] = new TrieNode();
+
+            temp = temp.arr[val];
+        }
+
+        temp.value = pre_xor;
+    }
+
+    query(pre_xor) {
+        let temp = this.root;
+
+        for (let i = INT_SIZE - 1; i >= 0; i--) {
+            let val = (pre_xor >> i) & 1;
+
+            if (temp.arr[1 - val])
+                temp = temp.arr[1 - val];
+            else
+                temp = temp.arr[val];
+        }
+
+        return pre_xor ^ temp.value;
+    }
+}
+
+// Returns maximum XOR value of a subarray
+function maxSubarrayXOR(arr) {
+    let trie = new Trie();
+    trie.insert(0);
+
+    let result = -Infinity, pre_xor = 0;
+
+    for (let num of arr) {
+        pre_xor ^= num;
+        trie.insert(pre_xor);
+        result = Math.max(result, trie.query(pre_xor));
+    }
+
+    return result;
+}
+
+// Driver program
+let arr = [8, 1, 2, 12];
+console.log(maxSubarrayXOR(arr));
+
+Output
+
+15
+
+Exercise: Extend the above solution so that it also prints starting and ending indexes of subarray with maximum value (Hint: we can add one more field to Trie node to achieve this

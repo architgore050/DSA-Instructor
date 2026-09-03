@@ -1,0 +1,1382 @@
+Source: https://www.geeksforgeeks.org/dsa/hopcroft-karp-algorithm-for-maximum-matching-set-1-introduction/
+Title: Maximum Bipartite Matching
+Extractor: 2
+
+A matching in a Bipartite Graph is a set of the edges chosen in such a way that no two edges share an endpoint. A maximum matching is a matching that contains the maximum possible number of edges. There can be more than one maximum matching for a given bipartite graph.
+
+Why do we care? There are many real world problems that can be formed as Bipartite Matching. For example, consider the following problem:
+
+" There are M job applicants and N jobs. Each applicant has a subset of jobs that he/she is interested in. Each job opening can only accept one applicant and a job applicant can be appointed for only one job. Find an assignment of jobs to applicants in such that as many applicants as possible get jobs."
+
+We strongly recommend to read the following post first. " Ford-Fulkerson Algorithm for Maximum Flow Problem"
+
+Maximum Bipartite Matching and Max Flow Problem : Maximum Bipartite Matching ( MBP ) problem can be solved by converting it into a flow network.
+
+1. Build a Flow Network : There must be a source and sink in a flow network. So we add a source and add edges from source to all applicants. Similarly, add edges from all jobs to sink. The capacity of every edge is marked as 1 unit.
+
+2. Find the maximum flow: We use Ford-Fulkerson algorithm to find the maximum flow in the flow network built in step 1. The maximum flow is actually the MBP we are looking for.
+
+Let's solve a problem for better understanding: There are m job applicants and n job openings. Each applicant is interested in a subset of the available jobs. You are given a binary matrix mat[][] of size m × n , where:
+
+- mat[i][j] = 1 indicates that the i-th applicant is interested in the j-th job.
+- mat[i][j] = 0 indicates that the applicant is not interested in that job.
+
+Each job can be assigned to only one applicant, and each applicant can be assigned to at most one job. Determine the maximum number of applicants that can be assigned jobs according to their interests.
+
+Example:
+
+> Input: mat = [[1, 1, 0, 1, 1], [0, 1, 0, 0, 1], [1, 1, 0, 1, 1]] Output: 3 Explanation: The following is one of the possible assignments: First applicant gets the 1st job. Second applicant gets the 2nd job. Third applicant gets the 4th job. Input: mat = [[1, 1], [0, 1], [0, 1], [0, 1], [0, 1], [1, 0]] Output: 2 Explanation: The following is one of the possible assignments: First applicant gets the 1st job. Second applicant gets the 2nd job
+
+Table of Content
+
+- [Expected Approach] Using Ford - Fulkerson Algorithm - O(V * E) Time and O(V + E) Space
+- [Optimized Approach] Using Hopcroft–Karp Algorithm - O(sqrt(V) * E) Time and O(V) Space
+
+### [Expected Approach] Using Ford - Fulkerson Algorithm - O(V * E) Time and O(V + E) Space
+
+> This problem can be viewed as a simplified version of the Ford–Fulkerson algorithm on a bipartite graph where every edge has capacity 1. The idea is to use DFS to find an augmenting path for each applicant. For every applicant, we try all jobs he is interested in. If a job is free, we assign it directly. Otherwise, we recursively try to reassign the currently assigned applicant to another job. If reassignment is possible, we assign the current job to the new applicant. Every successful DFS represents an augmenting path and increases the maximum matching by 1.
+
+- Create an array assignedApplicant[] to store which applicant is assigned to each job and initialize all values as -1.
+- For every applicant, perform a DFS traversal to try assigning a job.
+- In DFS, iterate through all jobs that the current applicant is interested in.
+- If a job is not visited and is free, assign that job to the applicant.
+- If the job is already assigned, recursively try to reassign the currently assigned applicant to another job.
+- If assignment/reassignment is successful, increase the maximum matching count by 1.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to check whether an applicant can get a job
+// using DFS traversal
+bool canAssignJob(int applicant, vector<vector<int>> &mat, vector<bool> &visitedJobs,
+                  vector<int> &assignedApplicant, int totalJobs)
+{
+    // Try every job one by one
+    for (int job = 0; job < totalJobs; job++)
+    {
+        // If applicant is interested in this job
+        // and this job is not visited yet
+        if (mat[applicant][job] == 1 && !visitedJobs[job])
+        {
+            // Mark current job as visited
+            visitedJobs[job] = true;
+
+            // If job is free OR previously assigned
+            // applicant can get another job
+            if (assignedApplicant[job] == -1 ||
+                canAssignJob(assignedApplicant[job], mat, visitedJobs, assignedApplicant, totalJobs))
+            {
+                // Assign current job to applicant
+                assignedApplicant[job] = applicant;
+
+                return true;
+            }
+        }
+    }
+
+    // No job could be assigned
+    return false;
+}
+
+// Function to find maximum bipartite matching
+int maximumMatch(vector<vector<int>> &mat)
+{
+    int totalApplicants = mat.size();
+    int totalJobs = mat[0].size();
+
+    // assignedApplicant[j] stores the applicant
+    // assigned to job j
+    // -1 means no applicant assigned
+    vector<int> assignedApplicant(totalJobs, -1);
+
+    // Stores final maximum matching count
+    int maximumMatching = 0;
+
+    // Try assigning jobs to every applicant
+    for (int applicant = 0; applicant < totalApplicants; applicant++)
+    {
+        // Keeps track of visited jobs
+        // during current DFS call
+        vector<bool> visitedJobs(totalJobs, false);
+
+        // If applicant gets a job
+        if (canAssignJob(applicant, mat, visitedJobs, assignedApplicant, totalJobs))
+        {
+            maximumMatching++;
+        }
+    }
+
+    return maximumMatching;
+}
+// Driver Code
+int main()
+{
+    vector<vector<int>> mat = {{0, 1, 1, 0, 0, 0}, {1, 0, 0, 1, 0, 0}, {0, 0, 1, 0, 0, 0},
+                               {0, 0, 1, 1, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 1}};
+
+    cout << maximumMatch(mat);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class GFG {
+
+    // Function to check whether an applicant can get a job
+    // using DFS traversal
+    static boolean canAssignJob(int applicant, int[][] mat,
+                                 boolean[] visitedJobs,
+                                 int[] assignedApplicant,
+                                 int totalJobs)
+    {
+        // Try every job one by one
+        for (int job = 0; job < totalJobs; job++) {
+
+            // If applicant is interested in this job
+            // and this job is not visited yet
+            if (mat[applicant][job] == 1
+                && !visitedJobs[job]) {
+
+                // Mark current job as visited
+                visitedJobs[job] = true;
+
+                // If job is free OR previously assigned
+                // applicant can get another job
+                if (assignedApplicant[job] == -1
+                    || canAssignJob(assignedApplicant[job],
+                                    mat, visitedJobs,
+                                    assignedApplicant,
+                                    totalJobs)) {
+
+                    // Assign current job to applicant
+                    assignedApplicant[job] = applicant;
+
+                    return true;
+                }
+            }
+        }
+
+        // No job could be assigned
+        return false;
+    }
+
+    // Function to find maximum bipartite matching
+    static int maximumMatch(int[][] mat)
+    {
+        int totalApplicants = mat.length;
+        int totalJobs = mat[0].length;
+
+        // assignedApplicant[j] stores applicant
+        // assigned to job j
+        int[] assignedApplicant = new int[totalJobs];
+
+        // Initially all jobs are unassigned
+        Arrays.fill(assignedApplicant, -1);
+
+        int maximumMatching = 0;
+
+        // Try assigning every applicant
+        for (int applicant = 0; applicant < totalApplicants;
+             applicant++) {
+
+            // Keeps track of visited jobs
+            boolean[] visitedJobs = new boolean[totalJobs];
+
+            // If applicant gets a job
+            if (canAssignJob(applicant, mat, visitedJobs,
+                             assignedApplicant,
+                             totalJobs)) {
+
+                maximumMatching++;
+            }
+        }
+
+        return maximumMatching;
+    }
+
+    public static void main(String[] args)
+    {
+        int[][] mat = {
+            { 0, 1, 1, 0, 0, 0 }, { 1, 0, 0, 1, 0, 0 },
+            { 0, 0, 1, 0, 0, 0 }, { 0, 0, 1, 1, 0, 0 },
+            { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 1 }
+        };
+
+        System.out.println(maximumMatch(mat));
+    }
+}
+
+Python
+
+# Function to check whether an applicant can get a job
+# using DFS traversal
+def canAssignJob(applicant, mat, visitedJobs, assignedApplicant, totalJobs):
+
+    # Try every job one by one
+    for job in range(totalJobs):
+
+        # If applicant is interested in this job
+        # and this job is not visited yet
+        if (mat[applicant][job] == 1 and
+                not visitedJobs[job]):
+
+            # Mark current job as visited
+            visitedJobs[job] = True
+
+            # If job is free OR previously assigned
+            # applicant can get another job
+            if (assignedApplicant[job] == -1 or canAssignJob(assignedApplicant[job], mat, visitedJobs, assignedApplicant, totalJobs)):
+
+                # Assign current job to applicant
+                assignedApplicant[job] = applicant
+
+                return True
+
+    # No job could be assigned
+    return False
+
+# Function to find maximum bipartite matching
+def maximumMatch(mat):
+
+    totalApplicants = len(mat)
+    totalJobs = len(mat[0])
+
+    # assignedApplicant[j] stores applicant
+    # assigned to job j
+    assignedApplicant = [-1] * totalJobs
+
+    maximumMatching = 0
+
+    # Try assigning every applicant
+    for applicant in range(totalApplicants):
+
+        # Keeps track of visited jobs
+        visitedJobs = [False] * totalJobs
+
+        # If applicant gets a job
+        if canAssignJob(applicant, mat, visitedJobs, assignedApplicant, totalJobs):
+
+            maximumMatching += 1
+
+    return maximumMatching
+
+# Driver Code
+if __name__ == "__main__":
+    mat = [
+        [0, 1, 1, 0, 0, 0],
+        [1, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0, 0],
+        [0, 0, 1, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1]
+    ]
+
+    print(maximumMatch(mat))
+
+C#
+
+using System;
+
+class GFG {
+
+    // Function to check whether an applicant can get a job
+    // using DFS traversal
+    static bool CanAssignJob(int applicant, int[][] mat,
+                             bool[] visitedJobs,
+                             int[] assignedApplicant,
+                             int totalJobs)
+    {
+        // Try every job one by one
+        for (int job = 0; job < totalJobs; job++) {
+            // If applicant is interested in this job
+            // and this job is not visited yet
+            if (mat[applicant][job] == 1
+                && !visitedJobs[job]) {
+                // Mark current job as visited
+                visitedJobs[job] = true;
+
+                // If job is free OR previously assigned
+                // applicant can get another job
+                if (assignedApplicant[job] == -1
+                    || CanAssignJob(assignedApplicant[job],
+                                    mat, visitedJobs,
+                                    assignedApplicant,
+                                    totalJobs)) {
+                    // Assign current job to applicant
+                    assignedApplicant[job] = applicant;
+
+                    return true;
+                }
+            }
+        }
+
+        // No job could be assigned
+        return false;
+    }
+
+    // Function to find maximum bipartite matching
+    static int maximumMatch(int[][] mat)
+    {
+        int totalApplicants = mat.Length;
+        int totalJobs = mat[0].Length;
+
+        // assignedApplicant[j] stores applicant
+        // assigned to job j
+        int[] assignedApplicant = new int[totalJobs];
+
+        // Initially all jobs are unassigned
+        Array.Fill(assignedApplicant, -1);
+
+        int maximumMatching = 0;
+
+        // Try assigning every applicant
+        for (int applicant = 0; applicant < totalApplicants;
+             applicant++) {
+            // Keeps track of visited jobs
+            bool[] visitedJobs = new bool[totalJobs];
+
+            // If applicant gets a job
+            if (CanAssignJob(applicant, mat, visitedJobs,
+                             assignedApplicant,
+                             totalJobs)) {
+                maximumMatching++;
+            }
+        }
+
+        return maximumMatching;
+    }
+
+    static void Main()
+    {
+        int[][] mat = { new int[] { 0, 1, 1, 0, 0, 0 },
+                        new int[] { 1, 0, 0, 1, 0, 0 },
+                        new int[] { 0, 0, 1, 0, 0, 0 },
+                        new int[] { 0, 0, 1, 1, 0, 0 },
+                        new int[] { 0, 0, 0, 0, 0, 0 },
+                        new int[] { 0, 0, 0, 0, 0, 1 } };
+
+        Console.WriteLine(maximumMatch(mat));
+    }
+}
+
+JavaScript
+
+// Function to check whether an applicant can get a job
+// using DFS traversal
+function canAssignJob(applicant, mat, visitedJobs,
+                      assignedApplicant, totalJobs)
+{
+    // Try every job one by one
+    for (let job = 0; job < totalJobs; job++) {
+
+        // If applicant is interested in this job
+        // and this job is not visited yet
+        if (mat[applicant][job] === 1
+            && !visitedJobs[job]) {
+
+            // Mark current job as visited
+            visitedJobs[job] = true;
+
+            // If job is free OR previously assigned
+            // applicant can get another job
+            if (assignedApplicant[job] === -1
+                || canAssignJob(assignedApplicant[job], mat,
+                                visitedJobs,
+                                assignedApplicant,
+                                totalJobs)) {
+
+                // Assign current job to applicant
+                assignedApplicant[job] = applicant;
+
+                return true;
+            }
+        }
+    }
+
+    // No job could be assigned
+    return false;
+}
+
+// Function to find maximum bipartite matching
+function maximumMatch(mat)
+{
+    const totalApplicants = mat.length;
+    const totalJobs = mat[0].length;
+
+    // assignedApplicant[j] stores applicant
+    // assigned to job j
+    const assignedApplicant = new Array(totalJobs).fill(-1);
+
+    let maximumMatching = 0;
+
+    // Try assigning every applicant
+    for (let applicant = 0; applicant < totalApplicants;
+         applicant++) {
+
+        // Keeps track of visited jobs
+        const visitedJobs
+            = new Array(totalJobs).fill(false);
+
+        // If applicant gets a job
+        if (canAssignJob(applicant, mat, visitedJobs,
+                         assignedApplicant, totalJobs)) {
+
+            maximumMatching++;
+        }
+    }
+
+    return maximumMatching;
+}
+
+// Driver Code
+const mat = [
+    [ 0, 1, 1, 0, 0, 0 ], [ 1, 0, 0, 1, 0, 0 ],
+    [ 0, 0, 1, 0, 0, 0 ], [ 0, 0, 1, 1, 0, 0 ],
+    [ 0, 0, 0, 0, 0, 0 ], [ 0, 0, 0, 0, 0, 1 ]
+];
+
+console.log(maximumMatch(mat));
+
+Output
+
+5
+
+Time Complexity: O(V * E) , where V is the number of vertices in the graph and E is the number of edges. The algorithm iterates over each vertex in the graph and then performs a DFS on the corresponding edges to find the maximum bipartite matching.
+
+Space Complexity: O(V + E) as it uses a two-dimensional boolean array to store the graph and an array to store the maximum matching.
+
+### [Optimized Approach] Using Hopcroft–Karp Algorithm - O(sqrt(V) * E) Time and O(V) Space
+
+Let us define few terms before we discuss the algorithm
+
+Free Node or Vertex: Given a matching M, a  node that is not part of matching is called free node. Initially all  vertices as free (See first graph of below diagram). In second graph, u2  and v2 are free. In third graph, no vertex is free.
+
+Matching and Not-Matching edges: Given a  matching M, edges that are part of matching are called Matching edges  and edges that are not part of M (or connect free nodes) are called  Not-Matching edges. In first graph, all edges are non-matching. In  second graph, (u0, v1), (u1, v0) and (u3, v3) are matching and others  not-matching.
+
+Alternating Paths: Given a matching M, an  alternating path is a path in which the edges belong alternatively to  the matching and not matching. All single edges paths are alternating  paths. Examples of alternating paths in middle graph are u0-v1-u2 and  u2-v1-u0-v2.
+
+Augmenting path: Given a matching M, an  augmenting path is an alternating path that starts from and ends on free  vertices. All single edge paths that start and end with free vertices  are augmenting paths. In below diagram, augmenting paths are highlighted  with blue color. Note that the augmenting path always has one extra  matching edge. The Hopcroft Karp algorithm is based on below concept. A  matching M is not maximum if there exists an augmenting path. It is  also true other way, i.e, a matching is maximum if no augmenting path  exists So the idea is to one by one look for augmenting paths. And add the found paths to current matching.
+
+Hopcroft Karp Algorithm:
+
+1) Initialize Maximal Matching M as empty.
+
+2) While there exists an Augmenting Path p
+
+- Remove matching edges of p from M and add not-matching edges of p to M
+- (This increases size of M by 1 as p starts and ends with a free vertex)
+
+3) Return M.
+
+Below diagram shows working of the algorithm.
+
+The idea is to use BFS (Breadth First Search) to find  augmenting paths. Since BFS traverses level by level, it is used to  divide the graph in layers of matching and not matching edges. A dummy  vertex NIL is added that is connected to all vertices on the left side  and all vertices on the right side. The following arrays are used to  find augmenting paths. Distance to NIL is initialized as INF (infinite).  If we start from a dummy vertex and come back to it using alternating  paths of distinct vertices, then there is an augmenting path.
+
+1. pairU[]: An array of  size m+1 where m is the number of vertices on the left side of the  Bipartite Graph. pairU[u] stores paa r of u on the right side if u is  matched and NIL otherwise.
+2. pairV[]: An array of size n+1 where n is several vertices on the right side of  the Bipartite Graph. pairV[v] stores a pair of v on the left side if v  is matched and NIL otherwise.
+3. dist[]: An  array of size m+1 where m is several vertices on the left side of the  Bipartite Graph. dist[u] is initialized as 0 if u is not matching and  INF (infinite) otherwise. dist[] of NIL is also initialized as INF
+
+Once  an augmenting path is found, DFS (Depth First Search) is used to add  augmenting paths to current matching. DFS simply follows the distance  array setup by BFS. It fills values in pairU[u] and pairV[v] if v is  next to u in BFS.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// BFS Function
+// Builds layers using shortest augmenting paths
+bool bfs(vector<vector<int>> &mat, vector<int> &pairU, vector<int> &pairV, vector<int> &dist,
+         int totalApplicants, int totalJobs)
+{
+    // Queue used for BFS traversal
+    queue<int> q;
+
+    // Traverse all applicants
+    for (int applicant = 1; applicant <= totalApplicants; applicant++)
+    {
+        // If applicant is free
+        if (pairU[applicant] == 0)
+        {
+            // Free applicants belong to level 0
+            dist[applicant] = 0;
+
+            // Push applicant into queue
+            q.push(applicant);
+        }
+        else
+        {
+            // Mark matched applicants as unvisited
+            dist[applicant] = INT_MAX;
+        }
+    }
+
+    // Distance to NIL node
+    dist[0] = INT_MAX;
+
+    // Perform BFS traversal
+    while (!q.empty())
+    {
+        // Get current applicant
+        int applicant = q.front();
+
+        // Remove from queue
+        q.pop();
+
+        // If current layer is useful
+        if (dist[applicant] < dist[0])
+        {
+            // Traverse all jobs
+            for (int job = 1; job <= totalJobs; job++)
+            {
+                // If edge exists
+                if (mat[applicant - 1][job - 1])
+                {
+                    // Get applicant assigned
+                    // to current job
+                    int nextApplicant = pairV[job];
+
+                    // If not visited
+                    if (dist[nextApplicant] == INT_MAX)
+                    {
+                        // Assign next BFS layer
+                        dist[nextApplicant] = dist[applicant] + 1;
+
+                        // Push into queue
+                        q.push(nextApplicant);
+                    }
+                }
+            }
+        }
+    }
+
+    // If NIL node reachable,
+    // augmenting path exists
+    return dist[0] != INT_MAX;
+}
+
+// DFS Function
+// Finds augmenting paths using BFS layers
+bool canAssignJob(int applicant, vector<vector<int>> &mat, vector<int> &pairU, vector<int> &pairV,
+                  vector<int> &dist, int totalJobs)
+{
+    // If NIL node reached,
+    // augmenting path found
+    if (applicant == 0)
+    {
+        return true;
+    }
+
+    // Traverse all jobs
+    for (int job = 1; job <= totalJobs; job++)
+    {
+        // If edge exists
+        if (mat[applicant - 1][job - 1])
+        {
+            // Get applicant assigned
+            // to current job
+            int nextApplicant = pairV[job];
+
+            // Follow only valid BFS layers
+            if (dist[nextApplicant] == dist[applicant] + 1)
+            {
+                // Recursively try to find
+                // augmenting path
+                if (canAssignJob(nextApplicant, mat, pairU, pairV, dist, totalJobs))
+                {
+                    // Assign current job
+                    // to current applicant
+                    pairV[job] = applicant;
+
+                    // Assign current applicant
+                    // to current job
+                    pairU[applicant] = job;
+
+                    // Matching successful
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Mark node as useless
+    dist[applicant] = INT_MAX;
+
+    // No augmenting path found
+    return false;
+}
+
+// Function to find maximum bipartite matching
+int maximumMatch(vector<vector<int>> &mat)
+{
+    // Number of applicants
+    int totalApplicants = mat.size();
+
+    // Number of jobs
+    int totalJobs = mat[0].size();
+
+    // pairU[u] stores job assigned
+    // to applicant u
+    vector<int> pairU(totalApplicants + 1, 0);
+
+    // pairV[v] stores applicant assigned
+    // to job v
+    vector<int> pairV(totalJobs + 1, 0);
+
+    // Distance array used in BFS
+    vector<int> dist(totalApplicants + 1);
+
+    // Stores final maximum matching
+    int maximumMatching = 0;
+
+    // Repeat while augmenting path exists
+    while (bfs(mat, pairU, pairV, dist, totalApplicants, totalJobs))
+    {
+        // Traverse all applicants
+        for (int applicant = 1; applicant <= totalApplicants; applicant++)
+        {
+            // If applicant is free
+            if (pairU[applicant] == 0)
+            {
+                // Try assigning a job
+                if (canAssignJob(applicant, mat, pairU, pairV, dist, totalJobs))
+                {
+                    // Increase matching count
+                    maximumMatching++;
+                }
+            }
+        }
+    }
+
+    // Return final answer
+    return maximumMatching;
+}
+
+int main()
+{
+    // Adjacency matrix representation
+    // mat[i][j] = 1 means
+    // applicant i interested in job j
+    vector<vector<int>> mat = {{0, 1, 1, 0, 0, 0}, {1, 0, 0, 1, 0, 0}, {0, 0, 1, 0, 0, 0},
+                               {0, 0, 1, 1, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 1}};
+
+    // Print maximum matching
+    cout << maximumMatch(mat);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class GFG {
+    // BFS Function
+    // Builds layers using shortest augmenting paths
+    static boolean bfs(int[][] mat, int[] pairU,
+                       int[] pairV, int[] dist,
+                       int totalApplicants, int totalJobs)
+    {
+        // Queue used for BFS traversal
+        Queue<Integer> q = new LinkedList<>();
+
+        // Traverse all applicants
+        for (int applicant = 1;
+             applicant <= totalApplicants; applicant++) {
+            // If applicant is free
+            if (pairU[applicant] == 0) {
+                // Free applicants belong to level 0
+                dist[applicant] = 0;
+
+                // Push applicant into queue
+                q.offer(applicant);
+            }
+            else {
+                // Mark matched applicants as unvisited
+                dist[applicant] = Integer.MAX_VALUE;
+            }
+        }
+
+        // Distance to NIL node
+        dist[0] = Integer.MAX_VALUE;
+
+        // Perform BFS traversal
+        while (!q.isEmpty()) {
+            // Get current applicant
+            int applicant = q.poll();
+
+            // If current layer is useful
+            if (dist[applicant] < dist[0]) {
+                // Traverse all jobs
+                for (int job = 1; job <= totalJobs; job++) {
+                    // If edge exists
+                    if (mat[applicant - 1][job - 1] == 1) {
+                        // Get applicant assigned
+                        // to current job
+                        int nextApplicant = pairV[job];
+
+                        // If not visited
+                        if (dist[nextApplicant]
+                            == Integer.MAX_VALUE) {
+                            // Assign next BFS layer
+                            dist[nextApplicant]
+                                = dist[applicant] + 1;
+
+                            // Push into queue
+                            q.offer(nextApplicant);
+                        }
+                    }
+                }
+            }
+        }
+
+        // If NIL node reachable,
+        // augmenting path exists
+        return dist[0] != Integer.MAX_VALUE;
+    }
+
+    // DFS Function
+    // Finds augmenting paths using BFS layers
+    static boolean canAssignJob(int applicant, int[][] mat,
+                                int[] pairU, int[] pairV,
+                                int[] dist, int totalJobs)
+    {
+        // If NIL node reached,
+        // augmenting path found
+        if (applicant == 0) {
+            return true;
+        }
+
+        // Traverse all jobs
+        for (int job = 1; job <= totalJobs; job++) {
+            // If edge exists
+            if (mat[applicant - 1][job - 1] == 1) {
+                // Get applicant assigned
+                // to current job
+                int nextApplicant = pairV[job];
+
+                // Follow only valid BFS layers
+                if (dist[nextApplicant]
+                    == dist[applicant] + 1) {
+                    // Recursively try to find
+                    // augmenting path
+                    if (canAssignJob(nextApplicant, mat,
+                                     pairU, pairV, dist,
+                                     totalJobs)) {
+                        // Assign current job
+                        // to current applicant
+                        pairV[job] = applicant;
+
+                        // Assign current applicant
+                        // to current job
+                        pairU[applicant] = job;
+
+                        // Matching successful
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Mark node as useless
+        dist[applicant] = Integer.MAX_VALUE;
+
+        // No augmenting path found
+        return false;
+    }
+
+    // Function to find maximum bipartite matching
+    static int maximumMatch(int[][] mat)
+    {
+        // Number of applicants
+        int totalApplicants = mat.length;
+
+        // Number of jobs
+        int totalJobs = mat[0].length;
+
+        // pairU[u] stores job assigned
+        // to applicant u
+        int[] pairU = new int[totalApplicants + 1];
+
+        // pairV[v] stores applicant assigned
+        // to job v
+        int[] pairV = new int[totalJobs + 1];
+
+        // Distance array used in BFS
+        int[] dist = new int[totalApplicants + 1];
+
+        // Stores final maximum matching
+        int maximumMatching = 0;
+
+        // Repeat while augmenting path exists
+        while (bfs(mat, pairU, pairV, dist, totalApplicants,
+                   totalJobs)) {
+            // Traverse all applicants
+            for (int applicant = 1;
+                 applicant <= totalApplicants;
+                 applicant++) {
+                // If applicant is free
+                if (pairU[applicant] == 0) {
+                    // Try assigning a job
+                    if (canAssignJob(applicant, mat, pairU,
+                                     pairV, dist,
+                                     totalJobs)) {
+                        // Increase matching count
+                        maximumMatching++;
+                    }
+                }
+            }
+        }
+
+        // Return final answer
+        return maximumMatching;
+    }
+
+    public static void main(String[] args)
+    {
+        // Adjacency matrix representation
+        int[][] mat = {
+            { 0, 1, 1, 0, 0, 0 }, { 1, 0, 0, 1, 0, 0 },
+            { 0, 0, 1, 0, 0, 0 }, { 0, 0, 1, 1, 0, 0 },
+            { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 1 }
+        };
+
+        // Print maximum matching
+        System.out.println(maximumMatch(mat));
+    }
+}
+
+Python
+
+from collections import deque
+
+# BFS Function
+# Builds layers using shortest augmenting paths
+
+def bfs(mat, pairU, pairV, dist, totalApplicants, totalJobs):
+
+    # Queue used for BFS traversal
+    q = deque()
+
+    # Traverse all applicants
+    for applicant in range(1, totalApplicants + 1):
+
+        # If applicant is free
+        if pairU[applicant] == 0:
+
+            # Free applicants belong to level 0
+            dist[applicant] = 0
+
+            # Push applicant into queue
+            q.append(applicant)
+
+        else:
+            # Mark matched applicants as unvisited
+            dist[applicant] = float('inf')
+
+    # Distance to NIL node
+    dist[0] = float('inf')
+
+    # Perform BFS traversal
+    while q:
+
+        # Get front applicant
+        applicant = q.popleft()
+
+        # If current layer is useful
+        if dist[applicant] < dist[0]:
+
+            # Traverse all jobs
+            for job in range(1, totalJobs + 1):
+
+                # If edge exists
+                if mat[applicant - 1][job - 1]:
+
+                    # Get applicant assigned to this job
+                    nextApplicant = pairV[job]
+
+                    # If not visited
+                    if dist[nextApplicant] == float('inf'):
+
+                        # Assign next BFS layer
+                        dist[nextApplicant] = (
+                            dist[applicant] + 1
+                        )
+
+                        # Push into queue
+                        q.append(nextApplicant)
+
+    # If NIL node reachable,
+    # augmenting path exists
+    return dist[0] != float('inf')
+
+# DFS Function
+# Finds augmenting paths using BFS layers
+def canAssignJob(applicant, mat, pairU, pairV, dist, totalJobs):
+
+    # If NIL node reached,
+    # augmenting path found
+    if applicant == 0:
+        return True
+
+    # Traverse all jobs
+    for job in range(1, totalJobs + 1):
+
+        # If edge exists
+        if mat[applicant - 1][job - 1]:
+
+            # Get applicant assigned to current job
+            nextApplicant = pairV[job]
+
+            # Follow only valid BFS layers
+            if dist[nextApplicant] == (
+                dist[applicant] + 1
+            ):
+
+                # Recursively try to find
+                # augmenting path
+                if canAssignJob(nextApplicant, mat, pairU, pairV, dist, totalJobs):
+
+                    # Assign current job
+                    # to current applicant
+                    pairV[job] = applicant
+
+                    # Assign current applicant
+                    # to current job
+                    pairU[applicant] = job
+
+                    # Matching successful
+                    return True
+
+    # Mark node as useless
+    dist[applicant] = float('inf')
+
+    # No augmenting path found
+    return False
+
+# Function to find maximum bipartite matching
+def maximumMatch(mat):
+
+    # Number of applicants
+    totalApplicants = len(mat)
+
+    # Number of jobs
+    totalJobs = len(mat[0])
+
+    # pairU[u] stores job assigned
+    # to applicant u
+    pairU = [0] * (totalApplicants + 1)
+
+    # pairV[v] stores applicant assigned
+    # to job v
+    pairV = [0] * (totalJobs + 1)
+
+    # Distance array used in BFS
+    dist = [0] * (totalApplicants + 1)
+
+    # Stores final maximum matching
+    maximumMatching = 0
+
+    # Repeat while augmenting path exists
+    while bfs(mat, pairU, pairV, dist, totalApplicants, totalJobs):
+
+        # Traverse all applicants
+        for applicant in range(1, totalApplicants + 1):
+
+            # If applicant is free
+            if pairU[applicant] == 0:
+
+                # Try assigning a job
+                if canAssignJob(applicant, mat, pairU, pairV, dist, totalJobs):
+
+                    # Increase matching count
+                    maximumMatching += 1
+
+    # Return final answer
+    return maximumMatching
+
+# Driver Code
+if __name__ == "__main__":
+
+    # Adjacency matrix representation
+    # mat[i][j] = 1 means
+    # applicant i interested in job j
+    mat = [
+        [0, 1, 1, 0, 0, 0],
+        [1, 0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0, 0],
+        [0, 0, 1, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1]
+    ]
+
+    # Print maximum matching
+    print(maximumMatch(mat))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Program {
+
+    // BFS Function
+    // Builds layers using shortest augmenting paths
+    static bool bfs(int[][] mat, int[] pairU, int[] pairV,
+                    int[] dist, int totalApplicants,
+                    int totalJobs)
+    {
+        // Queue used for BFS traversal
+        Queue<int> q = new Queue<int>();
+
+        // Traverse all applicants
+        for (int applicant = 1;
+             applicant <= totalApplicants; applicant++) {
+            // If applicant is free
+            if (pairU[applicant] == 0) {
+                // Free applicants belong to level 0
+                dist[applicant] = 0;
+
+                // Push applicant into queue
+                q.Enqueue(applicant);
+            }
+            else {
+                // Mark matched applicants as unvisited
+                dist[applicant] = int.MaxValue;
+            }
+        }
+
+        // Distance to NIL node
+        dist[0] = int.MaxValue;
+
+        // Perform BFS traversal
+        while (q.Count > 0) {
+            // Get current applicant
+            int applicant = q.Dequeue();
+
+            // If current layer is useful
+            if (dist[applicant] < dist[0]) {
+                // Traverse all jobs
+                for (int job = 1; job <= totalJobs; job++) {
+                    // If edge exists
+                    if (mat[applicant - 1][job - 1] == 1) {
+                        // Get applicant assigned
+                        // to current job
+                        int nextApplicant = pairV[job];
+
+                        // If not visited
+                        if (dist[nextApplicant]
+                            == int.MaxValue) {
+                            // Assign next BFS layer
+                            dist[nextApplicant]
+                                = dist[applicant] + 1;
+
+                            // Push into queue
+                            q.Enqueue(nextApplicant);
+                        }
+                    }
+                }
+            }
+        }
+
+        // If NIL node reachable,
+        // augmenting path exists
+        return dist[0] != int.MaxValue;
+    }
+
+    // DFS Function
+    // Finds augmenting paths using BFS layers
+    static bool CanAssignJob(int applicant, int[][] mat,
+                             int[] pairU, int[] pairV,
+                             int[] dist, int totalJobs)
+    {
+        // If NIL node reached,
+        // augmenting path found
+        if (applicant == 0) {
+            return true;
+        }
+
+        // Traverse all jobs
+        for (int job = 1; job <= totalJobs; job++) {
+            // If edge exists
+            if (mat[applicant - 1][job - 1] == 1) {
+                // Get applicant assigned
+                // to current job
+                int nextApplicant = pairV[job];
+
+                // Follow only valid BFS layers
+                if (dist[nextApplicant]
+                    == dist[applicant] + 1) {
+                    // Recursively try to find
+                    // augmenting path
+                    if (CanAssignJob(nextApplicant, mat,
+                                     pairU, pairV, dist,
+                                     totalJobs)) {
+                        // Assign current job
+                        // to current applicant
+                        pairV[job] = applicant;
+
+                        // Assign current applicant
+                        // to current job
+                        pairU[applicant] = job;
+
+                        // Matching successful
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Mark node as useless
+        dist[applicant] = int.MaxValue;
+
+        // No augmenting path found
+        return false;
+    }
+
+    // Function to find maximum bipartite matching
+    static int maximumMatch(int[][] mat)
+    {
+        // Number of applicants
+        int totalApplicants = mat.Length;
+
+        // Number of jobs
+        int totalJobs = mat[0].Length;
+
+        // pairU[u] stores job assigned
+        // to applicant u
+        int[] pairU = new int[totalApplicants + 1];
+
+        // pairV[v] stores applicant assigned
+        // to job v
+        int[] pairV = new int[totalJobs + 1];
+
+        // Distance array used in BFS
+        int[] dist = new int[totalApplicants + 1];
+
+        // Stores final maximum matching
+        int maximumMatching = 0;
+
+        // Repeat while augmenting path exists
+        while (bfs(mat, pairU, pairV, dist, totalApplicants,
+                   totalJobs)) {
+            // Traverse all applicants
+            for (int applicant = 1;
+                 applicant <= totalApplicants;
+                 applicant++) {
+                // If applicant is free
+                if (pairU[applicant] == 0) {
+                    // Try assigning a job
+                    if (CanAssignJob(applicant, mat, pairU,
+                                     pairV, dist,
+                                     totalJobs)) {
+                        // Increase matching count
+                        maximumMatching++;
+                    }
+                }
+            }
+        }
+
+        // Return final answer
+        return maximumMatching;
+    }
+
+    static void Main()
+    {
+        // Adjacency matrix representation
+        int[][] mat = { new int[] { 0, 1, 1, 0, 0, 0 },
+                        new int[] { 1, 0, 0, 1, 0, 0 },
+                        new int[] { 0, 0, 1, 0, 0, 0 },
+                        new int[] { 0, 0, 1, 1, 0, 0 },
+                        new int[] { 0, 0, 0, 0, 0, 0 },
+                        new int[] { 0, 0, 0, 0, 0, 1 } };
+
+        // Print maximum matching
+        Console.WriteLine(maximumMatch(mat));
+    }
+}
+
+JavaScript
+
+// BFS Function
+// Builds layers using shortest augmenting paths
+function bfs(mat, pairU, pairV, dist, totalApplicants,
+             totalJobs)
+{
+    // Queue used for BFS traversal
+    let queue = [];
+
+    // Traverse all applicants
+    for (let applicant = 1; applicant <= totalApplicants;
+         applicant++) {
+        // If applicant is free
+        if (pairU[applicant] === 0) {
+            // Free applicants belong to level 0
+            dist[applicant] = 0;
+
+            // Push applicant into queue
+            queue.push(applicant);
+        }
+        else {
+            // Mark matched applicants as unvisited
+            dist[applicant] = Infinity;
+        }
+    }
+
+    // Distance to NIL node
+    dist[0] = Infinity;
+
+    // Pointer for queue traversal
+    let front = 0;
+
+    // Perform BFS traversal
+    while (front < queue.length) {
+        // Get current applicant
+        let applicant = queue[front];
+
+        // Move queue pointer ahead
+        front++;
+
+        // If current layer is useful
+        if (dist[applicant] < dist[0]) {
+            // Traverse all jobs
+            for (let job = 1; job <= totalJobs; job++) {
+                // If edge exists
+                if (mat[applicant - 1][job - 1]) {
+                    // Get applicant assigned
+                    // to current job
+                    let nextApplicant = pairV[job];
+
+                    // If not visited
+                    if (dist[nextApplicant] === Infinity) {
+                        // Assign next BFS layer
+                        dist[nextApplicant]
+                            = dist[applicant] + 1;
+
+                        // Push into queue
+                        queue.push(nextApplicant);
+                    }
+                }
+            }
+        }
+    }
+
+    // If NIL node reachable,
+    // augmenting path exists
+    return dist[0] !== Infinity;
+}
+
+// DFS Function
+// Finds augmenting paths using BFS layers
+function canAssignJob(applicant, mat, pairU, pairV, dist,
+                      totalJobs)
+{
+    // If NIL node reached,
+    // augmenting path found
+    if (applicant === 0) {
+        return true;
+    }
+
+    // Traverse all jobs
+    for (let job = 1; job <= totalJobs; job++) {
+        // If edge exists
+        if (mat[applicant - 1][job - 1]) {
+            // Get applicant assigned
+            // to current job
+            let nextApplicant = pairV[job];
+
+            // Follow only valid BFS layers
+            if (dist[nextApplicant]
+                === dist[applicant] + 1) {
+                // Recursively try to find
+                // augmenting path
+                if (canAssignJob(nextApplicant, mat, pairU,
+                                 pairV, dist, totalJobs)) {
+                    // Assign current job
+                    // to current applicant
+                    pairV[job] = applicant;
+
+                    // Assign current applicant
+                    // to current job
+                    pairU[applicant] = job;
+
+                    // Matching successful
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Mark node as useless
+    dist[applicant] = Infinity;
+
+    // No augmenting path found
+    return false;
+}
+
+// Function to find maximum bipartite matching
+function maximumMatch(mat)
+{
+    // Number of applicants
+    let totalApplicants = mat.length;
+
+    // Number of jobs
+    let totalJobs = mat[0].length;
+
+    // pairU[u] stores job assigned
+    // to applicant u
+    let pairU = new Array(totalApplicants + 1).fill(0);
+
+    // pairV[v] stores applicant assigned
+    // to job v
+    let pairV = new Array(totalJobs + 1).fill(0);
+
+    // Distance array used in BFS
+    let dist = new Array(totalApplicants + 1).fill(0);
+
+    // Stores final maximum matching
+    let maximumMatching = 0;
+
+    // Repeat while augmenting path exists
+    while (bfs(mat, pairU, pairV, dist, totalApplicants,
+               totalJobs)) {
+        // Traverse all applicants
+        for (let applicant = 1;
+             applicant <= totalApplicants; applicant++) {
+            // If applicant is free
+            if (pairU[applicant] === 0) {
+                // Try assigning a job
+                if (canAssignJob(applicant, mat, pairU,
+                                 pairV, dist, totalJobs)) {
+                    // Increase matching count
+                    maximumMatching++;
+                }
+            }
+        }
+    }
+
+    // Return final answer
+    return maximumMatching;
+}
+
+// Driver Code
+
+// Adjacency matrix representation
+// mat[i][j] = 1 means
+// applicant i interested in job j
+let mat = [
+    [ 0, 1, 1, 0, 0, 0 ], [ 1, 0, 0, 1, 0, 0 ],
+    [ 0, 0, 1, 0, 0, 0 ], [ 0, 0, 1, 1, 0, 0 ],
+    [ 0, 0, 0, 0, 0, 0 ], [ 0, 0, 0, 0, 0, 1 ]
+];
+
+// Print maximum matching
+console.log(maximumMatch(mat));
+
+Output
+
+5

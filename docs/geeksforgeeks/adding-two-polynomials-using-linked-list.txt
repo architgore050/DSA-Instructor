@@ -1,0 +1,956 @@
+Source: https://www.geeksforgeeks.org/dsa/adding-two-polynomials-using-linked-list/
+Title: Adding two polynomials using Linked List
+Extractor: 2
+
+Given two polynomials represented by linked lists, add them by summing the coefficients of terms with the same power. The lists are sorted in descending order of powers.
+
+Structure of the linked list:
+
+Note: If the sum of coefficients for a specific power becomes zero, that term should not be included in the resulting linked list.
+
+Examples :
+
+> Input: head1 = [1, 3] , head2 = [1, 2] Output: head = [1, 3] -> [1, 2] Explanation: head1 represents x 3 , head2 represents x 2 , add both the polynomials to get x 3 + x 2 . Input: head1 = [1, 3] -> [2, 2], head2 = [3, 3] -> [4, 2] Output: head = [4, 3] -> [6, 2] Explanation: head1 represents x 3 + 2x 2 , head2 represents 3x 3 + 4x 2 . Since, x 3 has two different coefficients as 3 and 1. Adding them up will lead to 4x 3 . Also, x 2 has two coefficients as 4 and 2. So, adding them up will give 6x 2 .
+
+Table of Content
+
+- [Naive Approach] Using Hash Map to Store All Terms - O((n + m) log(n + m)) Time and O(n + m) Space
+- [Expected Approach] Merge Two Sorted Polynomial Lists - O(n + m) Time and O(1) Space
+
+### [Naive Approach] Using Hash Map to Store All Terms - O((n + m) log(n + m)) Time and O(n + m) Space
+
+> The idea is to traverse both linked lists and store the sum of coefficients corresponding to each power in a hash map. After processing both polynomials, traverse the map in descending order of powers and create the resultant polynomial. Terms whose coefficient becomes 0 are skipped.
+
+C++
+
+#include <iostream>
+using namespace std;
+
+class Node
+{
+  public:
+    int coeff;
+    int pow;
+    Node *next;
+
+    Node(int c, int p)
+    {
+        coeff = c;
+        pow = p;
+        next = nullptr;
+    }
+};
+
+Node *addPolynomial(Node *head1, Node *head2)
+{
+
+    map<int, int, greater<int>> mp;
+
+    // Store terms of first polynomial
+    while (head1)
+    {
+        mp[head1->pow] += head1->coeff;
+        head1 = head1->next;
+    }
+
+    // Store terms of second polynomial
+    while (head2)
+    {
+        mp[head2->pow] += head2->coeff;
+        head2 = head2->next;
+    }
+
+    Node *head = nullptr;
+    Node *tail = nullptr;
+
+    // Create resultant polynomial
+    for (auto &it : mp)
+    {
+
+        if (it.second == 0)
+            continue;
+
+        Node *newNode = new Node(it.second, it.first);
+
+        if (head == nullptr)
+        {
+            head = tail = newNode;
+        }
+        else
+        {
+            tail->next = newNode;
+            tail = newNode;
+        }
+    }
+
+    return head;
+}
+
+// Driver code
+void printList(Node *head)
+{
+
+    while (head)
+    {
+        cout << "[" << head->coeff << ", " << head->pow << "]";
+
+        if (head->next)
+            cout << " -> ";
+
+        head = head->next;
+    }
+
+    cout << endl;
+}
+
+int main()
+{
+
+    Node *head1 = new Node(1, 3);
+    head1->next = new Node(2, 2);
+
+    Node *head2 = new Node(3, 3);
+    head2->next = new Node(4, 2);
+
+    Node *res = addPolynomial(head1, head2);
+
+    printList(res);
+
+    return 0;
+}
+
+Java
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.TreeMap;
+
+class Node {
+    public int coeff;
+    public int pow;
+    public Node next;
+
+    public Node(int c, int p)
+    {
+        coeff = c;
+        pow = p;
+        next = null;
+    }
+}
+
+public class GFG {
+    public static Node addPolynomial(Node head1, Node head2)
+    {
+
+        Map<Integer, Integer> mp
+            = new TreeMap<>(Collections.reverseOrder());
+
+        // Store terms of first polynomial
+        while (head1 != null) {
+            mp.put(head1.pow, mp.getOrDefault(head1.pow, 0)
+                                  + head1.coeff);
+            head1 = head1.next;
+        }
+
+        // Store terms of second polynomial
+        while (head2 != null) {
+            mp.put(head2.pow, mp.getOrDefault(head2.pow, 0)
+                                  + head2.coeff);
+            head2 = head2.next;
+        }
+
+        Node head = null;
+        Node tail = null;
+
+        // Create resultant polynomial
+        for (Map.Entry<Integer, Integer> entry :
+             mp.entrySet()) {
+
+            if (entry.getValue() == 0)
+                continue;
+
+            Node newNode = new Node(entry.getValue(),
+                                    entry.getKey());
+
+            if (head == null) {
+                head = tail = newNode;
+            }
+            else {
+                tail.next = newNode;
+                tail = newNode;
+            }
+        }
+
+        return head;
+    }
+
+    // Driver code
+    public static void printList(Node head)
+    {
+
+        while (head != null) {
+            System.out.print("[" + head.coeff + ", "
+                             + head.pow + "]");
+
+            if (head.next != null)
+                System.out.print(" -> ");
+
+            head = head.next;
+        }
+
+        System.out.println();
+    }
+
+    public static void main(String[] args)
+    {
+
+        Node head1 = new Node(1, 3);
+        head1.next = new Node(2, 2);
+
+        Node head2 = new Node(3, 3);
+        head2.next = new Node(4, 2);
+
+        Node res = addPolynomial(head1, head2);
+
+        printList(res);
+    }
+}
+
+Python
+
+from collections import OrderedDict
+
+class Node:
+    def __init__(self, c, p):
+        self.coeff = c
+        self.pow = p
+        self.next = None
+
+def addPolynomial(head1, head2):
+    mp = OrderedDict()
+
+    # Store terms of first polynomial
+    while head1:
+        if head1.pow in mp:
+            mp[head1.pow] += head1.coeff
+        else:
+            mp[head1.pow] = head1.coeff
+        head1 = head1.next
+
+    # Store terms of second polynomial
+    while head2:
+        if head2.pow in mp:
+            mp[head2.pow] += head2.coeff
+        else:
+            mp[head2.pow] = head2.coeff
+        head2 = head2.next
+
+    head = None
+    tail = None
+
+    # Create resultant polynomial
+    for power, coeff in reversed(sorted(mp.items())):
+        if coeff == 0:
+            continue
+
+        newNode = Node(coeff, power)
+
+        if not head:
+            head = tail = newNode
+        else:
+            tail.next = newNode
+            tail = newNode
+
+    return head
+
+# Driver code
+def printList(head):
+    while head:
+        print('[{}, {}]'.format(head.coeff, head.pow), end='')
+
+        if head.next:
+            print(' -> ', end='')
+
+        head = head.next
+
+    print()
+
+if __name__ == '__main__':
+    head1 = Node(1, 3)
+    head1.next = Node(2, 2)
+
+    head2 = Node(3, 3)
+    head2.next = Node(4, 2)
+
+    res = addPolynomial(head1, head2)
+
+    printList(res)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int coeff;
+    public int pow;
+    public Node next;
+
+    public Node(int c, int p)
+    {
+        coeff = c;
+        pow = p;
+        next = null;
+    }
+}
+
+class GFG {
+    static Node addPolynomial(Node head1, Node head2)
+    {
+        Dictionary<int, int> mp
+            = new Dictionary<int, int>();
+
+        // Store terms of first polynomial
+        while (head1 != null) {
+            if (!mp.ContainsKey(head1.pow))
+                mp[head1.pow] = 0;
+
+            mp[head1.pow] += head1.coeff;
+            head1 = head1.next;
+        }
+
+        // Store terms of second polynomial
+        while (head2 != null) {
+            if (!mp.ContainsKey(head2.pow))
+                mp[head2.pow] = 0;
+
+            mp[head2.pow] += head2.coeff;
+            head2 = head2.next;
+        }
+
+        List<int> powers = new List<int>(mp.Keys);
+        powers.Sort();
+        powers.Reverse();
+
+        Node head = null;
+        Node tail = null;
+
+        // Create resultant polynomial
+        foreach(int power in powers)
+        {
+            if (mp[power] == 0)
+                continue;
+
+            Node newNode = new Node(mp[power], power);
+
+            if (head == null) {
+                head = tail = newNode;
+            }
+            else {
+                tail.next = newNode;
+                tail = newNode;
+            }
+        }
+
+        return head;
+    }
+
+    // Driver code
+    static void printList(Node head)
+    {
+        while (head != null) {
+            Console.Write("[" + head.coeff + ", " + head.pow
+                          + "]");
+
+            if (head.next != null)
+                Console.Write(" -> ");
+
+            head = head.next;
+        }
+
+        Console.WriteLine();
+    }
+
+    static int Main()
+    {
+        Node head1 = new Node(1, 3);
+        head1.next = new Node(2, 2);
+
+        Node head2 = new Node(3, 3);
+        head2.next = new Node(4, 2);
+
+        Node res = addPolynomial(head1, head2);
+
+        printList(res);
+
+        return 0;
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(c, p) {
+        this.coeff = c;
+        this.pow = p;
+        this.next = null;
+    }
+}
+
+function addPolynomial(head1, head2) {
+    const mp = new Map();
+
+    // Store terms of first polynomial
+    while (head1) {
+        mp.set(head1.pow, (mp.get(head1.pow) || 0) + head1.coeff);
+        head1 = head1.next;
+    }
+
+    // Store terms of second polynomial
+    while (head2) {
+        mp.set(head2.pow, (mp.get(head2.pow) || 0) + head2.coeff);
+        head2 = head2.next;
+    }
+
+    let head = null;
+    let tail = null;
+
+    // Create resultant polynomial
+    for (let [pow, coeff] of mp) {
+        if (coeff === 0)
+            continue;
+
+        const newNode = new Node(coeff, pow);
+
+        if (!head) {
+            head = tail = newNode;
+        } else {
+            tail.next = newNode;
+            tail = newNode;
+        }
+    }
+
+    return head;
+}
+
+// Driver code
+function printList(head) {
+    while (head) {
+        process.stdout.write(`[${head.coeff}, ${head.pow}]`);
+
+        if (head.next)
+            process.stdout.write(' -> ');
+
+        head = head.next;
+    }
+
+    console.log();
+}
+
+(function main() {
+    const head1 = new Node(1, 3);
+    head1.next = new Node(2, 2);
+
+    const head2 = new Node(3, 3);
+    head2.next = new Node(4, 2);
+
+    const res = addPolynomial(head1, head2);
+
+    printList(res);
+})();
+
+Output
+
+[4, 3] -> [6, 2]
+
+### [Expected Approach] Merge Two Sorted Polynomial Lists - O(n + m) Time and O(1) Space
+
+> The idea is to merge the two sorted polynomial linked lists. Compare the powers of the current terms: If powers are equal, add their coefficients and append the term. Otherwise, append the term with the higher power. Finally, attach the remaining terms of the non-empty list. The existing nodes are reused to build the resultant polynomial.
+
+Let us understand with example: Input: head1 = [1, 3] -> [2, 2], head2 = [3, 3] -> [4, 2]
+
+- Initially, curr1 points to [1, 3] and curr2 points to [3, 3]. Since both powers are equal (3), their coefficients are added (1 + 3 = 4), and node [4, 3] is appended to the result list.
+- Next, curr1 moves to [2, 2] and curr2 moves to [4, 2]. Again, the powers are equal (2), so the coefficients are added (2 + 4 = 6), and node [6, 2] is appended to the result.
+- Both lists are now exhausted, so the traversal stops and the merged polynomial is returned.
+- The final polynomial becomes: [4, 3] -> [6, 2], representing 4x³ + 6x² .
+
+C++
+
+#include <iostream>
+using namespace std;
+
+class Node
+{
+  public:
+    int coeff;
+    int pow;
+    Node *next;
+
+    Node(int c, int p)
+    {
+        coeff = c;
+        pow = p;
+        next = nullptr;
+    }
+};
+
+Node *addPolynomial(Node *head1, Node *head2)
+{
+
+    // if any list is empty, then return the other list.
+    if (head1 == nullptr)
+        return head2;
+    if (head2 == nullptr)
+        return head1;
+
+    Node *dummy = new Node(0, 0);
+
+    // node to append other nodes to the end of list
+    Node *prev = dummy;
+
+    Node *curr1 = head1, *curr2 = head2;
+
+    while (curr1 != nullptr && curr2 != nullptr)
+    {
+
+        // if curr2.pow > curr1.pow, then append curr2 to list
+        if (curr1->pow < curr2->pow)
+        {
+            prev->next = curr2;
+            prev = curr2;
+            curr2 = curr2->next;
+        }
+
+        // if curr1.pow > curr2.pow, then append curr2 to list
+        else if (curr1->pow > curr2->pow)
+        {
+            prev->next = curr1;
+            prev = curr1;
+            curr1 = curr1->next;
+        }
+
+        // else, add curr2->coeff to curr1->coeff,
+        // and append curr1 to the list
+        else
+        {
+            curr1->coeff += curr2->coeff;
+            prev->next = curr1;
+            prev = curr1;
+            curr1 = curr1->next;
+            curr2 = curr2->next;
+        }
+    }
+
+    // if there are leftover nodes in curr1, attach them
+    if (curr1 != nullptr)
+    {
+        prev->next = curr1;
+    }
+
+    // if there are leftover nodes in curr2, attach them
+    else if (curr2 != nullptr)
+    {
+        prev->next = curr2;
+    }
+
+    return dummy->next;
+}
+
+// Driver code
+void printList(Node *head)
+{
+
+    while (head)
+    {
+        cout << "[" << head->coeff << ", " << head->pow << "]";
+
+        if (head->next)
+            cout << " -> ";
+
+        head = head->next;
+    }
+
+    cout << endl;
+}
+
+int main()
+{
+
+    Node *head1 = new Node(1, 3);
+    head1->next = new Node(2, 2);
+
+    Node *head2 = new Node(3, 3);
+    head2->next = new Node(4, 2);
+
+    Node *res = addPolynomial(head1, head2);
+
+    printList(res);
+
+    return 0;
+}
+
+Java
+
+import java.util.LinkedList;
+import java.util.List;
+
+class Node {
+  public int coeff;
+  public int pow;
+  public Node next;
+
+  public Node(int c, int p) {
+    coeff = c;
+    pow = p;
+    next = null;
+  }
+}
+
+public class GFG {
+  public static Node addPolynomial(Node head1, Node head2) {
+
+    // if any list is empty, then return the other list.
+    if (head1 == null)
+      return head2;
+    if (head2 == null)
+      return head1;
+
+    Node dummy = new Node(0, 0);
+
+    // node to append other nodes to the end of list
+    Node prev = dummy;
+
+    Node curr1 = head1, curr2 = head2;
+
+    while (curr1!= null && curr2!= null) {
+
+      // if curr2.pow > curr1.pow, then append curr2 to list
+      if (curr1.pow < curr2.pow) {
+        prev.next = curr2;
+        prev = curr2;
+        curr2 = curr2.next;
+      }
+
+      // if curr1.pow > curr2.pow, then append curr2 to list
+      else if (curr1.pow > curr2.pow) {
+        prev.next = curr1;
+        prev = curr1;
+        curr1 = curr1.next;
+      }
+
+      // else, add curr2->coeff to curr1->coeff,
+      // and append curr1 to the list
+      else {
+        curr1.coeff += curr2.coeff;
+        prev.next = curr1;
+        prev = curr1;
+        curr1 = curr1.next;
+        curr2 = curr2.next;
+      }
+    }
+    // if there are leftover nodes in curr1, attach them
+    if (curr1!= null) {
+      prev.next = curr1;
+    }
+    // if there are leftover nodes in curr2, attach them
+    else if (curr2!= null) {
+      prev.next = curr2;
+    }
+
+    return dummy.next;
+  }
+
+  // Driver code
+  public static void printList(Node head) {
+
+    while (head!= null) {
+      System.out.print("[" + head.coeff + ", " + head.pow + "]");
+
+      if (head.next!= null)
+        System.out.print(" -> ");
+
+      head = head.next;
+    }
+
+    System.out.println();
+  }
+
+  public static void main(String[] args) {
+
+    Node head1 = new Node(1, 3);
+    head1.next = new Node(2, 2);
+
+    Node head2 = new Node(3, 3);
+    head2.next = new Node(4, 2);
+
+    Node res = addPolynomial(head1, head2);
+
+    printList(res);
+  }
+}
+
+Python
+
+class Node:
+    def __init__(self, c, p):
+        self.coeff = c
+        self.pow = p
+        self.next = None
+
+def addPolynomial(head1, head2):
+
+    # if any list is empty, then return the other list.
+    if head1 is None:
+        return head2
+    if head2 is None:
+        return head1
+
+    dummy = Node(0, 0)
+    # node to append other nodes to the end of list
+    prev = dummy
+
+    curr1 = head1
+    curr2 = head2
+
+    while curr1 is not None and curr2 is not None:
+        # if curr2.pow > curr1.pow, then append curr2 to list
+        if curr1.pow < curr2.pow:
+            prev.next = curr2
+            prev = curr2
+            curr2 = curr2.next
+        # if curr1.pow > curr2.pow, then append curr2 to list
+        elif curr1.pow > curr2.pow:
+            prev.next = curr1
+            prev = curr1
+            curr1 = curr1.next
+        # else, add curr2->coeff to curr1->coeff,
+        # and append curr1 to the list
+        else:
+            curr1.coeff += curr2.coeff
+            prev.next = curr1
+            prev = curr1
+            curr1 = curr1.next
+            curr2 = curr2.next
+
+    # if there are leftover nodes in curr1, attach them
+    if curr1 is not None:
+        prev.next = curr1
+
+    # if there are leftover nodes in curr2, attach them
+    elif curr2 is not None:
+        prev.next = curr2
+    return dummy.next
+
+# Driver code
+def printList(head):
+    while head:
+        print('[' + str(head.coeff) + ','+ str(head.pow) + ']', end='')
+        if head.next:
+            print(' -> ', end='')
+        head = head.next
+    print()
+
+if __name__ == "__main__":
+    head1 = Node(1, 3)
+    head1.next = Node(2, 2)
+    head2 = Node(3, 3)
+    head2.next = Node(4, 2)
+    res = addPolynomial(head1, head2)
+    printList(res)
+
+C#
+
+using System;
+
+public class Node
+{
+    public int coeff;
+    public int pow;
+    public Node next;
+
+    public Node(int c, int p)
+    {
+        coeff = c;
+        pow = p;
+        next = null;
+    }
+}
+
+public class GFG
+{
+    public static Node addPolynomial(Node head1, Node head2)
+    {
+        // if any list is empty, then return the other list.
+        if (head1 == null)
+            return head2;
+        if (head2 == null)
+            return head1;
+
+        Node dummy = new Node(0, 0);
+
+        // node to append other nodes to the end of list
+        Node prev = dummy;
+
+        Node curr1 = head1, curr2 = head2;
+
+        while (curr1!= null && curr2!= null)
+        {
+            // if curr2.pow > curr1.pow, then append curr2 to list
+            if (curr1.pow < curr2.pow)
+            {
+                prev.next = curr2;
+                prev = curr2;
+                curr2 = curr2.next;
+            }
+            // if curr1.pow > curr2.pow, then append curr2 to list
+            else if (curr1.pow > curr2.pow)
+            {
+                prev.next = curr1;
+                prev = curr1;
+                curr1 = curr1.next;
+            }
+            // else, add curr2->coeff to curr1->coeff,
+            // and append curr1 to the list
+            else
+            {
+                curr1.coeff += curr2.coeff;
+                prev.next = curr1;
+                prev = curr1;
+                curr1 = curr1.next;
+                curr2 = curr2.next;
+            }
+        }
+
+        // if there are leftover nodes in curr1, attach them
+        if (curr1!= null)
+        {
+            prev.next = curr1;
+        }
+
+        // if there are leftover nodes in curr2, attach them
+        else if (curr2!= null)
+        {
+            prev.next = curr2;
+        }
+
+        return dummy.next;
+    }
+
+    // Driver code
+    public static void printList(Node head)
+    {
+        while (head!= null)
+        {
+            Console.Write("[" + head.coeff + ", " + head.pow + "]");
+            if (head.next!= null)
+                Console.Write(" -> ");
+            head = head.next;
+        }
+        Console.WriteLine();
+    }
+
+    public static void Main()
+    {
+        Node head1 = new Node(1, 3);
+        head1.next = new Node(2, 2);
+
+        Node head2 = new Node(3, 3);
+        head2.next = new Node(4, 2);
+
+        Node res = addPolynomial(head1, head2);
+
+        printList(res);
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(c, p) {
+        this.coeff = c;
+        this.pow = p;
+        this.next = null;
+    }
+}
+
+function addPolynomial(head1, head2) {
+
+    // if any list is empty, then return the other list.
+    if (head1 === null) {
+        return head2;
+    }
+    if (head2 === null) {
+        return head1;
+    }
+
+    const dummy = new Node(0, 0);
+
+    // node to append other nodes to the end of list
+    let prev = dummy;
+
+    let curr1 = head1;
+    let curr2 = head2;
+
+    while (curr1!== null && curr2!== null) {
+
+        // if curr2.pow > curr1.pow, then append curr2 to list
+        if (curr1.pow < curr2.pow) {
+            prev.next = curr2;
+            prev = curr2;
+            curr2 = curr2.next;
+        }
+
+        // if curr1.pow > curr2.pow, then append curr2 to list
+        else if (curr1.pow > curr2.pow) {
+            prev.next = curr1;
+            prev = curr1;
+            curr1 = curr1.next;
+        }
+
+        // else, add curr2->coeff to curr1->coeff,
+        // and append curr1 to the list
+        else {
+            curr1.coeff += curr2.coeff;
+            prev.next = curr1;
+            prev = curr1;
+            curr1 = curr1.next;
+            curr2 = curr2.next;
+        }
+    }
+
+    // if there are leftover nodes in curr1, attach them
+    if (curr1!== null) {
+        prev.next = curr1;
+    }
+
+    // if there are leftover nodes in curr2, attach them
+    else if (curr2!== null) {
+        prev.next = curr2;
+    }
+    return dummy.next;
+}
+
+// Driver code
+function printList(head) {
+    while (head) {
+        process.stdout.write('[' + head.coeff + ',' + head.pow + ']');
+        if (head.next) {
+            process.stdout.write(' -> ');
+        }
+        head = head.next;
+    }
+    console.log();
+}
+
+if (typeof require!== 'undefined' && require!== null) {
+    const head1 = new Node(1, 3);
+    head1.next = new Node(2, 2);
+    const head2 = new Node(3, 3);
+    head2.next = new Node(4, 2);
+    const res = addPolynomial(head1, head2);
+    printList(res);
+}
+
+Output
+
+[4, 3] -> [6, 2]

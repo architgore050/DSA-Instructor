@@ -1,0 +1,553 @@
+Source: https://www.geeksforgeeks.org/dsa/construct-tree-from-ancestor-matrix/
+Title: Construct tree from ancestor matrix
+Extractor: 2
+
+Given an ancestor matrix mat[n][n] where the Ancestor matrix is defined as below.
+
+- mat[i][j] = 1 if i is ancestor of j
+- mat[i][j] = 0, otherwise
+
+Construct a Binary Tree from a given ancestor matrix where all its values of nodes are from 0 to n-1 .
+
+1. It may be assumed that the input provided in the program is valid and the tree can be constructed out of it.
+2. Many Binary trees can be constructed from one input. The program will construct any one of them.
+
+Examples:
+
+> Input: mat[][] = {{0, 1, 1}, {0, 0, 0}, {0, 0, 0}}; Output: There are different possible outputs because ancestor matrix doesn't store that which child is left and which is right, one of the ouput is shown below. Input: mat[][] = { {0, 0, 0, 0, 0, 0}, {1, 0, 0, 0, 1, 0}, {0, 0, 0, 1, 0,,0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {1, 1, 1, 1, 1, 0} } Output: There are different possible outputs because ancestor matrix doesn't store that which child is left and which is right, one of the ouput is shown below.
+
+Approach:
+
+> The idea is to use the below observations to construct the binary tree from the leaf nodes to the root node. Starting from leaf values, construct the corresponding node and check all its successor node. If any successor node does not have a parent node, then link the current node to that node.
+
+Observations used in the solution:
+
+1. The rows that correspond to leaves have all 0's
+2. The row that corresponds to root has maximum number of 1's.
+3. Count of 1's in i'th row indicates number of descendants of node i.
+
+Step by step approach:
+
+- Create an array of node pointers node[].
+- Store row numbers that correspond to a given count.
+- Process all entries of map from smallest count to largest (Note that entries in map can be traversed in sorted order). Do following for every entry: Create a new node for current row number. If this node is not a leaf node, consider all those descendants of it whose parent is not set, make current node as its parent.
+- The last processed node (node with maximum sum ) is root of tree.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ program to construct binary
+// tree from ancestor matrix.
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node *left, *right;
+    Node (int x) {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Constructs tree from ancestor matrix
+Node* ancestorTree(vector<vector<int>> mat) {
+    int n = mat.size();
+
+    // Binary array to determine whether
+    // parent is set for node i or not
+    vector<bool> parent(n, false);
+
+    // Root will store the root of the constructed tree
+    Node* root = nullptr;
+
+    // Create a map, sum is used as key and row
+    // numbers are used as values
+    map<int, vector<int>> map;
+
+    for (int i = 0; i < n; i++) {
+        int sum = 0;
+        for (int j = 0; j < n; j++)
+            sum += mat[i][j];
+
+        // insert(sum, i) pairs into the map
+        map[sum].push_back(i);
+    }
+
+    // node[i] will store node for i in constructed tree
+    vector<Node*> node(n, nullptr);
+
+    // Traverse all entries of map. Note that values
+    // are accessed in increasing order of sum
+    for (auto pair: map) {
+        vector<int> values = pair.second;
+
+        for (auto val: values) {
+            node[val] = new Node(val);
+
+            // To store last processed node. This node will be
+            // root after loop terminates
+            root = node[val];
+
+            // For all successor nodes, check
+            // if their parent node is set.
+            for (int i=0; i<n; i++) {
+
+                // if parent is not set and ancestor exists
+                if (mat[val][i] == 1 && parent[i] == false) {
+
+                    // check for unoccupied left/right node
+                    // and set parent of node i
+                    if (node[val]->left == nullptr)
+                        node[val]->left = node[i];
+                    else
+                        node[val]->right = node[i];
+
+                    parent[i] = true;
+                }
+            }
+        }
+    }
+
+    return root;
+}
+
+void printInorder(Node* node) {
+    if (node == nullptr)
+        return;
+    printInorder(node->left);
+    cout << node->data << " ";
+    printInorder(node->right);
+}
+
+int main() {
+    vector<vector<int>> mat = {{ 0, 0, 0, 0, 0, 0 },
+        { 1, 0, 0, 0, 1, 0 },
+        { 0, 0, 0, 1, 0, 0 },
+        { 0, 0, 0, 0, 0, 0 },
+        { 0, 0, 0, 0, 0, 0 },
+        { 1, 1, 1, 1, 1, 0 }
+    };
+
+    Node* root = ancestorTree(mat);
+
+    printInorder(root);
+
+    return 0;
+}
+
+Java
+
+// Java program to construct binary
+// tree from ancestor matrix.
+
+import java.util.*;
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Constructs tree from ancestor matrix
+    static Node ancestorTree(ArrayList<ArrayList<Integer>> mat) {
+        int n = mat.size();
+
+        // Binary array to determine whether
+        // parent is set for node i or not
+        ArrayList<Boolean> parent = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) parent.add(false);
+
+        // Root will store the root of the constructed tree
+        Node root = null;
+
+        // Create a map, sum is used as key and row
+        // numbers are used as values
+        Map<Integer, ArrayList<Integer>> map = new TreeMap<>();
+
+        for (int i = 0; i < n; i++) {
+            int sum = 0;
+            for (int j = 0; j < n; j++)
+                sum += mat.get(i).get(j);
+
+            // insert(sum, i) pairs into the map
+            map.computeIfAbsent(sum,
+                                k -> new ArrayList<>()).add(i);
+        }
+
+        // node[i] will store node for i in constructed tree
+        ArrayList<Node> node = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) node.add(null);
+
+        // Traverse all entries of map. Note that values
+        // are accessed in increasing order of sum
+        for (Map.Entry<Integer,
+             ArrayList<Integer>> pair : map.entrySet()) {
+            ArrayList<Integer> values = pair.getValue();
+
+            for (int val : values) {
+                node.set(val, new Node(val));
+
+                // To store last processed node. This node will be
+                // root after loop terminates
+                root = node.get(val);
+
+                // For all successor nodes, check
+                // if their parent node is set.
+                for (int i = 0; i < n; i++) {
+
+                    // if parent is not set and ancestor exists
+                    if (mat.get(val).get(i) == 1 && !parent.get(i)) {
+
+                        // check for unoccupied left/right node
+                        // and set parent of node i
+                        if (node.get(val).left == null)
+                            node.get(val).left = node.get(i);
+                        else
+                            node.get(val).right = node.get(i);
+
+                        parent.set(i, true);
+                    }
+                }
+            }
+        }
+
+        return root;
+    }
+
+    static void printInorder(Node node) {
+        if (node == null)
+            return;
+        printInorder(node.left);
+        System.out.print(node.data + " ");
+        printInorder(node.right);
+    }
+
+    public static void main(String[] args) {
+        ArrayList<ArrayList<Integer>> mat = new ArrayList<>();
+        mat.add(new ArrayList<>(List.of(0, 0, 0, 0, 0, 0)));
+        mat.add(new ArrayList<>(List.of(1, 0, 0, 0, 1, 0)));
+        mat.add(new ArrayList<>(List.of(0, 0, 0, 1, 0, 0)));
+        mat.add(new ArrayList<>(List.of(0, 0, 0, 0, 0, 0)));
+        mat.add(new ArrayList<>(List.of(0, 0, 0, 0, 0, 0)));
+        mat.add(new ArrayList<>(List.of(1, 1, 1, 1, 1, 0)));
+
+        Node root = ancestorTree(mat);
+
+        printInorder(root);
+    }
+}
+
+Python
+
+# Python program to construct binary
+# tree from ancestor matrix.
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+# Constructs tree from ancestor matrix
+def ancestorTree(mat):
+    n = len(mat)
+
+    # Binary array to determine whether
+    # parent is set for node i or not
+    parent = [False] * n
+
+    # Root will store the root of the
+    # constructed tree
+    root = None
+
+    # Create a map, sum is used as key and row
+    # numbers are used as values
+    my_map = {}
+
+    for i in range(n):
+        sum_val = sum(mat[i])
+
+        # insert(sum, i) pairs into the map
+        if sum_val not in my_map:
+            my_map[sum_val] = []
+        my_map[sum_val].append(i)
+
+    # node[i] will store node for i in
+    # constructed tree
+    node = [None] * n
+
+    # Traverse all entries of map. Note that values
+    # are accessed in increasing order of sum
+    for key in sorted(my_map.keys()):
+        for val in my_map[key]:
+            node[val] = Node(val)
+
+            # To store last processed node. This node will be
+            # root after loop terminates
+            root = node[val]
+
+            # For all successor nodes, check
+            # if their parent node is set.
+            for i in range(n):
+
+                # if parent is not set and ancestor exists
+                if mat[val][i] == 1 and not parent[i]:
+
+                    # check for unoccupied left/right node
+                    # and set parent of node i
+                    if node[val].left is None:
+                        node[val].left = node[i]
+                    else:
+                        node[val].right = node[i]
+
+                    parent[i] = True
+
+    return root
+
+def printInorder(node):
+    if node is None:
+        return
+    printInorder(node.left)
+    print(node.data, end=" ")
+    printInorder(node.right)
+
+if __name__ == "__main__":
+    mat = [[0, 0, 0, 0, 0, 0],
+           [1, 0, 0, 0, 1, 0],
+           [0, 0, 0, 1, 0, 0],
+           [0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0],
+           [1, 1, 1, 1, 1, 0]]
+
+    root = ancestorTree(mat)
+
+    printInorder(root)
+
+C#
+
+// C# program to construct binary
+// tree from ancestor matrix.
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Constructs tree from ancestor matrix
+    static Node ancestorTree(List<List<int>> mat) {
+        int n = mat.Count;
+
+        // Binary array to determine whether
+        // parent is set for node i or not
+        List<bool> parent = new List<bool>(new bool[n]);
+
+        // Root will store the root of the constructed tree
+        Node root = null;
+
+        // Create a map, sum is used as key and row
+        // numbers are used as values
+        SortedDictionary<int, List<int>> map =
+          new SortedDictionary<int, List<int>>();
+
+        for (int i = 0; i < n; i++) {
+            int sum = 0;
+            for (int j = 0; j < n; j++)
+                sum += mat[i][j];
+
+            // insert(sum, i) pairs into the map
+            if (!map.ContainsKey(sum))
+                map[sum] = new List<int>();
+
+            map[sum].Add(i);
+        }
+
+        // node[i] will store node for i in constructed tree
+        List<Node> node = new List<Node>(new Node[n]);
+
+        // Traverse all entries of map. Note that values
+        // are accessed in increasing order of sum
+        foreach (var pair in map) {
+            List<int> values = pair.Value;
+
+            foreach (int val in values) {
+                node[val] = new Node(val);
+
+                // To store last processed node. This node will be
+                // root after loop terminates
+                root = node[val];
+
+                // For all successor nodes, check
+                // if their parent node is set.
+                for (int i = 0; i < n; i++) {
+
+                    // if parent is not set and ancestor exists
+                    if (mat[val][i] == 1 && !parent[i]) {
+
+                        // check for unoccupied left/right node
+                        // and set parent of node i
+                        if (node[val].left == null)
+                            node[val].left = node[i];
+                        else
+                            node[val].right = node[i];
+
+                        parent[i] = true;
+                    }
+                }
+            }
+        }
+
+        return root;
+    }
+
+    static void printInorder(Node node) {
+        if (node == null)
+            return;
+        printInorder(node.left);
+        Console.Write(node.data + " ");
+        printInorder(node.right);
+    }
+
+    static void Main(string[] args) {
+        List<List<int>> mat = new List<List<int>> {
+            new List<int> { 0, 0, 0, 0, 0, 0 },
+            new List<int> { 1, 0, 0, 0, 1, 0 },
+            new List<int> { 0, 0, 0, 1, 0, 0 },
+            new List<int> { 0, 0, 0, 0, 0, 0 },
+            new List<int> { 0, 0, 0, 0, 0, 0 },
+            new List<int> { 1, 1, 1, 1, 1, 0 }
+        };
+
+        Node root = ancestorTree(mat);
+
+        printInorder(root);
+    }
+}
+
+JavaScript
+
+// JavaScript program to construct binary
+// tree from ancestor matrix.
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Constructs tree from ancestor matrix
+function ancestorTree(mat) {
+    const n = mat.length;
+
+    // Binary array to determine whether
+    // parent is set for node i or not
+    const parent = Array(n).fill(false);
+
+    // Root will store the root of the
+    // constructed tree
+    let root = null;
+
+    // Create a map, sum is used as key and row
+    // numbers are used as values
+    const map = new Map();
+
+    for (let i = 0; i < n; i++) {
+        let sum = 0;
+        for (let j = 0; j < n; j++)
+            sum += mat[i][j];
+
+        // insert(sum, i) pairs into the map
+        if (!map.has(sum)) {
+            map.set(sum, []);
+        }
+        map.get(sum).push(i);
+    }
+
+    // node[i] will store node for i in constructed tree
+    const node = Array(n).fill(null);
+
+    // Traverse all entries of map. Note that values
+    // are accessed in increasing order of sum
+    for (const [key, values] of
+    [...map.entries()].sort((a, b) => a[0] - b[0])) {
+        for (const val of values) {
+            node[val] = new Node(val);
+
+            // To store last processed node. This node will be
+            // root after loop terminates
+            root = node[val];
+
+            // For all successor nodes, check
+            // if their parent node is set.
+            for (let i = 0; i < n; i++) {
+
+                // if parent is not set and ancestor exists
+                if (mat[val][i] === 1 && parent[i] === false) {
+
+                    // check for unoccupied left/right node
+                    // and set parent of node i
+                    if (node[val].left === null)
+                        node[val].left = node[i];
+                    else
+                        node[val].right = node[i];
+
+                    parent[i] = true;
+                }
+            }
+        }
+    }
+
+    return root;
+}
+
+function printInorder(node) {
+    if (node === null)
+        return;
+    printInorder(node.left);
+    process.stdout.write(node.data + " ");
+    printInorder(node.right);
+}
+
+const mat = [
+    [0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 1, 0],
+    [0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 0]
+];
+
+const root = ancestorTree(mat);
+
+printInorder(root);
+
+Output
+
+0 1 4 5 3 2
+
+Time Complexity: O(n^2) , where n is the number of nodes in the tree. Auxiliary Space: O(n)
+
+Please refer to this article for Top-Down approach: Construct Binary Tree from Ancestor Matrix | Top Down Approach

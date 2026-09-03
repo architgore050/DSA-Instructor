@@ -1,0 +1,1083 @@
+Source: https://www.geeksforgeeks.org/dsa/range-lcm-queries/
+Title: Range LCM Queries
+Extractor: 2
+
+Given an array arr[] of size n and a list of Q queries, where each query is of two types:
+
+- Type 1 : [1, index, value] --> Update the element at the given index with the new value.
+- Type 2 : [2, L, R] --> Find the LCM (Least Common Multiple) of all elements in the range from index L to R (inclusive).
+
+Return a list of results for all Type 2 queries after performing all the queries sequentially.
+
+Examples:
+
+> Input: arr[] = {2, 3, 4, 6, 8, 16},  queries[] = {{2, 0, 2}, {1, 3, 8}, {2, 2, 5}} Output: [12, 16] Explanation: The queries are processed sequentially, updating the array when required. {2, 0, 2} --> lcm of all numbers within the given range: LCM of [2, 3, 4] = 12 {1, 3, 8} --> update the value at a specified index:  array becomes [2, 3, 4, 8, 8, 16] {2, 2, 5} --> lcm of all numbers within the given range: LCM of [4, 8, 8, 16] = 16 Input: arr[] = {1, 2, 3, 4}, query[] = {{2, 0, 3}, {1, 0, 5}, {2, 0, 1}} Output: [12, 10] Explanation: The queries are processed sequentially, updating the array when required. {2, 0, 3} --> lcm of all numbers within the given range: LCM of [1, 2, 3, 4] = 12 {1, 0, 5} --> update the value at a specified index: array becomes [5, 2, 3, 4] {2, 0, 1} --> lcm of all numbers within the given range: LCM of [5, 2] = 10
+
+Table of Content
+
+- [Naive Approach] - Using Simple Brute Force Approach - O(q * n * log(min(a, b))) Time and O(1) Space
+- [Expected Approach] - Using Segment Tree - O(n + q × log n × log(min(a, b))) Time and O(n) Space
+
+### [Naive Approach] - Using Simple Brute Force Approach - O(q * n * log(min(a, b))) Time and O(1) Space
+
+> The idea is to process each query one by one in a brute-force manner. For an update query, we directly modify the array at the given index. For a range query, we iterate through the given range and keep taking LCM cumulatively, using the property that LCM(a, b) can be computed via GCD. The above approach is based on the following mathematical idea. Mathematically,  LCM(l, r) = LCM(arr[l],  arr[l+1] , . . . ,arr[r-1], arr[r]) and LCM(a, b) = (a*b) / GCD(a,b)
+
+C++
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+// gcd of two numbers (Euclid Algorithms)
+int gcd(int a, int b)
+{
+    if (b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+// lcm of two numbers
+// product of two numbers (a * b) = gcd(a, b) * lcm(a, b)
+int lcm(int a, int b)
+{
+    // safer to avoid overflow
+    return (a / gcd(a, b)) * b;
+}
+
+// function to implement range lcm query
+vector<int> RangeLCMQuery(vector<int> &arr, vector<vector<int>> &queries)
+{
+    vector<int> result;
+    for (const auto &q : queries)
+    {
+        int type = q[0];
+        if (type == 1)
+        {
+            // update the elememt at the given index
+            int idx = q[1];
+            int ele = q[2];
+            arr[idx] = ele;
+        }
+        else
+        {
+            // type 2 that means find lcm of all numbers
+            // within the range
+            int l = q[1];
+            int r = q[2];
+            int lcmVal = arr[l];
+            for (int i = l + 1; i <= r; i++)
+            {
+                lcmVal = lcm(lcmVal, arr[i]);
+            }
+            result.push_back(lcmVal);
+        }
+    }
+    return result;
+}
+
+int main()
+{
+    vector<int> arr = {2, 3, 4, 6, 8, 16};
+    vector<vector<int>> queries = {{2, 0, 2}, {1, 3, 8}, {2, 2, 5}};
+
+    vector<int> result = RangeLCMQuery(arr, queries);
+    for (auto &res : result)
+    {
+        cout << res << " ";
+    }
+
+    cout << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+// Class to handle Range LCM Queries
+public class GFG {
+
+    // gcd of two numbers (Euclidean Algorithm)
+    public static int gcd(int a, int b)
+    {
+        if (b == 0)
+            return a;
+        return gcd(b, a % b);
+    }
+
+    // lcm of two numbers
+    // product of two numbers (a * b) = gcd(a, b) * lcm(a,
+    // b)
+    public static int lcm(int a, int b)
+    {
+        // safer to avoid overflow
+        return (a / gcd(a, b)) * b;
+    }
+
+    // function to implement range lcm query
+    public static List<Integer>
+    RangeLCMQuery(List<Integer> arr, List<int[]> queries)
+    {
+        List<Integer> result = new ArrayList<>();
+
+        for (int[] q : queries) {
+            int type = q[0];
+
+            if (type == 1) {
+                // update the element at the given index
+                int idx = q[1];
+                int ele = q[2];
+                arr.set(idx, ele);
+            }
+            else {
+                // type 2: find LCM of all numbers in range
+                // [l, r]
+                int l = q[1];
+                int r = q[2];
+
+                int lcmVal = arr.get(l);
+
+                for (int i = l + 1; i <= r; i++) {
+                    lcmVal = lcm(lcmVal, arr.get(i));
+                }
+
+                result.add(lcmVal);
+            }
+        }
+        return result;
+    }
+
+    public static void main(String[] args)
+    {
+        List<Integer> arr = new ArrayList<>(
+            Arrays.asList(2, 3, 4, 6, 8, 16));
+
+        List<int[]> queries = new ArrayList<>();
+        queries.add(new int[] { 2, 0, 2 });
+        queries.add(new int[] { 1, 3, 8 });
+        queries.add(new int[] { 2, 2, 5 });
+
+        List<Integer> result = RangeLCMQuery(arr, queries);
+
+        for (int res : result) {
+            System.out.print(res + " ");
+        }
+    }
+}
+
+Python
+
+# gcd of two numbers (Euclidean Algorithm)
+def gcd(a, b):
+    if b == 0:
+        return a
+    return gcd(b, a % b)
+
+# lcm of two numbers
+# product of two numbers (a * b) = gcd(a, b) * lcm(a, b)
+def lcm(a, b):
+
+    # use // for integer division
+    return (a // gcd(a, b)) * b
+
+# function to implement range lcm query
+def RangeLCMQuery(arr, queries):
+    result = []
+
+    for q in queries:
+        type_ = q[0]
+
+        if type_ == 1:
+            # update the element at the given index
+            idx = q[1]
+            ele = q[2]
+            arr[idx] = ele
+        else:
+            # type 2: find LCM in range [l, r]
+            l, r = q[1], q[2]
+
+            lcm_val = arr[l]
+
+            for i in range(l + 1, r + 1):
+                lcm_val = lcm(lcm_val, arr[i])
+
+            result.append(lcm_val)
+
+    return result
+
+# Driver code
+if __name__ == "__main__":
+    arr = [2, 3, 4, 6, 8, 16]
+    queries = [[2, 0, 2], [1, 3, 8], [2, 2, 5]]
+
+    result = RangeLCMQuery(arr, queries)
+
+    print(*result)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    // gcd of two numbers (Euclidean Algorithm)
+    static int gcd(int a, int b)
+    {
+        if (b == 0)
+            return a;
+        return gcd(b, a % b);
+    }
+
+    // lcm of two numbers
+    // product of two numbers (a * b) = gcd(a, b) * lcm(a,
+    // b)
+    static int lcm(int a, int b)
+    {
+        // safer to avoid overflow
+        return (a / gcd(a, b)) * b;
+    }
+
+    // function to implement range lcm query
+    static List<int> RangeLCMQuery(List<int> arr,
+                                   List<int[]> queries)
+    {
+        List<int> result = new List<int>();
+
+        foreach(var q in queries)
+        {
+            int type = q[0];
+
+            if (type == 1) {
+                // update the element at the given index
+                int idx = q[1];
+                int ele = q[2];
+                arr[idx] = ele;
+            }
+            else {
+                // type 2: find LCM in range [l, r]
+                int l = q[1];
+                int r = q[2];
+
+                int lcmVal = arr[l];
+
+                for (int i = l + 1; i <= r; i++) {
+                    lcmVal = lcm(lcmVal, arr[i]);
+                }
+
+                result.Add(lcmVal);
+            }
+        }
+
+        return result;
+    }
+
+    static void Main()
+    {
+        List<int> arr = new List<int>{ 2, 3, 4, 6, 8, 16 };
+
+        List<int[]> queries
+            = new List<int[]>{ new int[] { 2, 0, 2 },
+                               new int[] { 1, 3, 8 },
+                               new int[] { 2, 2, 5 } };
+
+        List<int> result = RangeLCMQuery(arr, queries);
+
+        foreach(var res in result)
+        {
+            Console.Write(res + " ");
+        }
+    }
+}
+
+JavaScript
+
+// gcd of two numbers (Euclidean Algorithm)
+function gcd(a, b)
+{
+    if (b === 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+// lcm of two numbers
+// product of two numbers (a * b) = gcd(a, b) * lcm(a, b)
+function lcm(a, b) { return Math.floor(a / gcd(a, b)) * b; }
+
+// function to implement range lcm query
+function RangeLCMQuery(arr, queries)
+{
+    let result = [];
+
+    for (let q of queries) {
+        let type = q[0];
+
+        if (type === 1) {
+            // update the element at the given index
+            let idx = q[1];
+            let ele = q[2];
+            arr[idx] = ele;
+        }
+        else {
+            // type 2: find LCM in range [l, r]
+            let l = q[1];
+            let r = q[2];
+
+            let lcmVal = arr[l];
+
+            for (let i = l + 1; i <= r; i++) {
+                lcmVal = lcm(lcmVal, arr[i]);
+            }
+
+            result.push(lcmVal);
+        }
+    }
+
+    return result;
+}
+
+// Driver code
+let arr = [ 2, 3, 4, 6, 8, 16 ];
+let queries = [ [ 2, 0, 2 ], [ 1, 3, 8 ], [ 2, 2, 5 ] ];
+
+let result = RangeLCMQuery(arr, queries);
+
+console.log(result.join(" "));
+
+Output
+
+12 16
+
+Time Complexity :  O(q * n * log(min(a, b)))
+
+- The gcd(a, b) function using Euclid’s algorithm takes O(log(min(a, b))) time.
+- Since each lcm(a, b) call internally uses gcd, it also takes O(log(min(a, b))) time.
+- For each type-2 query, we iterate over a subarray of size up to O(n) and compute LCM for each element, making each query cost O(n × log(min(a, b))).
+- Therefore, for q queries, the overall time complexity becomes O(q × n × log(min(a, b))) .
+
+Auxiliary Space: O(1) since we are only storing a few integers at a time. The space used by the input arr and queries is not considered.
+
+### [Expected Approach] - Using Segment Tree - O(n + q × log n × log(min(a, b))) Time and O(n) Space
+
+> The idea is to use a Segment Tree to efficiently handle range LCM queries and updates. Instead of recomputing LCM for every query from scratch, we build a tree where each node stores the LCM of a segment of the array. This allows us to answer any range query by combining only the relevant segments (using LCM), and updates are handled by modifying a single element and updating only the affected nodes in the tree.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to compute gcd using Euclidean Algorithm
+int gcd(int a, int b)
+{
+    if (b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+// Function to compute lcm using gcd
+// Using (a / gcd) * b to avoid overflow
+int lcm(int a, int b)
+{
+    return (a / gcd(a, b)) * b;
+}
+
+class SegmentTree
+{
+  private:
+    vector<int> tree;
+    vector<int> arr;
+    int n;
+
+  public:
+    SegmentTree(vector<int> input)
+    {
+        arr = input;
+        n = arr.size();
+        tree.resize(4 * n);
+        build(1, 0, n - 1);
+    }
+
+    // Build the segment tree
+    void build(int node, int start, int end)
+    {
+        // Leaf node
+        if (start == end)
+        {
+            tree[node] = arr[start];
+            return;
+        }
+
+        int mid = (start + end) / 2;
+
+        // Build left and right subtree
+        build(2 * node, start, mid);
+        build(2 * node + 1, mid + 1, end);
+
+        // Merge step: store LCM of children
+        tree[node] = lcm(tree[2 * node], tree[2 * node + 1]);
+    }
+
+    // Update value at index idx to val
+    void update(int node, int start, int end, int idx, int val)
+    {
+        // Leaf node
+        if (start == end)
+        {
+            arr[idx] = val;
+            tree[node] = val;
+            return;
+        }
+
+        // find mid
+        int mid = (start + end) / 2;
+
+        // Recurse to correct side
+        if (idx <= mid)
+            update(2 * node, start, mid, idx, val);
+        else
+            update(2 * node + 1, mid + 1, end, idx, val);
+
+        // Update current node after child update
+        tree[node] = lcm(tree[2 * node], tree[2 * node + 1]);
+    }
+
+    // Query LCM in range [l, r]
+    int query(int node, int start, int end, int l, int r)
+    {
+        // Completely outside range
+        // Return 1 (identity for LCM)
+        if (end < l || start > r)
+            return 1;
+
+        // Completely inside range
+        if (l <= start && end <= r)
+            return tree[node];
+
+        // Partial overlap
+        int mid = (start + end) / 2;
+
+        int left = query(2 * node, start, mid, l, r);
+        int right = query(2 * node + 1, mid + 1, end, l, r);
+
+        return lcm(left, right);
+    }
+};
+
+// function to find range lcm query
+vector<int> RangeLCMQuery(vector<int> &arr, vector<vector<int>> &queries)
+{
+    SegmentTree st(arr);
+
+    vector<int> result;
+
+    for (auto &q : queries)
+    {
+        int type = q[0];
+
+        if (type == 1)
+        {
+            int idx = q[1];
+            int val = q[2];
+
+            // Perform update
+            st.update(1, 0, arr.size() - 1, idx, val);
+        }
+        else
+        {
+            int l = q[1];
+            int r = q[2];
+
+            // Perform query
+            int ans = st.query(1, 0, arr.size() - 1, l, r);
+            result.push_back(ans);
+        }
+    }
+
+    return result;
+}
+
+int main()
+{
+    vector<int> arr = {2, 3, 4, 6, 8, 16};
+
+    // Queries:
+    // {type, x, y}
+    // type 1 → update index x with value y
+    // type 2 → query LCM in range [x, y]
+    vector<vector<int>> queries = {{2, 0, 2}, {1, 3, 8}, {2, 2, 5}};
+
+    vector<int> res = RangeLCMQuery(arr, queries);
+
+    // Print results
+    for (int x : res)
+        cout << x << " ";
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class SegmentTree {
+    private int[] tree;
+    private int[] arr;
+    private int n;
+
+    public SegmentTree(int[] input)
+    {
+        arr = input.clone();
+        n = arr.length;
+        tree = new int[4 * n];
+        build(1, 0, n - 1);
+    }
+
+    // Function to compute gcd using Euclidean Algorithm
+    int gcd(int a, int b)
+    {
+        if (b == 0)
+            return a;
+        return gcd(b, a % b);
+    }
+
+    // Function to compute lcm using gcd
+    // Using (a / gcd) * b to avoid overflow
+    int lcm(int a, int b) { return (a / gcd(a, b)) * b; }
+
+    // Build the segment tree
+    void build(int node, int start, int end)
+    {
+        // Leaf node
+        if (start == end) {
+            tree[node] = arr[start];
+            return;
+        }
+
+        int mid = (start + end) / 2;
+
+        // Build left and right subtree
+        build(2 * node, start, mid);
+        build(2 * node + 1, mid + 1, end);
+
+        // Merge step: store LCM of children
+        tree[node]
+            = lcm(tree[2 * node], tree[2 * node + 1]);
+    }
+
+    // Update value at index idx to val
+    void update(int node, int start, int end, int idx,
+                int val)
+    {
+        // Leaf node
+        if (start == end) {
+            arr[idx] = val;
+            tree[node] = val;
+            return;
+        }
+
+        // find mid
+        int mid = (start + end) / 2;
+
+        // Recurse to correct side
+        if (idx <= mid)
+            update(2 * node, start, mid, idx, val);
+        else
+            update(2 * node + 1, mid + 1, end, idx, val);
+
+        // Update current node after child update
+        tree[node]
+            = lcm(tree[2 * node], tree[2 * node + 1]);
+    }
+
+    // Query LCM in range [l, r]
+    int query(int node, int start, int end, int l, int r)
+    {
+        // Completely outside range
+        // Return 1 (identity for LCM)
+        if (end < l || start > r)
+            return 1;
+
+        // Completely inside range
+        if (l <= start && end <= r)
+            return tree[node];
+
+        // Partial overlap
+        int mid = (start + end) / 2;
+
+        int left = query(2 * node, start, mid, l, r);
+        int right = query(2 * node + 1, mid + 1, end, l, r);
+
+        return lcm(left, right);
+    }
+}
+
+public class GFG {
+
+    // function to find range lcm query
+    public static List<Integer>
+    RangeLCMQuery(int[] arr, int[][] queries)
+    {
+        SegmentTree st = new SegmentTree(arr);
+
+        List<Integer> result = new ArrayList<>();
+
+        for (int[] q : queries) {
+            int type = q[0];
+
+            if (type == 1) {
+                int idx = q[1];
+                int val = q[2];
+
+                // Perform update
+                st.update(1, 0, arr.length - 1, idx, val);
+            }
+            else {
+                int l = q[1];
+                int r = q[2];
+
+                // Perform query
+                int ans
+                    = st.query(1, 0, arr.length - 1, l, r);
+                result.add(ans);
+            }
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args)
+    {
+        int[] arr = { 2, 3, 4, 6, 8, 16 };
+
+        // Queries:
+        // {type, x, y}
+        // type 1 → update index x with value y
+        // type 2 → query LCM in range [x, y]
+        int[][] queries
+            = { { 2, 0, 2 }, { 1, 3, 8 }, { 2, 2, 5 } };
+
+        List<Integer> res = RangeLCMQuery(arr, queries);
+
+        // Print results
+        for (int x : res)
+            System.out.print(x + " ");
+    }
+}
+
+Python
+
+# Function to compute gcd using Euclidean Algorithm
+def gcd(a, b):
+    if b == 0:
+        return a
+    return gcd(b, a % b)
+
+# Function to compute lcm using gcd
+# Using (a / gcd) * b to avoid overflow
+def lcm(a, b):
+    return (a // gcd(a, b)) * b
+
+class SegmentTree:
+    def __init__(self, arr):
+        self.arr = arr[:]
+        self.n = len(arr)
+        self.tree = [0] * (4 * self.n)
+        self.build(1, 0, self.n - 1)
+
+    # Build the segment tree
+    def build(self, node, start, end):
+        # Leaf node
+        if start == end:
+            self.tree[node] = self.arr[start]
+            return
+
+        mid = (start + end) // 2
+
+        # Build left and right subtree
+        self.build(2 * node, start, mid)
+        self.build(2 * node + 1, mid + 1, end)
+
+        # Merge step: store LCM of children
+        self.tree[node] = lcm(self.tree[2 * node], self.tree[2 * node + 1])
+
+    # Update value at index idx to val
+    def update(self, node, start, end, idx, val):
+        # Leaf node
+        if start == end:
+            self.arr[idx] = val
+            self.tree[node] = val
+            return
+
+        # find mid
+        mid = (start + end) // 2
+
+        # Recurse to correct side
+        if idx <= mid:
+            self.update(2 * node, start, mid, idx, val)
+        else:
+            self.update(2 * node + 1, mid + 1, end, idx, val)
+
+        # Update current node after child update
+        self.tree[node] = lcm(self.tree[2 * node], self.tree[2 * node + 1])
+
+    # Query LCM in range [l, r]
+    def query(self, node, start, end, l, r):
+        # Completely outside range
+        # Return 1 (identity for LCM)
+        if end < l or start > r:
+            return 1
+
+        # Completely inside range
+        if l <= start and end <= r:
+            return self.tree[node]
+
+        # Partial overlap
+        mid = (start + end) // 2
+
+        left = self.query(2 * node, start, mid, l, r)
+        right = self.query(2 * node + 1, mid + 1, end, l, r)
+
+        return lcm(left, right)
+
+# function to find range lcm query
+def RangeLCMQuery(arr, queries):
+    st = SegmentTree(arr)
+
+    result = []
+
+    for q in queries:
+        type_ = q[0]
+
+        if type_ == 1:
+            idx = q[1]
+            val = q[2]
+
+            # Perform update
+            st.update(1, 0, len(arr) - 1, idx, val)
+        else:
+            l = q[1]
+            r = q[2]
+
+            # Perform query
+            ans = st.query(1, 0, len(arr) - 1, l, r)
+            result.append(ans)
+
+    return result
+
+# Driver code
+if __name__ == "__main__":
+    arr = [2, 3, 4, 6, 8, 16]
+
+    # Queries:
+    # {type, x, y}
+    # type 1 → update index x with value y
+    # type 2 → query LCM in range [x, y]
+    queries = [[2, 0, 2], [1, 3, 8], [2, 2, 5]]
+
+    res = RangeLCMQuery(arr, queries)
+
+    # Print results
+    print(*res)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class SegmentTree {
+    private int[] tree;
+    private int[] arr;
+    private int n;
+
+    public SegmentTree(int[] input)
+    {
+        arr = (int[])input.Clone();
+        n = arr.Length;
+        tree = new int[4 * n];
+        Build(1, 0, n - 1);
+    }
+
+    // Function to compute gcd using Euclidean Algorithm
+    int gcd(int a, int b)
+    {
+        if (b == 0)
+            return a;
+        return gcd(b, a % b);
+    }
+
+    // Function to compute lcm using gcd
+    // Using (a / gcd) * b to avoid overflow
+    int lcm(int a, int b) { return (a / gcd(a, b)) * b; }
+
+    // Build the segment tree
+    public void Build(int node, int start, int end)
+    {
+        // Leaf node
+        if (start == end) {
+            tree[node] = arr[start];
+            return;
+        }
+
+        int mid = (start + end) / 2;
+
+        // Build left and right subtree
+        Build(2 * node, start, mid);
+        Build(2 * node + 1, mid + 1, end);
+
+        // Merge step: store LCM of children
+        tree[node]
+            = lcm(tree[2 * node], tree[2 * node + 1]);
+    }
+
+    // Update value at index idx to val
+    public void Update(int node, int start, int end,
+                       int idx, int val)
+    {
+        // Leaf node
+        if (start == end) {
+            arr[idx] = val;
+            tree[node] = val;
+            return;
+        }
+
+        // find mid
+        int mid = (start + end) / 2;
+
+        // Recurse to correct side
+        if (idx <= mid)
+            Update(2 * node, start, mid, idx, val);
+        else
+            Update(2 * node + 1, mid + 1, end, idx, val);
+
+        // Update current node after child update
+        tree[node]
+            = lcm(tree[2 * node], tree[2 * node + 1]);
+    }
+
+    // Query LCM in range [l, r]
+    public int Query(int node, int start, int end, int l,
+                     int r)
+    {
+        // Completely outside range
+        // Return 1 (identity for LCM)
+        if (end < l || start > r)
+            return 1;
+
+        // Completely inside range
+        if (l <= start && end <= r)
+            return tree[node];
+
+        // Partial overlap
+        int mid = (start + end) / 2;
+
+        int left = Query(2 * node, start, mid, l, r);
+        int right = Query(2 * node + 1, mid + 1, end, l, r);
+
+        return lcm(left, right);
+    }
+}
+
+class GFG {
+    // function to find range lcm query
+    static List<int> RangeLCMQuery(int[] arr,
+                                   int[][] queries)
+    {
+        SegmentTree st = new SegmentTree(arr);
+
+        List<int> result = new List<int>();
+
+        foreach(var q in queries)
+        {
+            int type = q[0];
+
+            if (type == 1) {
+                int idx = q[1];
+                int val = q[2];
+
+                // Perform update
+                st.Update(1, 0, arr.Length - 1, idx, val);
+            }
+            else {
+                int l = q[1];
+                int r = q[2];
+
+                // Perform query
+                int ans
+                    = st.Query(1, 0, arr.Length - 1, l, r);
+                result.Add(ans);
+            }
+        }
+
+        return result;
+    }
+
+    static void Main()
+    {
+        int[] arr = { 2, 3, 4, 6, 8, 16 };
+
+        // Queries:
+        // {type, x, y}
+        // type 1 → update index x with value y
+        // type 2 → query LCM in range [x, y]
+        int[][] queries = { new int[] { 2, 0, 2 },
+                            new int[] { 1, 3, 8 },
+                            new int[] { 2, 2, 5 } };
+
+        List<int> res = RangeLCMQuery(arr, queries);
+
+        // Print results
+        foreach(int x in res) Console.Write(x + " ");
+    }
+}
+
+JavaScript
+
+// Function to compute gcd using Euclidean Algorithm
+function gcd(a, b)
+{
+    if (b === 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+// Function to compute lcm using gcd
+// Using (a / gcd) * b to avoid overflow
+function lcm(a, b) { return Math.floor(a / gcd(a, b)) * b; }
+
+class SegmentTree {
+    constructor(input)
+    {
+        this.arr = [...input ];
+        this.n = this.arr.length;
+        this.tree = new Array(4 * this.n).fill(0);
+        this.build(1, 0, this.n - 1);
+    }
+
+    // Build the segment tree
+    build(node, start, end)
+    {
+        // Leaf node
+        if (start === end) {
+            this.tree[node] = this.arr[start];
+            return;
+        }
+
+        let mid = Math.floor((start + end) / 2);
+
+        // Build left and right subtree
+        this.build(2 * node, start, mid);
+        this.build(2 * node + 1, mid + 1, end);
+
+        // Merge step: store LCM of children
+        this.tree[node] = lcm(this.tree[2 * node],
+                              this.tree[2 * node + 1]);
+    }
+
+    // Update value at index idx to val
+    update(node, start, end, idx, val)
+    {
+        // Leaf node
+        if (start === end) {
+            this.arr[idx] = val;
+            this.tree[node] = val;
+            return;
+        }
+
+        // find mid
+        let mid = Math.floor((start + end) / 2);
+
+        // Recurse to correct side
+        if (idx <= mid)
+            this.update(2 * node, start, mid, idx, val);
+        else
+            this.update(2 * node + 1, mid + 1, end, idx,
+                        val);
+
+        // Update current node after child update
+        this.tree[node] = lcm(this.tree[2 * node],
+                              this.tree[2 * node + 1]);
+    }
+
+    // Query LCM in range [l, r]
+    query(node, start, end, l, r)
+    {
+        // Completely outside range
+        // Return 1 (identity for LCM)
+        if (end < l || start > r)
+            return 1;
+
+        // Completely inside range
+        if (l <= start && end <= r)
+            return this.tree[node];
+
+        // Partial overlap
+        let mid = Math.floor((start + end) / 2);
+
+        let left = this.query(2 * node, start, mid, l, r);
+        let right
+            = this.query(2 * node + 1, mid + 1, end, l, r);
+
+        return lcm(left, right);
+    }
+}
+
+// function to find range lcm query
+function RangeLCMQuery(arr, queries)
+{
+    let st = new SegmentTree(arr);
+
+    let result = [];
+
+    for (let q of queries) {
+        let type = q[0];
+
+        if (type === 1) {
+            let idx = q[1];
+            let val = q[2];
+
+            // Perform update
+            st.update(1, 0, arr.length - 1, idx, val);
+        }
+        else {
+            let l = q[1];
+            let r = q[2];
+
+            // Perform query
+            let ans = st.query(1, 0, arr.length - 1, l, r);
+            result.push(ans);
+        }
+    }
+
+    return result;
+}
+
+// Driver code
+let arr = [ 2, 3, 4, 6, 8, 16 ];
+
+// Queries:
+// {type, x, y}
+// type 1 → update index x with value y
+// type 2 → query LCM in range [x, y]
+let queries = [ [ 2, 0, 2 ], [ 1, 3, 8 ], [ 2, 2, 5 ] ];
+
+let res = RangeLCMQuery(arr, queries);
+
+// Print results
+console.log(res.join(" "));
+
+Output
+
+12 16
+
+Time Complexity: O(n + q * log(n) * log(min(a, b)))
+
+- In the segment tree, both query and update operations traverse at most O(log n) nodes.
+- At each node, an LCM operation is performed, so each query/update costs O(log n × log(min(a, b))).
+- Therefore, for q queries, the overall time complexity becomes O(n + q × log n × log(min(a, b))) , where O(n) is for building the tree.
+
+Auxiliary Space: O(n)
+
+- The segment tree requires O(4n) space to store all nodes, which simplifies to O(n).
+- Additionally, the input array is stored separately, so the overall space complexity remains O(n).

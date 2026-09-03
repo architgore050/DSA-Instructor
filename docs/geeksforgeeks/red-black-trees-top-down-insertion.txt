@@ -1,0 +1,1329 @@
+Source: https://www.geeksforgeeks.org/dsa/red-black-trees-top-down-insertion/
+Title: Red-Black Trees | Top-Down Insertion
+Extractor: 2
+
+In Bottom-Up insertion of Red-Black Trees , "simple" Binary Search Tree insertion is used, followed by correction of the RB-Tree Violations on the way back up to the root. This can be done easily with the help of recursion. While in Top-Down Insertion, the corrections are done while traversing down the tree to the insertion point. When the actual insertion is done, no further corrections are needed, so no need to traverse back up the tree. Therefore, the goal of Top-Down insertion is to traverse from the root to the insertion point in such a way that RB properties are maintained. This iterative approach thus makes Top-Down insertion faster than Bottom-Up insertion.
+
+The two basic operations to perform for fixing violations and balancing are-
+
+- Recoloring
+- Rotation
+
+Following is the detailed Algorithm The main goal of this algorithm is to create an insertion point at which the parent of the new node is Black, or the uncle of the new node is black. Let N be the new node to be inserted.
+
+1. If Y and Z are Black:
+2. If X's Parent is Black:
+3. X’s Parent P is Red, Grandparent is Black and X and P are both left OR right children of Grandparent G: Recolor X, Y, Z Rotate P around G Color P black Color G red
+4. X’s Parent is Red, Grandparent is Black and X and P are opposite children of Grandparent G Recolor X, Y, Z Rotate X around P Rotate X around G Recolor X and G
+
+Below the implementation of the following approach:
+
+C++
+
+#include<bits/stdc++.h>
+using namespace std;
+
+// Class for representing a node of the tree
+class TreeNode {
+public:
+    string data, color;
+    TreeNode* children[2];
+
+    TreeNode(string data) {
+        this->data = data;
+        this->color = "R";
+        children[0] = NULL;
+        children[1] = NULL;
+    }
+};
+
+// Class for performing RBTree operations
+class RbTree {
+public:
+    TreeNode* Root = NULL;
+
+    // Function to calculate the height of the tree
+    int HeightT(TreeNode* Root) {
+        int lefth = 0, righth = 0;
+
+        if (Root == NULL || (Root->children[0] == NULL && Root->children[1] == NULL)) {
+            return 0;
+        }
+        lefth = HeightT(Root->children[0]);
+        righth = HeightT(Root->children[1]);
+
+        return (max(lefth, righth) + 1);
+    }
+
+    // Function to check if dir is equal to 0
+    static int check(int dir) {
+        return dir == 0 ? 1 : 0;
+    }
+
+    // Function to check if a node's color is red or not
+    static bool isRed(TreeNode* Node) {
+        return Node != NULL && Node->color == "R";
+    }
+
+    // Function to perform single rotation
+    TreeNode* SingleRotate(TreeNode* Node, int dir) {
+        TreeNode* temp = Node->children[check(dir)];
+        Node->children[check(dir)] = temp->children[dir];
+        temp->children[dir] = Node;
+        Root->color = "R";
+        temp->color = "B";
+
+        return temp;
+    }
+
+    // Function to perform double rotation
+    TreeNode* DoubleRotate(TreeNode* Node, int dir) {
+        Node->children[check(dir)] = SingleRotate(Node->children[check(dir)], check(dir));
+        return SingleRotate(Node, dir);
+    }
+
+    // Function to insert a new node with given data
+    TreeNode* Insert(RbTree* tree, string data) {
+        if (tree->Root == NULL) {
+            tree->Root = new TreeNode(data);
+            if (tree->Root == NULL)
+                return NULL;
+        }
+        else {
+            // A temporary root
+            TreeNode* temp = new TreeNode("");
+
+            // Grandparent and Parent
+            TreeNode *g, *t;
+            TreeNode *p, *q;
+
+            int dir = 0, last = 0;
+
+            t = temp;
+            g = p = NULL;
+            t->children[1] = tree->Root;
+            q = t->children[1];
+            while (true) {
+                if (q == NULL) {
+                    // Inserting root node
+                    q = new TreeNode(data);
+                    p->children[dir] = q;
+                }
+                // Sibling is red
+                else if (isRed(q->children[0]) && isRed(q->children[1])) {
+                    // Recoloring if both children are red
+                    q->color = "R";
+                    q->children[0]->color = "B";
+                    q->children[1]->color = "B";
+                }
+
+                if (isRed(q) && isRed(p)) {
+                    // Resolving red-red violation
+                    int dir2;
+                    if (t->children[1] == g) {
+                        dir2 = 1;
+                    }
+                    else {
+                        dir2 = 0;
+                    }
+
+                    // If children and parent are left-left or right-right of grand-parent
+                    if (q == p->children[last]) {
+                        t->children[dir2] = SingleRotate(g, last == 0 ? 1 : 0);
+                    }
+                    // If they are opposite childs i.e left-right or right-left
+                    else {
+                        t->children[dir2] = DoubleRotate(g, last == 0 ? 1 : 0);
+                    }
+                }
+
+                // Checking for correct position of node
+                if (q->data == data) {
+                    break;
+                }
+                last = dir;
+
+                // Finding the path to traverse [Either left or right]
+                dir = q->data < data ? 1 : 0;
+
+                if (g != NULL) {
+                    t = g;
+                }
+
+                // Rearranging pointers
+                g = p;
+                p = q;
+                q = q->children[dir];
+            }
+
+            tree->Root = temp->children[1];
+        }
+
+        // Assign black color to the root node
+        tree->Root->color = "B";
+
+        return tree->Root;
+    }
+
+    // Print nodes at each level in level order traversal
+    void PrintLevel(TreeNode* root, int i) {
+        if (root == NULL) {
+            return;
+        }
+
+        if (i == 1) {
+            cout << "| " << root->data << " | " << root->color << " |";
+
+            if (root->children[0] != NULL) {
+                cout << " " << root->children[0]->data << " |";
+            }
+            else {
+                cout << " " << "NULL" << " |";
+            }
+            if (root->children[1] != NULL) {
+                cout << " " << root->children[1]->data << " |";
+            }
+            else {
+                cout << " " << "NULL" << " |";
+            }
+
+            cout << " ";
+
+            return;
+        }
+
+        PrintLevel(root->children[0], i - 1);
+        PrintLevel(root->children[1], i - 1);
+    }
+
+    // Utility Function to perform level order traversal
+    void LevelOrder(TreeNode* root) {
+        int i;
+
+        for (i = 1; i < HeightT(root) + 1; i++) {
+            PrintLevel(root, i);
+            cout << "\n\n";
+        }
+    }
+};
+
+// Driver Code
+int main() {
+    // Tree Node Representation
+    // -------------------------------------------
+    // DATA | COLOR | LEFT CHILD | RIGHT CHILD |
+    // -------------------------------------------
+
+    RbTree* Tree = new RbTree();
+    string Sentence, Word;
+    Sentence = "old is gold";
+    vector<string> Word_Array;
+    stringstream ss(Sentence);
+    while (ss >> Word) {
+        Word_Array.push_back(Word);
+    }
+
+    for (int i = 0; i < Word_Array.size(); i++) {
+        Tree->Root = Tree->Insert(Tree, Word_Array[i]);
+    }
+
+    // Print Level Order Traversal
+    cout << "The Level Order Traversal of the tree is:\n";
+    Tree->LevelOrder(Tree->Root);
+    cout << "\nInserting a word in the tree:\n";
+    Word = "forever";
+    Tree->Root = Tree->Insert(Tree, Word);
+
+    cout << "\n";
+    Tree->LevelOrder(Tree->Root);
+
+    return 0;
+}
+
+Java
+
+// Java implementation for Top-Down
+// Red-Black Tree Insertion creating
+// a red black tree and storing an
+// English sentence into it using Top
+// down insertion approach
+
+import static java.lang.Integer.max;
+
+// Class for performing
+// RBTree operations
+public class RbTree {
+    TreeNode Root = null;
+
+    // Function to calculate
+    // the height of the tree
+    int HeightT(TreeNode Root)
+    {
+        int lefth, righth;
+
+        if (Root == null
+            || (Root.children == null
+                && Root.children[1] == null)) {
+            return 0;
+        }
+        lefth = HeightT(Root.children[0]);
+        righth = HeightT(Root.children[1]);
+
+        return (max(lefth, righth) + 1);
+    }
+
+    // Function to check if
+    // dir is equal to 0
+    int check(int dir)
+    {
+        return dir == 0 ? 1 : 0;
+    }
+
+    // Function to check if a
+    // node's color is red or not
+    boolean isRed(TreeNode Node)
+    {
+        return Node != null
+            && Node.color.equals("R");
+    }
+
+    // Function to perform
+    // single rotation
+    TreeNode SingleRotate(TreeNode Node,
+                          int dir)
+    {
+        TreeNode temp
+            = Node.children[check(dir)];
+        Node.children[check(dir)]
+            = temp.children[dir];
+        temp.children[dir] = Node;
+        Root.color = "R";
+        temp.color = "B";
+
+        return temp;
+    }
+
+    // Function to perform double rotation
+    TreeNode DoubleRotate(TreeNode Node,
+                          int dir)
+    {
+        Node.children[check(dir)]
+            = SingleRotate(Node.children[check(dir)],
+                           check(dir));
+        return SingleRotate(Node, dir);
+    }
+
+    // Function to insert a new
+    // node with given data
+    TreeNode Insert(RbTree tree,
+                    String data)
+    {
+        if (tree.Root == null) {
+            tree.Root
+                = new TreeNode(data);
+            if (tree.Root == null)
+                return null;
+        }
+        else {
+
+            // A temporary root
+            TreeNode temp = new TreeNode("");
+
+            // Grandparent and Parent
+            TreeNode g, t;
+            TreeNode p, q;
+
+            int dir = 0, last = 0;
+
+            t = temp;
+
+            g = p = null;
+
+            t.children[1] = tree.Root;
+
+            q = t.children[1];
+            while (true) {
+
+                if (q == null) {
+
+                    // Inserting root node
+                    q = new TreeNode(data);
+                    p.children[dir] = q;
+                }
+
+                // Sibling is red
+                else if (isRed(q.children[0])
+                         && isRed(q.children[1])) {
+
+                    // Recoloring if both
+                    // children are red
+                    q.color = "R";
+                    q.children[0].color = "B";
+                    q.children[1].color = "B";
+                }
+
+                if (isRed(q) && isRed(p)) {
+
+                    // Resolving red-red
+                    // violation
+                    int dir2;
+                    if (t.children[1] == g) {
+                        dir2 = 1;
+                    }
+                    else {
+                        dir2 = 0;
+                    }
+
+                    // If children and parent
+                    // are left-left or
+                    // right-right of grand-parent
+                    if (q == p.children[last]) {
+                        t.children[dir2]
+                            = SingleRotate(g,
+                                           last == 0
+                                               ? 1
+                                               : 0);
+                    }
+
+                    // If they are opposite
+                    // childs i.e left-right
+                    // or right-left
+                    else {
+                        t.children[dir2]
+                            = DoubleRotate(g,
+                                           last == 0
+                                               ? 1
+                                               : 0);
+                    }
+                }
+
+                // Checking for correct
+                // position of node
+                if (q.data.equals(data)) {
+                    break;
+                }
+                last = dir;
+
+                // Finding the path to
+                // traverse [Either left
+                // or right ]
+                dir = q.data.compareTo(data) < 0
+                          ? 1
+                          : 0;
+
+                if (g != null) {
+                    t = g;
+                }
+
+                // Rearranging pointers
+                g = p;
+                p = q;
+                q = q.children[dir];
+            }
+
+            tree.Root = temp.children[1];
+        }
+
+        // Assign black color
+        // to the root node
+        tree.Root.color = "B";
+
+        return tree.Root;
+    }
+
+    // Print nodes at each
+    // level in level order
+    // traversal
+    void PrintLevel(TreeNode root, int i)
+    {
+        if (root == null) {
+            return;
+        }
+
+        if (i == 1) {
+            System.out.print("| "
+                             + root.data
+                             + " | "
+                             + root.color
+                             + " |");
+
+            if (root.children[0] != null) {
+                System.out.print(" "
+                                 + root.children[0].data
+                                 + " |");
+            }
+            else {
+                System.out.print(" "
+                                 + "NULL"
+                                 + " |");
+            }
+            if (root.children[1] != null) {
+                System.out.print(" "
+                                 + root.children[1].data
+                                 + " |");
+            }
+            else {
+                System.out.print(" "
+                                 + "NULL"
+                                 + " |");
+            }
+
+            System.out.print(" ");
+
+            return;
+        }
+
+        PrintLevel(root.children[0],
+                   i - 1);
+        PrintLevel(root.children[1],
+                   i - 1);
+    }
+
+    // Utility Function to
+    // perform level order
+    // traversal
+    void LevelOrder(TreeNode root)
+    {
+        int i;
+
+        for (i = 1;
+             i < HeightT(root) + 1;
+             i++) {
+            PrintLevel(root, i);
+            System.out.print("\n\n");
+        }
+    }
+}
+
+// Class for representing
+// a node of the tree
+class TreeNode {
+
+    // Class variables
+    String data, color;
+    TreeNode children[];
+
+    public TreeNode(String data)
+    {
+        // Color R- Red
+        // and B - Black
+        this.data = data;
+        this.color = "R";
+        children
+            = new TreeNode[2];
+        children[0] = null;
+        children[1] = null;
+    }
+}
+
+// Driver Code
+class Driver {
+    public static void main(String[] args)
+    {
+        // Tree Node Representation
+        // -------------------------------------------
+        // DATA | COLOR | LEFT CHILD | RIGHT CHILD |
+        // -------------------------------------------
+
+        RbTree Tree = new RbTree();
+        String Sentence, Word;
+        Sentence = "old is gold";
+        String Word_Array[]
+            = Sentence.split(" ");
+
+        for (int i = 0;
+             i < Word_Array.length;
+             i++) {
+            Tree.Root
+                = Tree.Insert(Tree,
+                              Word_Array[i]);
+        }
+
+        // Print Level Order Traversal
+        System.out.println("The Level"
+                           + "Order Traversal"
+                           + "of the tree is:");
+        Tree.LevelOrder(Tree.Root);
+        System.out.println("\nInserting a"
+                           + " word in the tree:");
+        Word = "forever";
+        Tree.Root = Tree.Insert(Tree,
+                                Word);
+
+        System.out.println("");
+        Tree.LevelOrder(Tree.Root);
+    }
+}
+
+C#
+
+// C# implementation for Top-Down
+// Red-Black Tree Insertion creating
+// a red black tree and storing an
+// English sentence into it using Top
+// down insertion approach
+using System;
+
+// Class for performing
+// RBTree operations
+class RbTree
+{
+    public TreeNode Root = null;
+
+    // Function to calculate
+    // the height of the tree
+    public int HeightT(TreeNode Root)
+    {
+        int lefth, righth;
+
+        if (Root == null ||
+           (Root.children == null &&
+            Root.children[1] == null))
+        {
+            return 0;
+        }
+        lefth = HeightT(Root.children[0]);
+        righth = HeightT(Root.children[1]);
+
+        return (Math.Max(lefth, righth) + 1);
+    }
+
+    // Function to check if
+    // dir is equal to 0
+    public int check(int dir)
+    {
+        return dir == 0 ? 1 : 0;
+    }
+
+    // Function to check if a
+    // node's color is red or not
+    public bool isRed(TreeNode Node)
+    {
+        return Node != null &&
+               Node.color.Equals("R");
+    }
+
+    // Function to perform
+    // single rotation
+    public TreeNode SingleRotate(TreeNode Node, int dir)
+    {
+        TreeNode temp = Node.children[check(dir)];
+        Node.children[check(dir)] = temp.children[dir];
+        temp.children[dir] = Node;
+        Root.color = "R";
+        temp.color = "B";
+
+        return temp;
+    }
+
+    // Function to perform double rotation
+    public TreeNode DoubleRotate(TreeNode Node, int dir)
+    {
+        Node.children[check(dir)] =
+             SingleRotate(Node.children[check(dir)],
+                                        check(dir));
+        return SingleRotate(Node, dir);
+    }
+
+    // Function to insert a new
+    // node with given data
+    public TreeNode Insert(RbTree tree,
+                           String data)
+    {
+        if (tree.Root == null)
+        {
+            tree.Root = new TreeNode(data);
+            if (tree.Root == null)
+                return null;
+        }
+        else
+        {
+
+            // A temporary root
+            TreeNode temp = new TreeNode("");
+
+            // Grandparent and Parent
+            TreeNode g, t;
+            TreeNode p, q;
+
+            int dir = 0, last = 0;
+
+            t = temp;
+
+            g = p = null;
+
+            t.children[1] = tree.Root;
+
+            q = t.children[1];
+            while (true)
+            {
+                if (q == null)
+                {
+
+                    // Inserting root node
+                    q = new TreeNode(data);
+                    p.children[dir] = q;
+                }
+
+                // Sibling is red
+                else if (isRed(q.children[0]) &&
+                         isRed(q.children[1]))
+                {
+
+                    // Recoloring if both
+                    // children are red
+                    q.color = "R";
+                    q.children[0].color = "B";
+                    q.children[1].color = "B";
+                }
+
+                if (isRed(q) && isRed(p))
+                {
+
+                    // Resolving red-red
+                    // violation
+                    int dir2;
+                    if (t.children[1] == g)
+                    {
+                        dir2 = 1;
+                    }
+                    else
+                    {
+                        dir2 = 0;
+                    }
+
+                    // If children and parent
+                    // are left-left or
+                    // right-right of grand-parent
+                    if (q == p.children[last])
+                    {
+                        t.children[dir2] =
+                          SingleRotate(g, last == 0 ? 1 : 0);
+                    }
+
+                    // If they are opposite
+                    // childs i.e left-right
+                    // or right-left
+                    else
+                    {
+                        t.children[dir2] =
+                          DoubleRotate(g, last == 0 ? 1 : 0);
+                    }
+                }
+
+                // Checking for correct
+                // position of node
+                if (q.data.Equals(data))
+                {
+                    break;
+                }
+                last = dir;
+
+                // Finding the path to
+                // traverse [Either left
+                // or right ]
+                dir = q.data.CompareTo(data) < 0 ? 1 : 0;
+
+                if (g != null)
+                {
+                    t = g;
+                }
+
+                // Rearranging pointers
+                g = p;
+                p = q;
+                q = q.children[dir];
+            }
+            tree.Root = temp.children[1];
+        }
+
+        // Assign black color
+        // to the root node
+        tree.Root.color = "B";
+
+        return tree.Root;
+    }
+
+    // Print nodes at each
+    // level in level order
+    // traversal
+    public void PrintLevel(TreeNode root, int i)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        if (i == 1)
+        {
+            Console.Write("| " + root.data +
+                         " | " + root.color + " |");
+
+            if (root.children[0] != null)
+            {
+                Console.Write(" " +
+                   root.children[0].data + " |");
+            }
+            else
+            {
+                Console.Write(" " + "NULL" + " |");
+            }
+            if (root.children[1] != null)
+            {
+                Console.Write(" " +
+                   root.children[1].data + " |");
+            }
+            else
+            {
+                Console.Write(" " + "NULL" + " |");
+            }
+
+            Console.Write(" ");
+
+            return;
+        }
+
+        PrintLevel(root.children[0], i - 1);
+        PrintLevel(root.children[1], i - 1);
+    }
+
+    // Utility Function to perform
+    // level order traversal
+    public void LevelOrder(TreeNode root)
+    {
+        int i;
+
+        for (i = 1; i < HeightT(root) + 1; i++)
+        {
+            PrintLevel(root, i);
+            Console.Write("\n\n");
+        }
+    }
+}
+
+// Class for representing
+// a node of the tree
+public class TreeNode
+{
+
+    // Class variables
+    public String data, color;
+    public TreeNode []children;
+
+    public TreeNode(String data)
+    {
+        // Color R- Red
+        // and B - Black
+        this.data = data;
+        this.color = "R";
+        children = new TreeNode[2];
+        children[0] = null;
+        children[1] = null;
+    }
+}
+
+// Driver Code
+public class Driver
+{
+    public static void Main(String[] args)
+    {
+        // Tree Node Representation
+        // -------------------------------------------
+        // DATA | COLOR | LEFT CHILD | RIGHT CHILD |
+        // -------------------------------------------
+        RbTree Tree = new RbTree();
+        String Sentence, Word;
+        Sentence = "old is gold";
+        char[] spearator = { ' ', ' ' };
+        String []Word_Array = Sentence.Split(spearator,
+                StringSplitOptions.RemoveEmptyEntries);
+
+        for (int i = 0; i < Word_Array.Length; i++)
+        {
+            Tree.Root = Tree.Insert(Tree,
+                            Word_Array[i]);
+        }
+
+        // Print Level Order Traversal
+        Console.WriteLine("The Level" +
+                          "Order Traversal" +
+                          "of the tree is:");
+        Tree.LevelOrder(Tree.Root);
+        Console.WriteLine("\nInserting a" +
+                          " word in the tree:");
+        Word = "forever";
+        Tree.Root = Tree.Insert(Tree, Word);
+
+        Console.WriteLine("");
+        Tree.LevelOrder(Tree.Root);
+    }
+}
+
+// This code is contributed by Rajput-Ji
+
+JavaScript
+
+// Javascript implementation for Top-Down
+// Red-Black Tree Insertion creating
+// a red black tree and storing an
+// English sentence into it using Top
+// down insertion approach
+
+// Class for performing
+// RBTree operations
+class RbTree {
+  constructor() {
+    this.Root = null;
+  }
+
+  // Function to calculate
+  // the height of the tree
+  HeightT(Root) {
+    let lefth = 0;
+    let righth = 0;
+
+    if (Root === null || (Root.children === null && Root.children[1] === null)) {
+      return 0;
+    }
+
+    lefth = this.HeightT(Root.children[0]);
+    righth = this.HeightT(Root.children[1]);
+
+    return (Math.max(lefth, righth) + 1);
+  }
+
+  // Function to check if
+  // dir is equal to 0
+  static check(dir) {
+    return (dir === 0) ? 1 : 0;
+  }
+
+  // Function to check if a
+  // node's color is red or not
+  static isRed(Node) {
+    return (Node !== null && Node.color === "R");
+  }
+
+  // Function to perform
+  // single rotation
+  SingleRotate(Node, dir) {
+    let temp = Node.children[this.constructor.check(dir)];
+    Node.children[this.constructor.check(dir)] = temp.children[dir];
+    temp.children[dir] = Node;
+    this.Root.color = "R";
+    temp.color = "B";
+
+    return temp;
+  }
+
+  // Function to perform double rotation
+  DoubleRotate(Node, dir) {
+    Node.children[this.constructor.check(dir)] = this.SingleRotate(Node.children[this.constructor.check(dir)], this.constructor.check(dir));
+    return this.SingleRotate(Node, dir);
+  }
+
+  // Function to insert a new
+  // node with given data
+  Insert(tree, data) {
+    if (tree.Root === null) {
+      tree.Root = new TreeNode(data);
+      if (tree.Root === null) {
+        return null;
+      }
+    } else {
+      // A temporary root
+      let temp = new TreeNode("");
+
+      // Garndparent and parent
+      let g = null;
+      let t = null;
+      let p = null;
+      let q = null;
+      let dir = 0;
+      let last = 0;
+
+      t = temp;
+      g = p = null;
+      t.children[1] = tree.Root;
+      q = t.children[1];
+
+      while (true) {
+        if (q === null) {
+
+          // Inserting root node
+          q = new TreeNode(data);
+          p.children[dir] = q;
+        }
+        // Sibling red
+        else if (this.constructor.isRed(q.children[0]) && this.constructor.isRed(q.children[1])) {
+
+          // recoloring if both
+          // both children are red
+          q.color = "R";
+          q.children[0].color = "B";
+          q.children[1].color = "B";
+        }
+
+        if (this.constructor.isRed(q) && this.constructor.isRed(p)) {
+
+          // Resolving red-red
+          // violation
+          let dir2 = 0;
+          if (t.children[1] === g) {
+            dir2 = 1;
+          } else {
+            dir2 = 0;
+          }
+          // If children and parent
+          // are left-left or
+          // right-right of grand-parent
+          if (q === p.children[last]) {
+            t.children[dir2] = this.SingleRotate(g, (last === 0) ? 1 : 0);
+          }
+
+          // If they are opposite
+          // childs i.e left-right
+          // or right-left
+          else {
+            t.children[dir2] = this.DoubleRotate(g, (last === 0) ? 1 : 0);
+          }
+        }
+
+        // Checking for correct
+        // position of node
+        if (q.data === data) {
+          break;
+        }
+
+        // Finding the path to
+        // traverse [Either left or right]
+        last = dir;
+        dir = (q.data < data) ? 1 : 0;
+
+        if (g !== null) {
+          t = g;
+        }
+
+        // Rearranging pointers
+        g = p;
+        p = q;
+        q = q.children[dir];
+      }
+
+      // Assign black color
+      // to the root node
+      tree.Root = temp.children[1];
+    }
+
+    tree.Root.color = "B";
+    return tree.Root;
+  }
+
+    // Print nodes at each
+    // level in level order
+    // traversal
+    PrintLevel(root, i) {
+        if (root == null) {
+            return;
+        }
+
+        if (i == 1) {
+            process.stdout.write(`| ${root.data} | ${root.color} |`);
+
+            if (root.children[0] != null) {
+                process.stdout.write(` ${root.children[0].data} |`);
+            } else {
+                process.stdout.write(` None |`);
+            }
+            if (root.children[1] != null) {
+                process.stdout.write(` ${root.children[1].data} |`);
+            } else {
+                process.stdout.write(` None |`);
+            }
+
+            return;
+        }
+
+        this.PrintLevel(root.children[0], i - 1);
+        this.PrintLevel(root.children[1], i - 1);
+    }
+    // Utility Function to perform
+    // level order traversal
+    LevelOrder(root) {
+      for (let i = 1; i <= this.HeightT(root) + 1; i++) {
+        this.PrintLevel(root, i);
+        console.log('\n');
+      }
+    }
+}
+
+// Class for representing
+// a node of the tree
+class TreeNode {
+  constructor(data) {
+    // Color R- Red
+    // and B - Black
+    this.data = data;
+    this.color = "R";
+    this.children = [null, null];
+  }
+}
+
+// Driver Code
+// -------------------------------------------
+// DATA | COLOR | LEFT CHILD | RIGHT CHILD |
+// -------------------------------------------
+let Tree = new RbTree();
+let Sentence = "";
+let Word = "";
+Sentence = "old is gold";
+let Word_Array = Sentence.split(" ");
+
+for (let i = 0; i < Word_Array.length; i++) {
+  Tree.Root = Tree.Insert(Tree, Word_Array[i]);
+}
+
+// Print Level Order Traversal
+console.log("The Level Order Traversal the tree is:\n\n");
+Tree.LevelOrder(Tree.Root);
+console.log("Inserting a word in the tree:\n\n");
+Word = "forever";
+Tree.Root = Tree.Insert(Tree, Word);
+
+Tree.LevelOrder(Tree.Root);
+
+// This code is contributed by codebraxnzt
+
+Python3
+
+# Python 3 implementation for Top-Down
+# Red-Black Tree Insertion creating
+# a red black tree and storing an
+# English sentence into it using Top
+# down insertion approach
+
+# Class for performing
+# RBTree operations
+class RbTree:
+
+    Root = None
+
+    # Function to calculate
+    # the height of the tree
+    def HeightT(self,Root):
+
+        lefth, righth=0, 0
+
+        if (Root == None or (Root.children == None and Root.children[1] == None)):
+            return 0
+        lefth = self.HeightT(Root.children[0])
+        righth = self.HeightT(Root.children[1])
+
+        return (max(lefth, righth) + 1)
+
+    # Function to check if
+    # dir is equal to 0
+    @staticmethod
+    def check(dir):
+        return 1 if dir == 0 else 0
+
+    # Function to check if a
+    # node's color is red or not
+    @staticmethod
+    def isRed(Node):
+        return Node != None and Node.color=="R"
+
+    # Function to perform
+    # single rotation
+    def SingleRotate(self, Node, dir):
+
+        temp = Node.children[self.check(dir)]
+        Node.children[self.check(dir)] = temp.children[dir]
+        temp.children[dir] = Node
+        self.Root.color = "R"
+        temp.color = "B"
+
+        return temp
+
+    # Function to perform double rotation
+    def DoubleRotate(self, Node, dir):
+
+        Node.children[self.check(dir)] = self.SingleRotate(Node.children[self.check(dir)], self.check(dir))
+        return self.SingleRotate(Node, dir)
+
+    # Function to insert a new
+    # node with given data
+    def Insert(self, tree, data):
+
+        if (tree.Root == None):
+
+            tree.Root = TreeNode(data)
+            if (tree.Root == None):
+                return None
+        else:
+
+            # A temporary root
+            temp = TreeNode("")
+
+            # Grandparent and Parent
+            g, t=None,None
+            p, q=None,None
+
+            dir = 0; last = 0
+
+            t = temp
+
+            g = p = None
+
+            t.children[1] = tree.Root
+
+            q = t.children[1]
+            while (True):
+
+                if (q == None):
+
+                    # Inserting root node
+                    q = TreeNode(data)
+                    p.children[dir] = q
+
+                # Sibling is red
+                elif (self.isRed(q.children[0]) and self.isRed(q.children[1])):
+
+                    # Recoloring if both
+                    # children are red
+                    q.color = "R"
+                    q.children[0].color = "B"
+                    q.children[1].color = "B"
+
+                if (self.isRed(q) and self.isRed(p)):
+
+                    # Resolving red-red
+                    # violation
+                    dir2=0
+                    if (t.children[1] == g):
+                        dir2 = 1
+                    else:
+                        dir2 = 0
+
+                    # If children and parent
+                    # are left-left or
+                    # right-right of grand-parent
+                    if (q == p.children[last]):
+                        t.children[dir2] = self.SingleRotate(g, 1 if last == 0 else 0)
+
+                    # If they are opposite
+                    # childs i.e left-right
+                    # or right-left
+                    else:
+                        t.children[dir2] = self.DoubleRotate(g,1 if last == 0 else 0)
+
+                # Checking for correct
+                # position of node
+                if (q.data==data):
+                    break
+                last = dir
+
+                # Finding the path to
+                # traverse [Either left
+                # or right ]
+                dir = 1 if q.data<data else 0
+
+                if (g != None):
+                    t = g
+
+                # Rearranging pointers
+                g = p
+                p = q
+                q = q.children[dir]
+
+            tree.Root = temp.children[1]
+
+        # Assign black color
+        # to the root node
+        tree.Root.color = "B"
+
+        return tree.Root
+
+    # Print nodes at each
+    # level in level order
+    # traversal
+    def PrintLevel(self, root, i):
+        if (root == None):
+            return
+
+        if (i == 1):
+            print("| {} | {} |".format(root.data,root.color),end='')
+
+            if (root.children[0] != None):
+                print(" {} |".format(root.children[0].data),end='')
+            else:
+                print(" None |",end='')
+            if (root.children[1] != None):
+                print(" {} |".format(root.children[1].data),end='')
+            else:
+                print(" None |",end='')
+
+            return
+
+        self.PrintLevel(root.children[0], i - 1)
+        self.PrintLevel(root.children[1], i - 1)
+
+    # Utility Function to perform
+    # level order traversal
+    def LevelOrder(self, root):
+
+        for i in range(self.HeightT(root) + 1):
+            self.PrintLevel(root, i)
+            print('\n')
+
+# Class for representing
+# a node of the tree
+class TreeNode:
+    def __init__(self, data):
+
+        # Color R- Red
+        # and B - Black
+        self.data = data
+        self.color = "R"
+        self.children = [None,None]
+
+# Driver Code
+if __name__=='__main__':
+    # Tree Node Representation
+    # -------------------------------------------
+    # DATA | COLOR | LEFT CHILD | RIGHT CHILD |
+    # -------------------------------------------
+    Tree = RbTree()
+    Sentence, Word='',''
+    Sentence = "old is gold"
+    Word_Array = Sentence.split()
+
+    for i in range(len(Word_Array)):
+        Tree.Root = Tree.Insert(Tree, Word_Array[i])
+
+    # Print Level Order Traversal
+    print("The Level Order Traversal the tree is:")
+    Tree.LevelOrder(Tree.Root)
+    print("\nInserting a word in the tree:")
+    Word = "forever"
+    Tree.Root = Tree.Insert(Tree, Word)
+
+    Tree.LevelOrder(Tree.Root)
+# This code is contributed by Amartya Ghosh
+
+Output
+
+The LevelOrder Traversalof the tree is:
+| is | B | gold | old |
+
+| gold | R | NULL | NULL | | old | R | NULL | NULL |
+
+Inserting a word in the tree:
+
+| is | B | gold | old |
+
+| gold | B | forever | NULL | | old | B | NULL | NULL |
+
+| forever | R | NULL | NULL |
+
+References: Red Black Trees - UMBC CSEE

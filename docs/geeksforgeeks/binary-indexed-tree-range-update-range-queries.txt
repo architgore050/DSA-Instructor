@@ -1,0 +1,655 @@
+Source: https://www.geeksforgeeks.org/dsa/binary-indexed-tree-range-update-range-queries/
+Title: Binary Indexed Tree : Range Update and Range Queries
+Extractor: 2
+
+Given an array arr[0..N-1]. The following operations need to be performed.
+
+1. update(l, r, val) : Add ‘val’ to all the elements in the array from [l, r].
+2. getRangeSum(l, r) : Find the sum of all elements in the array from [l, r].
+
+Initially, all the elements in the array are 0. Queries can be in any order, i.e., there can be many updates before range sum.
+
+Example:
+
+> Input: N = 5   // {0, 0, 0, 0, 0} Queries: update: l = 0, r = 4, val = 2 update : l = 3, r = 4, val = 3 getRangeSum : l = 2, r = 4 Output: Sum of elements of range [2, 4] is 12 Explanation: Array after first update becomes {2, 2, 2, 2, 2} Array after second update becomes {2, 2, 2, 5, 5}
+
+Naive Approach: To solve the problem follow the below idea:
+
+> In the previous post , we discussed range update and point query solutions using BIT. rangeUpdate(l, r, val) : We add 'val' to the element at index 'l'. We subtract 'val' from the element at index 'r+1'. getElement(index) [or getSum()]: We return sum of elements from 0 to index which can be quickly obtained using BIT. We can compute rangeSum() using getSum() queries. rangeSum(l, r) = getSum(r) - getSum(l-1) A Simple Solution is to use the solutions discussed in the previous post . The range update query is the same. Range sum query can be achieved by doing a get query for all elements in the range.
+
+Efficient Approach: To solve the problem follow the below idea:
+
+> We get range sum using prefix sums. How to make sure that the update is done in a way so that prefix sum can be done quickly? Consider a situation where prefix sum [0, k] (where 0 <= k < n) is needed after range update on the range [l, r]. Three cases arise as k can possibly lie in 3 regions. Case 1 : 0 < k < l The update query won’t affect sum query. Case 2 : l <= k <= r Consider an example:  Add 2 to range [2, 4], the resultant array would be: 0 0 2 2 2 If k = 3 The sum from [0, k] = 4 How to get this result? Simply add the val from l th index to k th index. Sum is incremented by "val*(k) - val*(l-1)" after the update query. Case 3 : k > r For this case, we need to add "val" from l th index to r th index. Sum is incremented by "val*r – val*(l-1)" due to an update query.
+
+### Observations:
+
+Case 1: is simple as the sum would remain the same as it was before the update.
+
+Case 2: Sum was incremented by val*k - val*(l-1). We can find "val", it is similar to finding the i th element in range update and point query article . So we maintain one BIT for Range Update and Point Queries, this BIT will be helpful in finding the value at k th index. Now val * k is computed, how to handle extra term val*(l-1)? In order to handle this extra term, we maintain another BIT (BIT2). Update val * (l-1) at l th index, so when the getSum query is performed on BIT2 will give the result as val*(l-1).
+
+Case 3: The sum in case 3 was incremented by "val*r - val *(l-1)", the value of this term can be obtained using BIT2. Instead of adding, we subtract "val*(l-1) - val*r" as we can get this value from BIT2 by adding val*(l-1) as we did in case 2 and subtracting val*r in every update operation.
+
+> Update Query Update(BITree1, l, val) Update(BITree1, r+1, -val) UpdateBIT2(BITree2, l, val*(l-1)) UpdateBIT2(BITree2, r+1, -val*r) Range Sum getSum(BITTree1, k) *k) - getSum(BITTree2, k)
+
+Follow the below steps to solve the problem:
+
+- Create the two binary index trees using the given function constructBITree()
+- To find the Sum in a given range call the function rangeSum() with parameters as the given range and binary indexed trees Call a function sum that will return a sum in the range [0, X] Return sum(R) - sum(L-1) Inside this function call the function getSum(), which will return the sum of the array from [0, X] Return getSum(Tree1, x) * x - getSum(tree2, x) Inside the getSum() function create an integer sum equal to zero and increase the index by 1 While the index is greater than zero increase the sum by Tree[index] Decrease index by (index & (-index)) to move the index to the parent node in the tree Return sum
+- Print the sum in the given range
+
+Below is the Implementation of the above approach:
+
+C++
+
+// C++ program to demonstrate Range Update
+// and Range Queries using BIT
+#include <bits/stdc++.h>
+using namespace std;
+
+// Returns sum of arr[0..index]. This function assumes
+// that the array is preprocessed and partial sums of
+// array elements are stored in BITree[]
+int getSum(int BITree[], int index)
+{
+    int sum = 0; // Initialize result
+
+    // index in BITree[] is 1 more than the index in arr[]
+    index = index + 1;
+
+    // Traverse ancestors of BITree[index]
+    while (index > 0) {
+        // Add current element of BITree to sum
+        sum += BITree[index];
+
+        // Move index to parent node in getSum View
+        index -= index & (-index);
+    }
+    return sum;
+}
+
+// Updates a node in Binary Index Tree (BITree) at given
+// index in BITree.  The given value 'val' is added to
+// BITree[i] and all of its ancestors in tree.
+void updateBIT(int BITree[], int n, int index, int val)
+{
+    // index in BITree[] is 1 more than the index in arr[]
+    index = index + 1;
+
+    // Traverse all ancestors and add 'val'
+    while (index <= n) {
+        // Add 'val' to current node of BI Tree
+        BITree[index] += val;
+
+        // Update index to that of parent in update View
+        index += index & (-index);
+    }
+}
+
+// Returns the sum of array from [0, x]
+int sum(int x, int BITTree1[], int BITTree2[])
+{
+    return (getSum(BITTree1, x) * x) - getSum(BITTree2, x);
+}
+
+void updateRange(int BITTree1[], int BITTree2[], int n,
+                 int val, int l, int r)
+{
+    // Update Both the Binary Index Trees
+    // As discussed in the article
+
+    // Update BIT1
+    updateBIT(BITTree1, n, l, val);
+    updateBIT(BITTree1, n, r + 1, -val);
+
+    // Update BIT2
+    updateBIT(BITTree2, n, l, val * (l - 1));
+    updateBIT(BITTree2, n, r + 1, -val * r);
+}
+
+int rangeSum(int l, int r, int BITTree1[], int BITTree2[])
+{
+    // Find sum from [0,r] then subtract sum
+    // from [0,l-1] in order to find sum from
+    // [l,r]
+    return sum(r, BITTree1, BITTree2)
+           - sum(l - 1, BITTree1, BITTree2);
+}
+
+int* constructBITree(int n)
+{
+    // Create and initialize BITree[] as 0
+    int* BITree = new int[n + 1];
+    for (int i = 1; i <= n; i++)
+        BITree[i] = 0;
+
+    return BITree;
+}
+
+// Driver code
+int main()
+{
+    int n = 5;
+
+    // Construct two BIT
+    int *BITTree1, *BITTree2;
+
+    // BIT1 to get element at any index
+    // in the array
+    BITTree1 = constructBITree(n);
+
+    // BIT 2 maintains the extra term
+    // which needs to be subtracted
+    BITTree2 = constructBITree(n);
+
+    // Add 5 to all the elements from [0,4]
+    int l = 0, r = 4, val = 5;
+    updateRange(BITTree1, BITTree2, n, val, l, r);
+
+    // Add 10 to all the elements from [2,4]
+    l = 2, r = 4, val = 10;
+    updateRange(BITTree1, BITTree2, n, val, l, r);
+
+    // Find sum of all the elements from
+    // [1,4]
+    l = 1, r = 4;
+    cout << "Sum of elements from [" << l << "," << r
+         << "] is ";
+    cout << rangeSum(l, r, BITTree1, BITTree2) << "\n";
+
+    return 0;
+}
+
+Java
+
+// Java program to demonstrate Range Update
+// and Range Queries using BIT
+import java.util.*;
+
+class GFG {
+
+    // Returns sum of arr[0..index]. This function assumes
+    // that the array is preprocessed and partial sums of
+    // array elements are stored in BITree[]
+    static int getSum(int BITree[], int index)
+    {
+        int sum = 0; // Initialize result
+
+        // index in BITree[] is 1 more than the index in
+        // arr[]
+        index = index + 1;
+
+        // Traverse ancestors of BITree[index]
+        while (index > 0) {
+            // Add current element of BITree to sum
+            sum += BITree[index];
+
+            // Move index to parent node in getSum View
+            index -= index & (-index);
+        }
+        return sum;
+    }
+
+    // Updates a node in Binary Index Tree (BITree) at given
+    // index in BITree. The given value 'val' is added to
+    // BITree[i] and all of its ancestors in tree.
+    static void updateBIT(int BITree[], int n, int index,
+                          int val)
+    {
+        // index in BITree[] is 1 more than the index in
+        // arr[]
+        index = index + 1;
+
+        // Traverse all ancestors and add 'val'
+        while (index <= n) {
+            // Add 'val' to current node of BI Tree
+            BITree[index] += val;
+
+            // Update index to that of parent in update View
+            index += index & (-index);
+        }
+    }
+
+    // Returns the sum of array from [0, x]
+    static int sum(int x, int BITTree1[], int BITTree2[])
+    {
+        return (getSum(BITTree1, x) * x)
+            - getSum(BITTree2, x);
+    }
+
+    static void updateRange(int BITTree1[], int BITTree2[],
+                            int n, int val, int l, int r)
+    {
+        // Update Both the Binary Index Trees
+        // As discussed in the article
+
+        // Update BIT1
+        updateBIT(BITTree1, n, l, val);
+        updateBIT(BITTree1, n, r + 1, -val);
+
+        // Update BIT2
+        updateBIT(BITTree2, n, l, val * (l - 1));
+        updateBIT(BITTree2, n, r + 1, -val * r);
+    }
+
+    static int rangeSum(int l, int r, int BITTree1[],
+                        int BITTree2[])
+    {
+        // Find sum from [0,r] then subtract sum
+        // from [0,l-1] in order to find sum from
+        // [l,r]
+        return sum(r, BITTree1, BITTree2)
+            - sum(l - 1, BITTree1, BITTree2);
+    }
+
+    static int[] constructBITree(int n)
+    {
+        // Create and initialize BITree[] as 0
+        int[] BITree = new int[n + 1];
+        for (int i = 1; i <= n; i++)
+            BITree[i] = 0;
+
+        return BITree;
+    }
+
+    // Driver Program to test above function
+    public static void main(String[] args)
+    {
+        int n = 5;
+
+        // Contwo BIT
+        int[] BITTree1;
+        int[] BITTree2;
+
+        // BIT1 to get element at any index
+        // in the array
+        BITTree1 = constructBITree(n);
+
+        // BIT 2 maintains the extra term
+        // which needs to be subtracted
+        BITTree2 = constructBITree(n);
+
+        // Add 5 to all the elements from [0,4]
+        int l = 0, r = 4, val = 5;
+        updateRange(BITTree1, BITTree2, n, val, l, r);
+
+        // Add 10 to all the elements from [2,4]
+        l = 2;
+        r = 4;
+        val = 10;
+        updateRange(BITTree1, BITTree2, n, val, l, r);
+
+        // Find sum of all the elements from
+        // [1,4]
+        l = 1;
+        r = 4;
+        System.out.print("Sum of elements from [" + l + ","
+                         + r + "] is ");
+        System.out.print(rangeSum(l, r, BITTree1, BITTree2)
+                         + "\n");
+    }
+}
+
+// This code is contributed by 29AjayKumar
+
+Python3
+
+# Python3 program to demonstrate Range Update
+# and Range Queries using BIT
+
+# Returns sum of arr[0..index]. This function assumes
+# that the array is preprocessed and partial sums of
+# array elements are stored in BITree[]
+
+def getSum(BITree: list, index: int) -> int:
+    summ = 0  # Initialize result
+
+    # index in BITree[] is 1 more than the index in arr[]
+    index = index + 1
+
+    # Traverse ancestors of BITree[index]
+    while index > 0:
+
+        # Add current element of BITree to sum
+        summ += BITree[index]
+
+        # Move index to parent node in getSum View
+        index -= index & (-index)
+    return summ
+
+# Updates a node in Binary Index Tree (BITree) at given
+# index in BITree. The given value 'val' is added to
+# BITree[i] and all of its ancestors in tree.
+
+def updateBit(BITTree: list, n: int, index: int, val: int) -> None:
+
+    # index in BITree[] is 1 more than the index in arr[]
+    index = index + 1
+
+    # Traverse all ancestors and add 'val'
+    while index <= n:
+
+        # Add 'val' to current node of BI Tree
+        BITTree[index] += val
+
+        # Update index to that of parent in update View
+        index += index & (-index)
+
+# Returns the sum of array from [0, x]
+def summation(x: int, BITTree1: list, BITTree2: list) -> int:
+    return (getSum(BITTree1, x) * x) - getSum(BITTree2, x)
+
+def updateRange(BITTree1: list, BITTree2: list, n: int, val: int, l: int,
+                r: int) -> None:
+
+    # Update Both the Binary Index Trees
+    # As discussed in the article
+
+    # Update BIT1
+    updateBit(BITTree1, n, l, val)
+    updateBit(BITTree1, n, r + 1, -val)
+
+    # Update BIT2
+    updateBit(BITTree2, n, l, val * (l - 1))
+    updateBit(BITTree2, n, r + 1, -val * r)
+
+def rangeSum(l: int, r: int, BITTree1: list, BITTree2: list) -> int:
+
+    # Find sum from [0,r] then subtract sum
+    # from [0,l-1] in order to find sum from
+    # [l,r]
+    return summation(r, BITTree1, BITTree2) - summation(
+        l - 1, BITTree1, BITTree2)
+
+# Driver Code
+if __name__ == "__main__":
+    n = 5
+
+    # BIT1 to get element at any index
+    # in the array
+    BITTree1 = [0] * (n + 1)
+
+    # BIT 2 maintains the extra term
+    # which needs to be subtracted
+    BITTree2 = [0] * (n + 1)
+
+    # Add 5 to all the elements from [0,4]
+    l = 0
+    r = 4
+    val = 5
+    updateRange(BITTree1, BITTree2, n, val, l, r)
+
+    # Add 10 to all the elements from [2,4]
+    l = 2
+    r = 4
+    val = 10
+    updateRange(BITTree1, BITTree2, n, val, l, r)
+
+    # Find sum of all the elements from
+    # [1,4]
+    l = 1
+    r = 4
+    print("Sum of elements from [%d,%d] is %d" %
+          (l, r, rangeSum(l, r, BITTree1, BITTree2)))
+
+# This code is contributed by
+# sanjeev2552
+
+C#
+
+// C# program to demonstrate Range Update
+// and Range Queries using BIT
+using System;
+
+class GFG {
+
+    // Returns sum of arr[0..index]. This function assumes
+    // that the array is preprocessed and partial sums of
+    // array elements are stored in BITree[]
+    static int getSum(int[] BITree, int index)
+    {
+        int sum = 0; // Initialize result
+
+        // index in BITree[] is 1 more than
+        // the index in []arr
+        index = index + 1;
+
+        // Traverse ancestors of BITree[index]
+        while (index > 0) {
+            // Add current element of BITree to sum
+            sum += BITree[index];
+
+            // Move index to parent node in getSum View
+            index -= index & (-index);
+        }
+        return sum;
+    }
+
+    // Updates a node in Binary Index Tree (BITree) at given
+    // index in BITree. The given value 'val' is added to
+    // BITree[i] and all of its ancestors in tree.
+    static void updateBIT(int[] BITree, int n, int index,
+                          int val)
+    {
+        // index in BITree[] is 1 more than
+        // the index in []arr
+        index = index + 1;
+
+        // Traverse all ancestors and add 'val'
+        while (index <= n) {
+            // Add 'val' to current node of BI Tree
+            BITree[index] += val;
+
+            // Update index to that of
+            // parent in update View
+            index += index & (-index);
+        }
+    }
+
+    // Returns the sum of array from [0, x]
+    static int sum(int x, int[] BITTree1, int[] BITTree2)
+    {
+        return (getSum(BITTree1, x) * x)
+            - getSum(BITTree2, x);
+    }
+
+    static void updateRange(int[] BITTree1, int[] BITTree2,
+                            int n, int val, int l, int r)
+    {
+        // Update Both the Binary Index Trees
+        // As discussed in the article
+
+        // Update BIT1
+        updateBIT(BITTree1, n, l, val);
+        updateBIT(BITTree1, n, r + 1, -val);
+
+        // Update BIT2
+        updateBIT(BITTree2, n, l, val * (l - 1));
+        updateBIT(BITTree2, n, r + 1, -val * r);
+    }
+
+    static int rangeSum(int l, int r, int[] BITTree1,
+                        int[] BITTree2)
+    {
+        // Find sum from [0,r] then subtract sum
+        // from [0,l-1] in order to find sum from
+        // [l,r]
+        return sum(r, BITTree1, BITTree2)
+            - sum(l - 1, BITTree1, BITTree2);
+    }
+
+    static int[] constructBITree(int n)
+    {
+        // Create and initialize BITree[] as 0
+        int[] BITree = new int[n + 1];
+        for (int i = 1; i <= n; i++)
+            BITree[i] = 0;
+
+        return BITree;
+    }
+
+    // Driver Code
+    public static void Main(String[] args)
+    {
+        int n = 5;
+
+        // Contwo BIT
+        int[] BITTree1;
+        int[] BITTree2;
+
+        // BIT1 to get element at any index
+        // in the array
+        BITTree1 = constructBITree(n);
+
+        // BIT 2 maintains the extra term
+        // which needs to be subtracted
+        BITTree2 = constructBITree(n);
+
+        // Add 5 to all the elements from [0,4]
+        int l = 0, r = 4, val = 5;
+        updateRange(BITTree1, BITTree2, n, val, l, r);
+
+        // Add 10 to all the elements from [2,4]
+        l = 2;
+        r = 4;
+        val = 10;
+        updateRange(BITTree1, BITTree2, n, val, l, r);
+
+        // Find sum of all the elements from
+        // [1,4]
+        l = 1;
+        r = 4;
+        Console.Write("Sum of elements from [" + l + "," + r
+                      + "] is ");
+        Console.Write(rangeSum(l, r, BITTree1, BITTree2)
+                      + "\n");
+    }
+}
+
+// This code is contributed by 29AjayKumar
+
+JavaScript
+
+<script>
+
+// JavaScript program to demonstrate Range Update
+// and Range Queries using BIT
+
+// Returns sum of arr[0..index]. This function assumes
+// that the array is preprocessed and partial sums of
+// array elements are stored in BITree[]
+function getSum(BITree,index)
+{
+    let sum = 0; // Initialize result
+
+    // index in BITree[] is 1 more than the index in arr[]
+    index = index + 1;
+
+    // Traverse ancestors of BITree[index]
+    while (index > 0)
+    {
+        // Add current element of BITree to sum
+        sum += BITree[index];
+
+        // Move index to parent node in getSum View
+        index -= index & (-index);
+    }
+    return sum;
+}
+
+// Updates a node in Binary Index Tree (BITree) at given
+// index in BITree. The given value 'val' is added to
+// BITree[i] and all of its ancestors in tree.
+function updateBIT(BITree,n,index,val)
+{
+    // index in BITree[] is 1 more than the index in arr[]
+    index = index + 1;
+
+    // Traverse all ancestors and add 'val'
+    while (index <= n)
+    {
+        // Add 'val' to current node of BI Tree
+        BITree[index] += val;
+
+        // Update index to that of parent in update View
+        index += index & (-index);
+    }
+}
+
+// Returns the sum of array from [0, x]
+function sum(x,BITTree1,BITTree2)
+{
+    return (getSum(BITTree1, x) * x) - getSum(BITTree2, x);
+}
+
+function updateRange(BITTree1,BITTree2,n,val,l,r)
+{
+    // Update Both the Binary Index Trees
+    // As discussed in the article
+
+    // Update BIT1
+    updateBIT(BITTree1, n, l, val);
+    updateBIT(BITTree1, n, r + 1, -val);
+
+    // Update BIT2
+    updateBIT(BITTree2, n, l, val * (l - 1));
+    updateBIT(BITTree2, n, r + 1, -val * r);
+}
+
+function rangeSum(l,r,BITTree1,BITTree2)
+{
+    // Find sum from [0,r] then subtract sum
+    // from [0,l-1] in order to find sum from
+    // [l,r]
+    return sum(r, BITTree1, BITTree2) -
+        sum(l - 1, BITTree1, BITTree2);
+}
+
+function constructBITree(n)
+{
+    // Create and initialize BITree[] as 0
+    let BITree = new Array(n + 1);
+    for (let i = 1; i <= n; i++)
+        BITree[i] = 0;
+
+    return BITree;
+}
+
+// Driver Program to test above function
+let n = 5;
+
+// Contwo BIT
+let BITTree1;
+let BITTree2;
+
+// BIT1 to get element at any index
+// in the array
+BITTree1 = constructBITree(n);
+
+// BIT 2 maintains the extra term
+// which needs to be subtracted
+BITTree2 = constructBITree(n);
+
+// Add 5 to all the elements from [0,4]
+let l = 0 , r = 4 , val = 5;
+updateRange(BITTree1, BITTree2, n, val, l, r);
+
+// Add 10 to all the elements from [2,4]
+l = 2 ; r = 4 ; val = 10;
+updateRange(BITTree1, BITTree2, n, val, l, r);
+
+// Find sum of all the elements from
+// [1,4]
+l = 1 ; r = 4;
+document.write("Sum of elements from [" + l
+                 + "," + r+ "] is ");
+document.write(rangeSum(l, r, BITTree1, BITTree2)+ "<br>");
+
+// This code is contributed by rag2127
+
+</script>
+
+Output
+
+Sum of elements from [1,4] is 50
+
+Time Complexity : O(q * log(N)) where q is the number of queries. Auxiliary Space: O(N)

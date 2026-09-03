@@ -1,0 +1,785 @@
+Source: https://www.geeksforgeeks.org/dsa/snake-ladder-problem-2/
+Title: Snake and Ladder Problem
+Extractor: 2
+
+Given an integer n representing an n × n Snake and Ladder board with cells numbered from 1 to n 2 , find the minimum number of dice throws required to reach cell n 2 starting from cell 1. Two arrays of even length are provided:
+
+- lad[] , where each pair (lad[2*i], lad[2*i + 1]) represents the start and end cells of a ladder.
+- sn[] , where each pair (sn[2*i], sn[2*i + 1])represents the start and end cells of a snake.
+
+Whenever a player lands on the starting cell of a snake or ladder, they must immediately move to its corresponding destination cell.
+
+In a single dice throw, the player can move forward by any number of cells from 1 to 6. If it is not possible to reach the last cell, return -1.
+
+Example:
+
+> Input: n = 6, lad[] = [3, 22, 5, 8, 11, 35, 20, 32], sn[] = [17, 4, 19, 7, 34, 1, 21, 9] Output: 3 Explanation: Move from 1 to 5 and take the ladder to 8. Then move to 11 and take the ladder to 35. Finally, move from 35 to 36. Therefore, the minimum number of dice throws required is 3. Input: n = 3, lad[] = [2, 8], sn[] = [7, 3] Output: 2 Explanation: Move from 1 to 2 and take the ladder to 8. Then move from 8 to 9, which is the destination. Therefore, the minimum number of dice throws required is 2.
+
+Table of Content
+
+- [Naive Approach] Using DFS with Pruning - O(6^(n^2)) Time and O(n^2) Space
+- [Expected Approach] Using Breadth First Search (BFS) - O(n^2) Time and O(n^2) Space
+
+### [Naive Approach] Using DFS with Pruning - O(6^(n^2)) Time and O(n^2) Space
+
+> The idea is to use DFS to try all possible dice outcomes from 1 to 6 at each cell. If a snake or ladder is encountered, we immediately move to its destination. To reduce unnecessary exploration, we keep track of the minimum throws needed to reach each cell and prune paths that cannot lead to a better answer.
+
+- Store all snakes and ladders in a move[] array.
+- Start DFS from cell 1 with 0 throws.
+- Skip paths that are already worse than the current best answer.
+- Skip a cell if it was reached earlier with fewer throws.
+- Try all possible dice outcomes from 1 to 6.
+- Apply any snake or ladder jump and continue the DFS.
+- Update the answer when the destination is reached.
+- Return the minimum number of throws found.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int res;
+
+// DFS with pruning
+void dfs(int currPos, int movesMade, vector<int> &move,
+         unordered_map<int, int> &best, int m) {
+
+    // Prune if already worse than best answer
+    if (movesMade >= res) return;
+
+    // Prune if already visited in better or equal way
+    if (best.count(currPos) && best[currPos] <= movesMade)
+        return;
+
+    best[currPos] = movesMade;
+
+    // Destination reached
+    if (currPos == m) {
+        res = min(res, movesMade);
+        return;
+    }
+
+    // Try all dice outcomes
+    for (int dice = 1; dice <= 6 && currPos + dice <= m; dice++) {
+
+        int nxt = currPos + dice;
+
+        // Apply snake or ladder
+        if (move[nxt] != -1)
+            nxt = move[nxt];
+
+        dfs(nxt, movesMade + 1, move, best, m);
+    }
+}
+
+// Function to compute minimum throws
+int minThrows(int n, vector<int> &lad, vector<int> &sn) {
+
+    int m = n * n;
+
+    vector<int> move(m + 1, -1);
+
+    // Store ladders
+    for (int i = 0; i + 1 < (int)lad.size(); i += 2)
+        move[lad[i]] = lad[i + 1];
+
+    // Store snakes
+    for (int i = 0; i + 1 < (int)sn.size(); i += 2)
+        move[sn[i]] = sn[i + 1];
+
+    unordered_map<int, int> best;
+
+    res = INT_MAX;
+
+    dfs(1, 0, move, best, m);
+
+    return (res == INT_MAX) ? -1 : res;
+}
+
+int main() {
+
+    int n = 6;
+
+    vector<int> lad = {
+        3, 22,
+        5, 8,
+        11, 35,
+        20, 32
+    };
+
+    vector<int> sn = {
+        17, 4,
+        19, 7,
+        34, 1,
+        21, 9
+    };
+
+    cout << minThrows(n, lad, sn) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+class GFG {
+
+    static int res;
+
+    // DFS with pruning
+    static void dfs(int currPos, int movesMade,
+                    int[] move, int[] best, int m) {
+
+        // Prune if already worse than best answer
+        if (movesMade >= res)
+            return;
+
+        // Prune if already reached this cell in fewer throws
+        if (movesMade >= best[currPos])
+            return;
+
+        best[currPos] = movesMade;
+
+        // Destination reached
+        if (currPos == m) {
+            res = Math.min(res, movesMade);
+            return;
+        }
+
+        // Try all dice outcomes
+        for (int dice = 1;
+             dice <= 6 && currPos + dice <= m;
+             dice++) {
+
+            int nxt = currPos + dice;
+
+            // Apply snake or ladder
+            if (move[nxt] != -1)
+                nxt = move[nxt];
+
+            dfs(nxt, movesMade + 1, move, best, m);
+        }
+    }
+
+    // Function to compute minimum throws
+    static int minThrows(int n, int[] lad, int[] sn) {
+
+        int m = n * n;
+
+        int[] move = new int[m + 1];
+        Arrays.fill(move, -1);
+
+        // Store ladders
+        for (int i = 0; i + 1 < lad.length; i += 2)
+            move[lad[i]] = lad[i + 1];
+
+        // Store snakes
+        for (int i = 0; i + 1 < sn.length; i += 2)
+            move[sn[i]] = sn[i + 1];
+
+        int[] best = new int[m + 1];
+        Arrays.fill(best, Integer.MAX_VALUE);
+
+        res = Integer.MAX_VALUE;
+
+        dfs(1, 0, move, best, m);
+
+        return (res == Integer.MAX_VALUE) ? -1 : res;
+    }
+
+    public static void main(String[] args) {
+
+        int n = 6;
+
+        int[] lad = {3, 22, 5, 8, 11, 35, 20, 32};
+        int[] sn = {17, 4, 19, 7, 34, 1, 21, 9};
+
+        System.out.println(minThrows(n, lad, sn));
+    }
+}
+
+Python
+
+res = float('inf')
+
+# DFS with pruning
+def dfs(currPos, movesMade, move, best, m):
+
+    global res
+
+    # Prune if already worse than best answer
+    if movesMade >= res:
+        return
+
+    # Prune if already visited in better or equal way
+    if currPos in best and best[currPos] <= movesMade:
+        return
+
+    best[currPos] = movesMade
+
+    # Destination reached
+    if currPos == m:
+        res = min(res, movesMade)
+        return
+
+    # Try all dice outcomes
+    for dice in range(1, 7):
+
+        if currPos + dice > m:
+            continue
+
+        nxt = currPos + dice
+
+        # Apply snake or ladder
+        if move[nxt] != -1:
+            nxt = move[nxt]
+
+        dfs(nxt, movesMade + 1, move, best, m)
+
+# Function to compute minimum throws
+def minThrows(n, lad, sn):
+
+    global res
+
+    m = n * n
+
+    move = [-1] * (m + 1)
+
+    # Store ladders
+    for i in range(0, len(lad), 2):
+        move[lad[i]] = lad[i + 1]
+
+    # Store snakes
+    for i in range(0, len(sn), 2):
+        move[sn[i]] = sn[i + 1]
+
+    best = {}
+
+    res = float('inf')
+
+    dfs(1, 0, move, best, m)
+
+    return -1 if res == float('inf') else res
+
+if __name__ == "__main__":
+
+    n = 6
+
+    lad = [3,22,5,8,11,35,20,32]
+    sn = [17,4,19,7,34,1,21,9]
+
+    print(minThrows(n, lad, sn))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+    static int res;
+
+    // DFS with pruning
+    static void dfs(int currPos, int movesMade, int[] move,
+                    Dictionary<int, int> best, int m)
+    {
+        // Prune if already worse than best answer
+        if (movesMade >= res) return;
+
+        // Prune if already visited in better or equal way
+        if (best.ContainsKey(currPos) && best[currPos] <= movesMade)
+            return;
+
+        best[currPos] = movesMade;
+
+        // Destination reached
+        if (currPos == m)
+        {
+            res = Math.Min(res, movesMade);
+            return;
+        }
+
+        // Try all dice outcomes
+        for (int dice = 1; dice <= 6 && currPos + dice <= m; dice++)
+        {
+            int nxt = currPos + dice;
+
+            // Apply snake or ladder
+            if (move[nxt] != -1)
+                nxt = move[nxt];
+
+            dfs(nxt, movesMade + 1, move, best, m);
+        }
+    }
+
+    // Function to compute minimum throws
+    public static int minThrows(int n, int[] lad, int[] sn)
+    {
+        int m = n * n;
+
+        int[] move = new int[m + 1];
+        for (int i = 0; i <= m; i++) move[i] = -1;
+
+        // Store ladders
+        for (int i = 0; i + 1 < lad.Length; i += 2)
+            move[lad[i]] = lad[i + 1];
+
+        // Store snakes
+        for (int i = 0; i + 1 < sn.Length; i += 2)
+            move[sn[i]] = sn[i + 1];
+
+        Dictionary<int, int> best = new Dictionary<int, int>();
+
+        res = int.MaxValue;
+
+        dfs(1, 0, move, best, m);
+
+        return (res == int.MaxValue) ? -1 : res;
+    }
+
+    static void Main()
+    {
+        int n = 6;
+
+        int[] lad = { 3, 22, 5, 8, 11, 35, 20, 32 };
+        int[] sn = { 17, 4, 19, 7, 34, 1, 21, 9 };
+
+        Console.WriteLine(minThrows(n, lad, sn));
+    }
+}
+
+JavaScript
+
+// DFS with pruning
+function dfs(currPos, movesMade, move, best, m, resObj) {
+
+    // Prune if already worse than best answer
+    if (movesMade >= resObj.res) return;
+
+    // Prune if already visited in better or equal way
+    if (best.has(currPos) && best.get(currPos) <= movesMade)
+        return;
+
+    best.set(currPos, movesMade);
+
+    // Destination reached
+    if (currPos === m) {
+        resObj.res = Math.min(resObj.res, movesMade);
+        return;
+    }
+
+    // Try all dice outcomes
+    for (let dice = 1; dice <= 6 && currPos + dice <= m; dice++) {
+
+        let nxt = currPos + dice;
+
+        // Apply snake or ladder
+        if (move[nxt] !== -1)
+            nxt = move[nxt];
+
+        dfs(nxt, movesMade + 1, move, best, m, resObj);
+    }
+}
+
+// Function to compute minimum throws
+function minThrows(n, lad, sn) {
+
+    let m = n * n;
+
+    let move = new Array(m + 1).fill(-1);
+
+    // Store ladders
+    for (let i = 0; i + 1 < lad.length; i += 2)
+        move[lad[i]] = lad[i + 1];
+
+    // Store snakes
+    for (let i = 0; i + 1 < sn.length; i += 2)
+        move[sn[i]] = sn[i + 1];
+
+    let best = new Map();
+
+    // replace global res with object wrapper
+    let resObj = { res: Infinity };
+
+    dfs(1, 0, move, best, m, resObj);
+
+    return (resObj.res === Infinity) ? -1 : resObj.res;
+}
+
+//  Driver code
+
+    let n = 6;
+
+    let lad = [3, 22, 5, 8, 11, 35, 20, 32];
+    let sn = [17, 4, 19, 7, 34, 1, 21, 9];
+
+    console.log(minThrows(n, lad, sn));
+
+Output
+
+3
+
+### [Expected Approach] Using Breadth First Search (BFS) - O(n^2) Time and O(n^2) Space
+
+> The idea is to explore the board level by level using Breadth First Search (BFS) . From each cell, we try all possible dice outcomes from 1 to 6. If a move lands on a snake or ladder, we immediately jump to its destination cell. Since every dice throw has the same cost, the first time BFS reaches the last cell, it guarantees the minimum number of dice throws.
+
+- Store all snakes and ladders in a moves[] array.
+- Start BFS from cell 1.
+- For each cell, try all dice outcomes from 1 to 6.
+- Apply any snake or ladder jump to the next cell.
+- Add unvisited cells to the queue.
+- Continue until the destination cell is reached.
+- Return the minimum number of dice throws.
+
+Let us understand with an example: Input: n = 6, lad[] = [3, 22, 5, 8, 11, 35, 20, 32], sn[] = [17, 4, 19, 7, 34, 1, 21, 9]
+
+- The board has 6 × 6 = 36 positions, and BFS starts from position 1 with 0 throws.
+- The ladders are 3 -> 22, 5 -> 8, 11 -> 35, and 20 -> 32, while the snakes are 17 -> 4, 19 -> 7, 34 -> 1, and 21 -> 9.
+- From position 1, throwing 4 reaches position 5, and the ladder moves the player to position 8.
+- From position 8, throwing 3 reaches position 11, and the ladder moves the player to position 35.
+- From position 35, throwing 1 reaches the destination position 36.
+- Thus, one optimal path is 1 -> 5 -> 8 -> 11 -> 35 -> 36.
+- BFS explores the board level by level, so reaching position 36 for the first time guarantees the minimum number of throws.
+- Therefore, the minimum number of throws required is 3, so the output is 3.
+
+C++
+
+#include <iostream>
+#include <queue>
+#include <vector>
+using namespace std;
+
+int minThrows(int n, vector<int> &lad, vector<int> &sn)
+{
+    vector<int> moves(n * n + 1, -1);
+    vector<bool> vis(n * n + 1, false);
+
+    // Store all snakes and ladders.
+    for (int i = 0; i < (int)lad.size(); i += 2)
+    {
+        moves[lad[i]] = lad[i + 1];
+    }
+    for (int i = 0; i < (int)sn.size(); i += 2)
+    {
+        moves[sn[i]] = sn[i + 1];
+    }
+
+    queue<pair<int, int>> q;
+    q.push({1, 0});
+    vis[1] = true;
+
+    pair<int, int> cur;
+
+    while (!q.empty())
+    {
+        cur = q.front();
+        q.pop();
+
+        int pos = cur.first;
+        int dist = cur.second;
+
+        if (pos == n * n)
+        {
+            return dist;
+        }
+
+        // Try all possible dice outcomes.
+        for (int nxt = pos + 1; nxt <= pos + 6 && nxt <= n * n; nxt++)
+        {
+            if (!vis[nxt])
+            {
+                vis[nxt] = true;
+
+                int dest = (moves[nxt] == -1) ? nxt : moves[nxt];
+                q.push({dest, dist + 1});
+            }
+        }
+    }
+
+    return -1;
+}
+
+int main()
+{
+
+    int n = 6;
+
+    vector<int> lad = {3, 22, 5, 8, 11, 35, 20, 32};
+
+    vector<int> sn = {17, 4, 19, 7, 34, 1, 21, 9};
+
+    cout << minThrows(n, lad, sn) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Queue;
+
+class GFG {
+
+    static int minThrows(int n, int[] lad, int[] sn) {
+
+        int[] moves = new int[n * n + 1];
+        Arrays.fill(moves, -1);
+
+        boolean[] vis = new boolean[n * n + 1];
+
+        // Store all snakes and ladders.
+        for (int i = 0; i < lad.length; i += 2) {
+            moves[lad[i]] = lad[i + 1];
+        }
+
+        for (int i = 0; i < sn.length; i += 2) {
+            moves[sn[i]] = sn[i + 1];
+        }
+
+        Queue<int[]> q = new LinkedList<>();
+        q.offer(new int[]{1, 0});
+        vis[1] = true;
+
+        int[] cur;
+
+        while (!q.isEmpty()) {
+
+            cur = q.poll();
+
+            int pos = cur[0];
+            int dist = cur[1];
+
+            if (pos == n * n) {
+                return dist;
+            }
+
+            // Try all possible dice outcomes.
+            for (int nxt = pos + 1;
+                 nxt <= pos + 6 && nxt <= n * n;
+                 nxt++) {
+
+                if (!vis[nxt]) {
+
+                    vis[nxt] = true;
+
+                    int dest =
+                        (moves[nxt] == -1) ? nxt : moves[nxt];
+
+                    q.offer(new int[]{dest, dist + 1});
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    public static void main(String[] args) {
+
+        int n = 6;
+
+        int[] lad = {3, 22, 5, 8, 11, 35, 20, 32};
+
+        int[] sn = {17, 4, 19, 7, 34, 1, 21, 9};
+
+        System.out.println(minThrows(n, lad, sn));
+    }
+}
+
+Python
+
+from collections import deque
+
+def minThrows(n, lad, sn):
+
+    moves = [-1] * (n * n + 1)
+    vis = [False] * (n * n + 1)
+
+    # Store all snakes and ladders.
+    for i in range(0, len(lad), 2):
+        moves[lad[i]] = lad[i + 1]
+
+    for i in range(0, len(sn), 2):
+        moves[sn[i]] = sn[i + 1]
+
+    q = deque()
+    q.append((1, 0))
+    vis[1] = True
+
+    while q:
+
+        cur = q.popleft()
+
+        pos = cur[0]
+        dist = cur[1]
+
+        if pos == n * n:
+            return dist
+
+        # Try all possible dice outcomes.
+        for nxt in range(pos + 1,
+                         min(pos + 6, n * n) + 1):
+
+            if not vis[nxt]:
+
+                vis[nxt] = True
+
+                dest = nxt if moves[nxt] == -1 else moves[nxt]
+
+                q.append((dest, dist + 1))
+
+    return -1
+
+if __name__ == "__main__":
+
+    n = 6
+
+    lad = [3, 22, 5, 8, 11, 35, 20, 32]
+
+    sn = [17, 4, 19, 7, 34, 1, 21, 9]
+
+    print(minThrows(n, lad, sn))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+    static int minThrows(int n, int[] lad, int[] sn)
+    {
+        int[] moves = new int[n * n + 1];
+        Array.Fill(moves, -1);
+
+        bool[] vis = new bool[n * n + 1];
+
+        // Store all snakes and ladders.
+        for (int i = 0; i < lad.Length; i += 2)
+        {
+            moves[lad[i]] = lad[i + 1];
+        }
+
+        for (int i = 0; i < sn.Length; i += 2)
+        {
+            moves[sn[i]] = sn[i + 1];
+        }
+
+        Queue<(int, int)> q = new Queue<(int, int)>();
+        q.Enqueue((1, 0));
+        vis[1] = true;
+
+        (int, int) cur;
+
+        while (q.Count > 0)
+        {
+            cur = q.Dequeue();
+
+            int pos = cur.Item1;
+            int dist = cur.Item2;
+
+            if (pos == n * n)
+            {
+                return dist;
+            }
+
+            // Try all possible dice outcomes.
+            for (int nxt = pos + 1;
+                 nxt <= pos + 6 && nxt <= n * n;
+                 nxt++)
+            {
+                if (!vis[nxt])
+                {
+                    vis[nxt] = true;
+
+                    int dest =
+                        (moves[nxt] == -1) ? nxt : moves[nxt];
+
+                    q.Enqueue((dest, dist + 1));
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    static void Main()
+    {
+        int n = 6;
+
+        int[] lad = {3, 22, 5, 8, 11, 35, 20, 32};
+
+        int[] sn = {17, 4, 19, 7, 34, 1, 21, 9};
+
+        Console.WriteLine(minThrows(n, lad, sn));
+    }
+}
+
+JavaScript
+
+function minThrows(n, lad, sn) {
+
+    let moves = new Array(n * n + 1).fill(-1);
+    let vis = new Array(n * n + 1).fill(false);
+
+    // Store all snakes and ladders.
+    for (let i = 0; i < lad.length; i += 2) {
+        moves[lad[i]] = lad[i + 1];
+    }
+
+    for (let i = 0; i < sn.length; i += 2) {
+        moves[sn[i]] = sn[i + 1];
+    }
+
+    let q = [];
+    q.push([1, 0]);
+    vis[1] = true;
+
+    while (q.length > 0) {
+
+        let cur = q.shift();
+
+        let pos = cur[0];
+        let dist = cur[1];
+
+        if (pos === n * n) {
+            return dist;
+        }
+
+        // Try all possible dice outcomes.
+        for (let nxt = pos + 1;
+             nxt <= pos + 6 && nxt <= n * n;
+             nxt++) {
+
+            if (!vis[nxt]) {
+
+                vis[nxt] = true;
+
+                let dest =
+                    (moves[nxt] === -1) ? nxt : moves[nxt];
+
+                q.push([dest, dist + 1]);
+            }
+        }
+    }
+
+    return -1;
+}
+
+function main() {
+
+    let n = 6;
+
+    let lad = [3, 22, 5, 8, 11, 35, 20, 32];
+
+    let sn = [17, 4, 19, 7, 34, 1, 21, 9];
+
+    console.log(minThrows(n, lad, sn));
+}
+
+main();
+
+Output
+
+3

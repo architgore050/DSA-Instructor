@@ -1,0 +1,473 @@
+Source: https://www.geeksforgeeks.org/dsa/find-number-of-employees-under-every-manager/
+Title: Find number of Employees Under every Manager
+Extractor: 2
+
+Given a 2d matrix of strings arr[][] of order n * 2 , where each array arr[i] contains two strings, where the first string arr[i][0] is the employee and arr[i][1] is his manager . The task is to find the count of the number of employees under each manager in the hierarchy and not just their direct reports.
+
+Note: Every employee reports to only one manager. And the CEO reports to himself . Print the result in sorted order based on employee name.
+
+Example:
+
+> Input: arr[][] = [[A, C], [B, C], [C, F], [D, E], [E, F], [F, F]] Output: [[A, 0], [B, 0], [C, 2], [D, 0], [E, 1], [F, 5]] Explanation: 'A' and 'B' are reporting to 'C', thus for 'C' the count is 2. And 'D' is reporting to 'E', thus for 'E' the count is 1. 'C' and 'E' reporting to 'F' . Thus count for 'F' is 5 ( 2 under 'C'+ 1 under 'E' + 'C' + 'E' )  . And no employees are reporting 'A', 'B', and 'D', so the count for them is 0.
+
+Approach:
+
+> The idea is to store all the employees working under the manager in a HashMap , and then find the count of employees under each manager, and at last sum them all to find the count of direct and indirect employees working under any manager. To do so, first create a HashMap to store the employees under every manager. Also, create a HashMap to store the results . Now start traversal from any of the employee, and perform DFS to find the count of all the employees. Find the sum of all the direct and indirect employees and store the sum in results. At last, store the results in an array in the pairs of employee and the count of employees working under him.
+
+C++
+
+// C++ program to find number of
+// employees under every manager
+#include <bits/stdc++.h>
+using namespace std;
+
+// Helper function to recursively count
+// the number of employees under a manager
+int findEmployees(unordered_map<string, vector<string>> &dataset,
+            unordered_map<string, int> &result, string mngr) {
+
+    // if the result is already calculated
+    if(result[mngr] != -1) {
+        return result[mngr];
+    }
+
+    // if the manager is not present in the dataset
+    if(dataset.find(mngr) == dataset.end()) {
+        result[mngr] = 0;
+        return 0;
+    }
+
+    // count the number of employees under the manager
+    int count = 0;
+    for(auto i:dataset[mngr]) {
+
+        if(result[i]!=-1)
+        count+= result[i];
+
+        else {
+        result[i]= findEmployees(dataset, result, i);
+        count+= result[i];
+        }
+    }
+    result[mngr] = count + dataset[mngr].size();
+    return result[mngr];
+}
+
+// Function to find the count of
+// employees under each manager
+vector<pair<string, int>> findCount(vector<vector<string>> arr) {
+
+    // to store the employees under each manager
+    unordered_map<string, vector<string>> dataset;
+
+    // to store the results
+    unordered_map<string, int> result;
+    for(auto i:arr) {
+        if(i[1] == i[0]) continue;
+        dataset[i[1]].push_back(i[0]);
+
+        // initialize the result with -1
+        result[i[0]] = -1;
+        result[i[1]] = -1;
+    }
+
+    for(auto i: result) {
+
+        // if the manager is not visited yet
+        if(i.second == -1) {
+            findEmployees(dataset, result, i.first);
+        }
+    }
+
+    vector<pair<string, int>> res;
+    for(auto i:result) {
+        res.push_back({i.first, i.second});
+    }
+
+    return res;
+}
+
+int main() {
+    vector<vector<string>> arr = {
+        {"A", "C"},
+        {"B", "C"},
+        {"C", "F"},
+        {"D", "E"},
+        {"E", "F"},
+        {"F", "F"}
+    };
+
+    vector<pair<string, int>> result = findCount(arr);
+
+    // sort the result
+    sort(result.begin(), result.end());
+    for(auto i:result) {
+        cout << i.first << ": " << i.second << endl;
+    }
+    return 0;
+}
+
+Java
+
+// Java program to find number of
+// employees under every manager
+import java.util.*;
+
+class GFG {
+
+    // Helper function to recursively count
+    // the number of employees under a manager
+    static int findEmployees(Map<String, List<String>> dataset,
+                    Map<String, Integer> result, String mngr) {
+
+        // if the result is already calculated
+        if(result.get(mngr) != -1) {
+            return result.get(mngr);
+        }
+
+        // if the manager is not present in the dataset
+        if(!dataset.containsKey(mngr)) {
+            result.put(mngr, 0);
+            return 0;
+        }
+
+        // count the number of employees under the manager
+        int count = 0;
+        for(String i: dataset.get(mngr)) {
+
+            if(result.get(i) != -1)
+                count += result.get(i);
+            else {
+                result.put(i, findEmployees(dataset, result, i));
+                count += result.get(i);
+            }
+        }
+        result.put(mngr, count + dataset.get(mngr).size());
+        return result.get(mngr);
+    }
+
+    // Function to find the count of
+    // employees under each manager
+    static List<Map.Entry<String, Integer>>
+                findCount(List<List<String>> arr) {
+
+        // to store the employees under each manager
+        Map<String, List<String>> dataset = new HashMap<>();
+
+        // to store the results
+        Map<String, Integer> result = new HashMap<>();
+        for(List<String> i: arr) {
+            if(i.get(1).equals(i.get(0))) continue;
+            dataset.putIfAbsent(i.get(1), new ArrayList<>());
+            dataset.get(i.get(1)).add(i.get(0));
+
+            // initialize the result with -1
+            result.put(i.get(0), -1);
+            result.put(i.get(1), -1);
+        }
+
+        for(Map.Entry<String, Integer> i: result.entrySet()) {
+
+            // if the manager is not visited yet
+            if(i.getValue() == -1) {
+                findEmployees(dataset, result, i.getKey());
+            }
+        }
+
+        List<Map.Entry<String, Integer>> res =
+                new ArrayList<>(result.entrySet());
+
+        // sort the result
+        res.sort(Map.Entry.comparingByKey());
+        return res;
+    }
+
+    public static void main(String[] args) {
+        List<List<String>> arr = Arrays.asList(
+            Arrays.asList("A", "C"),
+            Arrays.asList("B", "C"),
+            Arrays.asList("C", "F"),
+            Arrays.asList("D", "E"),
+            Arrays.asList("E", "F"),
+            Arrays.asList("F", "F")
+        );
+
+        List<Map.Entry<String, Integer>> result = findCount(arr);
+
+        for(Map.Entry<String, Integer> i: result) {
+            System.out.println(i.getKey() + ": " + i.getValue());
+        }
+    }
+}
+
+Python
+
+# Python program to find number of
+# employees under every manager
+
+# Helper function to recursively count
+# the number of employees under a manager
+def findEmployees(dataset, result, mngr):
+
+    # if the result is already calculated
+    if result[mngr] != -1:
+        return result[mngr]
+
+    # if the manager is not present in the dataset
+    if mngr not in dataset:
+        result[mngr] = 0
+        return 0
+
+    # count the number of employees under the manager
+    count = 0
+    for i in dataset[mngr]:
+        if result[i] != -1:
+            count += result[i]  # Use precomputed value
+        else:
+            result[i] = findEmployees(dataset, result, i)
+            count += result[i]
+
+    result[mngr] = count + len(dataset[mngr])
+    return result[mngr]
+
+# Function to find the count of
+# employees under each manager
+def findCount(arr):
+
+    # to store the employees under each manager
+    dataset = {}
+
+    # to store the results
+    result = {}
+    for i in arr:
+        if i[1] == i[0]:
+            continue
+        dataset.setdefault(i[1], []).append(i[0])
+
+        # initialize the result with -1
+        result[i[0]] = -1
+        result[i[1]] = -1
+
+    for i in result:
+
+        # if the manager is not visited yet
+        if result[i] == -1:
+            findEmployees(dataset, result, i)
+
+    res = list(result.items())
+
+    # sort the result
+    res.sort()
+    return res
+
+if __name__ == "__main__":
+    arr = [
+        ["A", "C"],
+        ["B", "C"],
+        ["C", "F"],
+        ["D", "E"],
+        ["E", "F"],
+        ["F", "F"]
+    ]
+
+    result = findCount(arr)
+
+    for i in result:
+        print(f"{i[0]}: {i[1]}")
+
+C#
+
+// C# program to find number of
+// employees under every manager
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class GFG {
+
+    // Helper function to recursively count
+    // the number of employees under a manager
+    static int findEmployees(Dictionary<string, List<string>> dataset,
+                            Dictionary<string, int> result, string mngr) {
+
+        // if the result is already calculated
+        if (result[mngr] != -1) {
+            return result[mngr];
+        }
+
+        // if the manager is not present in the dataset
+        if (!dataset.ContainsKey(mngr)) {
+            result[mngr] = 0;
+            return 0;
+        }
+
+        // count the number of employees under the manager
+        int count = 0;
+        foreach (string i in dataset[mngr]) {
+
+            if (result[i] != -1)
+                count += result[i]; // Use precomputed value
+            else {
+                result[i] = findEmployees(dataset, result, i);
+                count += result[i];
+            }
+        }
+
+        result[mngr] = count + dataset[mngr].Count;
+        return result[mngr];
+    }
+
+    // Function to find the count of
+    // employees under each manager
+    static List<KeyValuePair<string, int>> findCount(List<List<string>> arr) {
+
+        // to store the employees under each manager
+        Dictionary<string, List<string>> dataset = new Dictionary<string, List<string>>();
+
+        // to store the results
+        Dictionary<string, int> result = new Dictionary<string, int>();
+
+        foreach (List<string> i in arr) {
+            if (i[1] == i[0]) continue;
+
+            if (!dataset.ContainsKey(i[1])) {
+                dataset[i[1]] = new List<string>();
+            }
+            dataset[i[1]].Add(i[0]);
+
+            // initialize the result with -1
+            result[i[0]] = -1;
+            result[i[1]] = -1;
+        }
+
+        // Iterate over a copy of keys to avoid modification errors
+        List<string> keys = new List<string>(result.Keys);
+        foreach (string key in keys) {
+            if (result[key] == -1) {
+                findEmployees(dataset, result, key);
+            }
+        }
+
+        List<KeyValuePair<string, int>> res = result.ToList();
+
+        // sort the result
+        res.Sort((a, b) => a.Key.CompareTo(b.Key));
+
+        return res;
+    }
+
+    public static void Main() {
+        List<List<string>> arr = new List<List<string>>() {
+            new List<string> { "A", "C" },
+            new List<string> { "B", "C" },
+            new List<string> { "C", "F" },
+            new List<string> { "D", "E" },
+            new List<string> { "E", "F" },
+            new List<string> { "F", "F" }
+        };
+
+        List<KeyValuePair<string, int>> result = findCount(arr);
+
+        foreach (var i in result) {
+            Console.WriteLine(i.Key + ": " + i.Value);
+        }
+    }
+}
+
+JavaScript
+
+// JavaScript program to find number of
+// employees under every manager
+
+// Helper function to recursively count
+// the number of employees under a manager
+function findEmployees(dataset, result, mngr) {
+
+    // if the result is already calculated
+    if(result[mngr] !== -1) {
+        return result[mngr];
+    }
+
+    // if the manager is not present in the dataset
+    if(!(mngr in dataset)) {
+        result[mngr] = 0;
+        return 0;
+    }
+
+    // count the number of employees under the manager
+    let count = 0;
+    for(let i of dataset[mngr]) {
+
+        if (result[i] !== -1)
+            count += result[i];
+        else {
+            result[i] = findEmployees(dataset, result, i);
+            count += result[i];
+        }
+    }
+
+    result[mngr] = count + dataset[mngr].length;
+    return result[mngr];
+}
+
+// Function to find the count of
+// employees under each manager
+function findCount(arr) {
+
+    // to store the employees under each manager
+    let dataset = {};
+
+    // to store the results
+    let result = {};
+    for(let i of arr) {
+        if(i[1] === i[0]) continue;
+        if(!(i[1] in dataset)) dataset[i[1]] = [];
+        dataset[i[1]].push(i[0]);
+
+        // initialize the result with -1
+        result[i[0]] = -1;
+        result[i[1]] = -1;
+    }
+
+    for(let i in result) {
+
+        // if the manager is not visited yet
+        if(result[i] === -1) {
+            findEmployees(dataset, result, i);
+        }
+    }
+
+    let res = Object.entries(result);
+
+    // sort the result
+    res.sort((a, b) => a[0].localeCompare(b[0]));
+    return res;
+}
+
+(function() {
+    let arr = [
+        ["A", "C"],
+        ["B", "C"],
+        ["C", "F"],
+        ["D", "E"],
+        ["E", "F"],
+        ["F", "F"]
+    ];
+
+    let result = findCount(arr);
+
+    for(let i of result) {
+        console.log(i[0] + ": " + i[1]);
+    }
+})();
+
+Output
+
+A: 0
+B: 0
+C: 2
+D: 0
+E: 1
+F: 5
+
+Time Complexity: O(n), where n is the number of edges, which is equal to number of employees, as each employee has only one manager. Auxiliary Space: O(n), to store the manager - employee data and results.

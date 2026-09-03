@@ -1,0 +1,646 @@
+Source: https://www.geeksforgeeks.org/dsa/find-itinerary-from-a-given-list-of-tickets/
+Title: Find Itinerary from a given list of tickets
+Extractor: 2
+
+Given a list of tickets, find the itinerary in order using the given list.
+
+Note: It may be assumed that the input list of tickets is not cyclic and there is one ticket from every city except the final destination.
+
+Examples:
+
+> Input : "Chennai" -> "Bangalore" "Bombay" -> "Delhi" "Goa"    -> "Chennai" "Delhi"  -> "Goa" Output: Bombay->Delhi, Delhi->Goa, Goa->Chennai, Chennai->Bangalore Input : "New York" -> "Chicago" "Denver" -> "San Francisco" "Chicago" -> "Denver" "San Francisco" -> "Los Angeles" Output: New York -> Chicago, Chicago -> Denver, Denver -> San Francisco, San Francisco -> Los Angeles
+
+Table of Content
+
+- [Expected Approach - 1] - Using Topological Sorting - O(n) Time and O(n) Space
+- [Expected Approach - 2] - Using HashMap - O(n) Time and O(n) Space
+
+### [Expected Approach - 1] - Using Topological Sorting - O(n) Time and O(n) Space
+
+> The idea is to use Topological Sorting to sort the cities (nodes). Firstly, store the tickets in a HashMap to create a adjacency list, and create another HashMap to store the visited node. Also, to keep the order of cities, create a stack. Now start from any of the unvisited node and keep pushing the nodes one by one in the stack. At last push all the elements of stack in an array.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to perform DFS and topological sorting
+void topologicalSortUtil(string v, unordered_map<string, string> &mp, unordered_map<string, int> &visited, stack<string> &st) {
+    // Mark the current node as visited
+    visited[v] = 1;
+
+    // Recur for adjacent vertex
+    if (mp.find(v) != mp.end() && visited[mp[v]] == 0)
+        topologicalSortUtil(mp[v], mp, visited, st);
+
+    // Push current vertex onto stack
+    if (!v.empty())
+        st.push(v);
+}
+
+// Function to perform topological sort
+vector<string> topologicalSort(unordered_map<string, string> &mp) {
+    stack<string> st;
+    unordered_map<string, int> visited;
+
+    // Perform DFS for all vertices
+    for (auto &i : mp) {
+        if (visited[i.first] == 0)
+            topologicalSortUtil(i.first, mp, visited, st);
+    }
+
+    vector<string> ans;
+    while (!st.empty()) {
+        ans.push_back(st.top());
+        st.pop();
+    }
+
+    return ans;
+}
+
+// Function to find the itinerary order
+vector<vector<string>> findItinerary(vector<vector<string>> &arr) {
+    unordered_map<string, string> mp;
+
+    // Map the list of tickets
+    for (auto &i : arr) {
+        mp[i[0]] = i[1];
+    }
+
+    vector<string> res = topologicalSort(mp);
+    vector<vector<string>> ans;
+
+    // Create itinerary pairs
+    for (size_t i = 0; i < res.size() - 1; i++) {
+        ans.push_back({res[i], res[i + 1]});
+    }
+
+    return ans;
+}
+
+int main() {
+    vector<vector<string>> arr = {
+        {"Chennai", "Bangalore"},
+        {"Bombay", "Delhi"},
+        {"Goa", "Chennai"},
+        {"Delhi", "Goa"}
+    };
+
+    vector<vector<string>> res = findItinerary(arr);
+
+    for (auto &i : res) {
+        cout << i[0] << " -> " << i[1] << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    // Function to perform DFS and topological sorting
+    static void topologicalSortUtil(String v, Map<String, String> mp, Map<String, Integer> visited, Stack<String> st) {
+
+        // mark current node as visited
+        visited.put(v, 1);
+
+        // recur for adjacent vertex
+        if (mp.containsKey(v) && visited.getOrDefault(mp.get(v), 0) == 0)
+            topologicalSortUtil(mp.get(v), mp, visited, st);
+
+        // push current vertex in stack
+        if (!v.isEmpty())
+            st.push(v);
+    }
+
+    // Function to perform topological sort
+    static List<String> topologicalSort(Map<String, String> mp) {
+        int V = mp.size();
+
+        // stack to store the result
+        Stack<String> st = new Stack<>();
+        Map<String, Integer> visited = new HashMap<>();
+
+        // Call the recursive helper function to store
+        // Topological Sort starting from all vertices
+        for (String i : mp.keySet()) {
+            if (visited.getOrDefault(i, 0) == 0)
+                topologicalSortUtil(i, mp, visited, st);
+        }
+
+        List<String> ans = new ArrayList<>();
+
+        // append contents of stack
+        while (!st.isEmpty()) {
+            ans.add(st.pop());
+        }
+
+        return ans;
+    }
+
+    static List<List<String>> findItinerary(List<List<String>> arr) {
+
+        // map the list of tickets
+        Map<String, String> mp = new HashMap<>();
+        for (List<String> i : arr) {
+            mp.put(i.get(0), i.get(1));
+        }
+
+        List<String> res = topologicalSort(mp);
+
+        List<List<String>> ans = new ArrayList<>();
+        for (int i = 0; i < res.size() - 1; i++) {
+            ans.add(Arrays.asList(res.get(i), res.get(i + 1)));
+        }
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        List<List<String>> arr = Arrays.asList(
+            Arrays.asList("Chennai", "Bangalore"),
+            Arrays.asList("Bombay", "Delhi"),
+            Arrays.asList("Goa", "Chennai"),
+            Arrays.asList("Delhi", "Goa")
+        );
+
+        List<List<String>> res = findItinerary(arr);
+        for (List<String> i : res) {
+            System.out.println(i.get(0) + " -> " + i.get(1));
+        }
+    }
+}
+
+Python
+
+# Function to perform DFS and topological sorting
+def topologicalSortUtil(v, mp, visited, st):
+    # mark current node as visited
+    visited[v] = 1
+
+    # recur for adjacent vertex
+    if v in mp and visited.get(mp[v], 0) == 0:
+        topologicalSortUtil(mp[v], mp, visited, st)
+
+    # push current vertex in stack
+    if v:
+        st.append(v)
+
+# Function to perform topological sort
+def topologicalSort(mp):
+    V = len(mp)
+
+    # stack to store the result
+    st = []
+    visited = {}
+
+    # Call the recursive helper function to store
+    # Topological Sort starting from all vertices
+    for i in mp:
+        if visited.get(i, 0) == 0:
+            topologicalSortUtil(i, mp, visited, st)
+
+    return st[::-1]
+
+def findItinerary(arr):
+    # map the list of tickets
+    mp = {i[0]: i[1] for i in arr}
+
+    res = topologicalSort(mp)
+
+    ans = []
+    for i in range(len(res) - 1):
+        ans.append([res[i], res[i + 1]])
+    return ans
+
+if __name__ == "__main__":
+    arr = [
+        ["Chennai", "Bangalore"],
+        ["Bombay", "Delhi"],
+        ["Goa", "Chennai"],
+        ["Delhi", "Goa"]
+    ]
+
+    res = findItinerary(arr)
+    for i in res:
+        print(i[0] + " -> " + i[1])
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // Function to perform DFS and topological sorting
+    static void topologicalSortUtil(string v, Dictionary<string, string> mp, Dictionary<string, int> visited, Stack<string> st) {
+
+        // mark current node as visited
+        visited[v] = 1;
+
+        // recur for adjacent vertex
+        if (mp.ContainsKey(v) && visited.GetValueOrDefault(mp[v], 0) == 0)
+            topologicalSortUtil(mp[v], mp, visited, st);
+
+        // push current vertex in stack
+        if (!string.IsNullOrEmpty(v))
+            st.Push(v);
+    }
+
+    // Function to perform topological sort
+    static List<string> topologicalSort(Dictionary<string, string> mp) {
+
+        int V = mp.Count;
+
+        // stack to store the result
+        Stack<string> st = new Stack<string>();
+        Dictionary<string, int> visited = new Dictionary<string, int>();
+
+        // Call the recursive helper function to store
+        // Topological Sort starting from all vertices
+        foreach (var i in mp) {
+            if (!visited.ContainsKey(i.Key))
+                topologicalSortUtil(i.Key, mp, visited, st);
+        }
+
+        List<string> ans = new List<string>();
+
+        // append contents of stack
+        while (st.Count > 0) {
+            ans.Add(st.Pop());
+        }
+
+        return ans;
+    }
+
+    static List<List<string>> findItinerary(List<List<string>> arr) {
+
+        // map the list of tickets
+        Dictionary<string, string> mp = new Dictionary<string, string>();
+        foreach (var i in arr) {
+            mp[i[0]] = i[1];
+        }
+
+        List<string> res = topologicalSort(mp);
+
+        List<List<string>> ans = new List<List<string>>();
+        for (int i = 0; i < res.Count - 1; i++) {
+            ans.Add(new List<string> { res[i], res[i + 1] });
+        }
+        return ans;
+    }
+
+    static void Main() {
+        List<List<string>> arr = new List<List<string>> {
+            new List<string> { "Chennai", "Bangalore" },
+            new List<string> { "Bombay", "Delhi" },
+            new List<string> { "Goa", "Chennai" },
+            new List<string> { "Delhi", "Goa" }
+        };
+
+        List<List<string>> res = findItinerary(arr);
+        foreach (var i in res) {
+            Console.WriteLine(i[0] + " -> " + i[1]);
+        }
+    }
+}
+
+JavaScript
+
+// Function to perform DFS and topological sorting
+function topologicalSortUtil(v, mp, visited, st) {
+
+    // mark current node as visited
+    visited[v] = 1;
+
+    // recur for adjacent vertex
+    if (mp[v] && !visited[mp[v]])
+        topologicalSortUtil(mp[v], mp, visited, st);
+
+    // push current vertex in stack
+    if (v)
+        st.push(v);
+}
+
+// Function to perform topological sort
+function topologicalSort(mp) {
+
+    let V = Object.keys(mp).length;
+
+    // stack to store the result
+    let st = [];
+    let visited = {};
+
+    // Call the recursive helper function to store
+    // Topological Sort starting from all vertices
+    for (let i in mp) {
+        if (!visited[i])
+            topologicalSortUtil(i, mp, visited, st);
+    }
+
+    return st.reverse();
+}
+
+function findItinerary(arr) {
+
+    // map the list of tickets
+    let mp = {};
+    arr.forEach(i => mp[i[0]] = i[1]);
+
+    let res = topologicalSort(mp);
+
+    let ans = [];
+    for (let i = 0; i < res.length - 1; i++) {
+        ans.push([res[i], res[i + 1]]);
+    }
+    return ans;
+}
+
+function main() {
+    let arr = [
+        ["Chennai", "Bangalore"],
+        ["Bombay", "Delhi"],
+        ["Goa", "Chennai"],
+        ["Delhi", "Goa"]
+    ];
+
+    let res = findItinerary(arr);
+    res.forEach(i => console.log(i[0] + " -> " + i[1]));
+}
+
+main();
+
+Output
+
+Bombay -> Delhi
+Delhi -> Goa
+Goa -> Chennai
+Chennai -> Bangalore
+
+### [Expected Approach - 2] - Using HashMap - O(n) Time and O(n) Space
+
+> The idea is to store the list of tickets in a Hashmap and find the starting point of the itinerary. To do so, firstly create a HashMap of given tickets, and also create a reverse HashMap to store the order in reverse Now traverse the first HashMap, and search if key is present in reverse one, the node which is not present is a start point. Now from start point traverse through all other connected  nodes.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<vector<string>> findItinerary(
+            vector<vector<string>> &arr) {
+
+    map<string, string> dataSet;
+    for(auto i:arr) {
+        dataSet[i[0]] = i[1];
+    }
+
+    map<string, string> reverseMap;
+    for(auto i:arr) {
+        reverseMap[i[1]] = i[0];
+    }
+
+    // Find the starting point of itinerary
+    string start;
+
+    for(int i = 0; i<arr.size(); i++) {
+        if(reverseMap.count(arr[i][0]) == 0) {
+            start = arr[i][0];
+            break;
+        }
+    }
+
+    vector<vector<string>> ans;
+
+    // Once we have starting point, we simple need to go next,
+    // next of next using given hash ma
+    auto it = dataSet.find(start);
+    while (it != dataSet.end()) {
+        ans.push_back({it->first, it->second});
+        it = dataSet.find(it->second);
+    }
+
+    return ans;
+}
+
+int main() {
+    vector<vector<string>> arr =
+    {{"Chennai" ,"Bangalore"}, {"Bombay", "Delhi"},
+    {"Goa", "Chennai"}, {"Delhi", "Goa"}};
+
+    vector<vector<string>> res = findItinerary(arr);
+    for(auto i:res) {
+        cout<<i[0]<<" -> "<<i[1]<<endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    static List<List<String>> findItinerary(
+                            List<List<String>> arr) {
+
+        Map<String, String> dataSet = new HashMap<>();
+        for (List<String> i : arr) {
+            dataSet.put(i.get(0), i.get(1));
+        }
+
+        Map<String, String> reverseMap = new HashMap<>();
+        for (List<String> i : arr) {
+            reverseMap.put(i.get(1), i.get(0));
+        }
+
+        // Find the starting point of itinerary
+        String start = "";
+
+        for (int i = 0; i < arr.size(); i++) {
+            if (!reverseMap.containsKey(arr.get(i).get(0))) {
+                start = arr.get(i).get(0);
+                break;
+            }
+        }
+
+        List<List<String>> ans = new ArrayList<>();
+
+        // Once we have starting point, we simple need to go next,
+        // next of next using given hash map
+        String current = start;
+        while (dataSet.containsKey(current)) {
+            List<String> temp = new ArrayList<>();
+            temp.add(current);
+            temp.add(dataSet.get(current));
+            ans.add(temp);
+            current = dataSet.get(current);
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        List<List<String>> arr = Arrays.asList(
+                Arrays.asList("Chennai", "Bangalore"),
+                Arrays.asList("Bombay", "Delhi"),
+                Arrays.asList("Goa", "Chennai"),
+                Arrays.asList("Delhi", "Goa")
+        );
+
+        List<List<String>> res = findItinerary(arr);
+        for (List<String> i : res) {
+            System.out.println(i.get(0) + " -> " + i.get(1));
+        }
+    }
+}
+
+Python
+
+def findItinerary(arr):
+
+    dataSet = {}
+    for i in arr:
+        dataSet[i[0]] = i[1]
+
+    reverseMap = {}
+    for i in arr:
+        reverseMap[i[1]] = i[0]
+
+    # Find the starting point of itinerary
+    start = ""
+
+    for i in range(len(arr)):
+        if arr[i][0] not in reverseMap:
+            start = arr[i][0]
+            break
+
+    ans = []
+
+    # Once we have starting point, we simple need to go next,
+    # next of next using given hash map
+    while start in dataSet:
+        ans.append([start, dataSet[start]])
+        start = dataSet[start]
+
+    return ans
+
+if __name__ == "__main__":
+    arr = [["Chennai", "Bangalore"], ["Bombay", "Delhi"],
+           ["Goa", "Chennai"], ["Delhi", "Goa"]]
+
+    res = findItinerary(arr)
+    for i in res:
+        print(i[0], "->", i[1])
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    static List<List<string>> findItinerary(
+                        List<List<string>> arr) {
+
+        Dictionary<string, string> dataSet =
+                new Dictionary<string, string>();
+        foreach (var i in arr) {
+            dataSet[i[0]] = i[1];
+        }
+
+        Dictionary<string, string> reverseMap =
+                new Dictionary<string, string>();
+        foreach (var i in arr) {
+            reverseMap[i[1]] = i[0];
+        }
+
+        // Find the starting point of itinerary
+        string start = "";
+
+        for (int i = 0; i < arr.Count; i++) {
+            if (!reverseMap.ContainsKey(arr[i][0])) {
+                start = arr[i][0];
+                break;
+            }
+        }
+
+        List<List<string>> ans = new List<List<string>>();
+
+        // Once we have starting point, we simple need to go next,
+        // next of next using given hash map
+        while (dataSet.ContainsKey(start)) {
+            ans.Add(new List<string> { start, dataSet[start] });
+            start = dataSet[start];
+        }
+
+        return ans;
+    }
+
+    static void Main(string[] args) {
+        List<List<string>> arr = new List<List<string>> {
+            new List<string> { "Chennai", "Bangalore" },
+            new List<string> { "Bombay", "Delhi" },
+            new List<string> { "Goa", "Chennai" },
+            new List<string> { "Delhi", "Goa" }
+        };
+
+        List<List<string>> res = findItinerary(arr);
+        foreach (var i in res) {
+            Console.WriteLine(i[0] + " -> " + i[1]);
+        }
+    }
+}
+
+JavaScript
+
+function findItinerary(arr) {
+
+    let dataSet = new Map();
+    for (let i of arr) {
+        dataSet.set(i[0], i[1]);
+    }
+
+    let reverseMap = new Map();
+    for (let i of arr) {
+        reverseMap.set(i[1], i[0]);
+    }
+
+    // Find the starting point of itinerary
+    let start = "";
+
+    for (let i = 0; i < arr.length; i++) {
+        if (!reverseMap.has(arr[i][0])) {
+            start = arr[i][0];
+            break;
+        }
+    }
+
+    let ans = [];
+
+    // Once we have starting point, we simple need to go next,
+    // next of next using given hash map
+    while (dataSet.has(start)) {
+        ans.push([start, dataSet.get(start)]);
+        start = dataSet.get(start);
+    }
+
+    return ans;
+}
+
+let arr = [["Chennai", "Bangalore"], ["Bombay", "Delhi"],
+           ["Goa", "Chennai"], ["Delhi", "Goa"]];
+
+let res = findItinerary(arr);
+for (let i of res) {
+    console.log(i[0] + " -> " + i[1]);
+}
+
+Output
+
+Bombay -> Delhi
+Delhi -> Goa
+Goa -> Chennai
+Chennai -> Bangalore

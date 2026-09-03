@@ -1,0 +1,547 @@
+Source: https://www.geeksforgeeks.org/dsa/maximum-edges-can-added-dag-remains-dag/
+Title: Maximum edges that can be added to DAG so that it remains DAG
+Extractor: 2
+
+Given a directed acyclic graph (DAG) represented as an adjacency list adj[][], where adj[u] contains all nodes v such that there is a directed edge from u to v, find the maximum number of additional edges that can be added without creating any cycles.
+
+Note: The resulting graph should remain a DAG, meaning that adding any further edge would introduce a cycle.
+
+Examples:
+
+> Input: adj[][] = [[1], [2], []] Output: 1 Explanation: The given DAG allows one more edge, 0 -> 2, which keeps the structure acyclic. Adding anything else would create a cycle. Input: adj[][] = [[1, 2], [2], [3], []] Output: 2 Explanation: Two additional edges (0 -> 3, 1 -> 3) can be added without forming cycles.
+
+Table of Content
+
+- [Expected Approach] Using Topological Sort
+- [Optimized Approach] Using Formula - O(1) Time and O(1) Space
+
+### [Expected Approach] Using Topological Sort
+
+The idea is to first find a topological order of the graph because this order tells us which nodes must come before others. In a DAG, a node can only have outgoing edges to nodes that appear later in the topological order.
+
+> Once we have the topological order, we can safely add an edge from a node u to a node v if v comes after u in the order and there is no existing edge between them. This ensures that no cycles are introduced, because edges are always going “forward” in the topological order.
+
+By checking all such forward pairs (u, v) and counting the ones not already connected, we can determine the maximum number of edges that can be added without creating cycles.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <queue>
+
+using namespace std;
+
+// Function to perform topological sort
+void topoSort(vector<vector<int>> &adj, vector<int> &topo) {
+    int V = adj.size();
+    vector<int> indegree(V, 0);
+
+    // Calculate in-degree of all vertices
+    for (int u = 0; u < V; u++) {
+        for (int v : adj[u]) {
+            indegree[v]++;
+        }
+    }
+
+    queue<int> q;
+
+    // Push all vertices with in-degree 0
+    for (int i = 0; i < V; i++) {
+        if (indegree[i] == 0) {
+            q.push(i);
+        }
+    }
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        topo.push_back(u);
+
+        for (int v : adj[u]) {
+            indegree[v]--;
+            if (indegree[v] == 0) {
+                q.push(v);
+            }
+        }
+    }
+}
+
+// Function to return maximum number of additional edges in DAG
+int maxEdgesToAdd(vector<vector<int>> &adj) {
+    int V = adj.size();
+    vector<vector<bool>> exists(V, vector<bool>(V, false));
+
+    // Build existence map from adjacency list
+    for (int u = 0; u < V; u++) {
+        for (int v : adj[u]) {
+            exists[u][v] = true;
+        }
+    }
+
+    vector<int> topo;
+    topoSort(adj, topo);
+
+    int count = 0;
+
+    // Count forward edges that can be added without creating cycles
+    for (int i = 0; i < V; i++) {
+        for (int j = i + 1; j < V; j++) {
+            int u = topo[i];
+            int v = topo[j];
+
+            if (!exists[u][v]) {
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
+int main() {
+    vector<vector<int>> adj = {{1, 2}, {2}, {3}, {}};
+
+    cout << maxEdgesToAdd(adj) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Queue;
+import java.util.LinkedList;
+
+class GFG {
+
+    // Function to perform topological sort
+    static void topoSort(ArrayList<ArrayList<Integer>> adj, int[] topo) {
+        int V = adj.size();
+        int[] indegree = new int[V];
+
+        // Calculate in-degree of all vertices
+        for (int u = 0; u < V; u++) {
+            for (int v : adj.get(u)) {
+                indegree[v]++;
+            }
+        }
+
+        Queue<Integer> q = new LinkedList<>();
+
+        // Push all vertices with indegree 0
+        for (int i = 0; i < V; i++)
+            if (indegree[i] == 0) q.add(i);
+
+        int idx = 0;
+        while (!q.isEmpty()) {
+            int u = q.poll();
+            topo[idx++] = u;
+
+            for (int v : adj.get(u)) {
+                indegree[v]--;
+                if (indegree[v] == 0) q.add(v);
+            }
+        }
+    }
+
+    // Function to return maximum number of additional edges in DAG
+    static int maxEdgesToAdd(ArrayList<ArrayList<Integer>> adj) {
+        int V = adj.size();
+        boolean[][] exists = new boolean[V][V];
+
+        // Build existence map from adjacency list
+        for (int u = 0; u < V; u++) {
+            for (int v : adj.get(u)) exists[u][v] = true;
+        }
+
+        int[] topo = new int[V];
+        topoSort(adj, topo);
+
+        int count = 0;
+
+        // Count forward edges that can be added without creating cycles
+        for (int i = 0; i < V; i++) {
+            for (int j = i + 1; j < V; j++) {
+                int u = topo[i], v = topo[j];
+                if (!exists[u][v]) count++;
+            }
+        }
+        return count;
+    }
+
+    // Function to add edge in adjacency list
+    static void addEdge(ArrayList<ArrayList<Integer>> adj, int u, int v) {
+        adj.get(u).add(v);
+    }
+
+    public static void main(String[] args) {
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+        for (int i = 0; i < 4; i++)
+            adj.add(new ArrayList<>());
+
+        addEdge(adj, 0, 1);
+        addEdge(adj, 0, 2);
+        addEdge(adj, 1, 2);
+        addEdge(adj, 2, 3);
+
+        System.out.println(maxEdgesToAdd(adj));
+    }
+}
+
+Python
+
+from collections import deque
+
+# Function to perform topological sort
+def topoSort(adj):
+    V = len(adj)
+    indegree = [0] * V
+
+    # Calculate in-degree of all vertices
+    for u in range(V):
+        for v in adj[u]:
+            indegree[v] += 1
+
+    q = deque()
+    # Push all vertices with in-degree 0
+    for i in range(V):
+        if indegree[i] == 0:
+            q.append(i)
+
+    topo = []
+    while q:
+        u = q.popleft()
+        topo.append(u)
+        for v in adj[u]:
+            indegree[v] -= 1
+            if indegree[v] == 0:
+                q.append(v)
+
+    return topo
+
+# Function to return maximum number of additional edges in DAG
+def maxEdgesToAdd(adj):
+    V = len(adj)
+    exists = [[False] * V for _ in range(V)]
+
+    # Build existence map from adjacency list
+    for u in range(V):
+        for v in adj[u]:
+            exists[u][v] = True
+
+    topo = topoSort(adj)
+    count = 0
+
+    # Count forward edges that can be added without creating cycles
+    for i in range(V):
+        for j in range(i + 1, V):
+            u = topo[i]
+            v = topo[j]
+            if not exists[u][v]:
+                count += 1
+
+    return count
+
+if __name__ == '__main__':
+    adj = [[1, 2], [2], [3], []]
+    print(maxEdgesToAdd(adj))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // Function to perform topological sort
+    static List<int> topoSort(List<List<int>> adj) {
+        int V = adj.Count;
+        int[] indegree = new int[V];
+
+        // Calculate in-degree of all vertices
+        for (int u = 0; u < V; u++)
+            foreach (int v in adj[u]) indegree[v]++;
+
+        Queue<int> q = new Queue<int>();
+
+        // Push all vertices with indegree 0
+        for (int i = 0; i < V; i++)
+            if (indegree[i] == 0) q.Enqueue(i);
+
+        List<int> topo = new List<int>();
+
+        while (q.Count > 0) {
+            int u = q.Dequeue();
+            topo.Add(u);
+
+            foreach (int v in adj[u]) {
+                indegree[v]--;
+                if (indegree[v] == 0) q.Enqueue(v);
+            }
+        }
+        return topo;
+    }
+
+    // Function to return maximum number of additional edges in DAG
+    static int maxEdgesToAdd(List<List<int>> adj) {
+        int V = adj.Count;
+        bool[,] exists = new bool[V, V];
+
+        // Build existence map from adjacency list
+        for (int u = 0; u < V; u++)
+            foreach (int v in adj[u]) exists[u, v] = true;
+
+        List<int> topo = topoSort(adj);
+        int count = 0;
+
+        // Count forward edges that can be added without creating cycles
+        for (int i = 0; i < V; i++) {
+            for (int j = i + 1; j < V; j++) {
+                int u = topo[i], v = topo[j];
+                if (!exists[u, v]) count++;
+            }
+        }
+        return count;
+    }
+
+    // Function to add an edge to adjacency list
+    static void addEdge(List<List<int>> adj, int u, int v) {
+        adj[u].Add(v);
+    }
+
+    static void Main() {
+        int V = 4;
+        List<List<int>> adj = new List<List<int>>();
+        for (int i = 0; i < V; i++)
+            adj.Add(new List<int>());
+
+        addEdge(adj, 0, 1);
+        addEdge(adj, 0, 2);
+        addEdge(adj, 1, 2);
+        addEdge(adj, 2, 3);
+
+        Console.WriteLine(maxEdgesToAdd(adj));
+    }
+}
+
+JavaScript
+
+const Denque = require("denque");
+
+// Function to perform topological sort
+function topoSort(adj) {
+    const V = adj.length;
+    const indegree = Array(V).fill(0);
+
+    // Calculate in-degree of all vertices
+    for (let u = 0; u < V; u++)
+        for (let v of adj[u]) indegree[v]++;
+
+    const q = new Denque();
+
+    // Push all vertices with indegree 0
+    for (let i = 0; i < V; i++)
+        if (indegree[i] === 0) q.push(i);
+
+    const topo = [];
+    while (!q.isEmpty()) {
+        const u = q.shift();
+        topo.push(u);
+        for (let v of adj[u]) {
+            indegree[v]--;
+            if (indegree[v] === 0) q.push(v);
+        }
+    }
+    return topo;
+}
+
+// Function to return maximum number of additional edges in DAG
+function maxEdgesToAdd(adj) {
+    const V = adj.length;
+    const exists = Array.from({ length: V }, () => Array(V).fill(false));
+
+    // Build existence map from adjacency list
+    for (let u = 0; u < V; u++)
+        for (let v of adj[u]) exists[u][v] = true;
+
+    const topo = topoSort(adj);
+    let count = 0;
+
+    // Count forward edges that can be added without creating cycles
+    for (let i = 0; i < V; i++) {
+        for (let j = i + 1; j < V; j++) {
+            const u = topo[i], v = topo[j];
+            if (!exists[u][v]) count++;
+        }
+    }
+    return count;
+}
+
+// Driver code
+const adj = [[1, 2], [2], [3], []];
+console.log(maxEdgesToAdd(adj));
+
+Output
+
+2
+
+Time Complexity: O(V 2 ), where V is number of Vertices Auxiliary Space: O(V 2 )
+
+### [Optimized Approach] Using Formula - O(1) Time and O(1) Space
+
+> In a DAG with V nodes, the maximum number of edges is V * (V - 1) / 2, representing all possible forward edges in a topological order. To find the maximum number of additional edges, simply subtract the current number of edges in the graph from maximum no of edges possible.
+
+C++
+
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int maxEdgesToAdd(vector<vector<int>> &adj) {
+    int V = adj.size();
+
+    // Count existing edges from adjacency list
+    int existingEdges = 0;
+    for (int u = 0; u < V; u++) {
+        existingEdges += adj[u].size();
+    }
+
+    int maxEdges = V * (V - 1) / 2;
+
+    // Subtract existing edges to get how many more we can add
+    return maxEdges - existingEdges;
+}
+
+int main() {
+    vector<vector<int>> adj = {{1, 2}, {2}, {3}, {}};
+
+    cout << maxEdgesToAdd(adj) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+class GFG {
+
+    static int maxEdgesToAdd(ArrayList<ArrayList<Integer>> adj) {
+        int V = adj.size();
+
+        // Count existing edges from adjacency list
+        int existingEdges = 0;
+        for (int i = 0; i < V; i++) {
+            existingEdges += adj.get(i).size();
+        }
+
+        int maxPossibleEdges = V * (V - 1) / 2;
+
+        // Subtract existing edges to get how many more we can add
+        return maxPossibleEdges - existingEdges;
+    }
+
+    // Function to add an edge to adjacency list
+    static void addEdge(ArrayList<ArrayList<Integer>> adj, int u, int v) {
+        adj.get(u).add(v);
+    }
+
+    public static void main(String[] args) {
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<>();
+        for (int i = 0; i < 4; i++)
+            adj.add(new ArrayList<>());
+
+        addEdge(adj, 0, 1);
+        addEdge(adj, 0, 2);
+        addEdge(adj, 1, 2);
+        addEdge(adj, 2, 3);
+
+        System.out.println(maxEdgesToAdd(adj));
+    }
+}
+
+Python
+
+def maxEdgesToAdd(adj):
+    V = len(adj)
+
+    # Count existing edges from adjacency list
+    existingEdges = sum(len(adj[i]) for i in range(V))
+
+    maxPossibleEdges = V * (V - 1) // 2
+
+    # Subtract existing edges to get how many more we can add
+    return maxPossibleEdges - existingEdges
+
+if __name__ == '__main__':
+    adj = [[1, 2], [2], [3], []]
+    print(maxEdgesToAdd(adj))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    static int maxEdgesToAdd(List<List<int>> adj) {
+        int V = adj.Count;
+
+        // Count existing edges from adjacency list
+        int existingEdges = 0;
+        for (int i = 0; i < V; i++) {
+            existingEdges += adj[i].Count;
+        }
+
+        int maxPossibleEdges = V * (V - 1) / 2;
+
+        // Subtract existing edges to get how many more we can add
+        return maxPossibleEdges - existingEdges;
+    }
+
+    // Function to add an edge to adjacency list
+    static void addEdge(List<List<int>> adj, int u, int v) {
+        adj[u].Add(v);
+    }
+
+    static void Main() {
+        int V = 4;
+        List<List<int>> adj = new List<List<int>>();
+        for (int i = 0; i < V; i++)
+            adj.Add(new List<int>());
+
+        addEdge(adj, 0, 1);
+        addEdge(adj, 0, 2);
+        addEdge(adj, 1, 2);
+        addEdge(adj, 2, 3);
+
+        Console.WriteLine(maxEdgesToAdd(adj));
+    }
+}
+
+JavaScript
+
+function maxEdgesToAdd(adj) {
+    const V = adj.length;
+
+    // Count existing edges from adjacency list
+    let existingEdges = 0;
+    for (let i = 0; i < V; i++) {
+        existingEdges += adj[i].length;
+    }
+
+    const maxPossibleEdges = V * (V - 1) / 2;
+
+    // Subtract existing edges to get how many more we can add
+    return maxPossibleEdges - existingEdges;
+}
+
+// Driver code
+const adj = [[1, 2], [2], [3], []];
+console.log(maxEdgesToAdd(adj));
+
+Output
+
+2

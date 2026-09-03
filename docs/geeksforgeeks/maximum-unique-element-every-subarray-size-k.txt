@@ -1,0 +1,404 @@
+Source: https://www.geeksforgeeks.org/dsa/maximum-unique-element-every-subarray-size-k/
+Title: Maximum Unique Element in every subarray of size K
+Extractor: 2
+
+Given an array and an integer K. We need to find the maximum of every segment of length K which has no duplicates in that segment.
+
+Examples:
+
+Input : a[] = {1, 2, 2, 3, 3},
+          K = 3.
+Output : 1 3 2
+For segment (1, 2, 2), Maximum = 1.
+For segment (2, 2, 3), Maximum = 3.
+For segment (2, 3, 3), Maximum = 2.
+
+Input : a[] = {3, 3, 3, 4, 4, 2},
+          K = 4.
+Output : 4 Nothing 3
+
+A simple solution is to run two loops. For every subarray, find all distinct elements and print maximum unique elements.
+
+An efficient solution is to use the sliding window technique . We have two structures in every window.
+
+1. A hash table to store counts of all elements in the current window.
+2. A self-balancing BST (implemented using set in C++ STL and TreeSet in Java) . The idea is to quickly find the maximum element and update the maximum elements.
+
+We process the first K-1 elements and store their counts in the hash table. We also store unique elements in set. Now we, one by one, process the last element of every window. If the current element is unique, we add it to the set. We also increase its count. After processing the last element, we print the maximum from the set. Before starting the next iteration, we remove the first element of the previous window.
+
+Implementation:
+
+C++
+
+// C++ code to calculate maximum unique
+// element of every segment of array
+#include <bits/stdc++.h>
+using namespace std;
+
+void find_max(int A[], int N, int K)
+{
+    // Storing counts of first K-1 elements
+    // Also storing distinct elements.
+    map<int, int> Count;
+    for (int i = 0; i < K - 1; i++)
+        Count[A[i]]++;
+    set<int> Myset;
+    for (auto x : Count)
+        if (x.second == 1)
+            Myset.insert(x.first);
+
+    // Before every iteration of this loop,
+    // we maintain that K-1 elements of current
+    // window are processed.
+    for (int i = K - 1; i < N; i++) {
+
+        // Process K-th element of current window
+        Count[A[i]]++;
+        if (Count[A[i]] == 1)
+            Myset.insert(A[i]);
+        else
+            Myset.erase(A[i]);
+
+        // If there are no distinct
+        // elements in current window
+        if (Myset.size() == 0)
+            printf("Nothing\n");
+
+        // Set is ordered and last element
+        // of set gives us maximum element.
+        else
+            printf("%d\n", *Myset.rbegin());
+
+        // Remove first element of current
+        // window before next iteration.
+        int x = A[i - K + 1];
+        Count[x]--;
+        if (Count[x] == 1)
+            Myset.insert(x);
+        if (Count[x] == 0)
+            Myset.erase(x);
+    }
+}
+
+// Driver code
+int main()
+{
+    int a[] = { 1, 2, 2, 3, 3 };
+    int n = sizeof(a) / sizeof(a[0]);
+    int k = 3;
+    find_max(a, n, k);
+    return 0;
+}
+
+Java
+
+// Java code to calculate maximum unique
+// element of every segment of array
+import java.io.*;
+import java.util.*;
+class GFG {
+
+    static void find_max(int[] A, int N, int K)
+    {
+        // Storing counts of first K-1 elements
+        // Also storing distinct elements.
+        HashMap<Integer, Integer> Count = new HashMap<>();
+        for (int i = 0; i < K - 1; i++)
+            if (Count.containsKey(A[i]))
+                Count.put(A[i], 1 + Count.get(A[i]));
+            else
+                Count.put(A[i], 1);
+
+        TreeSet<Integer> Myset = new TreeSet<Integer>();
+        for (Map.Entry x : Count.entrySet()) {
+            if (Integer.parseInt(String.valueOf(x.getValue())) == 1)
+                Myset.add(Integer.parseInt(String.valueOf(x.getKey())));
+        }
+
+        // Before every iteration of this loop,
+        // we maintain that K-1 elements of current
+        // window are processed.
+        for (int i = K - 1; i < N; i++) {
+
+            // Process K-th element of current window
+            if (Count.containsKey(A[i]))
+                Count.put(A[i], 1 + Count.get(A[i]));
+            else
+                Count.put(A[i], 1);
+
+            if (Integer.parseInt(String.valueOf(Count.get(A[i]))) == 1)
+                Myset.add(A[i]);
+            else
+                Myset.remove(A[i]);
+
+            // If there are no distinct
+            // elements in current window
+            if (Myset.size() == 0)
+                System.out.println("Nothing");
+
+            // Set is ordered and last element
+            // of set gives us maximum element.
+            else
+                System.out.println(Myset.last());
+
+            // Remove first element of current
+            // window before next iteration.
+            int x = A[i - K + 1];
+            Count.put(x, Count.get(x) - 1);
+
+            if (Integer.parseInt(String.valueOf(Count.get(x))) == 1)
+                Myset.add(x);
+            if (Integer.parseInt(String.valueOf(Count.get(x))) == 0)
+                Myset.remove(x);
+        }
+    }
+
+    // Driver code
+    public static void main(String args[])
+    {
+        int[] a = { 1, 2, 2, 3, 3 };
+        int n = a.length;
+        int k = 3;
+        find_max(a, n, k);
+    }
+}
+
+// This code is contributed by rachana soma
+
+Python3
+
+# Python3 code to calculate maximum unique
+# element of every segment of array
+def find_max(A, N, K):
+
+    # Storing counts of first K-1 elements
+    # Also storing distinct elements.
+    Count = dict()
+    for i in range(K - 1):
+        Count[A[i]] = Count.get(A[i], 0) + 1
+
+    Myset = dict()
+    for x in Count:
+        if (Count[x] == 1):
+            Myset[x] = 1
+
+    # Before every iteration of this loop,
+    # we maintain that K-1 elements of current
+    # window are processed.
+    for i in range(K - 1, N):
+
+        # Process K-th element of current window
+        Count[A[i]] = Count.get(A[i], 0) + 1
+
+        if (Count[A[i]] == 1):
+            Myset[A[i]] = 1
+        else:
+            del Myset[A[i]]
+
+        # If there are no distinct
+        # elements in current window
+        if (len(Myset) == 0):
+            print("Nothing")
+
+        # Set is ordered and last element
+        # of set gives us maximum element.
+        else:
+            maxm = -10**9
+            for i in Myset:
+                maxm = max(i, maxm)
+            print(maxm)
+
+        # Remove first element of current
+        # window before next iteration.
+        x = A[i - K + 1]
+        if x in Count.keys():
+            Count[x] -= 1
+            if (Count[x] == 1):
+                Myset[x] = 1
+            if (Count[x] == 0):
+                del Myset[x]
+
+# Driver code
+a = [1, 2, 2, 3, 3 ]
+n = len(a)
+k = 3
+find_max(a, n, k)
+
+# This code is contributed
+# by mohit kumar
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public class GFG
+{
+  static void find_max(int[] A, int N, int K)
+  {
+
+    // Storing counts of first K-1 elements
+    // Also storing distinct elements.
+    Dictionary<int, int> count = new Dictionary<int, int>();
+    for (int i = 0; i < K - 1; i++)
+    {
+      if(count.ContainsKey(A[i]))
+      {
+        count[A[i]]++;
+      }
+      else
+      {
+        count.Add(A[i], 1);
+      }
+    }
+    HashSet<int> Myset = new HashSet<int>();
+    foreach(KeyValuePair<int, int> x in count)
+    {
+      if(x.Value == 1)
+      {
+        Myset.Add(x.Key);
+      }
+    }
+
+    // Before every iteration of this loop,
+    // we maintain that K-1 elements of current
+    // window are processed.
+    for (int i = K - 1; i < N; i++)
+    {
+
+      // Process K-th element of current window
+      if (count.ContainsKey(A[i]))
+      {
+        count[A[i]]++;
+      }
+      else
+      {
+        count.Add(A[i], 1);
+      }
+      if(count[A[i]] == 1)
+      {
+        Myset.Add(A[i]);
+      }
+      else
+      {
+        Myset.Remove(A[i]);
+      }
+
+      // If there are no distinct
+      // elements in current window
+      if (Myset.Count == 0)
+        Console.Write("Nothing\n");
+
+      // Set is ordered and last element
+      // of set gives us maximum element.
+      else
+      {
+        List<int> myset = new List<int>(Myset);
+        Console.WriteLine(myset[myset.Count - 1]);
+      }
+
+      // Remove first element of current
+      // window before next iteration.
+      int x = A[i - K + 1];
+      count[x]--;
+      if(count[x] == 1)
+      {
+        Myset.Add(x);
+      }
+      if(count[x] == 0)
+      {
+        Myset.Remove(x);
+      }
+    }
+
+  }
+
+  // Driver code
+  static public void Main ()
+  {
+    int[] a = { 1, 2, 2, 3, 3 };
+    int n=a.Length;
+    int k = 3;
+    find_max(a, n, k);
+  }
+}
+
+// This code is contributed by rag2127
+
+JavaScript
+
+<script>
+    // Javascript code to calculate maximum unique
+    // element of every segment of array
+
+    function find_max(A,N,K)
+    {
+        // Storing counts of first K-1 elements
+        // Also storing distinct elements.
+        let Count = new Map();
+        for (let i = 0; i < K - 1; i++)
+            if (Count.has(A[i]))
+                Count.set(A[i], 1 + Count.get(A[i]));
+            else
+                Count.set(A[i], 1);
+
+        let Myset = new Set();
+        for (let [key, value] of Count.entries()) {
+            if (value==1)
+                Myset.add(key);
+        }
+
+        // Before every iteration of this loop,
+        // we maintain that K-1 elements of current
+        // window are processed.
+        for (let i = K - 1; i < N; i++) {
+
+            // Process K-th element of current window
+            if (Count.has(A[i]))
+                Count.set(A[i], 1 + Count.get(A[i]));
+            else
+                Count.set(A[i], 1);
+
+            if ((Count.get(A[i])) == 1)
+                Myset.add(A[i]);
+            else
+                Myset.delete(A[i]);
+
+            // If there are no distinct
+            // elements in current window
+            if (Myset.size == 0)
+                document.write("Nothing<br>");
+
+            // Set is ordered and last element
+            // of set gives us maximum element.
+            else
+                document.write(Array.from(Myset)[Myset.size-1]+"<br>");
+
+            // Remove first element of current
+            // window before next iteration.
+            let x = A[i - K + 1];
+            Count.set(x, Count.get(x) - 1);
+
+            if (Count.get(x) == 1)
+                Myset.add(x);
+            if (Count.get(x) == 0)
+                Myset.delete(x);
+        }
+    }
+
+    // Driver code
+    let a=[1, 2, 2, 3, 3];
+    let n = a.length;
+    let k = 3;
+    find_max(a, n, k);
+
+// This code is contributed by unknown2108
+</script>
+
+Output
+
+1
+3
+2
+
+Time Complexity: O(N Log K) Auxiliary Space: O(N)

@@ -1,0 +1,766 @@
+Source: https://www.geeksforgeeks.org/dsa/range-queries-longest-correct-bracket-subsequence/
+Title: Range Queries for Longest Correct Bracket Subsequence
+Extractor: 2
+
+Given a string s of length n, consisting of opening and closing brackets and an array queries[] consisting of q queries of type [start, end] , where start defines the starting point and end defines the ending point. For each query, the task is to find the maximum length of the valid bracket subsequence from index start to end .
+
+Note: A correct bracket sequence has matched bracket pairs or contains another nested correct bracket sequence.
+
+Examples:
+
+> Input: s = "())(())(())(", start = 0, end = 11 Output: 10 Explanation: Longest Correct Bracket Subsequence is ()(())(()) Input : s = "())(())(())(", start = 1, end = 2 Output : 0 Explanation: There is no correct bracket subsequence.
+
+Note: An approach using stack and pre-computed lengths has been discussed in article Range Query Set 2 that works in O(1) for each query.
+
+Approach:
+
+> Segment Trees can be used to solve this problem efficiently At each node of the segment tree, we store the following: Number of correctly matched pairs of brackets Number of unused open brackets Number of unused closed brackets For each interval [L, R], we can match X number of unused open brackets '(' in interval [L, MID] with unused closed brackets ')' in interval [MID + 1, R] where X = minimum(number of unused '(' in [L, MID], number of unused ')' in [MID + 1, R]) Hence, X is also the number of correctly matched pairs built by combination. So, for interval [L, R] Total number of correctly matched pairs becomes the sum of correctly matched pairs in left child and correctly matched pairs in right child and number of combinations of unused '(' and unused ')' from left and right child respectively  a[L, R] = a[L, MID] + a[MID + 1, R] + X Total number of unused open brackets becomes the sum of unused open brackets in left child and unused open brackets in right child minus X (minus - because we used X unused '(' from left child to match with unused ') from right child) a[L, R] = b[L, MID] + b[MID + 1, R] - X Similarly, for unused closed brackets, following relation holds a[L, R] = c[L, MID] + c[MID + 1, R] - X where a, b and c are the representations described above for each node to be stored in
+
+Below is the implementation of the above approach:
+
+C++
+
+// CPP Program to find the longest correct
+// bracket subsequence in a given range
+#include <bits/stdc++.h>
+using namespace std;
+
+// Declaring Structure for storing
+// three values in each segment tree node
+struct Node {
+    int pairs;
+    int open;
+    int closed;
+
+    Node() { pairs = open = closed = 0; }
+};
+
+// function to get the middle
+// index from corner indexes.
+int getMid(int s, int e) {
+    return s + (e - s) / 2;
+}
+
+// Returns Parent Node after merging
+// its left and right child
+Node merge(Node left, Node right) {
+    Node parent;
+    int mini = min(left.open, right.closed);
+    parent.pairs = left.pairs + right.pairs + mini;
+    parent.open = left.open + right.open - mini;
+    parent.closed = left.closed + right.closed - mini;
+    return parent;
+}
+
+// A recursive function that constructs Segment Tree
+// si is index of current node in segment tree head
+void constructSTUtil(string &s, int ss,
+                    int se, Node* head, int si) {
+
+    // If there is one element in string, store it in
+    // current node of segment tree and return
+    if (ss == se) {
+
+        // since it contains one element, pairs
+        // will be zero
+        head[si].pairs = 0;
+
+        // check whether that one element is opening
+        // bracket or not
+        head[si].open = (s[ss] == '(' ? 1 : 0);
+
+        // check whether that one element is closing
+        // bracket or not
+        head[si].closed = (s[ss] == ')' ? 1 : 0);
+
+        return;
+    }
+
+    // If there are more than one elements, then recur
+    // for left and right subtrees and store the relation
+    // of values in this node
+    int mid = getMid(ss, se);
+    constructSTUtil(s, ss, mid, head, si * 2 + 1);
+    constructSTUtil(s, mid + 1, se, head, si * 2 + 2);
+
+    // Merge left and right child into the Parent Node
+    head[si] = merge(head[si * 2 + 1], head[si * 2 + 2]);
+}
+
+// Function to construct segment tree from given string
+Node* buildTree(string &s) {
+    int n = s.size();
+
+    // Height of segment tree
+    int x = (int)(ceil(log2(n)));
+
+    // Maximum size of segment tree
+    int max_size = 2 * (int)pow(2, x) - 1;
+
+    // Declaring array of structure Allocate memory
+    Node* head = new Node[max_size];
+
+    // Fill the allocated memory head
+    constructSTUtil(s, 0, n - 1, head, 0);
+
+    // Return the constructed segment tree
+    return head;
+}
+
+// A Recursive function to get the desired
+// Maximum Sum Sub-Array
+Node queryUtil(Node* head, int ss, int se,
+                    int start, int end, int si) {
+
+    // No overlap
+    if (ss > end || se < start) {
+
+        // returns a Node for out of bounds condition
+        Node nullNode;
+        return nullNode;
+    }
+
+    // Complete overlap
+    if (ss >= start && se <= end) {
+        return head[si];
+    }
+
+    // Partial Overlap Merge results of Left
+    // and Right subtrees
+    int mid = getMid(ss, se);
+    Node left =
+    queryUtil(head, ss, mid, start, end, si * 2 + 1);
+    Node right =
+    queryUtil(head, mid + 1, se, start, end, si * 2 + 2);
+
+    // merge left and right subtree query results
+    Node res = merge(left, right);
+    return res;
+}
+
+// return length of maximum valid subsequence
+int query(Node* head, int start, int end, int n) {
+    Node res = queryUtil(head, 0, n - 1, start, end, 0);
+    return 2 * res.pairs;
+}
+
+vector<int> solveQueries(string &s,
+                vector<pair<int,int>> &queries) {
+    int n = s.size();
+
+    // to store the results of queries
+    vector<int> result;
+
+    Node* head = buildTree(s);
+
+    // processing the queries
+    for (const auto& q : queries) {
+        int start = q.first;
+        int end = q.second;
+        int res = query(head, start, end, n);
+        result.push_back(res);
+    }
+    return result;
+}
+
+int main() {
+    string s = "())(())(())(";
+    vector<pair<int, int>> queries = {{4, 11},
+                {3, 4}, {0, 2}, {0, 4}, {1, 2}};
+    vector<int> ans = solveQueries(s, queries);
+    for(auto i:ans) {
+        cout<<i<<" ";
+    }
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+
+    // Declaring Structure for storing
+    // three values in each segment tree node
+    static class Node {
+        int pairs;
+        int open;
+        int closed;
+
+        Node() {
+            pairs = open = closed = 0;
+        }
+    }
+
+    // function to get the middle
+    // index from corner indexes.
+    static int getMid(int s, int e) {
+        return s + (e - s) / 2;
+    }
+
+    // Returns Parent Node after merging
+    // its left and right child
+    static Node merge(Node left, Node right) {
+        Node parent = new Node();
+        int mini = Math.min(left.open, right.closed);
+        parent.pairs = left.pairs + right.pairs + mini;
+        parent.open = left.open + right.open - mini;
+        parent.closed = left.closed + right.closed - mini;
+        return parent;
+    }
+
+    // A recursive function that constructs Segment Tree
+    // si is index of current node in segment tree head
+    static void constructSTUtil(String s, int ss,
+            int se, Node[] head, int si) {
+
+        // If there is one element in string, store it in
+        // current node of segment tree and return
+        if (ss == se) {
+
+            // since it contains one element, pairs
+            // will be zero
+            head[si].pairs = 0;
+
+            // check whether that one element is opening
+            // bracket or not
+            head[si].open = (s.charAt(ss) == '(' ? 1 : 0);
+
+            // check whether that one element is closing
+            // bracket or not
+            head[si].closed = (s.charAt(ss) == ')' ? 1 : 0);
+
+            return;
+        }
+
+        // If there are more than one elements, then recur
+        // for left and right subtrees and store the relation
+        // of values in this node
+        int mid = getMid(ss, se);
+        constructSTUtil(s, ss, mid, head, si * 2 + 1);
+        constructSTUtil(s, mid + 1, se, head, si * 2 + 2);
+
+        // Merge left and right child into the Parent Node
+        head[si] = merge(head[si * 2 + 1], head[si * 2 + 2]);
+    }
+
+    // Function to construct segment tree from given string
+    static Node[] buildTree(String s) {
+        int n = s.length();
+
+        // Height of segment tree
+        int x = (int) (Math.ceil(Math.log(n) / Math.log(2)));
+
+        // Maximum size of segment tree
+        int max_size = 2 * (int) Math.pow(2, x) - 1;
+
+        // Declaring array of structure Allocate memory
+        Node[] head = new Node[max_size];
+        for (int i = 0; i < max_size; i++) {
+            head[i] = new Node();
+        }
+
+        // Fill the allocated memory head
+        constructSTUtil(s, 0, n - 1, head, 0);
+
+        // Return the constructed segment tree
+        return head;
+    }
+
+    // A Recursive function to get the desired
+    // Maximum Sum Sub-Array
+    static Node queryUtil(Node[] head, int ss, int se,
+            int start, int end, int si) {
+
+        // No overlap
+        if (ss > end || se < start) {
+
+            // returns a Node for out of bounds condition
+            return new Node();
+        }
+
+        // Complete overlap
+        if (ss >= start && se <= end) {
+            return head[si];
+        }
+
+        // Partial Overlap Merge results of Left
+        // and Right subtrees
+        int mid = getMid(ss, se);
+        Node left = queryUtil(head, ss, mid, start, end, si * 2 + 1);
+        Node right = queryUtil(head, mid + 1, se, start, end, si * 2 + 2);
+
+        // merge left and right subtree query results
+        return merge(left, right);
+    }
+
+    // return length of maximum valid subsequence
+    static int query(Node[] head, int start, int end, int n) {
+        Node res = queryUtil(head, 0, n - 1, start, end, 0);
+        return 2 * res.pairs;
+    }
+
+    static List<Integer> solveQueries(String s,
+            List<int[]> queries) {
+        int n = s.length();
+
+        // to store the results of queries
+        List<Integer> result = new ArrayList<>();
+
+        Node[] head = buildTree(s);
+
+        // processing the queries
+        for (int[] q : queries) {
+            int start = q[0];
+            int end = q[1];
+            int res = query(head, start, end, n);
+            result.add(res);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        String s = "())(())(())(";
+        List<int[]> queries = Arrays.asList(
+            new int[]{4, 11},
+            new int[]{3, 4},
+            new int[]{0, 2},
+            new int[]{0, 4},
+            new int[]{1, 2}
+        );
+        List<Integer> ans = solveQueries(s, queries);
+        for (int i : ans) {
+            System.out.print(i + " ");
+        }
+    }
+}
+
+Python
+
+import math
+
+# Declaring Structure for storing
+# three values in each segment tree node
+class Node:
+    def __init__(self):
+        self.pairs = 0
+        self.open = 0
+        self.closed = 0
+
+# function to get the middle
+# index from corner indexes.
+def getMid(s, e):
+    return s + (e - s) // 2
+
+# Returns Parent Node after merging
+# its left and right child
+def merge(left, right):
+    parent = Node()
+    mini = min(left.open, right.closed)
+    parent.pairs = left.pairs + right.pairs + mini
+    parent.open = left.open + right.open - mini
+    parent.closed = left.closed + right.closed - mini
+    return parent
+
+# A recursive function that constructs Segment Tree
+# si is index of current node in segment tree head
+def constructSTUtil(s, ss, se, head, si):
+
+    # If there is one element in string, store it in
+    # current node of segment tree and return
+    if ss == se:
+
+        # since it contains one element, pairs
+        # will be zero
+        head[si].pairs = 0
+
+        # check whether that one element is opening
+        # bracket or not
+        head[si].open = 1 if s[ss] == '(' else 0
+
+        # check whether that one element is closing
+        # bracket or not
+        head[si].closed = 1 if s[ss] == ')' else 0
+
+        return
+
+    # If there are more than one elements, then recur
+    # for left and right subtrees and store the relation
+    # of values in this node
+    mid = getMid(ss, se)
+    constructSTUtil(s, ss, mid, head, si * 2 + 1)
+    constructSTUtil(s, mid + 1, se, head, si * 2 + 2)
+
+    # Merge left and right child into the Parent Node
+    head[si] = merge(head[si * 2 + 1], head[si * 2 + 2])
+
+# Function to construct segment tree from given string
+def buildTree(s):
+    n = len(s)
+
+    # Height of segment tree
+    x = math.ceil(math.log2(n))
+
+    # Maximum size of segment tree
+    max_size = 2 * (2**x) - 1
+
+    # Declaring array of structure Allocate memory
+    head = [Node() for _ in range(max_size)]
+
+    # Fill the allocated memory head
+    constructSTUtil(s, 0, n - 1, head, 0)
+
+    # Return the constructed segment tree
+    return head
+
+# A Recursive function to get the desired
+# Maximum Sum Sub-Array
+def queryUtil(head, ss, se, start, end, si):
+
+    # No overlap
+    if ss > end or se < start:
+
+        # returns a Node for out of bounds condition
+        return Node()
+
+    # Complete overlap
+    if ss >= start and se <= end:
+        return head[si]
+
+    # Partial Overlap Merge results of Left
+    # and Right subtrees
+    mid = getMid(ss, se)
+    left = queryUtil(head, ss, mid, start, end, si * 2 + 1)
+    right = queryUtil(head, mid + 1, se, start, end, si * 2 + 2)
+
+    # merge left and right subtree query results
+    return merge(left, right)
+
+# return length of maximum valid subsequence
+def query(head, start, end, n):
+    res = queryUtil(head, 0, n - 1, start, end, 0)
+    return 2 * res.pairs
+
+def solveQueries(s, queries):
+    n = len(s)
+
+    # to store the results of queries
+    result = []
+
+    head = buildTree(s)
+
+    # processing the queries
+    for start, end in queries:
+        res = query(head, start, end, n)
+        result.append(res)
+    return result
+
+if __name__ == "__main__":
+    s = "())(())(())("
+    queries = [(4, 11), (3, 4), (0, 2), (0, 4), (1, 2)]
+    ans = solveQueries(s, queries)
+    print(" ".join(map(str, ans)))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Declaring Structure for storing
+    // three values in each segment tree node
+    class Node {
+        public int pairs;
+        public int open;
+        public int closed;
+
+        public Node() {
+            pairs = open = closed = 0;
+        }
+    }
+
+    // function to get the middle
+    // index from corner indexes.
+    static int GetMid(int s, int e) {
+        return s + (e - s) / 2;
+    }
+
+    // Returns Parent Node after merging
+    // its left and right child
+    static Node Merge(Node left, Node right) {
+        Node parent = new Node();
+        int mini = Math.Min(left.open, right.closed);
+        parent.pairs = left.pairs + right.pairs + mini;
+        parent.open = left.open + right.open - mini;
+        parent.closed = left.closed + right.closed - mini;
+        return parent;
+    }
+
+    // A recursive function that constructs Segment Tree
+    // si is index of current node in segment tree head
+    static void ConstructSTUtil(string s, int ss,
+            int se, Node[] head, int si) {
+
+        // If there is one element in string, store it in
+        // current node of segment tree and return
+        if (ss == se) {
+
+            // since it contains one element, pairs
+            // will be zero
+            head[si].pairs = 0;
+
+            // check whether that one element is opening
+            // bracket or not
+            head[si].open = (s[ss] == '(' ? 1 : 0);
+
+            // check whether that one element is closing
+            // bracket or not
+            head[si].closed = (s[ss] == ')' ? 1 : 0);
+
+            return;
+        }
+
+        // If there are more than one elements, then recur
+        // for left and right subtrees and store the relation
+        // of values in this node
+        int mid = GetMid(ss, se);
+        ConstructSTUtil(s, ss, mid, head, si * 2 + 1);
+        ConstructSTUtil(s, mid + 1, se, head, si * 2 + 2);
+
+        // Merge left and right child into the Parent Node
+        head[si] = Merge(head[si * 2 + 1], head[si * 2 + 2]);
+    }
+
+    // Function to construct segment tree from given string
+    static Node[] BuildTree(string s) {
+        int n = s.Length;
+
+        // Height of segment tree
+        int x = (int)(Math.Ceiling(Math.Log(n, 2)));
+
+        // Maximum size of segment tree
+        int max_size = 2 * (int)Math.Pow(2, x) - 1;
+
+        // Declaring array of structure Allocate memory
+        Node[] head = new Node[max_size];
+        for (int i = 0; i < max_size; i++) {
+            head[i] = new Node();
+        }
+
+        // Fill the allocated memory head
+        ConstructSTUtil(s, 0, n - 1, head, 0);
+
+        // Return the constructed segment tree
+        return head;
+    }
+
+    // A Recursive function to get the desired
+    // Maximum Sum Sub-Array
+    static Node QueryUtil(Node[] head, int ss, int se,
+            int start, int end, int si) {
+
+        // No overlap
+        if (ss > end || se < start) {
+
+            // returns a Node for out of bounds condition
+            return new Node();
+        }
+
+        // Complete overlap
+        if (ss >= start && se <= end) {
+            return head[si];
+        }
+
+        // Partial Overlap Merge results of Left
+        // and Right subtrees
+        int mid = GetMid(ss, se);
+        Node left = QueryUtil(head, ss, mid, start, end, si * 2 + 1);
+        Node right = QueryUtil(head, mid + 1, se, start, end, si * 2 + 2);
+
+        // merge left and right subtree query results
+        return Merge(left, right);
+    }
+
+    // return length of maximum valid subsequence
+    static int Query(Node[] head, int start, int end, int n) {
+        Node res = QueryUtil(head, 0, n - 1, start, end, 0);
+        return 2 * res.pairs;
+    }
+
+    static List<int> SolveQueries(string s,
+            List<Tuple<int, int>> queries) {
+        int n = s.Length;
+
+        // to store the results of queries
+        List<int> result = new List<int>();
+
+        Node[] head = BuildTree(s);
+
+        // processing the queries
+        foreach (var q in queries) {
+            int start = q.Item1;
+            int end = q.Item2;
+            int res = Query(head, start, end, n);
+            result.Add(res);
+        }
+        return result;
+    }
+
+    public static void Main() {
+        string s = "())(())(())(";
+        List<Tuple<int, int>> queries = new List<Tuple<int, int>> {
+            Tuple.Create(4, 11),
+            Tuple.Create(3, 4),
+            Tuple.Create(0, 2),
+            Tuple.Create(0, 4),
+            Tuple.Create(1, 2)
+        };
+        List<int> ans = SolveQueries(s, queries);
+        foreach (int i in ans) {
+            Console.Write(i + " ");
+        }
+    }
+}
+
+JavaScript
+
+// Declaring Structure for storing
+// three values in each segment tree node
+class Node {
+    constructor() {
+        this.pairs = 0;
+        this.open = 0;
+        this.closed = 0;
+    }
+}
+
+// function to get the middle
+// index from corner indexes.
+function getMid(s, e) {
+    return Math.floor(s + (e - s) / 2);
+}
+
+// Returns Parent Node after merging
+// its left and right child
+function merge(left, right) {
+    let parent = new Node();
+    let mini = Math.min(left.open, right.closed);
+    parent.pairs = left.pairs + right.pairs + mini;
+    parent.open = left.open + right.open - mini;
+    parent.closed = left.closed + right.closed - mini;
+    return parent;
+}
+
+// A recursive function that constructs Segment Tree
+// si is index of current node in segment tree head
+function constructSTUtil(s, ss, se, head, si) {
+    // If there is one element in string, store it in
+    // current node of segment tree and return
+    if (ss === se) {
+        // since it contains one element, pairs will be zero
+        head[si].pairs = 0;
+
+        // check whether that one element is opening bracket or not
+        head[si].open = s[ss] === '(' ? 1 : 0;
+
+        // check whether that one element is closing bracket or not
+        head[si].closed = s[ss] === ')' ? 1 : 0;
+
+        return;
+    }
+
+    // If there are more than one elements, then recur
+    // for left and right subtrees and store the relation
+    // of values in this node
+    let mid = getMid(ss, se);
+    constructSTUtil(s, ss, mid, head, si * 2 + 1);
+    constructSTUtil(s, mid + 1, se, head, si * 2 + 2);
+
+    // Merge left and right child into the Parent Node
+    head[si] = merge(head[si * 2 + 1], head[si * 2 + 2]);
+}
+
+// Function to construct segment tree from given string
+function buildTree(s) {
+    let n = s.length;
+
+    // Height of segment tree
+    let x = Math.ceil(Math.log2(n));
+
+    // Maximum size of segment tree
+    let max_size = 2 * Math.pow(2, x) - 1;
+
+    // Declaring array of structure Allocate memory
+    let head = new Array(max_size).fill(0).map(() => new Node());
+
+    // Fill the allocated memory head
+    constructSTUtil(s, 0, n - 1, head, 0);
+
+    // Return the constructed segment tree
+    return head;
+}
+
+// A Recursive function to get the desired
+// Maximum Sum Sub-Array
+function queryUtil(head, ss, se, start, end, si) {
+    // No overlap
+    if (ss > end || se < start) {
+        // returns a Node for out of bounds condition
+        return new Node();
+    }
+
+    // Complete overlap
+    if (ss >= start && se <= end) {
+        return head[si];
+    }
+
+    // Partial Overlap Merge results of Left
+    // and Right subtrees
+    let mid = getMid(ss, se);
+    let left = queryUtil(head, ss, mid, start, end, si * 2 + 1);
+    let right = queryUtil(head, mid + 1, se, start, end, si * 2 + 2);
+
+    // merge left and right subtree query results
+    return merge(left, right);
+}
+
+// return length of maximum valid subsequence
+function query(head, start, end, n) {
+    let res = queryUtil(head, 0, n - 1, start, end, 0);
+    return 2 * res.pairs;
+}
+
+function solveQueries(s, queries) {
+    let n = s.length;
+
+    // to store the results of queries
+    let result = [];
+
+    let head = buildTree(s);
+
+    // processing the queries
+    for (let [start, end] of queries) {
+        let res = query(head, start, end, n);
+        result.push(res);
+    }
+    return result;
+}
+
+// Main Execution
+let s = "())(())(())(";
+let queries = [
+    [4, 11],
+    [3, 4],
+    [0, 2],
+    [0, 4],
+    [1, 2],
+];
+let ans = solveQueries(s, queries);
+console.log(ans.join(" "));
+
+Output
+
+6 0 2 2 0
+
+Time complexity: O(n * log n), where n is the size of the string Auxiliary Space: O(n)

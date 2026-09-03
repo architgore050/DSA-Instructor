@@ -1,0 +1,321 @@
+Source: https://www.geeksforgeeks.org/dsa/shortest-path-unweighted-graph/
+Title: Shortest path from source to all vertices in an unweighted graph
+Extractor: 2
+
+Given an unweighted, undirected graph of V nodes and E edges, a source node S , and a destination node D , we need to find the shortest path from node S to node D in the graph.
+
+> Input: V = 8, E = 10, S = 0, D = 7, edges[][] = {{0, 1}, {1, 2}, {0, 3}, {3, 4}, {4, 7}, {3, 7}, {6, 7}, {4, 5}, {4, 6}, {5, 6}} Output: 0 3 7 Explanation: The shortest path is 0 -> 3 -> 7. Input: V = 8, E = 10, S = 2, D = 6, edges[][] = {{0, 1}, {1, 2}, {0, 3}, {3, 4}, {4, 7}, {3, 7}, {6, 7}, {4, 5}, {4, 6}, {5, 6}} Output: 2 1 0 3 4 6 Explanation: The shortest path is 2 -> 1 -> 0 -> 3 - > 4 -> 6.
+
+The idea is to use a modified version of Breadth-First Search in which we keep storing the parent of a given vertex while doing the breadth-first search. We first initialize an array dist[0, 1, ...., v-1] such that dist[i] stores the distance of vertex i from the source vertex and array par[0, 1, ....., v-1] such that par[i] represents the parent of the vertex i in the breadth-first search starting from the source. Now we get the length of the path from source to any other vertex from array dist[], and for printing the path from source to any vertex we can use array par[].
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Modified bfs to store the parent of nodes along with the
+// distance from source node
+void bfs(vector<vector<int> >& graph, int S,
+         vector<int>& par, vector<int>& dist)
+{
+    // queue to store the nodes in the order they are
+    // visited
+    queue<int> q;
+
+    // Mark the distance of the source node as 0
+    dist[S] = 0;
+
+    // Push the source node to the queue
+    q.push(S);
+
+    // Iterate till the queue is not empty
+    while (!q.empty()) {
+
+        // Pop the node at the front of the queue
+        int node = q.front();
+        q.pop();
+
+        // Explore all the neighbours of the current node
+        for (int neighbour : graph[node]) {
+
+            // Check if the neighbouring node is not visited
+            if (dist[neighbour] == 1e9) {
+
+                // Mark the current node as the parent of
+                // the neighbouring node
+                par[neighbour] = node;
+
+                // Mark the distance of the neighbouring
+                // node as distance of the current node + 1
+                dist[neighbour] = dist[node] + 1;
+
+                // Insert the neighbouring node to the queue
+                q.push(neighbour);
+            }
+        }
+    }
+}
+
+// Function to print the shortest distance between source
+// vertex and destination vertex
+void printShortestDistance(vector<vector<int> >& graph,
+                           int S, int D, int V)
+{
+    // par[] array stores the parent of nodes
+    vector<int> par(V, -1);
+
+    // dist[] array stores distance of nodes from S
+    vector<int> dist(V, 1e9);
+
+    // function call to find the distance of all nodes and
+    // their parent nodes
+    bfs(graph, S, par, dist);
+
+    if (dist[D] == 1e9) {
+        cout << "Source and Destination are not connected";
+        return;
+    }
+
+    // vector path stores the shortest path
+    vector<int> path;
+    int currentNode = D;
+    path.push_back(D);
+    while (par[currentNode] != -1) {
+        path.push_back(par[currentNode]);
+        currentNode = par[currentNode];
+    }
+
+    // printing path from source to destination
+    for (int i = path.size() - 1; i >= 0; i--)
+        cout << path[i] << " ";
+}
+
+// Driver program to test above functions
+int main()
+{
+    int V = 8, E = 10;
+    int S = 2, D = 6;
+    vector<vector<int> > edges
+        = { { 0, 1 }, { 1, 2 }, { 0, 3 }, { 3, 4 },
+            { 4, 7 }, { 3, 7 }, { 6, 7 }, { 4, 5 },
+            { 4, 6 }, { 5, 6 } };
+
+    // vector to store the graph as adjacency list
+    vector<vector<int> > graph(V);
+    for (auto edge : edges) {
+        graph[edge[0]].push_back(edge[1]);
+        graph[edge[1]].push_back(edge[0]);
+    }
+
+    printShortestDistance(graph, S, D, V);
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class ShortestPathBFS {
+
+    // Modified bfs to store the parent of nodes along with
+    // the distance from the source node
+    static void bfs(List<List<Integer> > graph, int S,
+                    List<Integer> par, List<Integer> dist)
+    {
+        // Queue to store the nodes in the order they are
+        // visited
+
+        Queue<Integer> q = new LinkedList<>();
+
+        // Mark the distance of the source node as 0
+        dist.set(S, 0);
+
+        // Push the source node to the queue
+        q.add(S);
+
+        // Iterate until the queue is not empty
+        while (!q.isEmpty()) {
+
+            // Pop the node at the front of the queue
+            int node = q.poll();
+
+            // Explore all the neighbors of the current node
+            for (int neighbor : graph.get(node)) {
+
+                // Check if the neighboring node is not
+                // visited
+                if (dist.get(neighbor)
+                    == Integer.MAX_VALUE) {
+
+                    // Mark the current node as the parent
+                    // of the neighboring node
+                    par.set(neighbor, node);
+
+                    // Mark the distance of the neighboring
+                    // node as the distance of the current
+                    // node + 1
+                    dist.set(neighbor, dist.get(node) + 1);
+
+                    // Insert the neighboring node to the
+                    // queue
+                    q.add(neighbor);
+                }
+            }
+        }
+    }
+
+    // Function to print the shortest distance between the
+    // source vertex and destination vertex
+    static void
+    printShortestDistance(List<List<Integer> > graph, int S,
+                          int D, int V)
+    {
+        // par[] array stores the parent of nodes
+        List<Integer> par
+            = new ArrayList<>(Collections.nCopies(V, -1));
+
+        // dist[] array stores the distance of nodes from S
+        List<Integer> dist = new ArrayList<>(
+            Collections.nCopies(V, Integer.MAX_VALUE));
+
+        // Function call to find the distance of all nodes
+        // and their parent nodes
+        bfs(graph, S, par, dist);
+
+        if (dist.get(D) == Integer.MAX_VALUE) {
+            System.out.println(
+                "Source and Destination are not connected");
+            return;
+        }
+
+        // List path stores the shortest path
+        List<Integer> path = new ArrayList<>();
+        int currentNode = D;
+        path.add(D);
+        while (par.get(currentNode) != -1) {
+            path.add(par.get(currentNode));
+            currentNode = par.get(currentNode);
+        }
+
+        // Printing path from source to destination
+        for (int i = path.size() - 1; i >= 0; i--)
+            System.out.print(path.get(i) + " ");
+    }
+
+    // Driver program to test above functions
+    public static void main(String[] args)
+    {
+        int V = 8;
+        int S = 2, D = 6;
+        List<List<Integer> > edges = Arrays.asList(
+            Arrays.asList(0, 1), Arrays.asList(1, 2),
+            Arrays.asList(0, 3), Arrays.asList(3, 4),
+            Arrays.asList(4, 7), Arrays.asList(3, 7),
+            Arrays.asList(6, 7), Arrays.asList(4, 5),
+            Arrays.asList(4, 6), Arrays.asList(5, 6));
+
+        // List to store the graph as an adjacency list
+        List<List<Integer> > graph = new ArrayList<>(V);
+        for (int i = 0; i < V; i++) {
+            graph.add(new ArrayList<>());
+        }
+
+        for (List<Integer> edge : edges) {
+            graph.get(edge.get(0)).add(edge.get(1));
+            graph.get(edge.get(1)).add(edge.get(0));
+        }
+
+        printShortestDistance(graph, S, D, V);
+    }
+}
+
+Python
+
+# Modified bfs to store the parent of nodes along with the
+# distance from source node
+from collections import deque
+
+def bfs(graph, S, par, dist):
+
+    # queue to store the nodes in the order they are
+    # visited
+    q = deque()
+
+    # Mark the distance of the source node as 0
+    dist[S] = 0
+
+    # Push the source node to the queue
+    q.append(S)
+
+    # Iterate till the queue is not empty
+    while q:
+        # Pop the node at the front of the queue
+        node = q.popleft()
+
+        # Explore all the neighbours of the current node
+        for neighbour in graph[node]:
+
+            # Check if the neighbouring node is not visited
+            if dist[neighbour] == 1e9:
+
+                # Mark the current node as the parent of
+                # the neighbouring node
+                par[neighbour] = node
+
+                # Mark the distance of the neighbouring
+                # node as distance of the current node + 1
+                dist[neighbour] = dist[node] + 1
+
+                # Insert the neighbouring node to the queue
+                q.append(neighbour)
+
+# Function to print the shortest distance between source
+# vertex and destination vertex
+def printShortestDistance(graph, S, D, V):
+    # par[] array stores the parent of nodes
+    par = [-1] * V
+
+    # dist[] array stores distance of nodes from S
+    dist = [1e9] * V
+
+    # function call to find the distance of all nodes and
+    # their parent nodes
+    bfs(graph, S, par, dist)
+
+    if dist[D] == 1e9:
+        print("Source and Destination are not connected")
+        return
+
+    # vector path stores the shortest path
+    path = []
+    currentNode = D
+    path.append(D)
+    while par[currentNode]!= -1:
+        path.append(par[currentNode])
+        currentNode = par[currentNode]
+
+    # printing path from source to destination
+    for i in range(len(path)-1, -1, -1):
+        print(path[i], end=" ")
+
+# Driver program to test above functions
+if __name__ == '__main__':
+    V = 8
+    E = 10
+    S = 2
+    D = 6
+    edges = [[0, 1], [1, 2], [0, 3], [3, 4], [4, 7], [3, 7], [6, 7], [4, 5], [4, 6], [5, 6]]
+
+    # vector to store the graph as adjacency list
+    graph = [[] for _ in range(V)]
+    for edge in edges:
+        graph[edge[0]].append(edge[1])
+        graph[edge[1]].append(edge[0])
+
+    printShortestDistance(graph, S, D, V)
+
+Output
+
+2 1 0 3 4 6
+
+Time Complexity: O(V + E), where V is the number of vertices and E is the number of edges. Auxiliary Space: O(V)

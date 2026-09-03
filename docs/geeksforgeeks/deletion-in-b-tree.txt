@@ -1,0 +1,1580 @@
+Source: https://www.geeksforgeeks.org/dsa/deletion-in-b-tree/
+Title: Deletion in B+ Tree
+Extractor: 2
+
+> B + tree is a variation of the B-tree data structure. In a B + tree, data pointers are stored only at the leaf nodes of the tree. In a B+ tree structure of a leaf node differs from the structure of internal nodes.
+
+When compared to the B tree, B+ Tree offers more effective insertion , deletion , and other operations .
+
+Deleting in B+ Tree :
+
+> Three operations— Searching, Deleting, and Balancing —are involved in deleting an element from the B+ tree. As the last step, we will balance the tree after first looking for the node that has to be deleted and deleting it from the tree. A key-value pair is deleted from a B+ tree using this method. In order to keep the attributes of the tree's internal nodes after performing the deletion operation, the appropriate leaf node and its key-value pair must be removed.
+
+Illustration:
+
+> Consider the following B+ Tree: [ 11 14 20 ] /         |              \ [ 1 3 5 ]  [ 11 12 ]  [ 14 15 17 ] /   |   \         /   \         /       |       \ [ 1 2 ] [ 3 4 ] [ 5 7 ] [ 11 ] [ 12 ] [ 14 15 ] Let's delete key 5 from the tree. The deletion strategy for the B+ tree is as follows: Look to locate the deleted key in the leaf nodes. Delete the key and its associated value if the key is discovered in a leaf node. One of the following steps should be taken if the node underflows (number of keys is less than half the maximum allowed): Get a key by borrowing it from a sibling node if it contains more keys than the required minimum. If the minimal number of keys is met by all of the sibling nodes, merge the underflow node with one of its siblings and modify the parent node as necessary. Remove all references to the deleted leaf node from the internal nodes of the tree. Remove the old root node and update the new one if the root node is empty.
+
+The following describes how to remove Key 5 from the B+ tree:
+
+- Look in the leaf nodes for the key number 5 . The node [1 3 5] contains the key.
+- Remove the value associated with the key 5, creating the node [1 3] .
+- The node [1 3] underflows because it contains fewer keys than the maximum number permitted. From its sibling node, we can obtain a key [3 4]. We borrow key 4 in this instance, resulting in the nodes [1 3 4] and [5 7].
+- Remove all references to the deleted leaf node from the internal nodes of the tree. We must delete the reference to the node [1 3 5] from its parent node [1 3 4 11] because it was merged with the node [5 7]. The node [1 3 4 11] is the consequence of this.
+- The deletion is finished since the root node [11 14 20] is not empty.
+
+Below is the implementation of the above illustration:
+
+C++
+
+#include <bits/stdc++.h>
+
+class Node {
+public:
+    std::vector<int> keys;
+    std::vector<Node*> values;
+    bool leaf;
+    Node* next;
+
+    Node(bool isLeaf) : leaf(isLeaf), next(nullptr) {}
+};
+
+class BPlusTree {
+private:
+    Node* root;
+    int degree;
+
+public:
+    BPlusTree(int degree) : degree(degree) {
+        root = new Node(true);
+    }
+
+    bool search(int key) {
+        Node* current = root;
+        while (!current->leaf) {
+            int i = 0;
+            while (i < current->keys.size()) {
+                if (key < current->keys[i]) {
+                    break;
+                }
+                i += 1;
+            }
+            current = current->values[i];
+        }
+
+        int i = 0;
+        while (i < current->keys.size()) {
+            if (key == current->keys[i]) {
+                return true;
+            }
+            i += 1;
+        }
+        return false;
+    }
+
+    void insert(int key) {
+        Node* current = root;
+        if (current->keys.size() == 2 * degree) {
+            Node* newRoot = new Node(false);
+            root = newRoot;
+            newRoot->values.push_back(current);
+            split(newRoot, 0, current);
+            insertNonFull(newRoot, key);
+        } else {
+            insertNonFull(current, key);
+        }
+    }
+
+    void insertNonFull(Node* current, int key) {
+        int i = 0;
+        while (i < current->keys.size()) {
+            if (key < current->keys[i]) {
+                break;
+            }
+            i += 1;
+        }
+
+        if (current->leaf) {
+            current->keys.insert(current->keys.begin() + i, key);
+        } else {
+            if (current->values[i]->keys.size() == 2 * degree) {
+                split(current, i, current->values[i]);
+                if (key > current->keys[i]) {
+                    i += 1;
+                }
+            }
+            insertNonFull(current->values[i], key);
+        }
+    }
+
+    void split(Node* parent, int index, Node* node) {
+        Node* newNode = new Node(node->leaf);
+        parent->values.insert(parent->values.begin() + index + 1, newNode);
+        parent->keys.insert(parent->keys.begin() + index, node->keys[degree - 1]);
+
+        newNode->keys.insert(newNode->keys.end(), node->keys.begin() + degree, node->keys.end());
+        node->keys.erase(node->keys.begin() + degree - 1, node->keys.end());
+
+        if (!node->leaf) {
+            newNode->values.insert(newNode->values.end(), node->values.begin() + degree, node->values.end());
+            node->values.erase(node->values.begin() + degree, node->values.end());
+        }
+    }
+
+    void stealFromLeft(Node* parent, int i) {
+        Node* node = parent->values[i];
+        Node* leftSibling = parent->values[i - 1];
+        node->keys.insert(node->keys.begin(), parent->keys[i - 1]);
+        parent->keys[i - 1] = leftSibling->keys[leftSibling->keys.size() - 1];
+        if (!node->leaf) {
+            node->values.insert(node->values.begin(), leftSibling->values[leftSibling->values.size() - 1]);
+            leftSibling->values.pop_back();
+        }
+    }
+
+    void stealFromRight(Node* parent, int i) {
+        Node* node = parent->values[i];
+        Node* rightSibling = parent->values[i + 1];
+        node->keys.push_back(parent->keys[i]);
+        parent->keys[i] = rightSibling->keys[0];
+        if (!node->leaf) {
+            node->values.push_back(rightSibling->values[0]);
+            rightSibling->values.erase(rightSibling->values.begin());
+        }
+    }
+
+    void remove(int key) {
+        Node* current = root;
+        bool found = false;
+        int i = 0;
+        while (i < current->keys.size()) {
+            if (key == current->keys[i]) {
+                found = true;
+                break;
+            } else if (key < current->keys[i]) {
+                break;
+            }
+            i += 1;
+        }
+        if (found) {
+            if (current->leaf) {
+                current->keys.erase(current->keys.begin() + i);
+            } else {
+                Node* pred = current->values[i];
+                if (pred->keys.size() >= degree) {
+                    int predKey = getMaxKey(pred);
+                    current->keys[i] = predKey;
+                    removeFromLeaf(predKey, pred);
+                } else {
+                    Node* succ = current->values[i + 1];
+                    if (succ->keys.size() >= degree) {
+                        int succKey = getMinKey(succ);
+                        current->keys[i] = succKey;
+                        removeFromLeaf(succKey, succ);
+                    } else {
+                        merge(current, i, pred, succ);
+                        removeFromLeaf(key, pred);
+                    }
+                }
+
+                if (current == root && current->keys.size() == 0) {
+                    root = current->values[0];
+                }
+            }
+        } else {
+            if (current->leaf) {
+                return;
+            } else {
+                if (current->values[i]->keys.size() < degree) {
+                    if (i != 0 && current->values[i - 1]->keys.size() >= degree) {
+                        stealFromLeft(current, i);
+                    } else if (i != current->keys.size() && current->values[i + 1]->keys.size() >= degree) {
+                        stealFromRight(current, i);
+                    } else {
+                        if (i == current->keys.size()) {
+                            i -= 1;
+                        }
+                        merge(current, i, current->values[i], current->values[i + 1]);
+                    }
+                }
+
+                remove(key);
+            }
+        }
+    }
+
+    void removeFromLeaf(int key, Node* leaf) {
+        leaf->keys.erase(std::remove(leaf->keys.begin(), leaf->keys.end(), key), leaf->keys.end());
+
+        if (leaf == root || leaf->keys.size() >= std::floor(degree / 2)) {
+            return;
+        }
+
+        Node* parent = findParent(leaf);
+        int i = std::distance(parent->values.begin(), std::find(parent->values.begin(), parent->values.end(), leaf));
+
+        if (i > 0 && parent->values[i - 1]->keys.size() > std::floor(degree / 2)) {
+            rotateRight(parent, i);
+        } else if (i < parent->keys.size() && parent->values[i + 1]->keys.size() > std::floor(degree / 2)) {
+            rotateLeft(parent, i);
+        } else {
+            if (i == parent->keys.size()) {
+                i -= 1;
+            }
+            merge(parent, i, parent->values[i], parent->values[i + 1]);
+        }
+    }
+
+    int getMinKey(Node* node) {
+        while (!node->leaf) {
+            node = node->values[0];
+        }
+        return node->keys[0];
+    }
+
+    int getMaxKey(Node* node) {
+        while (!node->leaf) {
+            node = node->values[node->values.size() - 1];
+        }
+        return node->keys[node->keys.size() - 1];
+    }
+
+    Node* findParent(Node* child) {
+        Node* current = root;
+        while (!current->leaf) {
+            int i = 0;
+            while (i < current->values.size()) {
+                if (child == current->values[i]) {
+                    return current;
+                } else if (child->keys[0] < current->values[i]->keys[0]) {
+                    break;
+                }
+                i += 1;
+            }
+            current = current->values[i];
+        }
+        return nullptr;
+    }
+
+    void merge(Node* parent, int index, Node* pred, Node* succ) {
+        pred->keys.insert(pred->keys.end(), succ->keys.begin(), succ->keys.end());
+        pred->values.insert(pred->values.end(), succ->values.begin(), succ->values.end());
+        parent->values.erase(parent->values.begin() + index + 1);
+        parent->keys.erase(parent->keys.begin() + index);
+
+        if (parent == root && parent->keys.size() == 0) {
+            root = pred;
+        }
+    }
+
+    void rotateRight(Node* parent, int index) {
+        Node* node = parent->values[index];
+        Node* prev = parent->values[index - 1];
+        node->keys.insert(node->keys.begin(), parent->keys[index - 1]);
+        parent->keys[index - 1] = prev->keys[prev->keys.size() - 1];
+        if (!node->leaf) {
+            node->values.insert(node->values.begin(), prev->values[prev->values.size() - 1]);
+            prev->values.pop_back();
+        }
+    }
+
+    void rotateLeft(Node* parent, int index) {
+        Node* node = parent->values[index];
+        Node* next = parent->values[index + 1];
+        node->keys.push_back(parent->keys[index]);
+        parent->keys[index] = next->keys[0];
+        if (!node->leaf) {
+            node->values.push_back(next->values[0]);
+            next->values.erase(next->values.begin());
+        }
+    }
+
+    void printTree() {
+        std::vector<Node*> currentLevel;
+        currentLevel.push_back(root);
+
+        while (!currentLevel.empty()) {
+            std::vector<Node*> nextLevel;
+
+            for (Node* node : currentLevel) {
+                std::cout << "[";
+                for (int i = 0; i < node->keys.size(); ++i) {
+                    std::cout << node->keys[i];
+                    if (i < node->keys.size() - 1) {
+                        std::cout << ", ";
+                    }
+                }
+                std::cout << "] ";
+
+                if (!node->leaf) {
+                    nextLevel.insert(nextLevel.end(), node->values.begin(), node->values.end());
+                }
+            }
+
+            std::cout << std::endl;
+            currentLevel = nextLevel;
+        }
+    }
+};
+
+int main() {
+    // create a B+ tree with degree 3
+    BPlusTree tree(3);
+
+    // insert some keys
+    tree.insert(1);
+    tree.insert(2);
+    tree.insert(3);
+    tree.insert(4);
+    tree.insert(5);
+    tree.insert(6);
+    tree.insert(7);
+    tree.insert(8);
+    tree.insert(9);
+
+    // print the tree
+    tree.printTree(); // [4] [2, 3] [6, 7, 8, 9] [1] [5]
+
+    // delete a key
+    tree.remove(3);
+
+    // print the tree
+    tree.printTree(); // [4] [2] [6, 7, 8, 9] [1] [5]
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.List;
+
+class Node {
+    List<Integer> keys;
+    List<Node> values;
+    boolean leaf;
+    Node next;
+
+    public Node(boolean leaf) {
+        this.keys = new ArrayList<>();
+        this.values = new ArrayList<>();
+        this.leaf = leaf;
+        this.next = null;
+    }
+}
+
+public class BPlusTree {
+    private Node root;
+    private int degree;
+
+    public BPlusTree(int degree) {
+        this.root = new Node(true);
+        this.degree = degree;
+    }
+
+    public boolean search(int key) {
+        Node curr = this.root;
+        while (!curr.leaf) {
+            int i = 0;
+            while (i < curr.keys.size()) {
+                if (key < curr.keys.get(i)) {
+                    break;
+                }
+                i += 1;
+            }
+            curr = curr.values.get(i);
+        }
+        int i = 0;
+        while (i < curr.keys.size()) {
+            if (curr.keys.get(i) == key) {
+                return true;
+            }
+            i += 1;
+        }
+        return false;
+    }
+
+    public void insert(int key) {
+        Node curr = this.root;
+        if (curr.keys.size() == 2 * this.degree) {
+            Node newRoot = new Node(false);
+            this.root = newRoot;
+            newRoot.values.add(curr);
+            this.split(newRoot, 0, curr);
+            this.insertNonFull(newRoot, key);
+        } else {
+            this.insertNonFull(curr, key);
+        }
+    }
+
+    private void insertNonFull(Node curr, int key) {
+        int i = 0;
+        while (i < curr.keys.size()) {
+            if (key < curr.keys.get(i)) {
+                break;
+            }
+            i += 1;
+        }
+        if (curr.leaf) {
+            curr.keys.add(i, key);
+        } else {
+            if (curr.values.get(i).keys.size() == 2 * this.degree) {
+                this.split(curr, i, curr.values.get(i));
+                if (key > curr.keys.get(i)) {
+                    i += 1;
+                }
+            }
+            this.insertNonFull(curr.values.get(i), key);
+        }
+    }
+
+    private void split(Node parent, int index, Node node) {
+    Node new_node = new Node(node.leaf);
+    parent.values.add(index + 1, new_node);
+    parent.keys.add(index, node.keys.get(this.degree - 1));
+
+    new_node.keys.addAll(node.keys.subList(this.degree, node.keys.size()));
+    node.keys.subList(this.degree - 1, node.keys.size()).clear();
+
+    if (!node.leaf) {
+        new_node.values.addAll(node.values.subList(this.degree, node.values.size()));
+        node.values.subList(this.degree, node.values.size()).clear();
+    }
+}
+
+    private void stealFromLeft(Node parent, int i) {
+        Node node = parent.values.get(i);
+        Node leftSibling = parent.values.get(i - 1);
+        node.keys.add(0, parent.keys.get(i - 1));
+        parent.keys.set(i - 1, leftSibling.keys.remove(leftSibling.keys.size() - 1));
+        if (!node.leaf) {
+            node.values.add(0, leftSibling.values.remove(leftSibling.values.size() - 1));
+        }
+    }
+
+    private void stealFromRight(Node parent, int i) {
+        Node node = parent.values.get(i);
+        Node rightSibling = parent.values.get(i + 1);
+        node.keys.add(parent.keys.get(i));
+        parent.keys.set(i, rightSibling.keys.remove(0));
+        if (!node.leaf) {
+            node.values.add(rightSibling.values.remove(0));
+        }
+    }
+
+    public void delete(int key) {
+        Node curr = this.root;
+        boolean found = false;
+        int i = 0;
+        while (i < curr.keys.size()) {
+            if (key == curr.keys.get(i)) {
+                found = true;
+                break;
+            } else if (key < curr.keys.get(i)) {
+                break;
+            }
+            i += 1;
+        }
+        if (found) {
+            if (curr.leaf) {
+                curr.keys.remove(i);
+            } else {
+                Node pred = curr.values.get(i);
+                if (pred.keys.size() >= this.degree) {
+                    int predKey = this.getMaxKey(pred);
+                    curr.keys.set(i, predKey);
+                    this.deleteFromLeaf(predKey, pred);
+                } else {
+                    Node succ = curr.values.get(i + 1);
+                    if (succ.keys.size() >= this.degree) {
+                        int succKey = this.getMinKey(succ);
+                        curr.keys.set(i, succKey);
+                        this.deleteFromLeaf(succKey, succ);
+                    } else {
+                        this.merge(curr, i, pred, succ);
+                        this.deleteFromLeaf(key, pred);
+                    }
+                }
+
+                if (curr == this.root && curr.keys.size() == 0) {
+                    this.root = curr.values.get(0);
+                }
+            }
+        } else {
+            if (curr.leaf) {
+                return;
+            } else {
+                if (curr.values.get(i).keys.size() < this.degree) {
+                    if (i != 0 && curr.values.get(i - 1).keys.size() >= this.degree) {
+                        this.stealFromLeft(curr, i);
+                    } else if (i != curr.keys.size() && curr.values.get(i + 1).keys.size() >= this.degree) {
+                        this.stealFromRight(curr, i);
+                    } else {
+                        if (i == curr.keys.size()) {
+                            i -= 1;
+                        }
+                        this.merge(curr, i, curr.values.get(i), curr.values.get(i + 1));
+                    }
+                }
+
+                this.delete(key);
+            }
+        }
+    }
+
+    private void deleteFromLeaf(int key, Node leaf) {
+        leaf.keys.remove(Integer.valueOf(key));
+
+        if (leaf == this.root || leaf.keys.size() >= Math.floor(this.degree / 2)) {
+            return;
+        }
+
+        Node parent = this.findParent(leaf);
+        int i = parent.values.indexOf(leaf);
+
+        if (i > 0 && parent.values.get(i - 1).keys.size() > Math.floor(this.degree / 2)) {
+            this.rotateRight(parent, i);
+        } else if (i < parent.keys.size() && parent.values.get(i + 1).keys.size() > Math.floor(this.degree / 2)) {
+            this.rotateLeft(parent, i);
+        } else {
+            if (i == parent.keys.size()) {
+                i -= 1;
+            }
+            this.merge(parent, i, parent.values.get(i), parent.values.get(i + 1));
+        }
+    }
+
+    private int getMinKey(Node node) {
+        while (!node.leaf) {
+            node = node.values.get(0);
+        }
+        return node.keys.get(0);
+    }
+
+    private int getMaxKey(Node node) {
+        while (!node.leaf) {
+            node = node.values.get(node.values.size() - 1);
+        }
+        return node.keys.get(node.keys.size() - 1);
+    }
+
+    private Node findParent(Node child) {
+        Node curr = this.root;
+        while (!curr.leaf) {
+            int i = 0;
+            while (i < curr.values.size()) {
+                if (child == curr.values.get(i)) {
+                    return curr;
+                } else if (child.keys.get(0) < curr.values.get(i).keys.get(0)) {
+                    break;
+                }
+                i += 1;
+            }
+            curr = curr.values.get(i);
+        }
+        return null;
+    }
+
+    private void merge(Node parent, int i, Node pred, Node succ) {
+        pred.keys.addAll(succ.keys);
+        pred.values.addAll(succ.values);
+        parent.values.remove(i + 1);
+        parent.keys.remove(i);
+
+        if (parent == this.root && parent.keys.size() == 0) {
+            this.root = pred;
+        }
+    }
+
+    private void rotateRight(Node parent, int i) {
+        Node node = parent.values.get(i);
+        Node prev = parent.values.get(i - 1);
+        node.keys.add(0, parent.keys.get(i - 1));
+        parent.keys.set(i - 1, prev.keys.remove(prev.keys.size() - 1));
+        if (!node.leaf) {
+            node.values.add(0, prev.values.remove(prev.values.size() - 1));
+        }
+    }
+
+    private void rotateLeft(Node parent, int i) {
+        Node node = parent.values.get(i);
+        Node next = parent.values.get(i + 1);
+        node.keys.add(parent.keys.get(i));
+        parent.keys.set(i, next.keys.remove(0));
+        if (!node.leaf) {
+            node.values.add(next.values.remove(0));
+        }
+    }
+
+    public void printTree() {
+        List<Node> currLevel = new ArrayList<>();
+        currLevel.add(this.root);
+
+        while (!currLevel.isEmpty()) {
+            List<Node> nextLevel = new ArrayList<>();
+
+            for (Node node : currLevel) {
+                System.out.print("[" + String.join(", ", node.keys.stream().map(String::valueOf).toArray(String[]::new)) + "] ");
+
+                if (!node.leaf) {
+                    nextLevel.addAll(node.values);
+                }
+            }
+
+            System.out.println();
+            currLevel = nextLevel;
+        }
+    }
+
+    public static void main(String[] args) {
+        // create a B+ tree with degree 3
+        BPlusTree tree = new BPlusTree(3);
+
+        // insert some keys
+        tree.insert(1);
+        tree.insert(2);
+        tree.insert(3);
+        tree.insert(4);
+        tree.insert(5);
+        tree.insert(6);
+        tree.insert(7);
+        tree.insert(8);
+        tree.insert(9);
+
+        // print the tree
+        tree.printTree(); // [4] [2, 3] [6, 7, 8, 9] [1] [5]
+
+        // delete a key
+        tree.delete(3);
+
+        // print the tree
+        tree.printTree(); // [4] [2] [6, 7, 8, 9] [1] [5]
+    }
+}
+
+Python3
+
+# Python Implementation
+class Node:
+
+        # Creating structure of tree
+    def __init__(self, leaf = False):
+        self.keys = []
+        self.values = []
+        self.leaf = leaf
+        self.next = None
+
+# B + Tree
+
+class BPlusTree:
+    def __init__(self, degree):
+        self.root = Node(leaf = True)
+        self.degree = degree
+
+    # Search for key which
+    # has to be deleted
+    def search(self, key):
+        curr = self.root
+        while not curr.leaf:
+            i = 0
+            while i < len(curr.keys):
+                if key < curr.keys[i]:
+                    break
+                i += 1
+            curr = curr.values[i]
+        i = 0
+        while i < len(curr.keys):
+            if curr.keys[i] == key:
+                return True
+            i += 1
+        return False
+
+    # Insert key value pairs
+    def insert(self, key):
+        curr = self.root
+        if len(curr.keys) == 2 * self.degree:
+            new_root = Node()
+            self.root = new_root
+            new_root.values.append(curr)
+            self.split(new_root, 0, curr)
+            self.insert_non_full(new_root, key)
+        else:
+            self.insert_non_full(curr, key)
+
+    def insert_non_full(self, curr, key):
+        i = 0
+        while i < len(curr.keys):
+            if key < curr.keys[i]:
+                break
+            i += 1
+        if curr.leaf:
+            curr.keys.insert(i, key)
+        else:
+            if len(curr.values[i].keys) == 2 * self.degree:
+                self.split(curr, i, curr.values[i])
+                if key > curr.keys[i]:
+                    i += 1
+            self.insert_non_full(curr.values[i], key)
+
+    def split(self, parent, i, node):
+        new_node = Node(leaf = node.leaf)
+        parent.values.insert(i + 1, new_node)
+        parent.keys.insert(i, node.keys[self.degree-1])
+        new_node.keys = node.keys[self.degree:]
+        node.keys = node.keys[:self.degree-1]
+        if not new_node.leaf:
+            new_node.values = node.values[self.degree:]
+            node.values = node.values[:self.degree]
+
+    def steal_from_left(self, parent, i):
+        node = parent.values[i]
+        left_sibling = parent.values[i-1]
+        node.keys.insert(0, parent.keys[i-1])
+        parent.keys[i-1] = left_sibling.keys.pop(-1)
+        if not node.leaf:
+            node.values.insert(0, left_sibling.values.pop(-1))
+
+    def steal_from_right(self, parent, i):
+        node = parent.values[i]
+        right_sibling = parent.values[i + 1]
+        node.keys.append(parent.keys[i])
+        parent.keys[i] = right_sibling.keys.pop(0)
+        if not node.leaf:
+            node.values.append(right_sibling.values.pop(0))
+
+    # Del the given key
+    def delete(self, key):
+        curr = self.root
+        found = False
+        i = 0
+        while i < len(curr.keys):
+            if key == curr.keys[i]:
+                found = True
+                break
+            elif key < curr.keys[i]:
+                break
+            i += 1
+        if found:
+            if curr.leaf:
+                curr.keys.pop(i)
+            else:
+                pred = curr.values[i]
+                if len(pred.keys) >= self.degree:
+                    pred_key = self.get_max_key(pred)
+                    curr.keys[i] = pred_key
+                    self.delete_from_leaf(pred_key, pred)
+                else:
+                    succ = curr.values[i + 1]
+                    if len(succ.keys) >= self.degree:
+                        succ_key = self.get_min_key(succ)
+                        curr.keys[i] = succ_key
+                        self.delete_from_leaf(succ_key, succ)
+                    else:
+                        self.merge(curr, i, pred, succ)
+                        self.delete_from_leaf(key, pred)
+            if curr == self.root and not curr.keys:
+                self.root = curr.values[0]
+        else:
+            if curr.leaf:
+                return False
+            else:
+                if len(curr.values[i].keys) < self.degree:
+                    if i != 0 and len(curr.values[i-1].keys) >= self.degree:
+                        self.steal_from_left(curr, i)
+                    elif i != len(curr.keys) and len(curr.values[i + 1].keys) >= self.degree:
+                        self.steal_from_right(curr, i)
+                    else:
+                        if i == len(curr.keys):
+                            i -= 1
+                        self.merge(curr, i, curr.values[i], curr.values[i + 1])
+                self.delete(key)
+
+    def delete_from_leaf(self, key, leaf):
+        leaf.keys.remove(key)
+        if leaf == self.root or len(leaf.keys) >= self.degree // 2:
+            return
+        parent = self.find_parent(leaf)
+        i = parent.values.index(leaf)
+        if i > 0 and len(parent.values[i-1].keys) > self.degree // 2:
+            self.rotate_right(parent, i)
+        elif i < len(parent.keys) and len(parent.values[i + 1].keys) > self.degree // 2:
+            self.rotate_left(parent, i)
+        else:
+            if i == len(parent.keys):
+                i -= 1
+            self.merge(parent, i, parent.values[i], parent.values[i + 1])
+
+    def get_min_key(self, node):
+        while not node.leaf:
+            node = node.values[0]
+        return node.keys[0]
+
+    def get_max_key(self, node):
+        while not node.leaf:
+            node = node.values[-1]
+        return node.keys[-1]
+
+        def get_min_key(self, node):
+            while not node.leaf:
+                node = node.values[0]
+                return node.keys[0]
+
+    def merge(self, parent, i, pred, succ):
+        pred.keys += succ.keys
+        pred.values += succ.values
+        parent.values.pop(i + 1)
+        parent.keys.pop(i)
+        if parent == self.root and not parent.keys:
+            self.root = pred
+
+    def fix(self, parent, i):
+        node = parent.values[i]
+        if i > 0 and len(parent.values[i-1].keys) >= self.degree:
+            self.rotate_right(parent, i)
+        elif i < len(parent.keys) and len(parent.values[i + 1].keys) >= self.degree:
+            self.rotate_left(parent, i)
+        else:
+            if i == len(parent.keys):
+                i -= 1
+            self.merge(parent, i, node, parent.values[i + 1])
+
+    # Balance the tree after deletion
+    def rotate_right(self, parent, i):
+        node = parent.values[i]
+        prev = parent.values[i-1]
+        node.keys.insert(0, parent.keys[i-1])
+        parent.keys[i-1] = prev.keys.pop(-1)
+        if not node.leaf:
+            node.values.insert(0, prev.values.pop(-1))
+
+    def rotate_left(self, parent, i):
+        node = parent.values[i]
+        next = parent.values[i + 1]
+        node.keys.append(parent.keys[i])
+        parent.keys[i] = next.keys.pop(0)
+        if not node.leaf:
+            node.values.append(next.values.pop(0))
+
+    # Function to print Tree
+    def print_tree(self):
+        curr_level = [self.root]
+        while curr_level:
+            next_level = []
+            for node in curr_level:
+                print(str(node.keys), end =' ')
+                if not node.leaf:
+                    next_level += node.values
+            print()
+            curr_level = next_level
+
+# create a B + tree with degree 3
+tree = BPlusTree(3)
+
+# insert some keys
+tree.insert(1)
+tree.insert(2)
+tree.insert(3)
+tree.insert(4)
+tree.insert(5)
+tree.insert(6)
+tree.insert(7)
+tree.insert(8)
+tree.insert(9)
+
+# print the tree
+tree.print_tree()  # [4] [2, 3] [6, 7, 8, 9] [1] [5]
+
+# delete a key
+tree.delete(3)
+
+# print the tree
+tree.print_tree()  # [4] [2] [6, 7, 8, 9] [1] [5]
+
+C#
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Node
+{
+    public List<int> Keys { get; set; }
+    public List<Node> Values { get; set; }
+    public bool Leaf { get; set; }
+    public Node Next { get; set; }
+
+    public Node(bool leaf)
+    {
+        Keys = new List<int>();
+        Values = new List<Node>();
+        Leaf = leaf;
+        Next = null;
+    }
+}
+
+public class BPlusTree
+{
+    private Node root;
+    private int degree;
+
+    public BPlusTree(int degree)
+    {
+        root = new Node(true);
+        this.degree = degree;
+    }
+
+    public bool Search(int key)
+    {
+        Node curr = root;
+        while (!curr.Leaf)
+        {
+            int i = 0;
+            while (i < curr.Keys.Count)
+            {
+                if (key < curr.Keys[i])
+                {
+                    break;
+                }
+                i += 1;
+            }
+            curr = curr.Values[i];
+        }
+        int j = 0;
+        while (j < curr.Keys.Count)
+        {
+            if (curr.Keys[j] == key)
+            {
+                return true;
+            }
+            j += 1;
+        }
+        return false;
+    }
+
+    public void Insert(int key)
+    {
+        Node curr = root;
+        if (curr.Keys.Count == 2 * degree)
+        {
+            Node newRoot = new Node(false);
+            root = newRoot;
+            newRoot.Values.Add(curr);
+            Split(newRoot, 0, curr);
+            InsertNonFull(newRoot, key);
+        }
+        else
+        {
+            InsertNonFull(curr, key);
+        }
+    }
+
+    private void InsertNonFull(Node curr, int key)
+    {
+        int i = 0;
+        while (i < curr.Keys.Count)
+        {
+            if (key < curr.Keys[i])
+            {
+                break;
+            }
+            i += 1;
+        }
+        if (curr.Leaf)
+        {
+            curr.Keys.Insert(i, key);
+        }
+        else
+        {
+            if (curr.Values[i].Keys.Count == 2 * degree)
+            {
+                Split(curr, i, curr.Values[i]);
+                if (key > curr.Keys[i])
+                {
+                    i += 1;
+                }
+            }
+            InsertNonFull(curr.Values[i], key);
+        }
+    }
+
+    private void Split(Node parent, int index, Node node)
+    {
+        Node new_node = new Node(node.Leaf);
+        parent.Values.Insert(index + 1, new_node);
+        parent.Keys.Insert(index, node.Keys[degree - 1]);
+
+        new_node.Keys.AddRange(node.Keys.GetRange(degree, node.Keys.Count - degree));
+        node.Keys.RemoveRange(degree - 1, node.Keys.Count - degree + 1);
+
+        if (!node.Leaf)
+        {
+            new_node.Values.AddRange(node.Values.GetRange(degree, node.Values.Count - degree));
+            node.Values.RemoveRange(degree, node.Values.Count - degree);
+        }
+    }
+
+    private void StealFromLeft(Node parent, int i)
+    {
+        Node node = parent.Values[i];
+        Node leftSibling = parent.Values[i - 1];
+        node.Keys.Insert(0, parent.Keys[i - 1]);
+        parent.Keys[i - 1] = leftSibling.Keys[leftSibling.Keys.Count - 1];
+        leftSibling.Keys.RemoveAt(leftSibling.Keys.Count - 1);
+        if (!node.Leaf)
+        {
+            node.Values.Insert(0, leftSibling.Values[leftSibling.Values.Count - 1]);
+            leftSibling.Values.RemoveAt(leftSibling.Values.Count - 1);
+        }
+    }
+
+    private void StealFromRight(Node parent, int i)
+    {
+        Node node = parent.Values[i];
+        Node rightSibling = parent.Values[i + 1];
+        node.Keys.Add(parent.Keys[i]);
+        parent.Keys[i] = rightSibling.Keys[0];
+        rightSibling.Keys.RemoveAt(0);
+        if (!node.Leaf)
+        {
+            node.Values.Add(rightSibling.Values[0]);
+            rightSibling.Values.RemoveAt(0);
+        }
+    }
+
+    public void Delete(int key)
+    {
+        Node curr = root;
+        bool found = false;
+        int i = 0;
+        while (i < curr.Keys.Count)
+        {
+            if (key == curr.Keys[i])
+            {
+                found = true;
+                break;
+            }
+            else if (key < curr.Keys[i])
+            {
+                break;
+            }
+            i += 1;
+        }
+        if (found)
+        {
+            if (curr.Leaf)
+            {
+                curr.Keys.RemoveAt(i);
+            }
+            else
+            {
+                Node pred = curr.Values[i];
+                if (pred.Keys.Count >= degree)
+                {
+                    int predKey = GetMaxKey(pred);
+                    curr.Keys[i] = predKey;
+                    DeleteFromLeaf(predKey, pred);
+                }
+                else
+                {
+                    Node succ = curr.Values[i + 1];
+                    if (succ.Keys.Count >= degree)
+                    {
+                        int succKey = GetMinKey(succ);
+                        curr.Keys[i] = succKey;
+                        DeleteFromLeaf(succKey, succ);
+                    }
+                    else
+                    {
+                        Merge(curr, i, pred, succ);
+                        DeleteFromLeaf(key, pred);
+                    }
+                }
+
+                if (curr == root && curr.Keys.Count == 0)
+                {
+                    root = curr.Values[0];
+                }
+            }
+        }
+        else
+        {
+            if (curr.Leaf)
+            {
+                return;
+            }
+            else
+            {
+                if (curr.Values[i].Keys.Count < degree)
+                {
+                    if (i != 0 && curr.Values[i - 1].Keys.Count >= degree)
+                    {
+                        StealFromLeft(curr, i);
+                    }
+                    else if (i != curr.Keys.Count && curr.Values[i + 1].Keys.Count >= degree)
+                    {
+                        StealFromRight(curr, i);
+                    }
+                    else
+                    {
+                        if (i == curr.Keys.Count)
+                        {
+                            i -= 1;
+                        }
+                        Merge(curr, i, curr.Values[i], curr.Values[i + 1]);
+                    }
+                }
+
+                Delete(key);
+            }
+        }
+    }
+
+    private void DeleteFromLeaf(int key, Node leaf)
+    {
+        leaf.Keys.Remove(key);
+
+        if (leaf == root || leaf.Keys.Count >= Math.Floor(degree / 2.0))
+        {
+            return;
+        }
+
+        Node parent = FindParent(leaf);
+        int i = parent.Values.IndexOf(leaf);
+
+        if (i > 0 && parent.Values[i - 1].Keys.Count > Math.Floor(degree / 2.0))
+        {
+            RotateRight(parent, i);
+        }
+        else if (i < parent.Keys.Count && parent.Values[i + 1].Keys.Count > Math.Floor(degree / 2.0))
+        {
+            RotateLeft(parent, i);
+        }
+        else
+        {
+            if (i == parent.Keys.Count)
+            {
+                i -= 1;
+            }
+            Merge(parent, i, parent.Values[i], parent.Values[i + 1]);
+        }
+    }
+
+    private int GetMinKey(Node node)
+    {
+        while (!node.Leaf)
+        {
+            node = node.Values[0];
+        }
+        return node.Keys[0];
+    }
+
+    private int GetMaxKey(Node node)
+    {
+        while (!node.Leaf)
+        {
+            node = node.Values[node.Values.Count - 1];
+        }
+        return node.Keys[node.Keys.Count - 1];
+    }
+
+    private Node FindParent(Node child)
+    {
+        Node curr = root;
+        while (!curr.Leaf)
+        {
+            int i = 0;
+            while (i < curr.Values.Count)
+            {
+                if (child == curr.Values[i])
+                {
+                    return curr;
+                }
+                else if (child.Keys[0] < curr.Values[i].Keys[0])
+                {
+                    break;
+                }
+                i += 1;
+            }
+            curr = curr.Values[i];
+        }
+        return null;
+    }
+
+    private void Merge(Node parent, int i, Node pred, Node succ)
+    {
+        pred.Keys.AddRange(succ.Keys);
+        pred.Values.AddRange(succ.Values);
+        parent.Values.RemoveAt(i + 1);
+        parent.Keys.RemoveAt(i);
+
+        if (parent == root && parent.Keys.Count == 0)
+        {
+            root = pred;
+        }
+    }
+
+    private void RotateRight(Node parent, int i)
+    {
+        Node node = parent.Values[i];
+        Node prev = parent.Values[i - 1];
+        node.Keys.Insert(0, parent.Keys[i - 1]);
+        parent.Keys[i - 1] = prev.Keys[prev.Keys.Count - 1];
+        prev.Keys.RemoveAt(prev.Keys.Count - 1);
+        if (!node.Leaf)
+        {
+            node.Values.Insert(0, prev.Values[prev.Values.Count - 1]);
+            prev.Values.RemoveAt(prev.Values.Count - 1);
+        }
+    }
+
+    private void RotateLeft(Node parent, int i)
+    {
+        Node node = parent.Values[i];
+        Node next = parent.Values[i + 1];
+        node.Keys.Add(parent.Keys[i]);
+        parent.Keys[i] = next.Keys[0];
+        next.Keys.RemoveAt(0);
+        if (!node.Leaf)
+        {
+            node.Values.Add(next.Values[0]);
+            next.Values.RemoveAt(0);
+        }
+    }
+
+    public void PrintTree()
+    {
+        List<Node> currLevel = new List<Node>();
+        currLevel.Add(root);
+
+        while (currLevel.Count > 0)
+        {
+            List<Node> nextLevel = new List<Node>();
+
+            foreach (Node node in currLevel)
+            {
+                Console.Write("[" + string.Join(", ", node.Keys.Select(k => k.ToString()).ToArray()) + "] ");
+
+                if (!node.Leaf)
+                {
+                    nextLevel.AddRange(node.Values);
+                }
+            }
+
+            Console.WriteLine();
+            currLevel = nextLevel;
+        }
+    }
+
+    public static void Main(string[] args)
+    {
+        // create a B+ tree with degree 3
+        BPlusTree tree = new BPlusTree(3);
+
+        // insert some keys
+        tree.Insert(1);
+        tree.Insert(2);
+        tree.Insert(3);
+        tree.Insert(4);
+        tree.Insert(5);
+        tree.Insert(6);
+        tree.Insert(7);
+        tree.Insert(8);
+        tree.Insert(9);
+
+        // print the tree
+        tree.PrintTree(); // [4] [2, 3] [6, 7, 8, 9] [1] [5]
+
+        // delete a key
+        tree.Delete(3);
+
+        // print the tree
+        tree.PrintTree(); // [4] [2] [6, 7, 8, 9] [1] [5]
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(leaf = false) {
+        this.keys = [];
+        this.values = [];
+        this.leaf = leaf;
+        this.next = null;
+    }
+}
+
+class BPlusTree {
+    constructor(degree) {
+        this.root = new Node(true);
+        this.degree = degree;
+    }
+
+    search(key) {
+        let curr = this.root;
+        while (!curr.leaf) {
+            let i = 0;
+            while (i < curr.keys.length) {
+                if (key < curr.keys[i]) {
+                    break;
+                }
+                i += 1;
+            }
+            curr = curr.values[i];
+        }
+        let i = 0;
+        while (i < curr.keys.length) {
+            if (curr.keys[i] === key) {
+                return true;
+            }
+            i += 1;
+        }
+        return false;
+    }
+
+    insert(key) {
+        let curr = this.root;
+        if (curr.keys.length === 2 * this.degree) {
+            let newRoot = new Node();
+            this.root = newRoot;
+            newRoot.values.push(curr);
+            this.split(newRoot, 0, curr);
+            this.insertNonFull(newRoot, key);
+        } else {
+            this.insertNonFull(curr, key);
+        }
+    }
+
+    insertNonFull(curr, key) {
+        let i = 0;
+        while (i < curr.keys.length) {
+            if (key < curr.keys[i]) {
+                break;
+            }
+            i += 1;
+        }
+        if (curr.leaf) {
+            curr.keys.splice(i, 0, key);
+        } else {
+            if (curr.values[i].keys.length === 2 * this.degree) {
+                this.split(curr, i, curr.values[i]);
+                if (key > curr.keys[i]) {
+                    i += 1;
+                }
+            }
+            this.insertNonFull(curr.values[i], key);
+        }
+    }
+
+    split(parent, i, node) {
+        let new_node = new Node(node.leaf);
+        parent.values.splice(i + 1, 0, new_node);
+        parent.keys.splice(i, 0, node.keys[this.degree - 1]);
+        new_node.keys = node.keys.slice(this.degree);
+        node.keys = node.keys.slice(0, this.degree - 1);
+        if (!new_node.leaf) {
+            new_node.values = node.values.slice(this.degree);
+            node.values = node.values.slice(0, this.degree);
+        }
+    }
+
+    stealFromLeft(parent, i) {
+        let node = parent.values[i];
+        let leftSibling = parent.values[i - 1];
+        node.keys.splice(0, 0, parent.keys[i - 1]);
+        parent.keys[i - 1] = leftSibling.keys.pop();
+        if (!node.leaf) {
+            node.values.splice(0, 0, leftSibling.values.pop());
+        }
+    }
+
+    stealFromRight(parent, i) {
+        let node = parent.values[i];
+        let rightSibling = parent.values[i + 1];
+        node.keys.push(parent.keys[i]);
+        parent.keys[i] = rightSibling.keys.shift();
+        if (!node.leaf) {
+            node.values.push(rightSibling.values.shift());
+        }
+    }
+
+    delete(key) {
+        let curr = this.root;
+        let found = false;
+        let i = 0;
+        while (i < curr.keys.length) {
+            if (key === curr.keys[i]) {
+                found = true;
+                break;
+            } else if (key < curr.keys[i]) {
+                break;
+            }
+            i += 1;
+        }
+        if (found) {
+            if (curr.leaf) {
+                curr.keys.splice(i, 1);
+            } else {
+                let pred = curr.values[i];
+                if (pred.keys.length >= this.degree) {
+                    let predKey = this.getMaxKey(pred);
+                    curr.keys[i] = predKey;
+                    this.deleteFromLeaf(predKey, pred);
+                } else {
+                    let succ = curr.values[i + 1];
+                    if (succ.keys.length >= this.degree) {
+                        let succKey = this.getMinKey(succ);
+                        curr.keys[i] = succKey;
+                        this.deleteFromLeaf(succKey, succ);
+                    } else {
+                        this.merge(curr, i, pred, succ);
+                        this.deleteFromLeaf(key, pred);
+                    }
+                }
+                if (curr === this.root && curr.keys.length === 0) {
+                    this.root = curr.values[0];
+                }
+            }
+        } else {
+            if (curr.leaf) {
+                return false;
+            } else {
+                if (curr.values[i].keys.length < this.degree) {
+                    if (i !== 0 && curr.values[i - 1].keys.length >= this.degree) {
+                        this.stealFromLeft(curr, i);
+                    } else if (i !== curr.keys.length && curr.values[i + 1].keys.length >= this.degree) {
+                        this.stealFromRight(curr, i);
+                    } else {
+                        if (i === curr.keys.length) {
+                            i -= 1;
+                        }
+                        this.merge(curr, i, curr.values[i], curr.values[i + 1]);
+                    }
+                }
+                this.delete(key);
+            }
+        }
+    }
+
+    deleteFromLeaf(key, leaf) {
+        leaf.keys.splice(leaf.keys.indexOf(key), 1);
+        if (leaf === this.root || leaf.keys.length >= Math.floor(this.degree / 2)) {
+            return;
+        }
+        let parent = this.findParent(leaf);
+        let i = parent.values.indexOf(leaf);
+        if (i > 0 && parent.values[i - 1].keys.length > Math.floor(this.degree / 2)) {
+            this.rotateRight(parent, i);
+        } else if (i < parent.keys.length && parent.values[i + 1].keys.length > Math.floor(this.degree / 2)) {
+            this.rotateLeft(parent, i);
+        } else {
+            if (i === parent.keys.length) {
+                i -= 1;
+            }
+            this.merge(parent, i, parent.values[i], parent.values[i + 1]);
+        }
+    }
+
+    getMinKey(node) {
+        while (!node.leaf) {
+            node = node.values[0];
+        }
+        return node.keys[0];
+    }
+
+    getMaxKey(node) {
+        while (!node.leaf) {
+            node = node.values[node.values.length - 1];
+        }
+        return node.keys[node.keys.length - 1];
+    }
+
+    merge(parent, i, pred, succ) {
+        pred.keys = pred.keys.concat(succ.keys);
+        pred.values = pred.values.concat(succ.values);
+        parent.values.splice(i + 1, 1);
+        parent.keys.splice(i, 1);
+        if (parent === this.root && parent.keys.length === 0) {
+            this.root = pred;
+        }
+    }
+
+    fix(parent, i) {
+        let node = parent.values[i];
+        if (i > 0 && parent.values[i - 1].keys.length >= this.degree) {
+            this.rotateRight(parent, i);
+        } else if (i < parent.keys.length && parent.values[i + 1].keys.length >= this.degree) {
+            this.rotateLeft(parent, i);
+        } else {
+            if (i === parent.keys.length) {
+                i -= 1;
+            }
+            this.merge(parent, i, node, parent.values[i + 1]);
+        }
+    }
+
+    rotateRight(parent, i) {
+        let node = parent.values[i];
+        let prev = parent.values[i - 1];
+        node.keys.splice(0, 0, parent.keys[i - 1]);
+        parent.keys[i - 1] = prev.keys.pop();
+        if (!node.leaf) {
+            node.values.splice(0, 0, prev.values.pop());
+        }
+    }
+
+    rotateLeft(parent, i) {
+        let node = parent.values[i];
+        let next = parent.values[i + 1];
+        node.keys.push(parent.keys[i]);
+        parent.keys[i] = next.keys.shift();
+        if (!node.leaf) {
+            node.values.push(next.values.shift());
+        }
+    }
+
+    printTree() {
+        let currLevel = [this.root];
+        while (currLevel.length > 0) {
+            let nextLevel = [];
+            for (let node of currLevel) {
+                console.log(`[${node.keys}] `);
+                if (!node.leaf) {
+                    nextLevel = nextLevel.concat(node.values);
+                }
+            }
+            console.log();
+            currLevel = nextLevel;
+        }
+    }
+}
+
+// create a B + tree with degree 3
+let tree = new BPlusTree(3);
+
+// insert some keys
+tree.insert(1);
+tree.insert(2);
+tree.insert(3);
+tree.insert(4);
+tree.insert(5);
+tree.insert(6);
+tree.insert(7);
+tree.insert(8);
+tree.insert(9);
+
+// print the tree
+tree.printTree(); // [4] [2, 3] [6, 7, 8, 9] [1] [5]
+
+// delete a key
+tree.delete(3);
+
+// print the tree
+tree.printTree(); // [4] [2] [6, 7, 8, 9] [1] [5]
+
+Output
+
+[3]
+[1, 2] [4, 5, 6, 7, 8, 9]
+[4]
+[1, 2] [5, 6, 7, 8, 9]
+
+Time Complexity: O(log N) Auxiliary Space: O(N)

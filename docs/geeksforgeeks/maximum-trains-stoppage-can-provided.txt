@@ -1,0 +1,351 @@
+Source: https://www.geeksforgeeks.org/dsa/maximum-trains-stoppage-can-provided/
+Title: Maximum trains for which stoppage can be provided
+Extractor: 2
+
+Given a railway station with m platforms and a 2D array trains[][] of size n × 3 , where:
+
+- trains[i][0] denotes the arrival time of the i-th train
+- trains[i][1] denotes the departure time of the i-th train
+- trains[i][2] denotes the platform number required by the i-th train
+
+A platform can serve only one train at a time. If a train departs at time T and another arrives at the same time T , the platform can be reused .
+
+Each train must halt for at least one unit of time (i.e., arrival time is not equal to departure time). Trains that do not require a platform may pass through the station without stopping using the main tracks. Find the maximum number of trains that can be scheduled to stop at the station without any platform conflicts.
+
+Examples:
+
+> Input: m = 3 Output: 5 Explanation: If train no. 1 goes through main track without stopping, then 2 and 6 can easily be accommodated on platform 1.  And 3 and 4 on platform 2 and 5 on platform 3. Input: m = 1 Output: 3 Explanation: All three trains can be easily stopped at platform 1.
+
+### [Approach] Platform-wise Greedy Scheduling - O(n*log n) Time and O(1) Space
+
+Each train is assigned to a fixed platform, so trains scheduled on different platforms never conflict with each other. This allows the problem to be broken into independent subproblems, one for each platform.
+
+> For a single platform, the task reduces to selecting the maximum number of non-overlapping train stoppages, which is equivalent to the classic interval scheduling problem. A greedy strategy is optimal in this case: whenever multiple trains overlap in time, choosing the train with the earliest departure is always beneficial, as it frees the platform sooner and allows more trains to be accommodated later. By applying this greedy reasoning independently to each platform and summing the results, we obtain the maximum number of trains that can be provided stoppage without any platform conflicts.
+
+CPP
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int maxStop(int plat, vector<vector<int>> &trains)
+{
+    // number of trains
+    int n = trains.size();
+
+    // vector for each platform
+    vector<vector<pair<int, int>>> arr(plat + 1);
+
+    // Store (departure, arrival) for each platform
+    for (int i = 0; i < n; i++) {
+        int arrival = trains[i][0];
+        int departure = trains[i][1];
+        int platform = trains[i][2];
+
+        arr[platform].push_back({departure, arrival});
+    }
+
+    int count = 0;
+
+    // Process each platform independently
+    for (int i = 1; i <= plat; i++) {
+        if (arr[i].empty())
+            continue;
+
+        // Sort by departure time
+        sort(arr[i].begin(), arr[i].end());
+
+        // Select first train
+        int lastDeparture = arr[i][0].first;
+        count++;
+
+        // Select remaining compatible trains
+        for (int j = 1; j < arr[i].size(); j++) {
+            if (arr[i][j].second >= lastDeparture) {
+                count++;
+                lastDeparture = arr[i][j].first;
+            }
+        }
+    }
+
+    return count;
+}
+
+int main()
+{
+    // number of platforms
+    int plat = 3;
+
+    vector<vector<int>> trains = {
+        {1000, 1030, 1},
+        {1010, 1030, 1},
+        {1000, 1020, 2},
+        {1030, 1230, 2},
+        {1200, 1230, 3},
+        {900, 1005, 1}
+    };
+
+    cout << maxStop(plat, trains);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    static int maxStop(int plat, int[][] trains)
+    {
+        // number of trains
+        int n = trains.length;
+
+        // vector for each platform
+        ArrayList<ArrayList<int[]>> arr = new ArrayList<>();
+        for (int i = 0; i <= plat; i++) {
+            arr.add(new ArrayList<>());
+        }
+
+        // Store (departure, arrival) for each platform
+        for (int i = 0; i < n; i++) {
+            int arrival = trains[i][0];
+            int departure = trains[i][1];
+            int platform = trains[i][2];
+
+            arr.get(platform).add(new int[]{departure, arrival});
+        }
+
+        int count = 0;
+
+        // Process each platform independently
+        for (int i = 1; i <= plat; i++) {
+            if (arr.get(i).isEmpty())
+                continue;
+
+            // Sort by departure time
+            arr.get(i).sort((a, b) -> a[0] - b[0]);
+
+            // Select first train
+            int lastDeparture = arr.get(i).get(0)[0];
+            count++;
+
+            // Select remaining compatible trains
+            for (int j = 1; j < arr.get(i).size(); j++) {
+                if (arr.get(i).get(j)[1] >= lastDeparture) {
+                    count++;
+                    lastDeparture = arr.get(i).get(j)[0];
+                }
+            }
+        }
+
+        return count;
+    }
+
+    public static void main(String[] args)
+    {
+        // number of platforms
+        int plat = 3;
+
+        int[][] trains = {
+            {1000, 1030, 1},
+            {1010, 1030, 1},
+            {1000, 1020, 2},
+            {1030, 1230, 2},
+            {1200, 1230, 3},
+            {900, 1005, 1}
+        };
+
+        System.out.println(maxStop(plat, trains));
+    }
+}
+
+Python
+
+def maxStop(plat, trains):
+    # number of trains
+    n = len(trains)
+
+    # vector for each platform
+    arr = [[] for _ in range(plat + 1)]
+
+    # Store (departure, arrival) for each platform
+    for i in range(n):
+        arrival = trains[i][0]
+        departure = trains[i][1]
+        platform = trains[i][2]
+
+        arr[platform].append((departure, arrival))
+
+    count = 0
+
+    # Process each platform independently
+    for i in range(1, plat + 1):
+        if not arr[i]:
+            continue
+
+        # Sort by departure time
+        arr[i].sort()
+
+        # Select first train
+        lastDeparture = arr[i][0][0]
+        count += 1
+
+        # Select remaining compatible trains
+        for j in range(1, len(arr[i])):
+            if arr[i][j][1] >= lastDeparture:
+                count += 1
+                lastDeparture = arr[i][j][0]
+
+    return count
+
+if __name__ == "__main__":
+    # number of platforms
+    plat = 3
+
+    trains = [
+        [1000, 1030, 1],
+        [1010, 1030, 1],
+        [1000, 1020, 2],
+        [1030, 1230, 2],
+        [1200, 1230, 3],
+        [900, 1005, 1]
+    ]
+
+    print(maxStop(plat, trains))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+    static int maxStop(int plat, int[,] trains)
+    {
+        // number of trains
+        int n = trains.GetLength(0);
+
+        // vector for each platform
+        List<List<int[]>> arr = new List<List<int[]>>();
+        for (int i = 0; i <= plat; i++) {
+            arr.Add(new List<int[]>());
+        }
+
+        // Store (departure, arrival) for each platform
+        for (int i = 0; i < n; i++) {
+            int arrival = trains[i, 0];
+            int departure = trains[i, 1];
+            int platform = trains[i, 2];
+
+            arr[platform].Add(new int[] { departure, arrival });
+        }
+
+        int count = 0;
+
+        // Process each platform independently
+        for (int i = 1; i <= plat; i++) {
+            if (arr[i].Count == 0)
+                continue;
+
+            // Sort by departure time
+            arr[i].Sort((a, b) => a[0].CompareTo(b[0]));
+
+            // Select first train
+            int lastDeparture = arr[i][0][0];
+            count++;
+
+            // Select remaining compatible trains
+            for (int j = 1; j < arr[i].Count; j++) {
+                if (arr[i][j][1] >= lastDeparture) {
+                    count++;
+                    lastDeparture = arr[i][j][0];
+                }
+            }
+        }
+
+        return count;
+    }
+
+    static void Main()
+    {
+        // number of platforms
+        int plat = 3;
+
+        int[,] trains = {
+            {1000, 1030, 1},
+            {1010, 1030, 1},
+            {1000, 1020, 2},
+            {1030, 1230, 2},
+            {1200, 1230, 3},
+            {900, 1005, 1}
+        };
+
+        Console.WriteLine(maxStop(plat, trains));
+    }
+}
+
+JavaScript
+
+function maxStop(plat, trains) {
+    // number of trains
+    let n = trains.length;
+
+    // vector for each platform
+    let arr = Array.from({ length: plat + 1 }, () => []);
+
+    // Store (departure, arrival) for each platform
+    for (let i = 0; i < n; i++) {
+        let arrival = trains[i][0];
+        let departure = trains[i][1];
+        let platform = trains[i][2];
+
+        arr[platform].push([departure, arrival]);
+    }
+
+    let count = 0;
+
+    // Process each platform independently
+    for (let i = 1; i <= plat; i++) {
+        if (arr[i].length === 0)
+            continue;
+
+        // Sort by departure time
+        arr[i].sort((a, b) => a[0] - b[0]);
+
+        // Select first train
+        let lastDeparture = arr[i][0][0];
+        count++;
+
+        // Select remaining compatible trains
+        for (let j = 1; j < arr[i].length; j++) {
+            if (arr[i][j][1] >= lastDeparture) {
+                count++;
+                lastDeparture = arr[i][j][0];
+            }
+        }
+    }
+
+    return count;
+}
+
+// Driver function
+// number of platforms
+let plat = 3;
+
+let trains = [
+    [1000, 1030, 1],
+    [1010, 1030, 1],
+    [1000, 1020, 2],
+    [1030, 1230, 2],
+    [1200, 1230, 3],
+    [900, 1005, 1]
+];
+
+console.log(maxStop(plat, trains));
+
+Output
+
+5

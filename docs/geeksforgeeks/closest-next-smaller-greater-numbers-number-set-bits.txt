@@ -1,0 +1,1512 @@
+Source: https://www.geeksforgeeks.org/dsa/closest-next-smaller-greater-numbers-number-set-bits/
+Title: Closest (or Next) smaller and greater numbers with same number of set bits
+Extractor: 2
+
+Given a positive integer n, print the next smallest and the previous largest number that has the same number of 1 bit in their binary representation.
+
+Examples:
+
+Input : n = 5
+Output : Closest Greater = 6
+         Closest Smaller = 3
+Note that 5, 6 and 3 have same number of
+set bits.
+
+Input : n = 11
+Output : Closest Greater = 13
+         Closest Smaller = 7
+
+The Brute Force Approach An easy approach is simple brute force: count the number of 1s in n, and then increment (or decrement) until we find a number with the same number of 1s. Optimal Approaches Let's start with the code for getNext, and then move on to getPrev. Bit Manipulation Approach for Get Next Number If we think about what the next number should be, we can observe the following. Given the number 13948, the binary representation looks like this:
+
+1   1   0   1   1  0  0  1  1  1  1  1  0  0
+13  12  11  10  9  8  7  6  5  4  3  2  1  0
+
+We want to make this number bigger (but not too big). We also need to keep the same number of ones. Observation: Given a number n and two-bit locations i and j, suppose we flip bit i from a 1 to a 0, and bit j from a 0 to a 1. If i > j, then n will have decreased. If i < j, then n will have increased.
+
+We know the following:
+
+- If we flip zero to one, we must flip one to zero.
+- The number ( after two flips) will be bigger if and only if the zero-to-one bit was to the left of the one to zero bit.
+- We want to make the number bigger, but not unnecessarily bigger. Therefore, we need to flip the rightmost zero, which has one on the right of it.
+
+To put this in a different way, we are flipping the rightmost non-trailing zero. That is, using the above example, the trailing zeros are in the 0th and 1st spot. The rightmost non-trailing zero is at 7. Let's call this position p.
+
+p ==> Position of rightmost non-trailing 0.
+
+Step 1: Flip rightmost non-trailing zero
+
+1    1   0   1  1  0  1  1  1  1  1  1  0  0
+13  12  11  10  9  8  7  6  5  4  3  2  1  0
+
+With this change, we have increased the number of 1s of n. We can shrink the number by rearranging all the bits to the right of bit p such that the 0s are on the left and the 1s are on the right. As we do this, we want to replace one of the 1s with a 0. A relatively easy way of doing this is to count how many ones are to the right of p, clear all the bits from 0 until p, and then add them back to c1-1 ones. Let c1 be the number of ones to the right of p and c0 be the number of zeros to the right of p. Let's walk through this with an example.
+
+c1 ==> Number of ones to the right of p
+c0 ==> Number of zeros to the right of p.
+p = c0 + c1
+
+Step 2: Clear bits to the right of p. From before, c0 = 2. c1 = 5. p = 7.
+
+1    1   0   1  1  0  1  0  0  0  0  0  0  0
+13  12  11  10  9  8  7  6  5  4  3  2  1  0
+
+To clear these bits, we need to create a mask that is a sequence of ones, followed by p zeros. We can do this as follows:
+
+// all zeros except for a 1 at position p.
+a = 1 << p;
+
+// all zeros, followed by p ones.
+b = a - 1;
+
+// all ones, followed by p zeros.
+mask = ~b;
+
+// clears rightmost p bits.
+n = n & mask;
+
+Or, more concisely, we do:
+n &= ~((1 << p) - 1).
+
+Step 3: Add one c1 - 1 one.
+
+1   1   0   1   1  0  1  0  0  0  1  1  1  1
+13  12  11  10  9  8  7  6  5  4  3  2  1  0
+
+To insert c1 - 1 one on the right, we do the following:
+
+// 0s with a 1 at position c1– 1
+a = 1 << (c1 - 1);
+
+// 0s with 1s at positions 0 through c1-1
+b = a - 1;
+
+// inserts 1s at positions 0 through c1-1
+n = n | b;
+
+Or, more concisely:
+n | = (1 << (c1 - 1)) - 1;
+
+We have now arrived at the smallest number, bigger than n with the same number of ones. The implementation of the code for getNext is below.
+
+C++
+
+// C++ implementation of  getNext with
+// same number of bits 1's is below
+#include <bits/stdc++.h>
+using namespace std;
+
+// Main Function to find next smallest
+// number bigger than n
+int getNext(int n)
+{
+    /* Compute c0 and c1 */
+    int c = n;
+    int c0 = 0;
+    int c1 = 0;
+
+    while (((c & 1) == 0) && (c != 0))
+    {
+        c0 ++;
+        c >>= 1;
+    }
+    while ((c & 1)==1)
+    {
+        c1++;
+        c >>= 1;
+    }
+
+    // If there is no bigger number with the
+    // same no. of 1's
+    if (c0 +c1 == 31 || c0 +c1== 0)
+        return -1;
+
+    // position of rightmost non-trailing zero
+    int p = c0 + c1;
+
+    // Flip rightmost non-trailing zero
+    n |= (1 << p);
+
+    // Clear all bits to the right of p
+    n &= ~((1 << p) - 1);
+
+    // Insert (c1-1) ones on the right.
+    n |= (1 << (c1 - 1)) - 1;
+
+    return n;
+}
+
+// Driver Code
+int main()
+{
+    int n = 5;   // input 1
+    cout << getNext(n) << endl;
+
+    n = 8;     // input 2
+    cout << getNext(n);
+    return 0;
+}
+
+Java
+
+// Java implementation of
+// getNext with same number
+// of bits 1's is below
+import java.io.*;
+
+class GFG
+{
+
+    // Main Function to find next
+    // smallest number bigger than n
+    static int getNext(int n)
+    {
+
+        /* Compute c0 and c1 */
+        int c = n;
+        int c0 = 0;
+        int c1 = 0;
+
+        while (((c & 1) == 0) &&
+                (c != 0))
+        {
+            c0++;
+            c >>= 1;
+        }
+        while ((c & 1) == 1)
+        {
+            c1++;
+            c >>= 1;
+        }
+
+        // If there is no bigger number
+        // with the same no. of 1's
+        if (c0 + c1 == 31 ||
+            c0 + c1 == 0)
+            return -1;
+
+        // position of rightmost
+        // non-trailing zero
+        int p = c0 + c1;
+
+        // Flip rightmost
+        // non-trailing zero
+        n |= (1 << p);
+
+        // Clear all bits
+        // to the right of p
+        n &= ~((1 << p) - 1);
+
+        // Insert (c1-1) ones
+        // on the right.
+        n |= (1 << (c1 - 1)) - 1;
+
+        return n;
+    }
+
+    // Driver Code
+    public static void main (String[] args)
+    {
+
+        int n = 5; // input 1
+        System.out.println(getNext(n));
+
+        n = 8; // input 2
+        System.out.println(getNext(n));
+    }
+}
+
+// This code is contributed by aj_36
+
+Python3
+
+# Python 3 implementation of getNext with
+# same number of bits 1's is below
+
+# Main Function to find next smallest
+# number bigger than n
+def getNext(n):
+
+    # Compute c0 and c1
+    c = n
+    c0 = 0
+    c1 = 0
+
+    while (((c & 1) == 0) and (c != 0)):
+        c0 += 1
+        c >>= 1
+
+    while ((c & 1) == 1):
+        c1 += 1
+        c >>= 1
+
+    # If there is no bigger number with
+    # the same no. of 1's
+    if (c0 + c1 == 31 or c0 + c1== 0):
+        return -1
+
+    # position of rightmost non-trailing zero
+    p = c0 + c1
+
+    # Flip rightmost non-trailing zero
+    n |= (1 << p)
+
+    # Clear all bits to the right of p
+    n &= ~((1 << p) - 1)
+
+    # Insert (c1-1) ones on the right.
+    n |= (1 << (c1 - 1)) - 1
+
+    return n
+
+# Driver Code
+if __name__ == "__main__":
+
+    n = 5 # input 1
+    print(getNext(n))
+
+    n = 8     # input 2
+    print(getNext(n))
+
+# This code is contributed by ita_c
+
+C#
+
+// C# implementation of getNext with
+// same number of bits 1's is below
+using System;
+
+class GFG {
+
+    // Main Function to find next
+    // smallest number bigger than n
+    static int getNext(int n)
+    {
+
+        /* Compute c0 and c1 */
+        int c = n;
+        int c0 = 0;
+        int c1 = 0;
+
+        while (((c & 1) == 0) && (c != 0))
+        {
+            c0++;
+            c >>= 1;
+        }
+        while ((c & 1) == 1)
+        {
+            c1++;
+            c >>= 1;
+        }
+
+        // If there is no bigger number
+        // with the same no. of 1's
+        if (c0 + c1 == 31 || c0 + c1== 0)
+            return -1;
+
+        // position of rightmost
+        // non-trailing zero
+        int p = c0 + c1;
+
+        // Flip rightmost non-trailing
+        // zero
+        n |= (1 << p);
+
+        // Clear all bits to the right
+        // of p
+        n &= ~((1 << p) - 1);
+
+        // Insert (c1-1) ones on the
+        // right.
+        n |= (1 << (c1 - 1)) - 1;
+
+        return n;
+    }
+
+    // Driver Code
+    static void Main()
+    {
+        int n = 5; // input 1
+        Console.WriteLine(getNext(n));
+
+        n = 8; // input 2
+        Console.Write(getNext(n));
+
+    }
+}
+
+// This code is contributed by Anuj_67
+
+PHP
+
+<?php
+// PHP implementation of getNext with
+// same number of bits 1's is below
+
+// Function to find next smallest
+// number bigger than n
+function getNext($n)
+{
+
+    // Compute c0 and c1
+    $c = $n;
+    $c0 = 0;
+    $c1 = 0;
+
+    while ((($c & 1) == 0) &&
+                   ($c != 0))
+    {
+        $c0 ++;
+        $c >>= 1;
+    }
+    while (($c & 1) == 1)
+    {
+        $c1++;
+        $c >>= 1;
+    }
+
+    // If there is no bigger
+    // number with the
+    // same no. of 1's
+    if ($c0 + $c1 == 31 ||
+        $c0 + $c1== 0)
+        return -1;
+
+    // position of rightmost
+    // non-trailing zero
+    $p = $c0 + $c1;
+
+    // Flip rightmost non -
+    // trailing zero
+    $n |= (1 << $p);
+
+    // Clear all bits to
+    // the right of p
+    $n &= ~((1 << $p) - 1);
+
+    // Insert (c1-1) ones
+    // on the right.
+    $n |= (1 << ($c1 - 1)) - 1;
+
+    return $n;
+}
+
+    // Driver Code
+    // input 1
+    $n = 5;
+    echo getNext($n),"\n";
+
+    // input 2
+    $n = 8;
+    echo getNext($n);
+
+// This code is contributed by ajit
+?>
+
+JavaScript
+
+<script>
+
+    function getNext(n)
+    {
+        /* Compute c0 and c1 */
+        let c = n;
+        let c0 = 0;
+        let c1 = 0;
+
+        while (((c & 1) == 0) &&
+                (c != 0))
+        {
+            c0++;
+            c >>= 1;
+        }
+        while ((c & 1) == 1)
+        {
+            c1++;
+            c >>= 1;
+        }
+
+        // If there is no bigger number
+        // with the same no. of 1's
+        if (c0 + c1 == 31 ||
+            c0 + c1 == 0)
+            return -1;
+
+        // position of rightmost
+        // non-trailing zero
+        let p = c0 + c1;
+
+        // Flip rightmost
+        // non-trailing zero
+        n |= (1 << p);
+
+        // Clear all bits
+        // to the right of p
+        n &= ~((1 << p) - 1);
+
+        // Insert (c1-1) ones
+        // on the right.
+        n |= (1 << (c1 - 1)) - 1;
+
+        return n;
+    }
+
+    let  n = 5; // input 1
+    document.write(getNext(n)+"<br>");
+
+    n = 8; // input 2
+    document.write(getNext(n));
+
+    // This code is contributed by rag2127
+</script>
+
+Output:
+
+6
+16
+
+The time complexity of the above code is O(log n) as we are looping through the bits of the given integer n.
+
+The space complexity of the above code is O(1) as no extra space is required.
+
+Optimal Bit Manipulation Approach for Get Previous Number To implement getPrev, we follow a very similar approach.
+
+- Compute c0 and c1. Note that c1 is the number of trailing ones, and c0 is the size of the block of zeros immediately to the left of the trailing ones.
+- Flip the rightmost non-trailing one to zero. This will be at position p = c1 + c0.
+- Clear all bits to the right of bit p.
+- Insert c1 + 1 ones immediately to the right of position p.
+
+Note that Step 2 sets bits p to zero and Step 3 sets bits 0 through p-1 to zero. We can merge these steps. Let's walk through this with an example.
+
+c1 ==> number of trailing ones
+c0 ==> size of the block of zeros immediately
+       to the left of the trailing ones.
+p = c1 + c0
+
+Step 1: Initial Number: p = 7. c1 = 2. c0 = 5.
+
+1   0   0   1   1  1  1  0  0  0  0  0  1  1
+13  12  11  10  9  8  7  6  5  4  3  2  1  0
+
+Steps 2 & 3: Clear bits 0 through p.
+
+1   0   0   1   1  1  0  0  0  0  0  0  0  0
+13  12  11  10  9  8  7  6  5  4  3  2  1  0
+
+We can do this as follows:
+
+// Sequence of 1s
+int a = ~0;
+
+// Sequence of 1s followed by p + 1 zeros.
+int b = a << (p + 1);
+
+// Clears bits 0 through p.
+n & = b;
+
+Step 4: Insert c1 + 1 ones immediately to the right of position p.
+
+1   0   0   1   1  1  0  1  1  1  0  0  0  0
+13  12  11  10  9  8  7  6  5  4  3  2  1  0
+
+Note that since p =c1 + c0, then (c1 + 1) ones will be followed by (c0 – 1)zeros. We can do this as follows:
+
+// 0s with 1 at position (c1 + 1)
+int a = 1 << (c1 + 1);
+
+// 0s followed by c1 + 1 ones
+int b = a - 1;
+
+// c1 + 1 ones followed by c0 - 1 zeros.
+int c = b << (c0 - 1);
+n |= c;
+
+The code to implement this is below.
+
+C++
+
+// C++ Implementation of  getPrev in
+// Same number of bits 1's is below
+#include <bits/stdc++.h>
+using namespace std;
+
+// Main Function to find next Bigger number
+// Smaller than n
+int getPrev(int n)
+{
+    /* Compute c0 and c1  and store N*/
+    int temp = n;
+    int c0 = 0;
+    int c1= 0;
+
+    while ((temp & 1) == 1)
+    {
+        c1++;
+        temp = temp >> 1;
+    }
+
+    if (temp == 0)
+        return -1;
+
+    while (((temp & 1) == 0) && (temp!= 0))
+    {
+        c0++;
+        temp  = temp >> 1;
+    }
+
+    // position of rightmost non-trailing one.
+    int p = c0 + c1;
+
+    // clears from bit p onwards
+    n = n & ((~0) << (p + 1));
+
+    // Sequence of (c1+1) ones
+    int mask = (1 << (c1 + 1)) - 1;
+
+    n = n | mask << (c0 - 1);
+
+    return n;
+}
+
+// Driver Code
+int main()
+{
+    int n = 6;   // input 1
+    cout << getPrev(n);
+
+    n = 16;     // input 2
+    cout << endl;
+    cout << getPrev(n);
+
+    return 0;
+}
+
+Java
+
+// Java Implementation of
+// getPrev in Same number
+// of bits 1's is below
+import java.io.*;
+
+class GFG
+{
+
+// Main Function to find
+// next Bigger number
+// Smaller than n
+static int getPrev(int n)
+{
+    // Compute c0 and
+    // c1 and store N
+    int temp = n;
+    int c0 = 0;
+    int c1= 0;
+
+    while((temp & 1) == 1)
+    {
+        c1++;
+        temp = temp >> 1;
+    }
+
+    if(temp == 0)
+        return -1;
+
+    while(((temp & 1) == 0) &&
+           (temp!= 0))
+    {
+        c0++;
+        temp = temp >> 1;
+    }
+
+    // position of rightmost
+    // non-trailing one.
+    int p = c0 + c1;
+
+    // clears from bit p onwards
+    n = n & ((~0) << (p + 1));
+
+    // Sequence of (c1+1) ones
+    int mask = (1 << (c1 + 1)) - 1;
+
+    n = n | mask << (c0 - 1);
+
+    return n;
+}
+
+// Driver Code
+public static void main(String[] args)
+{
+    int n = 6; // input 1
+    System.out.println(getPrev(n));
+
+    n = 16; // input 2
+    System.out.println(getPrev(n));
+}
+}
+
+// This code is contributed by aj_36
+
+Python3
+
+# Python3 Implementation of  getPrev in
+# Same number of bits 1's is below
+
+# Main Function to find next Bigger number
+# Smaller than n
+
+def getPrev(n):
+
+    # Compute c0 and c1  and store N
+    temp = n
+    c0 = 0
+    c1 = 0
+
+    while ((temp & 1) == 1):
+        c1 = c1+1
+        temp = temp >> 1
+
+    if (temp == 0):
+        return -1
+
+    while (((temp & 1) == 0) and (temp != 0)):
+        c0 = c0+1
+        temp = temp >> 1
+
+    # position of rightmost non-trailing one.
+    p = c0 + c1
+
+    # clears from bit p onwards
+    n = n & ((~0) << (p + 1))
+
+    # Sequence of (c1+1) ones
+    mask = (1 << (c1 + 1)) - 1
+
+    n = n | mask << (c0 - 1)
+
+    return n
+
+if __name__ == '__main__':
+    n = 6   # input 1
+    print(getPrev(n))
+
+    n = 16     # input 2
+    print(getPrev(n))
+
+# This code is contributed by nirajgusain5
+
+C#
+
+// C# Implementation of
+// getPrev in Same number
+// of bits 1's is below
+using System;
+
+class GFG
+{
+
+// Main Function to find
+// next Bigger number
+// Smaller than n
+static int getPrev(int n)
+{
+    // Compute c0 and
+    // c1 and store N
+    int temp = n;
+    int c0 = 0;
+    int c1 = 0;
+
+    while((temp & 1) == 1)
+    {
+        c1++;
+        temp = temp >> 1;
+    }
+
+    if(temp == 0)
+        return -1;
+
+    while(((temp & 1) == 0) &&
+           (temp != 0))
+    {
+        c0++;
+        temp = temp >> 1;
+    }
+
+    // position of rightmost
+    // non-trailing one.
+    int p = c0 + c1;
+
+    // clears from
+    // bit p onwards
+    n = n & ((~0) << (p + 1));
+
+    // Sequence of
+    // (c1+1) ones
+    int mask = (1 << (c1 + 1)) - 1;
+
+    n = n | mask << (c0 - 1);
+
+    return n;
+}
+
+// Driver Code
+static public void Main ()
+{
+    int n = 6; // input 1
+    Console.WriteLine(getPrev(n));
+
+    n = 16; // input 2
+    Console.WriteLine(getPrev(n));
+}
+}
+
+// This code is contributed by ajit
+
+PHP
+
+<?php
+// PHP Implementation of getPrev in
+// Same number of bits 1's is below
+
+// Main Function to find next Bigger
+// number Smaller than n
+
+function getPrev($n)
+{
+    // Compute c0 and
+    // c1 and store N
+    $temp = $n;
+    $c0 = 0;
+    $c1= 0;
+
+    while (($temp & 1) == 1)
+    {
+        $c1++;
+        $temp = $temp >> 1;
+    }
+
+    if ($temp == 0)
+        return -1;
+
+    while ((($temp & 1) == 0) &&
+            ($temp!= 0))
+    {
+        $c0++;
+        $temp = $temp >> 1;
+    }
+
+    // position of rightmost
+    // non-trailing one.
+    $p = $c0 + $c1;
+
+    // clears from bit p onwards
+    $n = $n & ((~0) << ($p + 1));
+
+    // Sequence of (c1 + 1) ones
+    $mask = (1 << ($c1 + 1)) - 1;
+
+    $n = $n | $mask << ($c0 - 1);
+
+    return $n;
+}
+
+// Driver Code
+
+// input 1
+$n = 6;
+echo getPrev($n);
+
+// input 2
+$n = 16;
+echo " \n" ;
+echo getPrev($n);
+
+// This code is contributed by Ajit
+?>
+
+JavaScript
+
+<script>
+// Javascript Implementation of
+// getPrev in Same number
+// of bits 1's is below
+
+    // Main Function to find
+// next Bigger number
+// Smaller than n
+    function getPrev(n)
+    {
+        // Compute c0 and
+    // c1 and store N
+    let temp = n;
+    let c0 = 0;
+    let c1= 0;
+
+    while((temp & 1) == 1)
+    {
+        c1++;
+        temp = temp >> 1;
+    }
+
+    if(temp == 0)
+        return -1;
+
+    while(((temp & 1) == 0) &&
+           (temp!= 0))
+    {
+        c0++;
+        temp = temp >> 1;
+    }
+
+    // position of rightmost
+    // non-trailing one.
+    let p = c0 + c1;
+
+    // clears from bit p onwards
+    n = n & ((~0) << (p + 1));
+
+    // Sequence of (c1+1) ones
+    let mask = (1 << (c1 + 1)) - 1;
+
+    n = n | mask << (c0 - 1);
+
+    return n;
+    }
+
+    // Driver Code
+    let n = 6; // input 1
+    document.write(getPrev(n)+"<br>");
+
+    n = 16; // input 2
+    document.write(getPrev(n));
+
+    // This code is contributed by avanitrachhadiya2155
+</script>
+
+Output:
+
+5
+8
+
+Time Complexity: O(logn)
+
+The time complexity of the above algorithm is O(logn) as we are iterating through the bits of a number while computing c0 and c1.
+
+Space Complexity: O(1)
+
+The algorithm runs in constant space O(1) as no extra space is used. Arithmetic Approach to Get Next Number If c0 is the number of trailing zeros, c1 is the size of the one block immediately following, and p = c0 + c1, we can form our solution from earlier as follows:
+
+1. Set the p-th bit to 1.
+2. Set all bits following p to 0.
+3. Set bits from 0 through c1 - 2 to 1. This will be c1 - 1 total bits.
+
+A quick way to perform steps 1 and 2 is to set the trailing zeros to 1 (giving us p trailing ones), and then add 1. Adding one will flip all trailing ones, so we wind up with a 1 at bit p followed by p zeros. We can do this arithmetically. // Sets trailing 0s to 1, giving us p trailing 1s. n += 2 c0 - 1 ; // Flips first p ls to 0s and puts a 1 at bit p. n += 1; Now, to perform Step 3 arithmetically, we just do: // Sets trailing c1 - 1 zeros to ones. n += 2 c1 - 1 - 1; This math reduces to: next = n + (2 c0 - 1) + 1 + (2 c1 - 1 - 1) = n + 2 c0 + 2 c1 - 1 – 1
+
+The best part is that using a little bit of manipulation, it's simple to code.
+
+C++
+
+// C++ Implementation of getNext with
+// Same number of bits 1's is below
+#include <bits/stdc++.h>
+using namespace std;
+
+// Main Function to find next smallest number
+// bigger than n
+int getNext(int n)
+{
+    /* Compute c0 and c1 */
+    int c = n;
+    int c0 = 0;
+    int c1 = 0;
+
+    while (((c & 1) == 0) && (c != 0))
+    {
+        c0 ++;
+        c >>= 1;
+    }
+    while ((c & 1)==1)
+    {
+        c1++;
+        c >>= 1;
+    }
+
+    // If there is no bigger number with the
+    // same no. of 1's
+    if (c0 +c1 == 31 || c0 +c1== 0)
+        return -1;
+
+    return n + (1 << c0) + (1 << (c1 - 1)) - 1;
+}
+
+// Driver Code
+int main()
+{
+    int n = 5; // input 1
+    cout << getNext(n);
+
+    n = 8;     // input 2
+    cout << endl;
+    cout << getNext(n);
+    return 0;
+}
+
+Java
+
+// Java Implementation of getNext with
+// Same number of bits 1's is below
+import java.io.*;
+
+class GFG
+{
+
+// Function to find next smallest
+// number bigger than n
+static int getNext(int n)
+{
+    /* Compute c0
+    and c1 */
+    int c = n;
+    int c0 = 0;
+    int c1 = 0;
+
+    while (((c & 1) == 0) && (c != 0))
+    {
+        c0 ++;
+        c >>= 1;
+    }
+    while ((c & 1) == 1)
+    {
+        c1++;
+        c >>= 1;
+    }
+
+    // If there is no bigger number
+    // with the same no. of 1's
+    if (c0 + c1 == 31 || c0 + c1 == 0)
+        return -1;
+
+    return n + (1 << c0) +
+               (1 << (c1 - 1)) - 1;
+}
+
+// Driver Code
+public static void main (String[] args)
+{
+int n = 5; // input 1
+System.out.println(getNext(n));
+
+n = 8; // input 2
+System.out.println(getNext(n));
+}
+}
+
+// This code is contributed by ajit
+
+Python3
+
+# python3 Implementation of getNext with
+# Same number of bits 1's is below
+
+# Main Function to find next smallest number
+# bigger than n
+
+def getNext(n):
+
+    # Compute c0 and c1
+    c = n
+    c0 = 0
+    c1 = 0
+
+    while (((c & 1) == 0) and (c != 0)):
+        c0 = c0+1
+        c >>= 1
+
+    while ((c & 1) == 1):
+        c1 = c1+1
+        c >>= 1
+
+    # If there is no bigger number with the
+    # same no. of 1's
+    if (c0 + c1 == 31 or c0 + c1 == 0):
+        return -1
+
+    return n + (1 << c0) + (1 << (c1 - 1)) - 1
+
+# Driver Code
+
+if __name__ == '__main__':
+    n = 5  # input 1
+    print(getNext(n))
+    n = 8     # input 2
+    print(getNext(n))
+
+# This code is contributed by nirajgusain5
+
+C#
+
+// C# Implementation of getNext
+// with Same number of bits
+// 1's is below
+using System;
+
+class GFG
+{
+
+// Function to find next smallest
+// number bigger than n
+static int getNext(int n)
+{
+    /* Compute c0
+    and c1 */
+    int c = n;
+    int c0 = 0;
+    int c1 = 0;
+
+    while (((c & 1) == 0) &&
+            (c != 0))
+    {
+        c0 ++;
+        c >>= 1;
+    }
+    while ((c & 1) == 1)
+    {
+        c1++;
+        c >>= 1;
+    }
+
+    // If there is no bigger
+    // number with the same
+    // no. of 1's
+    if (c0 + c1 == 31 ||
+        c0 + c1 == 0)
+        return -1;
+
+    return n + (1 << c0) +
+               (1 << (c1 - 1)) - 1;
+}
+
+// Driver Code
+static public void Main ()
+{
+    int n = 5; // input 1
+    Console.WriteLine(getNext(n));
+
+    n = 8; // input 2
+    Console.WriteLine(getNext(n));
+    }
+}
+
+// This code is contributed by m_kit
+
+PHP
+
+<?php
+// PHP Implementation of
+// getNext with Same number
+// of bits 1's is below
+
+// Main Function to find
+// next smallest number
+// bigger than n
+function getNext($n)
+{
+    /* Compute c0 and c1 */
+    $c = $n;
+    $c0 = 0;
+    $c1 = 0;
+
+    while ((($c & 1) == 0) &&
+            ($c != 0))
+    {
+        $c0 ++;
+        $c >>= 1;
+    }
+    while (($c & 1) == 1)
+    {
+        $c1++;
+        $c >>= 1;
+    }
+
+    // If there is no bigger
+    // number with the
+    // same no. of 1's
+    if ($c0 + $c1 == 31 ||
+        $c0 + $c1 == 0)
+        return -1;
+
+    return $n + (1 << $c0) +
+                (1 << ($c1 - 1)) - 1;
+}
+
+// Driver Code
+$n = 5; // input 1
+echo getNext($n);
+
+$n = 8; // input 2
+echo "\n";
+echo getNext($n);
+
+// This code is contributed by ajit
+?>
+
+JavaScript
+
+<script>
+    // Javascript Implementation of getNext
+    // with Same number of bits
+    // 1's is below
+
+    // Function to find next smallest
+    // number bigger than n
+    function getNext(n)
+    {
+        /* Compute c0
+        and c1 */
+        let c = n;
+        let c0 = 0;
+        let c1 = 0;
+
+        while (((c & 1) == 0) &&
+                (c != 0))
+        {
+            c0 ++;
+            c >>= 1;
+        }
+        while ((c & 1) == 1)
+        {
+            c1++;
+            c >>= 1;
+        }
+
+        // If there is no bigger
+        // number with the same
+        // no. of 1's
+        if (c0 + c1 == 31 ||
+            c0 + c1 == 0)
+            return -1;
+
+        return n + (1 << c0) +
+                   (1 << (c1 - 1)) - 1;
+    }
+
+    let n = 5; // input 1
+    document.write(getNext(n) + "</br>");
+
+    n = 8; // input 2
+    document.write(getNext(n));
+
+</script>
+
+Output :
+
+6
+16
+
+Time Complexity: O(logn).
+
+Space Complexity: O(1)
+
+Arithmetic Approach to Get Previous Number If c1 is the number of trailing ones, c0 is the size of the zero block immediately following, and p =c0 + c1, we can word the initial getPrev solution as follows:
+
+1. Set the pth bit to 0
+2. Set all bits following p to 1
+3. Set bits 0 through c0 - 1 to 0.
+
+We can implement this arithmetically as follows. For clarity in the example, we assume n = 10000011. This makes c1 = 2 and c0 = 5.
+
+// Removes trailing 1s. n is now 10000000.
+n -= 2c1 – 1;
+
+// Flips trailing 0s. n is now 01111111.
+n -= 1;
+
+// Flips last (c0-1) 0s. n is now 01110000.
+n -= 2c0 - 1 - 1;
+
+This reduces mathematically to:
+next = n - (2c1 - 1) - 1 - ( 2c0-1 - 1) .
+     = n - 2c1 - 2c0-1 + 1;
+
+Again, this is very easy to implement.
+
+C++
+
+// C++ Implementation of Arithmetic Approach to
+// getPrev with Same number of bits 1's is below
+#include <bits/stdc++.h>
+using namespace std;
+
+// Main Function to find next Bigger number
+// Smaller than n
+int getPrev(int n)
+{
+    /* Compute c0 and c1  and store N*/
+    int temp = n;
+    int c0 = 0;
+    int c1 = 0;
+
+    while ((temp & 1) == 1)
+    {
+        c1++;
+        temp = temp >> 1;
+    }
+
+    if (temp == 0)
+        return -1;
+
+    while (((temp & 1) == 0) && (temp!= 0))
+    {
+        c0++;
+        temp  = temp >> 1;
+    }
+
+    return n - (1 << c1) - (1 << (c0 - 1)) + 1;
+}
+
+// Driver Code
+int main()
+{
+    int n = 6;   // input 1
+    cout << getPrev(n);
+
+    n = 16;     // input 2
+    cout << endl;
+    cout << getPrev(n);
+
+    return 0;
+}
+
+Java
+
+// Java Implementation of Arithmetic
+// Approach to getPrev with Same
+// number of bits 1's is below
+import java.io.*;
+
+class GFG
+{
+
+// Main Function to find next
+// Bigger number Smaller than n
+static int getPrev(int n)
+{
+    /* Compute c0 and
+    c1 and store N*/
+    int temp = n;
+    int c0 = 0;
+    int c1 = 0;
+
+    while ((temp & 1) == 1)
+    {
+        c1++;
+        temp = temp >> 1;
+    }
+
+    if (temp == 0)
+        return -1;
+
+    while (((temp & 1) == 0) &&
+            (temp!= 0))
+    {
+        c0++;
+        temp = temp >> 1;
+    }
+
+    return n - (1 << c1) -
+               (1 << (c0 - 1)) + 1;
+}
+
+// Driver Code
+public static void main (String[] args)
+{
+
+    int n = 6; // input 1
+    System.out.println (getPrev(n));
+
+    n = 16; // input 2
+    System.out.println(getPrev(n));
+
+}
+}
+
+// This code is contributed by akt_mit
+
+Python3
+
+# Python3 Implementation of Arithmetic Approach to
+# getPrev with Same number of bits 1's is below
+
+# Main Function to find next Bigger
+# number Smaller than n
+def getPrev(n):
+
+    # Compute c0 and c1 and store N
+    temp = n
+    c0 = 0
+    c1 = 0
+
+    while ((temp & 1) == 1):
+        c1 += 1
+        temp = temp >> 1
+    if (temp == 0):
+        return -1
+
+    while (((temp & 1) == 0) and (temp != 0)):
+        c0 += 1
+        temp = temp >> 1
+
+    return n - (1 << c1) - (1 << (c0 - 1)) + 1
+
+# Driver Code
+if __name__ == '__main__':
+    n = 6 # input 1
+    print(getPrev(n))
+
+    n = 16     # input 2
+    print(getPrev(n))
+
+# This code is contributed
+# by PrinciRaj1992
+
+C#
+
+// C# Implementation of Arithmetic
+// Approach to getPrev with Same
+// number of bits 1's is below
+using System;
+
+class GFG
+{
+
+// Main Function to find next
+// Bigger number Smaller than n
+static int getPrev(int n)
+{
+    /* Compute c0 and
+    c1 and store N*/
+    int temp = n;
+    int c0 = 0;
+    int c1 = 0;
+
+    while ((temp & 1) == 1)
+    {
+        c1++;
+        temp = temp >> 1;
+    }
+
+    if (temp == 0)
+        return -1;
+
+    while (((temp & 1) == 0) &&
+            (temp!= 0))
+    {
+        c0++;
+        temp = temp >> 1;
+    }
+
+    return n - (1 << c1) -
+               (1 << (c0 - 1)) + 1;
+}
+
+// Driver Code
+static public void Main ()
+{
+    int n = 6; // input 1
+    Console.WriteLine(getPrev(n));
+
+    n = 16; // input 2
+    Console.WriteLine(getPrev(n));
+}
+}
+
+// This code is contributed by ajit
+
+PHP
+
+<?php
+// PHP program to count of
+// steps until one of the
+// two numbers become 0.
+
+// Returns count of steps
+// before one of the numbers
+// become 0 after repeated
+// subtractions.
+function countSteps($x, $y)
+{
+    // If y divides x, then
+    // simply return x/y.
+    if ($x % $y == 0)
+        return floor(((int)$x / $y));
+
+    // Else recur. Note that this
+    // function works even if x is
+    // smaller than y because in that
+    // case first recursive call
+    // exchanges roles of x and y.
+    return floor(((int)$x / $y) +
+                   countSteps($y, $x % $y));
+}
+
+// Driver code
+$x = 100;
+$y = 19;
+echo countSteps($x, $y);
+
+// This code is contributed by aj_36
+?>
+
+JavaScript
+
+<script>
+    // Javascript Implementation of Arithmetic
+    // Approach to getPrev with Same
+    // number of bits 1's is below
+
+    // Main Function to find next
+    // Bigger number Smaller than n
+    function getPrev(n)
+    {
+        /* Compute c0 and
+        c1 and store N*/
+        let temp = n;
+        let c0 = 0;
+        let c1 = 0;
+
+        while ((temp & 1) == 1)
+        {
+            c1++;
+            temp = temp >> 1;
+        }
+
+        if (temp == 0)
+            return -1;
+
+        while (((temp & 1) == 0) &&
+                (temp!= 0))
+        {
+            c0++;
+            temp = temp >> 1;
+        }
+
+        return n - (1 << c1) -
+                   (1 << (c0 - 1)) + 1;
+    }
+
+    let n = 6; // input 1
+    document.write(getPrev(n) + "</br>");
+
+    n = 16; // input 2
+    document.write(getPrev(n));
+
+</script>
+
+Output :
+
+5
+
+8
+
+Time complexity: O(log n) where n is the value of the input integer n.
+
+Space complexity: O(1) as the algorithm uses only a constant amount of additional memory.
+
+This article is contributed by Mr. Somesh Awasthi .

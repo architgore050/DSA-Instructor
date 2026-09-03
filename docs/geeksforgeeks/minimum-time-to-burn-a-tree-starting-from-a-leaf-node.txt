@@ -1,0 +1,979 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-time-to-burn-a-tree-starting-from-a-leaf-node/
+Title: Minimum time to burn a Tree
+Extractor: 2
+
+Given the root of a binary tree and a target node, find the minimum time required to burn the entire tree if the target node is set on fire. In one second, the fire spreads from a node to its left child, right child, and parent. Note: The tree contains unique values.
+
+Examples:
+
+> Input: target = 2 Output : 3 Explanation:
+
+Table of Content
+
+- [Approach- 1] Using Queue - O(n) Time and O(n) Space
+- [Alternate Approach] Using Recursion - O(n) Time and O(h) Space
+
+### [Approach- 1] Using Queue - O(n) Time and O(n) Space
+
+> The fire spreads to neighboring nodes first, then to their neighbors, and so on. In other words, the fire spreads level by level. To simulate this, we use BFS to traverse the tree in all directions, towards children and the parent. Since we need to move upwards, we first keep track of the parent of each node. Then, starting from the target node, we perform a level-order traversal. The number of levels traversed during this process gives the minimum time required to burn the entire tree.
+
+In JavaScript there is no any built in queue so we are using custom queue.
+
+C++
+
+#include<iostream>
+#include<queue>
+#include<unordered_map>
+using namespace std;
+
+// Node Structure
+class Node{
+public:
+    int data;
+    Node* left, *right;
+    Node(int x) {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+int minTime(Node *root, int target) {
+    if (root == nullptr) return -1;
+
+    queue<Node*> q;
+    q.push(root);
+    Node* tar;
+
+    // Map to keep track of parent of every node
+    unordered_map<Node*, Node*> par;
+    par[root] = nullptr;
+
+    while (!q.empty()) {
+        Node* curr = q.front();
+        q.pop();
+
+        //  Set the target node
+        if (curr->data == target)
+            tar = curr;
+
+        //  Push the left child
+        if (curr->left != nullptr) {
+            par[curr->left] = curr;
+            q.push(curr->left);
+        }
+
+        // Push the right child
+        if (curr->right != nullptr) {
+            par[curr->right] = curr;
+            q.push(curr->right);
+        }
+    }
+
+    // map to keep track of visted or not visted node
+    unordered_map<Node*, bool> vis;
+
+    int ans = -1;
+
+    q.push(tar);
+
+    while (!q.empty()) {
+        int size = q.size();
+        while (size--) {
+            Node* curr = q.front();
+            vis[curr] = true;
+            q.pop();
+
+            // Push the left child node.
+            if (curr->left != nullptr && !vis[curr->left])
+                q.push(curr->left);
+
+            // Push the right child node.
+            if (curr->right != nullptr && !vis[curr->right])
+                q.push(curr->right);
+
+            // Push the parent node.
+            if (par[curr] != nullptr && !vis[par[curr]])
+                q.push(par[curr]);
+        }
+        ans++;
+    }
+
+    return ans;
+}
+
+int main() {
+    Node *root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+    root->right->left = new Node(6);
+    root->right->right = new Node(7);
+
+    int target = 2;
+
+    cout << minTime(root, target) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.HashMap;
+import java.util.Map;
+
+// Node Structure
+class Node {
+    int data;
+    Node left, right;
+    Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GFG {
+
+    static int minTime(Node root, int target) {
+        if (root == null) return -1;
+
+        Queue<Node> q = new LinkedList<>();
+        q.add(root);
+        Node tar = null;
+
+        // Map to keep track of parent of every node
+        Map<Node, Node> par = new HashMap<>();
+        par.put(root, null);
+
+        while (!q.isEmpty()) {
+            Node curr = q.poll();
+
+            // Set the target node
+            if (curr.data == target)
+                tar = curr;
+
+            // Insert the left child
+            if (curr.left != null) {
+                par.put(curr.left, curr);
+                q.add(curr.left);
+            }
+
+            // Insert the right child
+            if (curr.right != null) {
+                par.put(curr.right, curr);
+                q.add(curr.right);
+            }
+        }
+
+        // map to keep track of visited or not visited node
+        Map<Node, Boolean> vis = new HashMap<>();
+        int ans = -1;
+        q.add(tar);
+
+        while (!q.isEmpty()) {
+            int size = q.size();
+            while (size-- > 0) {
+                Node curr = q.poll();
+                vis.put(curr, true);
+
+                // Push the left child node.
+                if (curr.left != null && !vis.containsKey(curr.left))
+                    q.add(curr.left);
+
+                // Push the right child node.
+                if (curr.right != null && !vis.containsKey(curr.right))
+                    q.add(curr.right);
+
+                // Push the parent node.
+                if (par.get(curr) != null && !vis.containsKey(par.get(curr)))
+                    q.add(par.get(curr));
+            }
+            ans++;
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+        int target = 2;
+        System.out.println(minTime(root, target));
+    }
+}
+
+Python
+
+from collections import deque
+
+# Node Structure
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+def minTime(root, target):
+    if root is None:
+        return -1
+
+    q = deque()
+    q.append(root)
+    tar = None
+
+    # Map to keep track of parent of every node
+    par = {root: None}
+
+    while q:
+        curr = q.popleft()
+
+        # Set the target node
+        if curr.data == target:
+            tar = curr
+
+        # Insert the left child
+        if curr.left:
+            par[curr.left] = curr
+            q.append(curr.left)
+
+        # Insert the right child
+        if curr.right:
+            par[curr.right] = curr
+            q.append(curr.right)
+
+    # map to keep track of visited or not visited node
+    vis = {}
+    ans = -1
+    q.append(tar)
+
+    while q:
+        size = len(q)
+        for _ in range(size):
+            curr = q.popleft()
+            vis[curr] = True
+
+            # Push the left child node.
+            if curr.left and curr.left not in vis:
+                q.append(curr.left)
+
+            # Push the right child node.
+            if curr.right and curr.right not in vis:
+                q.append(curr.right)
+
+            # Push the parent node.
+            if par[curr] and par[curr] not in vis:
+                q.append(par[curr])
+        ans += 1
+
+    return ans
+
+if __name__ == "__main__":
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+    root.right.left = Node(6)
+    root.right.right = Node(7)
+    target = 2
+    print(minTime(root, target))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+// Node Structure
+class Node {
+    public int data;
+    public Node left, right;
+    public Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GFG {
+
+   static int minTime(Node root, int target) {
+        if (root == null) return -1;
+
+        Queue<Node> q = new Queue<Node>();
+        q.Enqueue(root);
+        Node tar = null;
+
+        // Map to keep track of parent of every node
+        Dictionary<Node, Node> par = new Dictionary<Node, Node>();
+        par[root] = null;
+
+        while (q.Count > 0) {
+            Node curr = q.Dequeue();
+
+            // Set the target node
+            if (curr.data == target)
+                tar = curr;
+
+            // Insert the left child
+            if (curr.left != null) {
+                par[curr.left] = curr;
+                q.Enqueue(curr.left);
+            }
+
+            // Insert the right child
+            if (curr.right != null) {
+                par[curr.right] = curr;
+                q.Enqueue(curr.right);
+            }
+        }
+
+        // map to keep track of visited or not visited node
+        Dictionary<Node, bool> vis = new Dictionary<Node, bool>();
+        int ans = -1;
+        q.Enqueue(tar);
+
+        while (q.Count > 0) {
+            int size = q.Count;
+            for (int i = 0; i < size; i++) {
+                Node curr = q.Dequeue();
+                vis[curr] = true;
+
+                // Push the left child node.
+                if (curr.left != null && !vis.ContainsKey(curr.left))
+                    q.Enqueue(curr.left);
+
+                // Push the right child node.
+                if (curr.right != null && !vis.ContainsKey(curr.right))
+                    q.Enqueue(curr.right);
+
+                // Push the parent node.
+                if (par[curr] != null && !vis.ContainsKey(par[curr]))
+                    q.Enqueue(par[curr]);
+            }
+            ans++;
+        }
+
+        return ans;
+    }
+
+    static void Main(string[] args) {
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+        int target = 2;
+        Console.WriteLine(minTime(root, target));
+    }
+}
+
+JavaScript
+
+// Queue node
+class QNode {
+    constructor(data) {
+        this.data = data;
+        this.next = null;
+    }
+}
+
+// Custom Queue implementation
+class Queue {
+    constructor() {
+        this.front = null;
+        this.rear = null;
+        this._length = 0;
+    }
+
+    // Check if queue is empty
+    isEmpty() {
+        return this._length === 0;
+    }
+
+    // Return current queue size
+    size() {
+        return this._length;
+    }
+
+    // Enqueue a node
+    enqueue(x) {
+        if (!x) return; // ignore null
+        let newNode = new QNode(x);
+        if (this.rear === null) {
+            this.front = this.rear = newNode;
+        } else {
+            this.rear.next = newNode;
+            this.rear = newNode;
+        }
+        this._length++;
+    }
+
+    // Dequeue a node
+    dequeue() {
+        if (this.front === null) return null;
+        let temp = this.front;
+        this.front = this.front.next;
+        if (this.front === null) this.rear = null;
+        this._length--;
+        return temp.data;
+    }
+}
+
+// Node Structure
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Function to calculate minimum time
+// to burn the tree from target
+function minTime(root, target) {
+    if (root === null) return -1;
+
+    // Map child -> parent
+    const par = new Map();
+    const q1 = new Queue();
+    q1.enqueue(root);
+    par.set(root, null);
+
+    // target node reference
+    let tar = null;
+
+    // BFS to map parents and find target node
+    while (!q1.isEmpty()) {
+        const curr = q1.dequeue();
+
+        // Set target node reference
+        if (curr.data === target) tar = curr;
+
+        // Map left child to parent and enqueue
+        if (curr.left !== null) {
+            par.set(curr.left, curr);
+            q1.enqueue(curr.left);
+        }
+
+        // Map right child to parent and enqueue
+        if (curr.right !== null) {
+            par.set(curr.right, curr);
+            q1.enqueue(curr.right);
+        }
+    }
+
+    // If target node not found, return 0
+    if (!tar) return 0;
+
+    // Queue for BFS to simulate burning tree
+    const q2 = new Queue();
+
+    // track visited nodes
+    const vis = new Map();
+    q2.enqueue(tar);
+    vis.set(tar, true);
+
+    let ans = 0;
+
+    // BFS level by level
+    while (!q2.isEmpty()) {
+        let levelSize = q2.size();
+        let processed = 0;
+
+        while (processed < levelSize) {
+            const curr = q2.dequeue();
+
+            // Enqueue left child if not visited
+            if (curr.left && !vis.has(curr.left)) {
+                q2.enqueue(curr.left);
+                vis.set(curr.left, true);
+            }
+
+            // Enqueue right child if not visited
+            if (curr.right && !vis.has(curr.right)) {
+                q2.enqueue(curr.right);
+                vis.set(curr.right, true);
+            }
+
+            // Enqueue parent if not visited
+            const parent = par.get(curr);
+            if (parent && !vis.has(parent)) {
+                q2.enqueue(parent);
+                vis.set(parent, true);
+            }
+
+            processed++;
+        }
+
+        // Increment time after burning one level
+        if (!q2.isEmpty()) ans++;
+    }
+
+    return ans;
+}
+
+// Driver code
+
+// Construct binary tree
+//        1
+//      /   \
+//     2     3
+//    / \   / \
+//   4  5  6   7
+
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+root.right.left = new Node(6);
+root.right.right = new Node(7);
+
+let target = 2;
+
+console.log(minTime(root, target));
+
+Output
+
+3
+
+### [Alternate Approach] Using Recursion - O(n) Time and O(h) Space
+
+The fire spreads level by level from the target node. The total time to burn the entire tree is determined by the farthest node reached by the fire. In other words, the minimum time to burn the whole tree is simply the distance from the target node to the farthest node. This reduces the problem to finding the farthest node from the target.
+
+> The idea is to find the parent of each node and recursively explore all paths from the target node to find the farthest node. The distance to this node gives the minimum time required to burn the entire tree.
+
+C++
+
+#include <iostream>
+#include <unordered_map>
+#include<algorithm>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+    Node(int x) {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+//  Recursively set parent for each node
+void setParent(Node* root, unordered_map<int, Node*>& parent) {
+    if (!root) return;
+    if (root->left) {
+        parent[root->left->data] = root;
+        setParent(root->left, parent);
+    }
+    if (root->right) {
+        parent[root->right->data] = root;
+        setParent(root->right, parent);
+    }
+}
+
+//  Recursively find target node
+Node* findTarget(Node* root, int target) {
+    if (!root) return nullptr;
+    if (root->data == target) return root;
+
+    Node* left = findTarget(root->left, target);
+    if (left) return left;
+
+    return findTarget(root->right, target);
+}
+
+//  DFS to calculate minimum time to burn entire tree
+int dfs(Node* node, unordered_map<int,int>& visited, unordered_map<int, Node*>& parent) {
+    if (!node || visited[node->data]) return 0;
+
+    visited[node->data] = 1;
+
+    // dfs call for left and right child
+    int timeLeft = dfs(node->left, visited, parent);
+    int timeRight = dfs(node->right, visited, parent);
+    int timeParent = 0;
+
+    // call dfs for parent if parnet is not visited
+    if (parent.find(node->data) != parent.end())
+        timeParent = dfs(parent[node->data], visited, parent);
+
+    return max({timeLeft, timeRight, timeParent}) + 1;
+}
+
+int minTime(Node* root, int target) {
+    unordered_map<int, Node*> parent;
+    setParent(root, parent);
+    Node* targetNode = findTarget(root, target);
+    unordered_map<int, int> visited;
+
+    return dfs(targetNode, visited, parent) - 1;
+}
+
+int main() {
+    //         1
+    //       /   \
+    //      2     3
+    //     / \   / \
+    //   4   5 6   7
+
+    Node* root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+    root->right->left = new Node(6);
+    root->right->right = new Node(7);
+
+    int target = 2;
+    cout << minTime(root, target) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.HashMap;
+import java.util.Map;
+
+class Node {
+    int data;
+    Node left, right;
+    Node(int x) { data = x; left = null; right = null; }
+}
+
+public class BurnTree {
+
+    // Recursively set the parent of every node
+    static void setParent(Node root, Map<Integer, Node> parent) {
+        if (root == null) return;
+        if (root.left != null) {
+            parent.put(root.left.data, root);
+            setParent(root.left, parent);
+        }
+        if (root.right != null) {
+            parent.put(root.right.data, root);
+            setParent(root.right, parent);
+        }
+    }
+
+    // Recursively find the target node
+    static Node findTarget(Node root, int target) {
+        if (root == null) return null;
+        if (root.data == target) return root;
+        Node left = findTarget(root.left, target);
+        if (left != null) return left;
+        return findTarget(root.right, target);
+    }
+
+    // DFS to find minimum time to burn tree from target
+    static int dfs(Node node, Map<Integer, Boolean> visited, Map<Integer, Node> parent) {
+        if (node == null || visited.getOrDefault(node.data, false)) return 0;
+        visited.put(node.data, true);
+
+        // dfs call for left and right child
+        int left = dfs(node.left, visited, parent);
+        int right = dfs(node.right, visited, parent);
+
+        // dfs call for parent if parent is not visited
+        int parTime = parent.containsKey(node.data) ? dfs(parent.get(node.data), visited, parent) : 0;
+
+        return Math.max(Math.max(left, right), parTime) + 1;
+    }
+
+    static int minTime(Node root, int target) {
+        Map<Integer, Node> parent = new HashMap<>();
+        setParent(root, parent);
+
+        Node targetNode = findTarget(root, target);
+        Map<Integer, Boolean> visited = new HashMap<>();
+
+        return dfs(targetNode, visited, parent) - 1;
+    }
+
+    public static void main(String[] args) {
+
+        //         1
+        //       /   \
+        //      2     3
+        //     / \   / \
+        //    4   5 6   7
+        Node root = new Node(1);
+        root.left = new Node(2); root.right = new Node(3);
+        root.left.left = new Node(4); root.left.right = new Node(5);
+        root.right.left = new Node(6); root.right.right = new Node(7);
+
+        int target = 2;
+        System.out.println(minTime(root, target));
+    }
+}
+
+Python
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+# Recursively set the parent of every node
+
+def setParent(root, parent):
+    if not root:
+        return
+    if root.left:
+        parent[root.left.data] = root
+        setParent(root.left, parent)
+    if root.right:
+        parent[root.right.data] = root
+        setParent(root.right, parent)
+
+# Recursively find the target node
+
+def findTarget(root, target):
+    if not root:
+        return None
+    if root.data == target:
+        return root
+    left = findTarget(root.left, target)
+    if left:
+        return left
+    return findTarget(root.right, target)
+
+# DFS to find minimum time to burn tree from target
+
+def dfs(node, visited, parent):
+    if not node or visited.get(node.data, False):
+        return 0
+    visited[node.data] = True
+
+#   dfs call for left and right child
+    left = dfs(node.left, visited, parent)
+    right = dfs(node.right, visited, parent)
+
+    # dfs call for parent if parent is not visited
+    par_time = dfs(parent[node.data], visited,
+                   parent) if node.data in parent else 0
+
+    return max(left, right, par_time) + 1
+
+def minTime(root, target):
+    parent = {}
+    setParent(root, parent)
+    targetNode = findTarget(root, target)
+    visited = {}
+    return dfs(targetNode, visited, parent) - 1
+
+if __name__ == "__main__":
+
+    #         1
+    #       /   \
+    #       2     3
+    #      / \   / \
+    #     4   5 6   7
+
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+    root.right.left = Node(6)
+    root.right.right = Node(7)
+    print(minTime(root, 2))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+    public Node(int x)
+    {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GFG {
+
+    // Recursively set the parent of every node
+    static void setParent(Node root,
+                          Dictionary<int, Node> parent)
+    {
+        if (root == null)
+            return;
+        if (root.left != null) {
+            parent[root.left.data] = root;
+            setParent(root.left, parent);
+        }
+        if (root.right != null) {
+            parent[root.right.data] = root;
+            setParent(root.right, parent);
+        }
+    }
+
+    // Recursively find the target node
+    static Node findTarget(Node root, int target)
+    {
+        if (root == null)
+            return null;
+        if (root.data == target)
+            return root;
+        Node left = findTarget(root.left, target);
+        if (left != null)
+            return left;
+        return findTarget(root.right, target);
+    }
+
+    // DFS to find minimum time to burn tree from target
+    static int dfs(Node node, Dictionary<int, bool> visited,
+                   Dictionary<int, Node> parent)
+    {
+        if (node == null
+            || visited.ContainsKey(node.data)
+                   && visited[node.data])
+            return 0;
+        visited[node.data] = true;
+
+        int left = dfs(node.left, visited, parent);
+        int right = dfs(node.right, visited, parent);
+        int parTime
+            = parent.ContainsKey(node.data)
+                  ? dfs(parent[node.data], visited, parent)
+                  : 0;
+
+        return Math.Max(Math.Max(left, right), parTime) + 1;
+    }
+
+    static int minTime(Node root, int target)
+    {
+        var parent = new Dictionary<int, Node>();
+        setParent(root, parent);
+        Node targetNode = findTarget(root, target);
+        var visited = new Dictionary<int, bool>();
+        return dfs(targetNode, visited, parent) - 1;
+    }
+
+    static void Main()
+    {
+
+        //         1
+        //       /   \
+        //      2     3
+        //     / \   / \
+        //   4   5 6   7
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+
+        Console.WriteLine(minTime(root, 2));
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(data)
+    {
+        this.data = data;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Recursively set the parent of every node
+function setParent(root, parent)
+{
+    if (!root)
+        return;
+    if (root.left) {
+        parent[root.left.data] = root;
+        setParent(root.left, parent);
+    }
+    if (root.right) {
+        parent[root.right.data] = root;
+        setParent(root.right, parent);
+    }
+}
+
+// Recursively find the target node
+function findTarget(root, target)
+{
+    if (!root)
+        return null;
+    if (root.data === target)
+        return root;
+    let left = findTarget(root.left, target);
+    if (left)
+        return left;
+    return findTarget(root.right, target);
+}
+
+// DFS to find minimum time to burn tree from target
+function dfs(node, visited, parent)
+{
+    if (!node || visited[node.data])
+        return 0;
+    visited[node.data] = true;
+
+    let left = dfs(node.left, visited, parent);
+    let right = dfs(node.right, visited, parent);
+    let parTime = parent[node.data] ? dfs(parent[node.data],
+                                          visited, parent)
+                                    : 0;
+
+    return Math.max(left, right, parTime) + 1;
+}
+
+function minTime(root, target)
+{
+    const parent = {};
+    setParent(root, parent);
+    const targetNode = findTarget(root, target);
+    const visited = {};
+    return dfs(targetNode, visited, parent) - 1;
+}
+
+// Driver Code
+        //         1
+        //       /   \
+        //      2     3
+        //     / \   / \
+        //   4   5 6   7
+
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+root.right.left = new Node(6);
+root.right.right = new Node(7);
+
+console.log(minTime(root, 2));
+
+Output
+
+3

@@ -1,0 +1,624 @@
+Source: https://www.geeksforgeeks.org/dsa/create-doubly-linked-list-ternary-ree/
+Title: Create a Doubly Linked List from a Ternary Tree
+Extractor: 2
+
+Given a ternary tree, create a doubly linked list out of it. A ternary tree is just like a binary tree but instead of having two nodes, it has three nodes i.e. left, middle, and right.
+
+The doubly linked list should hold the following properties –
+
+1. The left pointer of the ternary tree should act as prev pointer of the doubly linked list.
+2. The middle pointer of the ternary tree should not point to anything.
+3. Right pointer of the ternary tree should act as the next pointer of the doubly linked list.
+4. Each node of the ternary tree is inserted into the doubly linked list before its subtrees and for any node, its left child will be inserted first, followed by the mid and right child (if any).
+
+For the above example, the linked list formed for below tree should be NULL <- 30 <-> 5 <-> 1 <-> 4 <-> 8 <-> 11 <-> 6 <-> 7 <-> 15 <-> 63 <-> 31 <-> 55 <-> 65 -> NULL
+
+We strongly recommend you to minimize your browser and try this yourself first.
+
+The idea is to traverse the tree in a preorder fashion similar to binary tree preorder traversal. Here, when we visit a node, we will insert it into a doubly linked list, in the end, using a tail pointer. That we use to maintain the required insertion order. We then recursively call for left child, middle child and right child in that order.
+
+Below is the implementation of this idea.
+
+C++
+
+// C++ program to create a doubly linked list out
+// of given a ternary tree.
+#include <bits/stdc++.h>
+using namespace std;
+
+/* A ternary tree */
+struct Node
+{
+    int data;
+    struct Node *left, *middle, *right;
+};
+
+/* Helper function that allocates a new node with the
+   given data and assign NULL to left, middle and right
+   pointers.*/
+Node* newNode(int data)
+{
+    Node* node = new Node;
+    node->data = data;
+    node->left = node->middle = node->right = NULL;
+    return node;
+}
+
+/* Utility function that constructs doubly linked list
+by inserting current node at the end of the doubly
+linked list by using a tail pointer */
+void push(Node** tail_ref, Node* node)
+{
+    // initialize tail pointer
+    if (*tail_ref == NULL)
+    {
+        *tail_ref = node;
+
+        // set left, middle and right child to point
+        // to NULL
+        node->left = node->middle = node->right = NULL;
+
+        return;
+    }
+
+    // insert node in the end using tail pointer
+    (*tail_ref)->right = node;
+
+    // set prev of node
+    node->left = (*tail_ref);
+
+    // set middle and right child to point to NULL
+    node->right = node->middle = NULL;
+
+    // now tail pointer will point to inserted node
+    (*tail_ref) = node;
+}
+
+/* Create a doubly linked list out of given a ternary tree.
+by traversing the tree in preorder fashion. */
+void TernaryTreeToList(Node* root, Node** head_ref)
+{
+    // Base case
+    if (root == NULL)
+        return;
+
+    //create a static tail pointer
+    static Node* tail = NULL;
+
+    // store left, middle and right nodes
+    // for future calls.
+    Node* left = root->left;
+    Node* middle = root->middle;
+    Node* right = root->right;
+
+    // set head of the doubly linked list
+    // head will be root of the ternary tree
+    if (*head_ref == NULL)
+        *head_ref = root;
+
+    // push current node in the end of DLL
+    push(&tail, root);
+
+    //recurse for left, middle and right child
+    TernaryTreeToList(left, head_ref);
+    TernaryTreeToList(middle, head_ref);
+    TernaryTreeToList(right, head_ref);
+}
+
+// Utility function for printing double linked list.
+void printList(Node* head)
+{
+    printf("Created Double Linked list is:\n");
+    while (head)
+    {
+        printf("%d ", head->data);
+        head = head->right;
+    }
+}
+
+// Driver program to test above functions
+int main()
+{
+    // Constructing ternary tree as shown in above figure
+    Node* root = newNode(30);
+
+    root->left = newNode(5);
+    root->middle = newNode(11);
+    root->right = newNode(63);
+
+    root->left->left = newNode(1);
+    root->left->middle = newNode(4);
+    root->left->right = newNode(8);
+
+    root->middle->left = newNode(6);
+    root->middle->middle = newNode(7);
+    root->middle->right = newNode(15);
+
+    root->right->left = newNode(31);
+    root->right->middle = newNode(55);
+    root->right->right = newNode(65);
+
+    Node* head = NULL;
+
+    TernaryTreeToList(root, &head);
+
+    printList(head);
+
+    return 0;
+}
+
+Java
+
+//Java program to create a doubly linked list
+// from a given ternary tree.
+
+//Custom node class.
+class newNode
+{
+    int data;
+    newNode left,middle,right;
+    public newNode(int data)
+    {
+        this.data = data;
+        left = middle = right = null;
+    }
+}
+
+class GFG {
+
+    //tail of the linked list.
+    static newNode tail;
+
+    //function to push the node to the tail.
+    public static void push(newNode node)
+    {
+        //to put the node at the end of
+        // the already existing tail.
+        tail.right = node;
+
+        //to point to the previous node.
+        node.left = tail;
+
+        // middle pointer should point to
+        // nothing so null. initiate right
+        // pointer to null.
+        node.middle = node.right = null;
+
+        //update the tail position.
+        tail = node;
+    }
+
+    /* Create a doubly linked list out of given a ternary tree.
+    by traversing the tree in preorder fashion. */
+    public static void ternaryTree(newNode node,newNode head)
+    {
+        if(node == null)
+            return;
+        newNode left = node.left;
+        newNode middle = node.middle;
+        newNode right = node.right;
+        if(tail != node)
+
+            // already root is in the tail so dont push
+            // the node when it was root.In the first
+            // case both node and tail have root in them.
+            push(node);
+
+        // First the left child is to be taken.
+        // Then middle and then right child.
+        ternaryTree(left,head);
+        ternaryTree(middle,head);
+        ternaryTree(right,head);
+    }
+
+    //function to initiate the list process.
+    public static newNode startTree(newNode root)
+    {
+        //Initiate the head and tail with root.
+        newNode head = root;
+        tail = root;
+        ternaryTree(root,head);
+
+        //since the head,root are passed
+        // with reference the changes in
+        // root will be reflected in head.
+        return head;
+    }
+
+    // Utility function for printing double linked list.
+    public static void printList(newNode head)
+    {
+        System.out.print("Created Double Linked list is:\n");
+        while(head != null)
+        {
+            System.out.print(head.data + " ");
+            head = head.right;
+        }
+    }
+
+    // Driver program to test above functions
+    public static void main(String args[])
+    {
+
+        // Constructing ternary tree as shown
+        // in above figure
+        newNode root = new newNode(30);
+        root.left = new newNode(5);
+        root.middle = new newNode(11);
+        root.right = new newNode(63);
+        root.left.left = new newNode(1);
+        root.left.middle = new newNode(4);
+        root.left.right = new newNode(8);
+        root.middle.left = new newNode(6);
+        root.middle.middle = new newNode(7);
+        root.middle.right = new newNode(15);
+        root.right.left = new newNode(31);
+        root.right.middle = new newNode(55);
+        root.right.right = new newNode(65);
+
+        // The function which initiates the list
+        // process returns the head.
+        newNode head = startTree(root);
+        printList(head);
+    }
+}
+
+// This code is contributed by M.V.S.Surya Teja.
+
+Python3
+
+# Python3 program to create a doubly linked
+# list out of given a ternary tree.
+
+# Custom node class.
+class newNode:
+
+    def __init__(self, data):
+
+        self.data = data
+        self.left = None
+        self.right = None
+        self.middle = None
+
+class GFG:
+
+    def __init__(self):
+
+        # Tail of the linked list.
+        self.tail = None
+
+    # Function to push the node to the tail.
+    def push(self, node):
+
+        # To put the node at the end of
+        # the already existing tail.
+        self.tail.right = node
+
+        # To point to the previous node.
+        node.left = self.tail
+
+        # Middle pointer should point to
+        # nothing so null. initiate right
+        # pointer to null.
+        node.middle = node.right = None
+
+        # Update the tail position.
+        self.tail = node
+
+    # Create a doubly linked list out of given
+    # a ternary tree By traversing the tree in
+    # preorder fashion.
+    def ternaryTree(self, node, head):
+
+        if node == None:
+            return
+
+        left = node.left
+        middle = node.middle
+        right = node.right
+
+        if self.tail != node:
+
+            # Already root is in the tail so dont push
+            # the node when it was root.In the first
+            # case both node and tail have root in them.
+            self.push(node)
+
+        # First the left child is to be taken.
+        # Then middle and then right child.
+        self.ternaryTree(left, head)
+        self.ternaryTree(middle, head)
+        self.ternaryTree(right, head)
+
+    def startTree(self, root):
+
+        # Initiate the head and tail with root.
+        head = root
+        self.tail = root
+        self.ternaryTree(root, head)
+
+        # Since the head,root are passed
+        # with reference the changes in
+        # root will be reflected in head.
+        return head
+
+    # Utility function for printing double linked list.
+    def printList(self, head):
+
+        print("Created Double Linked list is:")
+
+        while head:
+            print(head.data, end = " ")
+            head = head.right
+
+# Driver code
+if __name__ == '__main__':
+
+    # Constructing ternary tree as shown
+    # in above figure
+    root = newNode(30)
+    root.left = newNode(5)
+    root.middle = newNode(11)
+    root.right = newNode(63)
+    root.left.left = newNode(1)
+    root.left.middle = newNode(4)
+    root.left.right = newNode(8)
+    root.middle.left = newNode(6)
+    root.middle.middle = newNode(7)
+    root.middle.right = newNode(15)
+    root.right.left = newNode(31)
+    root.right.middle = newNode(55)
+    root.right.right = newNode(65)
+
+    # The function which initiates the list
+    # process returns the head.
+    head = None
+    gfg = GFG()
+    head = gfg.startTree(root)
+
+    gfg.printList(head)
+
+# This code is contributed by Winston Sebastian Pais
+
+C#
+
+// C# program to create a doubly linked
+// list from a given ternary tree.
+using System;
+
+// Custom node class.
+public class newNode
+{
+    public int data;
+    public newNode left, middle, right;
+    public newNode(int data)
+    {
+        this.data = data;
+        left = middle = right = null;
+    }
+}
+
+class GFG
+{
+
+// tail of the linked list.
+public static newNode tail;
+
+// function to push the node to the tail.
+public static void push(newNode node)
+{
+    // to put the node at the end of
+    // the already existing tail.
+    tail.right = node;
+
+    // to point to the previous node.
+    node.left = tail;
+
+    // middle pointer should point to
+    // nothing so null. initiate right
+    // pointer to null.
+    node.middle = node.right = null;
+
+    // update the tail position.
+    tail = node;
+}
+
+/* Create a doubly linked list out
+of given a ternary tree. by traversing
+the tree in preorder fashion. */
+public static void ternaryTree(newNode node,
+                               newNode head)
+{
+    if (node == null)
+    {
+        return;
+    }
+    newNode left = node.left;
+    newNode middle = node.middle;
+    newNode right = node.right;
+    if (tail != node)
+    {
+
+        // already root is in the tail so dont push
+        // the node when it was root.In the first
+        // case both node and tail have root in them.
+        push(node);
+    }
+
+    // First the left child is to be taken.
+    // Then middle and then right child.
+    ternaryTree(left, head);
+    ternaryTree(middle, head);
+    ternaryTree(right, head);
+}
+
+// function to initiate the list process.
+public static newNode startTree(newNode root)
+{
+    // Initiate the head and tail with root.
+    newNode head = root;
+    tail = root;
+    ternaryTree(root,head);
+
+    // since the head,root are passed
+    // with reference the changes in
+    // root will be reflected in head.
+    return head;
+}
+
+// Utility function for printing
+// double linked list.
+public static void printList(newNode head)
+{
+    Console.Write("Created Double Linked list is:\n");
+    while (head != null)
+    {
+        Console.Write(head.data + " ");
+        head = head.right;
+    }
+}
+
+// Driver Code
+public static void Main(string[] args)
+{
+
+    // Constructing ternary tree as shown
+    // in above figure
+    newNode root = new newNode(30);
+    root.left = new newNode(5);
+    root.middle = new newNode(11);
+    root.right = new newNode(63);
+    root.left.left = new newNode(1);
+    root.left.middle = new newNode(4);
+    root.left.right = new newNode(8);
+    root.middle.left = new newNode(6);
+    root.middle.middle = new newNode(7);
+    root.middle.right = new newNode(15);
+    root.right.left = new newNode(31);
+    root.right.middle = new newNode(55);
+    root.right.right = new newNode(65);
+
+    // The function which initiates the list
+    // process returns the head.
+    newNode head = startTree(root);
+    printList(head);
+}
+}
+
+// This code is contributed by Shrikant13
+
+JavaScript
+
+<script>
+//javascript program to create a doubly linked list
+// from a given ternary tree.
+
+//Custom node class.
+class newNode {
+
+    constructor(data) {
+        this.data = data;
+        this.left = null;
+        this.middle = null;
+        this.right = null;
+    }
+}
+    // tail of the linked list.
+     var tail;
+
+    // function to push the node to the tail.
+    function push( node) {
+        // to put the node at the end of
+        // the already existing tail.
+        tail.right = node;
+
+        // to point to the previous node.
+        node.left = tail;
+
+        // middle pointer should point to
+        // nothing so null. initiate right
+        // pointer to null.
+        node.middle = node.right = null;
+
+        // update the tail position.
+        tail = node;
+    }
+
+    /*
+     * Create a doubly linked list out of given a ternary tree. by traversing the
+     * tree in preorder fashion.
+     */
+    function ternaryTree( node,  head) {
+        if (node == null)
+            return;
+        var left = node.left;
+        var middle = node.middle;
+        var right = node.right;
+        if (tail != node)
+
+            // already root is in the tail so dont push
+            // the node when it was root.In the first
+            // case both node and tail have root in them.
+            push(node);
+
+        // First the left child is to be taken.
+        // Then middle and then right child.
+        ternaryTree(left, head);
+        ternaryTree(middle, head);
+        ternaryTree(right, head);
+    }
+
+    // function to initiate the list process.
+      function startTree( root) {
+        // Initiate the head and tail with root.
+        var head = root;
+        tail = root;
+        ternaryTree(root, head);
+
+        // since the head,root are passed
+        // with reference the changes in
+        // root will be reflected in head.
+        return head;
+    }
+
+    // Utility function for printing var linked list.
+    function printList( head) {
+        document.write("Created Double Linked list is:<br/>");
+        while (head != null) {
+            document.write(head.data + " ");
+            head = head.right;
+        }
+    }
+
+    // Driver program to test above functions
+
+        // Constructing ternary tree as shown
+        // in above figure
+         root = new newNode(30);
+        root.left = new newNode(5);
+        root.middle = new newNode(11);
+        root.right = new newNode(63);
+        root.left.left = new newNode(1);
+        root.left.middle = new newNode(4);
+        root.left.right = new newNode(8);
+        root.middle.left = new newNode(6);
+        root.middle.middle = new newNode(7);
+        root.middle.right = new newNode(15);
+        root.right.left = new newNode(31);
+        root.right.middle = new newNode(55);
+        root.right.right = new newNode(65);
+
+        // The function which initiates the list
+        // process returns the head.
+         head = startTree(root);
+        printList(head);
+
+// This code contributed by gauravrajput1
+</script>
+
+Output
+
+Created Double Linked list is:
+30 5 1 4 8 11 6 7 15 63 31 55 65
+
+Time Complexity: O(n), as we are using recursion to traverse n times. Where n is the number of nodes in the tree. Auxiliary Space: O(n), as we are using extra space for the linked list.

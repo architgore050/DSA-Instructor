@@ -1,0 +1,386 @@
+Source: https://www.geeksforgeeks.org/dsa/0-1-bfs-shortest-path-binary-graph/
+Title: Shortest Path in a Binary Weight Graph
+Extractor: 2
+
+Given an undirected graph with N vertices (numbered from 0 to N-1), where each edge has a weight of either 0 or 1, and a source vertex. Find the shortest paths from the source vertex to all other vertices in the graph.
+
+Example:
+
+> Input:  N= 9, Source = 0, Edges: [ [0, 1, 0], [0, 7, 1], [1, 2, 1], [1, 7, 1], [2, 3, 0], [2, 5, 0], [2, 8, 1], [3, 4, 1], [3, 5, 1], [4, 5, 1], [5, 6, 1], [6, 7, 1], [7, 8, 1] ] Output:   [0, 0, 1, 1, 2, 1, 2, 1, 2]
+
+Table of Content
+
+- [Naive Approach] Using Dijkstra Algorithm - O(E x log (V)) Time and O(V) Space
+- [Expected Approach] Using Deque - O(V + E) time and O(V + E) space
+
+### [Naive Approach] Using Dijkstra Algorithm - O(E x log (V)) Time and O(V) Space
+
+> One Approach would be to use Dijkstra's Algorithm to find the shortest distance from a given source node to all other nodes in the graph. The source node's distance from itself is initialized to zero. From there, we iteratively pick the unprocessed node with the minimum distance from the source, this is where a min-heap or a set is typically used for efficiency.
+
+### [Expected Approach] Using Deque - O(V + E) time and O(V + E) space
+
+> To solve this problem efficiently, we can use 0-1 BFS , which employs a deque to maintain sorted distances in O(V + E) time. By pushing 0-weight edges to the front for immediate processing and 1-weight edges to the back, we can replicate Dijkstra’s priority logic without the computational overhead of a heap.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+vector<int> minDist(int n, int src, vector<vector<vector<int>>> &adj) {
+
+    // Initialize distances to infinity
+    vector<int> dist(n, INT_MAX);
+    dist[src] = 0;
+
+    // Use deque for 0-1 BFS
+    deque<int> dq;
+    dq.push_back(src);
+
+    while (!dq.empty()) {
+        int u = dq.front();
+        dq.pop_front();
+
+        // Process all adjacent vertices
+        for (auto &edge : adj[u]) {
+            int v = edge[0];
+            int weight = edge[1];
+
+            // If we can improve the distance
+            if (dist[u] + weight < dist[v]) {
+                dist[v] = dist[u] + weight;
+
+                // If weight is 0, push to front (higher priority)
+                // If weight is 1, push to back (lower priority)
+                if (weight == 0)
+                    dq.push_front(v);
+                else
+                    dq.push_back(v);
+            }
+        }
+    }
+
+    return dist;
+}
+
+int main() {
+    int n = 9, src = 0;
+    vector<vector<int>> edges = {
+        {0, 1, 0}, {0, 7, 1}, {1, 2, 1}, {1, 7, 1},
+        {2, 3, 0}, {2, 5, 0}, {2, 8, 1}, {3, 4, 1}, {3, 5, 1},
+        {4, 5, 1}, {5, 6, 1}, {6, 7, 1}, {7, 8, 1}
+    };
+
+    // Create adjacency list representation of the graph
+    vector<vector<vector<int>>> adj(n);
+    for (auto &edge : edges) {
+        int u = edge[0];
+        int v = edge[1];
+        int w = edge[2];
+        adj[u].push_back({v, w});
+        adj[v].push_back({u, w});
+    }
+
+    vector<int> res = minDist(n, src, adj);
+    for (int i = 0; i < n; i++) {
+        cout << res[i] << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+
+public class Main {
+    public static int[] minDist(int n, int src, List<List<int[]>> adj) {
+
+        // Initialize distances to infinity
+        int[] dist = new int[n];
+        for (int i = 0; i < n; i++) {
+            dist[i] = Integer.MAX_VALUE;
+        }
+        dist[src] = 0;
+
+        // Use deque for 0-1 BFS
+        Deque<Integer> dq = new ArrayDeque<>();
+        dq.add(src);
+
+        while (!dq.isEmpty()) {
+            int u = dq.poll();
+
+            // Process all adjacent vertices
+            for (int[] edge : adj.get(u)) {
+                int v = edge[0];
+                int weight = edge[1];
+
+                // If we can improve the distance
+                if (dist[u] + weight < dist[v]) {
+                    dist[v] = dist[u] + weight;
+
+                    // If weight is 0, push to front (higher priority)
+                    // If weight is 1, push to back (lower priority)
+                    if (weight == 0) {
+                        dq.addFirst(v);
+                    } else {
+                        dq.addLast(v);
+                    }
+                }
+            }
+        }
+        return dist;
+    }
+
+    public static void main(String[] args) {
+        int n = 9;
+        int src = 0;
+        int[][] edges = {
+            {0, 1, 0}, {0, 7, 1}, {1, 2, 1}, {1, 7, 1},
+            {2, 3, 0}, {2, 5, 0}, {2, 8, 1}, {3, 4, 1}, {3, 5, 1},
+            {4, 5, 1}, {5, 6, 1}, {6, 7, 1}, {7, 8, 1}
+        };
+
+        // Create adjacency list representation of the graph
+        List<List<int[]>> adj = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            adj.add(new ArrayList<>());
+        }
+        for (int[] edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
+            int w = edge[2];
+            adj.get(u).add(new int[]{v, w});
+            adj.get(v).add(new int[]{u, w});
+        }
+
+        int[] res = minDist(n, src, adj);
+        for (int i = 0; i < n; i++) {
+            System.out.print(res[i] + " ");
+        }
+        System.out.println();
+    }
+}
+
+Python
+
+from collections import deque
+import sys
+
+def minDist(n, src, adj):
+
+    # Initialize distances to infinity
+    dist = [sys.maxsize] * n
+    dist[src] = 0
+
+    # Use deque for 0-1 BFS
+    dq = deque()
+    dq.append(src)
+
+    while dq:
+        u = dq.popleft()
+
+        # Process all adjacent vertices
+        for edge in adj[u]:
+            v = edge[0]
+            weight = edge[1]
+
+            # If we can improve the distance
+            if dist[u] + weight < dist[v]:
+                dist[v] = dist[u] + weight
+
+                # If weight is 0, push to front (higher priority)
+                # If weight is 1, push to back (lower priority)
+                if weight == 0:
+                    dq.appendleft(v)
+                else:
+                    dq.append(v)
+
+    return dist
+
+def main():
+    n = 9
+    src = 0
+    edges = [
+        (0, 1, 0), (0, 7, 1), (1, 2, 1), (1, 7, 1),
+        (2, 3, 0), (2, 5, 0), (2, 8, 1), (3, 4, 1), (3, 5, 1),
+        (4, 5, 1), (5, 6, 1), (6, 7, 1), (7, 8, 1)
+    ]
+
+    # Create adjacency list representation of the graph
+    adj = [[] for _ in range(n)]
+    for u, v, w in edges:
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+
+    res = minDist(n, src, adj)
+    for i in range(n):
+        print(res[i], end=' ')
+    print()
+
+if __name__ == "__main__":
+    main()
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static int MAX_VALUE = int.MaxValue;
+
+    static List<int> minDist(int n, int src, List<Tuple<int, int>>[] adj){
+
+        // Initialize distances to infinity
+        int[] dist = new int[n];
+        Array.Fill(dist, MAX_VALUE);
+        dist[src] = 0;
+
+        // Use Queue for 0-1 BFS
+        LinkedList<int> dq = new LinkedList<int>();
+        dq.AddLast(src);
+
+        while (dq.Count > 0) {
+            int u = dq.First.Value;
+            dq.RemoveFirst();
+
+            foreach (var edge in adj[u]) {
+                int v = edge.Item1;
+                int weight = edge.Item2;
+
+                if (dist[u] + weight < dist[v]) {
+                    dist[v] = dist[u] + weight;
+
+                    if (weight == 0)
+                        dq.AddFirst(v);
+                    else
+                        dq.AddLast(v);
+                }
+            }
+        }
+        return new List<int>(dist);
+    }
+
+    static void Main()
+    {
+        int n = 9;
+        int src = 0;
+        var edges = new List<Tuple<int, int, int>>
+        {
+            new Tuple<int, int, int>(0, 1, 0),
+            new Tuple<int, int, int>(0, 7, 1),
+            new Tuple<int, int, int>(1, 2, 1),
+            new Tuple<int, int, int>(1, 7, 1),
+            new Tuple<int, int, int>(2, 3, 0),
+            new Tuple<int, int, int>(2, 5, 0),
+            new Tuple<int, int, int>(2, 8, 1),
+            new Tuple<int, int, int>(3, 4, 1),
+            new Tuple<int, int, int>(3, 5, 1),
+            new Tuple<int, int, int>(4, 5, 1),
+            new Tuple<int, int, int>(5, 6, 1),
+            new Tuple<int, int, int>(6, 7, 1),
+            new Tuple<int, int, int>(7, 8, 1)
+        };
+
+        // Create adjacency list representation of the graph
+        var adj = new List<Tuple<int, int>>[n];
+        for (int i = 0; i < n; i++)
+        {
+            adj[i] = new List<Tuple<int, int>>();
+        }
+        foreach (var edge in edges)
+        {
+            adj[edge.Item1].Add(new Tuple<int, int>(edge.Item2, edge.Item3));
+            adj[edge.Item2].Add(new Tuple<int, int>(edge.Item1, edge.Item3));
+        }
+
+        var res = minDist(n, src, adj);
+        foreach (var d in res)
+        {
+            Console.Write(d + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+const MAX_VALUE = Number.MAX_VALUE;
+
+const minDist = (n, src, adj) => {
+
+    // Initialize distances to infinity
+    const dist = Array(n).fill(MAX_VALUE);
+    dist[src] = 0;
+
+    // Use Queue for 0-1 BFS
+    const dq = [src];
+
+    while (dq.length > 0) {
+        const u = dq.shift();
+
+        // Process all adjacent vertices
+        for (const edge of adj[u]) {
+            const v = edge[0];
+            const weight = edge[1];
+
+            // If we can improve the distance
+            if (dist[u] + weight < dist[v]) {
+                dist[v] = dist[u] + weight;
+
+                // If weight is 0, push to front (higher priority)
+                // If weight is 1, push to back (lower priority)
+                if (weight === 0) {
+                    dq.unshift(v);
+                }
+                else {
+                    dq.push(v);
+                }
+            }
+        }
+    }
+
+    return dist;
+};
+
+const main = () => {
+    const n = 9;
+    const src = 0;
+    const edges = [
+        [0, 1, 0],
+        [0, 7, 1],
+        [1, 2, 1],
+        [1, 7, 1],
+        [2, 3, 0],
+        [2, 5, 0],
+        [2, 8, 1],
+        [3, 4, 1],
+        [3, 5, 1],
+        [4, 5, 1],
+        [5, 6, 1],
+        [6, 7, 1],
+        [7, 8, 1]
+    ];
+
+    // Create adjacency list representation of the graph
+    const adj = Array.from({ length: n }, () => []);
+    for (const edge of edges) {
+        adj[edge[0]].push([edge[1], edge[2]]);
+        adj[edge[1]].push([edge[0], edge[2]]);
+    }
+
+    const res = minDist(n, src, adj);
+    console.log(res.join(' '));
+};
+
+main();
+
+Output
+
+0 0 1 1 2 1 2 1 2

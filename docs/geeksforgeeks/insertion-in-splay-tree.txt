@@ -1,0 +1,1048 @@
+Source: https://www.geeksforgeeks.org/dsa/insertion-in-splay-tree/
+Title: Insertion in Splay Tree
+Extractor: 2
+
+It is recommended to refer following post as prerequisite of this post. Splay Tree | Set 1 (Search) As discussed in the previous post , Splay tree is a self-balancing data structure where the last accessed key is always at root. The insert operation is similar to Binary Search Tree insert with additional steps to make sure that the newly inserted key becomes the new root. Following are different cases to insert a key k in splay tree. 1) Root is NULL: We simply allocate a new node and return it as root. 2) Splay the given key k. If k is already present, then it becomes the new root. If not present, then last accessed leaf node becomes the new root. 3) If new root's key is same as k, don't do anything as k is already present. 4) Else allocate memory for new node and compare root's key with k. ....... 4.a) If k is smaller than root's key, make root as right child of new node, copy left child of root as left child of new node and make left child of root as NULL. ....... 4.b) If k is greater than root's key, make root as left child of new node, copy right child of root as right child of new node and make right child of root as NULL. 5) Return new node as new root of tree. Example:
+
+100                  [20]                             25               /  \                   \                             /  \        50   200                  50                          20   50        /          insert(25)     /  \        insert(25)           /  \        40          ======>      30   100      ========>           30  100         /          1. Splay(25)    \     \      2. insert 25         \    \    30                          40    200                         40   200      /                                                           [20]
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// An AVL tree node
+class node
+{
+    public:
+    int key;
+    node *left, *right;
+};
+
+/* Helper function that allocates
+a new node with the given key and
+    NULL left and right pointers. */
+node* newNode(int key)
+{
+    node* Node = new node();
+    Node->key = key;
+    Node->left = Node->right = NULL;
+    return (Node);
+}
+
+// A utility function to right
+// rotate subtree rooted with y
+// See the diagram given above.
+node *rightRotate(node *x)
+{
+    node *y = x->left;
+    x->left = y->right;
+    y->right = x;
+    return y;
+}
+
+// A utility function to left
+// rotate subtree rooted with x
+// See the diagram given above.
+node *leftRotate(node *x)
+{
+    node *y = x->right;
+    x->right = y->left;
+    y->left = x;
+    return y;
+}
+
+// This function brings the key at
+// root if key is present in tree.
+// If key is not present, then it
+// brings the last accessed item at
+// root. This function modifies the
+// tree and returns the new root
+node *splay(node *root, int key)
+{
+    // Base cases: root is NULL or
+    // key is present at root
+    if (root == NULL || root->key == key)
+        return root;
+
+    // Key lies in left subtree
+    if (root->key > key)
+    {
+        // Key is not in tree, we are done
+        if (root->left == NULL) return root;
+
+        // Zig-Zig (Left Left)
+        if (root->left->key > key)
+        {
+            // First recursively bring the
+            // key as root of left-left
+            root->left->left = splay(root->left->left, key);
+
+            // Do first rotation for root,
+            // second rotation is done after else
+            root = rightRotate(root);
+        }
+        else if (root->left->key < key) // Zig-Zag (Left Right)
+        {
+            // First recursively bring
+            // the key as root of left-right
+            root->left->right = splay(root->left->right, key);
+
+            // Do first rotation for root->left
+            if (root->left->right != NULL)
+                root->left = leftRotate(root->left);
+        }
+
+        // Do second rotation for root
+        return (root->left == NULL)? root: rightRotate(root);
+    }
+    else // Key lies in right subtree
+    {
+        // Key is not in tree, we are done
+        if (root->right == NULL) return root;
+
+        // Zig-Zag (Right Left)
+        if (root->right->key > key)
+        {
+            // Bring the key as root of right-left
+            root->right->left = splay(root->right->left, key);
+
+            // Do first rotation for root->right
+            if (root->right->left != NULL)
+                root->right = rightRotate(root->right);
+        }
+        else if (root->right->key < key)// Zag-Zag (Right Right)
+        {
+            // Bring the key as root of
+            // right-right and do first rotation
+            root->right->right = splay(root->right->right, key);
+            root = leftRotate(root);
+        }
+
+        // Do second rotation for root
+        return (root->right == NULL)? root: leftRotate(root);
+    }
+}
+
+// Function to insert a new key k
+// in splay tree with given root
+node *insert(node *root, int k)
+{
+    // Simple Case: If tree is empty
+    if (root == NULL) return newNode(k);
+
+    // Bring the closest leaf node to root
+    root = splay(root, k);
+
+    // If key is already present, then return
+    if (root->key == k) return root;
+
+    // Otherwise allocate memory for new node
+    node *newnode = newNode(k);
+
+    // If root's key is greater, make
+    // root as right child of newnode
+    // and copy the left child of root to newnode
+    if (root->key > k)
+    {
+        newnode->right = root;
+        newnode->left = root->left;
+        root->left = NULL;
+    }
+
+    // If root's key is smaller, make
+    // root as left child of newnode
+    // and copy the right child of root to newnode
+    else
+    {
+        newnode->left = root;
+        newnode->right = root->right;
+        root->right = NULL;
+    }
+
+    return newnode; // newnode becomes new root
+}
+
+// A utility function to print
+// preorder traversal of the tree.
+// The function also prints height of every node
+void preOrder(node *root)
+{
+    if (root != NULL)
+    {
+        cout<<root->key<<" ";
+        preOrder(root->left);
+        preOrder(root->right);
+    }
+}
+
+/* Driver code*/
+int main()
+{
+    node *root = newNode(100);
+    root->left = newNode(50);
+    root->right = newNode(200);
+    root->left->left = newNode(40);
+    root->left->left->left = newNode(30);
+    root->left->left->left->left = newNode(20);
+    root = insert(root, 25);
+    cout<<"Preorder traversal of the modified Splay tree is \n";
+    preOrder(root);
+    return 0;
+}
+
+// This code is contributed by rathbhupendra
+
+C
+
+// This code is adopted from https://algs4.cs.princeton.edu/33balanced/SplayBST.java.html
+#include<stdio.h>
+#include<stdlib.h>
+
+// An AVL tree node
+struct node
+{
+    int key;
+    struct node *left, *right;
+};
+
+/* Helper function that allocates a new node with the given key and
+    NULL left and right pointers. */
+struct node* newNode(int key)
+{
+    struct node* node = (struct node*)malloc(sizeof(struct node));
+    node->key   = key;
+    node->left  = node->right  = NULL;
+    return (node);
+}
+
+// A utility function to right rotate subtree rooted with y
+// See the diagram given above.
+struct node *rightRotate(struct node *x)
+{
+    struct node *y = x->left;
+    x->left = y->right;
+    y->right = x;
+    return y;
+}
+
+// A utility function to left rotate subtree rooted with x
+// See the diagram given above.
+struct node *leftRotate(struct node *x)
+{
+    struct node *y = x->right;
+    x->right = y->left;
+    y->left = x;
+    return y;
+}
+
+// This function brings the key at root if key is present in tree.
+// If key is not present, then it brings the last accessed item at
+// root.  This function modifies the tree and returns the new root
+struct node *splay(struct node *root, int key)
+{
+    // Base cases: root is NULL or key is present at root
+    if (root == NULL || root->key == key)
+        return root;
+
+    // Key lies in left subtree
+    if (root->key > key)
+    {
+        // Key is not in tree, we are done
+        if (root->left == NULL) return root;
+
+        // Zig-Zig (Left Left)
+        if (root->left->key > key)
+        {
+            // First recursively bring the key as root of left-left
+            root->left->left = splay(root->left->left, key);
+
+            // Do first rotation for root, second rotation is done after else
+            root = rightRotate(root);
+        }
+        else if (root->left->key < key) // Zig-Zag (Left Right)
+        {
+            // First recursively bring the key as root of left-right
+            root->left->right = splay(root->left->right, key);
+
+            // Do first rotation for root->left
+            if (root->left->right != NULL)
+                root->left = leftRotate(root->left);
+        }
+
+        // Do second rotation for root
+        return (root->left == NULL)? root: rightRotate(root);
+    }
+    else // Key lies in right subtree
+    {
+        // Key is not in tree, we are done
+        if (root->right == NULL) return root;
+
+        // Zig-Zag (Right Left)
+        if (root->right->key > key)
+        {
+            // Bring the key as root of right-left
+            root->right->left = splay(root->right->left, key);
+
+            // Do first rotation for root->right
+            if (root->right->left != NULL)
+                root->right = rightRotate(root->right);
+        }
+        else if (root->right->key < key)// Zag-Zag (Right Right)
+        {
+            // Bring the key as root of right-right and do first rotation
+            root->right->right = splay(root->right->right, key);
+            root = leftRotate(root);
+        }
+
+        // Do second rotation for root
+        return (root->right == NULL)? root: leftRotate(root);
+    }
+}
+
+// Function to insert a new key k in splay tree with given root
+struct node *insert(struct node *root, int k)
+{
+    // Simple Case: If tree is empty
+    if (root == NULL) return newNode(k);
+
+    // Bring the closest leaf node to root
+    root = splay(root, k);
+
+    // If key is already present, then return
+    if (root->key == k) return root;
+
+    // Otherwise allocate memory for new node
+    struct node *newnode  = newNode(k);
+
+    // If root's key is greater, make root as right child
+    // of newnode and copy the left child of root to newnode
+    if (root->key > k)
+    {
+        newnode->right = root;
+        newnode->left = root->left;
+        root->left = NULL;
+    }
+
+    // If root's key is smaller, make root as left child
+    // of newnode and copy the right child of root to newnode
+    else
+    {
+        newnode->left = root;
+        newnode->right = root->right;
+        root->right = NULL;
+    }
+
+    return newnode; // newnode becomes new root
+}
+
+// A utility function to print preorder traversal of the tree.
+// The function also prints height of every node
+void preOrder(struct node *root)
+{
+    if (root != NULL)
+    {
+        printf("%d ", root->key);
+        preOrder(root->left);
+        preOrder(root->right);
+    }
+}
+
+/* Driver program to test above function*/
+int main()
+{
+    struct node *root = newNode(100);
+    root->left = newNode(50);
+    root->right = newNode(200);
+    root->left->left = newNode(40);
+    root->left->left->left = newNode(30);
+    root->left->left->left->left = newNode(20);
+    root = insert(root, 25);
+    printf("Preorder traversal of the modified Splay tree is \n");
+    preOrder(root);
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG{
+
+// An AVL tree node
+static class node
+{
+
+    int key;
+    node left, right;
+};
+
+/* Helper function that allocates
+a new node with the given key and
+    null left and right pointers. */
+static node newNode(int key)
+{
+    node Node = new node();
+    Node.key = key;
+    Node.left = Node.right = null;
+    return (Node);
+}
+
+// A utility function to right
+// rotate subtree rooted with y
+// See the diagram given above.
+static node rightRotate(node x)
+{
+    node y = x.left;
+    x.left = y.right;
+    y.right = x;
+    return y;
+}
+
+// A utility function to left
+// rotate subtree rooted with x
+// See the diagram given above.
+static node leftRotate(node x)
+{
+    node y = x.right;
+    x.right = y.left;
+    y.left = x;
+    return y;
+}
+
+// This function brings the key at
+// root if key is present in tree.
+// If key is not present, then it
+// brings the last accessed item at
+// root. This function modifies the
+// tree and returns the new root
+static node splay(node root, int key)
+{
+    // Base cases: root is null or
+    // key is present at root
+    if (root == null || root.key == key)
+        return root;
+
+    // Key lies in left subtree
+    if (root.key > key)
+    {
+        // Key is not in tree, we are done
+        if (root.left == null) return root;
+
+        // Zig-Zig (Left Left)
+        if (root.left.key > key)
+        {
+            // First recursively bring the
+            // key as root of left-left
+            root.left.left = splay(root.left.left, key);
+
+            // Do first rotation for root,
+            // second rotation is done after else
+            root = rightRotate(root);
+        }
+        else if (root.left.key < key) // Zig-Zag (Left Right)
+        {
+            // First recursively bring
+            // the key as root of left-right
+            root.left.right = splay(root.left.right, key);
+
+            // Do first rotation for root.left
+            if (root.left.right != null)
+                root.left = leftRotate(root.left);
+        }
+
+        // Do second rotation for root
+        return (root.left == null)? root: rightRotate(root);
+    }
+    else // Key lies in right subtree
+    {
+        // Key is not in tree, we are done
+        if (root.right == null) return root;
+
+        // Zig-Zag (Right Left)
+        if (root.right.key > key)
+        {
+            // Bring the key as root of right-left
+            root.right.left = splay(root.right.left, key);
+
+            // Do first rotation for root.right
+            if (root.right.left != null)
+                root.right = rightRotate(root.right);
+        }
+        else if (root.right.key < key)// Zag-Zag (Right Right)
+        {
+            // Bring the key as root of
+            // right-right and do first rotation
+            root.right.right = splay(root.right.right, key);
+            root = leftRotate(root);
+        }
+
+        // Do second rotation for root
+        return (root.right == null)? root: leftRotate(root);
+    }
+}
+
+// Function to insert a new key k
+// in splay tree with given root
+static node insert(node root, int k)
+{
+    // Simple Case: If tree is empty
+    if (root == null) return newNode(k);
+
+    // Bring the closest leaf node to root
+    root = splay(root, k);
+
+    // If key is already present, then return
+    if (root.key == k) return root;
+
+    // Otherwise allocate memory for new node
+    node newnode = newNode(k);
+
+    // If root's key is greater, make
+    // root as right child of newnode
+    // and copy the left child of root to newnode
+    if (root.key > k)
+    {
+        newnode.right = root;
+        newnode.left = root.left;
+        root.left = null;
+    }
+
+    // If root's key is smaller, make
+    // root as left child of newnode
+    // and copy the right child of root to newnode
+    else
+    {
+        newnode.left = root;
+        newnode.right = root.right;
+        root.right = null;
+    }
+
+    return newnode; // newnode becomes new root
+}
+
+// A utility function to print
+// preorder traversal of the tree.
+// The function also prints height of every node
+static void preOrder(node root)
+{
+    if (root != null)
+    {
+        System.out.print(root.key+" ");
+        preOrder(root.left);
+        preOrder(root.right);
+    }
+}
+
+/* Driver code*/
+public static void main(String[] args)
+{
+    node root = newNode(100);
+    root.left = newNode(50);
+    root.right =  newNode(200);
+    root.left.left =  newNode(40);
+    root.left.left.left =  newNode(30);
+    root.left.left.left.left =  newNode(20);
+    root = insert(root, 25);
+    System.out.print("Preorder traversal of the modified Splay tree is \n");
+    preOrder(root);
+}
+}
+
+// This code is contributed by Rajput-Ji
+
+Python
+
+class Node:
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+
+def newNode(key):
+    return Node(key)
+
+def rightRotate(x):
+    y = x.left
+    x.left = y.right
+    y.right = x
+    return y
+
+def leftRotate(x):
+    y = x.right
+    x.right = y.left
+    y.left = x
+    return y
+
+def splay(root, key):
+    # Base cases: root is None or key is present at root
+    if root == None or root.key == key:
+        return root
+    # Key lies in left subtree
+    if root.key > key:
+        # Key is not in tree, we are done
+        if root.left == None:
+            return root
+        # Zig-Zig (Left Left)
+        if root.left.key > key:
+            # First recursively bring the key as root of left-left
+            root.left.left = splay(root.left.left, key)
+            # Do first rotation for root, second rotation is done after else
+            root = rightRotate(root)
+        elif root.left.key < key: # Zig-Zag (Left Right)
+            # First recursively bring the key as root of left-right
+            root.left.right = splay(root.left.right, key)
+            # Do first rotation for root.left
+            if root.left.right != None:
+                root.left = leftRotate(root.left)
+        # Do second rotation for root
+        return root if root.left == None else rightRotate(root)
+    else: # Key lies in right subtree
+        # Key is not in tree, we are done
+        if root.right == None:
+            return root
+        # Zig-Zag (Right Left)
+        if root.right.key > key:
+            # Bring the key as root of right-left
+            root.right.left = splay(root.right.left, key)
+            # Do first rotation for root.right
+            if root.right.left != None:
+                root.right = rightRotate(root.right)
+        elif root.right.key < key: # Zag-Zag (Right Right)
+            # Bring the key as root of right-right and do first rotation
+            root.right.right = splay(root.right.right, key)
+            root = leftRotate(root)
+        # Do second rotation for root
+        return root if root.right == None else leftRotate(root)
+
+# Function to insert a new key k in splay tree with given root
+def insert(root, k):
+    # Simple Case: If tree is empty
+    if (root == None):
+        return newNode(k)
+    root = splay(root, k)
+    # If key is already present, then return
+    if (root.key == k):
+        return root
+    # If key is not present, then insert this
+    # key into the tree
+    # If root's key is greater, make key as
+    # root of root's left subtree
+    if (root.key > k):
+        n = newNode(k)
+        n.right = root
+        n.left = root.left
+        root.left = None
+        return n
+    else:
+        # If root's key is smaller, make key as
+        # root of root's right subtree
+        n = newNode(k)
+        n.left = root
+        n.right = root.right
+        root.right = None
+        return n
+
+# A utility function to print preorder
+# traversal of the tree.
+# The function also prints height of every
+# node
+def preOrder(root):
+    if (root != None):
+        print(root.key, end=' ')
+        preOrder(root.left)
+        preOrder(root.right)
+
+# Driver code
+root = newNode(100)
+root.left = newNode(50)
+root.right = newNode(200)
+root.left.left = newNode(40)
+root.left.left.left = newNode(30)
+root.left.left.left.left = newNode(20)
+root = insert(root, 25)
+print("Preorder traversal of the modified Splay tree is")
+preOrder(root)
+
+C#
+
+using System;
+
+public class node
+{
+  public int key;
+  public node left, right;
+}
+
+public class GFG{
+
+  /* Helper function that allocates
+a new node with the given key and
+    null left and right pointers. */
+  static node newNode(int key)
+  {
+    node Node = new node();
+    Node.key = key;
+    Node.left = Node.right = null;
+    return (Node);
+  }
+
+  // A utility function to right
+  // rotate subtree rooted with y
+  // See the diagram given above.
+  static node rightRotate(node x)
+  {
+    node y = x.left;
+    x.left = y.right;
+    y.right = x;
+    return y;
+  }
+
+  // A utility function to left
+  // rotate subtree rooted with x
+  // See the diagram given above.
+  static node leftRotate(node x)
+  {
+    node y = x.right;
+    x.right = y.left;
+    y.left = x;
+    return y;
+  }
+
+  // This function brings the key at
+  // root if key is present in tree.
+  // If key is not present, then it
+  // brings the last accessed item at
+  // root. This function modifies the
+  // tree and returns the new root
+  static node splay(node root, int key)
+  {
+    // Base cases: root is null or
+    // key is present at root
+    if (root == null || root.key == key)
+      return root;
+
+    // Key lies in left subtree
+    if (root.key > key)
+    {
+      // Key is not in tree, we are done
+      if (root.left == null) return root;
+
+      // Zig-Zig (Left Left)
+      if (root.left.key > key)
+      {
+        // First recursively bring the
+        // key as root of left-left
+        root.left.left = splay(root.left.left, key);
+
+        // Do first rotation for root,
+        // second rotation is done after else
+        root = rightRotate(root);
+      }
+      else if (root.left.key < key) // Zig-Zag (Left Right)
+      {
+        // First recursively bring
+        // the key as root of left-right
+        root.left.right = splay(root.left.right, key);
+
+        // Do first rotation for root.left
+        if (root.left.right != null)
+          root.left = leftRotate(root.left);
+      }
+
+      // Do second rotation for root
+      return (root.left == null)? root: rightRotate(root);
+    }
+    else // Key lies in right subtree
+    {
+      // Key is not in tree, we are done
+      if (root.right == null) return root;
+
+      // Zig-Zag (Right Left)
+      if (root.right.key > key)
+      {
+        // Bring the key as root of right-left
+        root.right.left = splay(root.right.left, key);
+
+        // Do first rotation for root.right
+        if (root.right.left != null)
+          root.right = rightRotate(root.right);
+      }
+      else if (root.right.key < key)// Zag-Zag (Right Right)
+      {
+        // Bring the key as root of
+        // right-right and do first rotation
+        root.right.right = splay(root.right.right, key);
+        root = leftRotate(root);
+      }
+
+      // Do second rotation for root
+      return (root.right == null)? root: leftRotate(root);
+    }
+  }
+
+  // Function to insert a new key k
+  // in splay tree with given root
+  static node insert(node root, int k)
+  {
+    // Simple Case: If tree is empty
+    if (root == null) return newNode(k);
+
+    // Bring the closest leaf node to root
+    root = splay(root, k);
+
+    // If key is already present, then return
+    if (root.key == k) return root;
+
+    // Otherwise allocate memory for new node
+    node newnode = newNode(k);
+
+    // If root's key is greater, make
+    // root as right child of newnode
+    // and copy the left child of root to newnode
+    if (root.key > k)
+    {
+      newnode.right = root;
+      newnode.left = root.left;
+      root.left = null;
+    }
+
+    // If root's key is smaller, make
+    // root as left child of newnode
+    // and copy the right child of root to newnode
+    else
+    {
+      newnode.left = root;
+      newnode.right = root.right;
+      root.right = null;
+    }
+
+    return newnode; // newnode becomes new root
+  }
+
+  // A utility function to print
+  // preorder traversal of the tree.
+  // The function also prints height of every node
+  static void preOrder(node root)
+  {
+    if (root != null)
+    {
+      Console.Write(root.key+" ");
+      preOrder(root.left);
+      preOrder(root.right);
+    }
+  }
+
+  /* Driver code*/
+  static public void Main ()
+  {
+
+    node root = newNode(100);
+    root.left = newNode(50);
+    root.right =  newNode(200);
+    root.left.left =  newNode(40);
+    root.left.left.left =  newNode(30);
+    root.left.left.left.left =  newNode(20);
+    root = insert(root, 25);
+    Console.Write("Preorder traversal of the modified Splay tree is \n");
+    preOrder(root);
+  }
+}
+
+// This code is contributed by patel2127.
+
+JavaScript
+
+<script>
+
+    // An AVL tree node
+    class Node {
+        constructor(val) {
+            this.key = val;
+            this.left = null;
+            this.right = null;
+        }
+    }
+
+    /*
+     Helper function that allocates a new
+     node with the given key and null left
+     and right pointers.
+     */
+     function newNode(key) {
+        var node = new Node();
+        node.key = key;
+        node.left = node.right = null;
+        return (node);
+    }
+
+    // A utility function to right
+    // rotate subtree rooted with y
+    // See the diagram given above.
+     function rightRotate( x) {
+        var y = x.left;
+        x.left = y.right;
+        y.right = x;
+        return y;
+    }
+
+    // A utility function to left
+    // rotate subtree rooted with x
+    // See the diagram given above.
+     function leftRotate( x) {
+        var y = x.right;
+        x.right = y.left;
+        y.left = x;
+        return y;
+    }
+
+    // This function brings the key at
+    // root if key is present in tree.
+    // If key is not present, then it
+    // brings the last accessed item at
+    // root. This function modifies the
+    // tree and returns the new root
+     function splay( root , key) {
+        // Base cases: root is null or
+        // key is present at root
+        if (root == null || root.key == key)
+            return root;
+
+        // Key lies in left subtree
+        if (root.key > key) {
+            // Key is not in tree, we are done
+            if (root.left == null)
+                return root;
+
+            // Zig-Zig (Left Left)
+            if (root.left.key > key) {
+                // First recursively bring the
+                // key as root of left-left
+                root.left.left = splay(root.left.left, key);
+
+                // Do first rotation for root,
+                // second rotation is done after else
+                root = rightRotate(root);
+            } else if (root.left.key < key) // Zig-Zag (Left Right)
+            {
+                // First recursively bring
+                // the key as root of left-right
+                root.left.right = splay(root.left.right, key);
+
+                // Do first rotation for root.left
+                if (root.left.right != null)
+                    root.left = leftRotate(root.left);
+            }
+
+            // Do second rotation for root
+            return (root.left == null) ? root : rightRotate(root);
+        } else // Key lies in right subtree
+        {
+            // Key is not in tree, we are done
+            if (root.right == null)
+                return root;
+
+            // Zig-Zag (Right Left)
+            if (root.right.key > key) {
+                // Bring the key as root of right-left
+                root.right.left = splay(root.right.left, key);
+
+                // Do first rotation for root.right
+                if (root.right.left != null)
+                    root.right = rightRotate(root.right);
+            } else if (root.right.key < key)// Zag-Zag (Right Right)
+            {
+                // Bring the key as root of
+                // right-right and do first rotation
+                root.right.right = splay(root.right.right, key);
+                root = leftRotate(root);
+            }
+
+            // Do second rotation for root
+            return (root.right == null) ? root : leftRotate(root);
+        }
+    }
+
+    // Function to insert a new key k
+    // in splay tree with given root
+     function insert( root , k) {
+        // Simple Case: If tree is empty
+        if (root == null)
+            return newNode(k);
+
+        // Bring the closest leaf node to root
+        root = splay(root, k);
+
+        // If key is already present, then return
+        if (root.key == k)
+            return root;
+
+        // Otherwise allocate memory for new node
+        var newnode = newNode(k);
+
+        // If root's key is greater, make
+        // root as right child of newnode
+        // and copy the left child of root to newnode
+        if (root.key > k) {
+            newnode.right = root;
+            newnode.left = root.left;
+            root.left = null;
+        }
+
+        // If root's key is smaller, make
+        // root as left child of newnode
+        // and copy the right child of root to newnode
+        else {
+            newnode.left = root;
+            newnode.right = root.right;
+            root.right = null;
+        }
+
+        return newnode; // newnode becomes new root
+    }
+
+    // A utility function to print
+    // preorder traversal of the tree.
+    // The function also prints height of every node
+    function preOrder( root) {
+        if (root != null) {
+            document.write(root.key + " ");
+            preOrder(root.left);
+            preOrder(root.right);
+        }
+    }
+
+    /* Driver code */
+
+        var root = newNode(100);
+        root.left = newNode(50);
+        root.right = newNode(200);
+        root.left.left = newNode(40);
+        root.left.left.left = newNode(30);
+        root.left.left.left.left = newNode(20);
+        root = insert(root, 25);
+
+        document.write(
+        "Preorder traversal of the modified Splay tree is <br/>"
+        );
+        preOrder(root);
+
+// This code contributed by umadevi9616
+
+</script>
+
+Output:
+
+Preorder traversal of the modified Splay tree is25 20 50 30 40 100 200
+
+This is an implementation of a Splay Tree data structure, which is a self-balancing binary search tree with the ability to bring the most recently accessed node to the root of the tree. The code defines a node class and several utility functions to perform operations on the tree, such as left and right rotations and insertion of new nodes.
+
+The splay function takes a node pointer root and an integer key, and it returns a pointer to the node that contains the key after performing a splay operation. The splay operation brings the node with the key to the root of the tree, or the last accessed node if the key is not found in the tree. The splay operation is performed by rotating the tree around a node in a zig-zag or zig-zig pattern until the target node is at the root.
+
+The insert function takes a node pointer root and an integer k, and it returns a pointer to the root of the updated tree after inserting the new key k. The function first performs a splay operation on the node with the closest value to k and then adds a new node containing k to the tree, as a child of the splayed node.
+
+The preOrder function performs a preorder traversal of the tree and prints the keys of each node in the order they are visited.
+
+The code in the main function creates a sample tree, performs an insertion operation with the insert function, and then prints the preorder traversal of the modified tree with the preOrder function.
+
+This article is compiled by Abhay Rathi .

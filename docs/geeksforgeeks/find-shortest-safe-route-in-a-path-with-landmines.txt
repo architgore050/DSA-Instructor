@@ -1,0 +1,1035 @@
+Source: https://www.geeksforgeeks.org/dsa/find-shortest-safe-route-in-a-path-with-landmines/
+Title: Shortest Safe route in a Matrix
+Extractor: 2
+
+Given a 2D binary matrix mat[][] where 0 represents a landmine and 1 represents a safe cell, find the length of the shortest safe route from any cell in the first column to any cell in the last column.
+
+You can move only up, down, left, or right, and can enter only safe cells (cells that are neither landmines nor adjacent to a landmine). If there is no safe path to reach the last column, return -1.
+
+Examples:
+
+> Input: mat[][] = [ [1, 0, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 0, 1], [1, 1, 1, 1, 0] ] Output: 6 Explanation: The shortest safe path starts from the first column (row 2, column 0) and reaches the last column (row 1, column 4) with length 6. Input: mat[][] = [ [1, 1, 1, 1, 1], [1, 1, 0, 1, 1], [1, 1, 1, 1, 1] ] Output: -1 Explanation: There is no possible path from first column to last column.
+
+Table of Content
+
+- [Naive Approach] Using Backtracking - O(4(n*m)) Time and O(n*m) Space
+- [Expected Approach] Using Breadth First Search - O(n*m) Time and O(n*m) Space
+
+### [Naive Approach] Using Backtracking - O(4 (n*m) ) Time and O(n*m) Space
+
+> The idea is to use Backtracking . We first mark all adjacent cells of the landmines as unsafe. For each safe cell of first column of the matrix, we move forward in all allowed directions and recursively checks if they leads to the destination or not. If destination is found, we update the value of shortest path else if none of the above solutions work we return false from our function.
+
+C++
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <algorithm>
+using namespace std;
+
+//Driver Code Ends
+
+// Function to mark unsafe cells (landmines and their adjacent cells)
+void markUnsafeCells(vector<vector<int>> &mat) {
+    int r = mat.size();
+    int c = mat[0].size();
+
+    // Directions for adjacent cells: up, down, left, right
+    int row[] = {-1, 1, 0, 0};
+    int col[] = {0, 0, -1, 1};
+
+    vector<vector<int>> temp = mat;
+
+    // Mark adjacent cells of landmines (0) as unsafe (0)
+    for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+            if (temp[i][j] == 0) {
+                for (int k = 0; k < 4; k++) {
+                    int ni = i + row[k];
+                    int nj = j + col[k];
+                    if (ni >= 0 && ni < r && nj >= 0 && nj < c) {
+                        mat[ni][nj] = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// DFS to find shortest path from (i, j) to any cell in last column
+int dfs(vector<vector<int>> &mat, vector<vector<bool>> &visited,
+                                                int i, int j, int c) {
+    int r = mat.size();
+
+    if (i < 0 || i >= r || j < 0 || j >= c || mat[i][j] == 0 || visited[i][j]) {
+        return INT_MAX;
+    }
+
+    if (j == c - 1) {
+        return 1;
+    }
+
+    visited[i][j] = true;
+
+    // Four possible moves: up, down, left, right
+    int row[] = {-1, 1, 0, 0};
+    int col[] = {0, 0, -1, 1};
+
+    int minPath = INT_MAX;
+
+    // Try all four directions
+    for (int k = 0; k < 4; k++) {
+        int ni = i + row[k];
+        int nj = j + col[k];
+
+        int pathLength = dfs(mat, visited, ni, nj, c);
+        if (pathLength != INT_MAX) {
+            minPath = min(minPath, 1 + pathLength);
+        }
+    }
+
+    // Backtrack - unmark current cell
+    visited[i][j] = false;
+
+    return minPath;
+}
+
+int shortestPath(vector<vector<int>> &mat) {
+    int r = mat.size();
+    int c = mat[0].size();
+
+    // Mark all adjacent cells of landmines as unsafe
+    markUnsafeCells(mat);
+
+    // Initialize visited array
+    vector<vector<bool>> visited(r, vector<bool>(c, false));
+
+    int minPath = INT_MAX;
+
+    // Try starting from each safe cell in the first column
+    for (int i = 0; i < r; i++) {
+        if (mat[i][0] == 1) {
+            int pathLength = dfs(mat, visited, i, 0, c);
+            if (pathLength != INT_MAX) {
+                minPath = min(minPath, pathLength);
+            }
+        }
+    }
+
+    return minPath == INT_MAX ? -1 : minPath;
+}
+
+//Driver Code Starts
+
+int main() {
+    vector<vector<int>> mat = {
+        {1, 0, 1, 1, 1},
+        {1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1},
+        {1, 1, 1, 0, 1},
+        {1, 1, 1, 1, 0}
+    };
+
+    int result = shortestPath(mat);
+    cout << result << endl;
+
+    return 0;
+}
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.Arrays;
+
+class GFG {
+
+//Driver Code Ends
+
+    // Function to mark unsafe cells (landmines and their adjacent cells)
+    static void markUnsafeCells(int[][] mat) {
+        int r = mat.length;
+        int c = mat[0].length;
+
+        int[] row = {-1, 1, 0, 0};
+        int[] col = {0, 0, -1, 1};
+
+        int[][] temp = new int[r][c];
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < c; j++) {
+                temp[i][j] = mat[i][j];
+            }
+        }
+
+        // Mark adjacent cells of landmines (0) as unsafe (0)
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < c; j++) {
+                if (temp[i][j] == 0) {
+                    for (int k = 0; k < 4; k++) {
+                        int ni = i + row[k];
+                        int nj = j + col[k];
+                        if (ni >= 0 && ni < r && nj >= 0 && nj < c) {
+                            mat[ni][nj] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // DFS to find shortest path from (i, j) to any cell in last column
+    static int dfs(int[][] mat, boolean[][] visited, int i, int j, int c) {
+        int r = mat.length;
+
+        // If out of bounds, blocked, or visited
+        if (i < 0 || i >= r || j < 0 || j >= c || mat[i][j] == 0 || visited[i][j]) {
+            return Integer.MAX_VALUE;
+        }
+
+        if (j == c - 1) {
+            return 1;
+        }
+
+        visited[i][j] = true;
+
+        int[] row = {-1, 1, 0, 0};
+        int[] col = {0, 0, -1, 1};
+
+        int minPath = Integer.MAX_VALUE;
+
+        // Try all four directions
+        for (int k = 0; k < 4; k++) {
+            int ni = i + row[k];
+            int nj = j + col[k];
+
+            int pathLength = dfs(mat, visited, ni, nj, c);
+            if (pathLength != Integer.MAX_VALUE) {
+                minPath = Math.min(minPath, 1 + pathLength);
+            }
+        }
+
+        // Backtrack - unmark current cell
+        visited[i][j] = false;
+
+        return minPath;
+    }
+
+    static int shortestPath(int[][] mat) {
+        int r = mat.length;
+        int c = mat[0].length;
+
+        // Mark all adjacent cells of landmines as unsafe
+        markUnsafeCells(mat);
+
+        boolean[][] visited = new boolean[r][c];
+
+        int minPath = Integer.MAX_VALUE;
+
+        // Try starting from each safe cell in the first column
+        for (int i = 0; i < r; i++) {
+            if (mat[i][0] == 1) {
+                int pathLength = dfs(mat, visited, i, 0, c);
+                if (pathLength != Integer.MAX_VALUE) {
+                    minPath = Math.min(minPath, pathLength);
+                }
+            }
+        }
+
+        return minPath == Integer.MAX_VALUE ? -1 : minPath;
+    }
+
+//Driver Code Starts
+    public static void main(String[] args) {
+        int[][] mat = {
+            {1, 0, 1, 1, 1},
+            {1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1},
+            {1, 1, 1, 0, 1},
+            {1, 1, 1, 1, 0}
+        };
+
+        int result = shortestPath(mat);
+        System.out.println(result);
+    }
+}
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+import sys
+
+#Driver Code Ends
+
+# Function to mark unsafe cells (landmines and their adjacent cells)
+def markUnsafeCells(mat):
+    r = len(mat)
+    c = len(mat[0])
+
+    # Directions for adjacent cells: up, down, left, right
+    row_dir = [-1, 1, 0, 0]
+    col_dir = [0, 0, -1, 1]
+
+    temp = [row[:] for row in mat]
+
+    # Mark adjacent cells of landmines (0) as unsafe (0)
+    for i in range(r):
+        for j in range(c):
+            if temp[i][j] == 0:
+                for k in range(4):
+                    ni = i + row_dir[k]
+                    nj = j + col_dir[k]
+                    if 0 <= ni < r and 0 <= nj < c:
+                        mat[ni][nj] = 0
+
+# DFS to find shortest path from (i, j) to any cell in last column
+def dfs(mat, visited, i, j, c):
+    r = len(mat)
+
+    # If out of bounds, blocked, or already visited
+    if i < 0 or i >= r or j < 0 or j >= c or mat[i][j] == 0 or visited[i][j]:
+        return sys.maxsize
+
+    # If last column reached
+    if j == c - 1:
+        return 1
+
+    visited[i][j] = True
+
+    # Four possible moves: up, down, left, right
+    row_dir = [-1, 1, 0, 0]
+    col_dir = [0, 0, -1, 1]
+
+    minPath = sys.maxsize
+
+    # Explore all four directions
+    for k in range(4):
+        ni = i + row_dir[k]
+        nj = j + col_dir[k]
+
+        pathLength = dfs(mat, visited, ni, nj, c)
+        if pathLength != sys.maxsize:
+            minPath = min(minPath, 1 + pathLength)
+
+    # Backtrack - unmark current cell
+    visited[i][j] = False
+
+    return minPath
+
+def shortestPath(mat):
+    r = len(mat)
+    c = len(mat[0])
+
+    # Mark all adjacent cells of landmines as unsafe
+    markUnsafeCells(mat)
+
+    # Initialize visited array
+    visited = [[False] * c for _ in range(r)]
+
+    minPath = sys.maxsize
+
+    # Try starting from each safe cell in the first column
+    for i in range(r):
+        if mat[i][0] == 1:
+            pathLength = dfs(mat, visited, i, 0, c)
+            if pathLength != sys.maxsize:
+                minPath = min(minPath, pathLength)
+
+    return -1 if minPath == sys.maxsize else minPath
+
+#Driver Code Starts
+if __name__ == "__main__":
+    mat = [
+        [1, 0, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 0, 1],
+        [1, 1, 1, 1, 0]
+    ]
+
+    result = shortestPath(mat)
+    print(result)
+
+#Driver Code Ends
+
+C#
+
+using System;
+
+class GFG {
+
+    // Function to mark unsafe cells (landmines and their adjacent cells)
+    static void markUnsafeCells(int[][] mat) {
+        int r = mat.Length;
+        int c = mat[0].Length;
+
+        // Directions for adjacent cells: up, down, left, right
+        int[] rowDir = {-1, 1, 0, 0};
+        int[] colDir = {0, 0, -1, 1};
+
+        int[][] temp = new int[r][];
+        for (int i = 0; i < r; i++)
+            temp[i] = new int[c];
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < c; j++) {
+                temp[i][j] = mat[i][j];
+            }
+        }
+
+        // Mark adjacent cells of landmines (0) as unsafe (0)
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < c; j++) {
+                if (temp[i][j] == 0) {
+                    for (int k = 0; k < 4; k++) {
+                        int ni = i + rowDir[k];
+                        int nj = j + colDir[k];
+                        if (ni >= 0 && ni < r && nj >= 0 && nj < c) {
+                            mat[ni][nj] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // DFS to find shortest path from (i, j) to any cell in last column
+    static int dfs(int[][] mat, bool[,] visited, int i, int j, int c) {
+        int r = mat.Length;
+
+        // If out of bounds, blocked, or already visited
+        if (i < 0 || i >= r || j < 0 || j >= c || mat[i][j] == 0 || visited[i, j])
+            return int.MaxValue;
+
+        // If last column reached
+        if (j == c - 1)
+            return 1;
+
+        visited[i, j] = true;
+
+        int[] rowDir = {-1, 1, 0, 0};
+        int[] colDir = {0, 0, -1, 1};
+
+        int minPath = int.MaxValue;
+
+        // Explore all four directions
+        for (int k = 0; k < 4; k++) {
+            int ni = i + rowDir[k];
+            int nj = j + colDir[k];
+
+            int pathLength = dfs(mat, visited, ni, nj, c);
+            if (pathLength!= int.MaxValue)
+                minPath = Math.Min(minPath, 1 + pathLength);
+        }
+
+        // Backtrack - unmark current cell
+        visited[i, j] = false;
+
+        return minPath;
+    }
+
+    static int shortestPath(int[][] mat) {
+        int r = mat.Length;
+        int c = mat[0].Length;
+
+        // Mark all adjacent cells of landmines as unsafe
+        markUnsafeCells(mat);
+
+        bool[,] visited = new bool[r, c];
+        int minPath = int.MaxValue;
+
+        // Try starting from each safe cell in the first column
+        for (int i = 0; i < r; i++) {
+            if (mat[i][0] == 1) {
+                int pathLength = dfs(mat, visited, i, 0, c);
+                if (pathLength!= int.MaxValue)
+                    minPath = Math.Min(minPath, pathLength);
+            }
+        }
+
+        return minPath == int.MaxValue ? -1 : minPath;
+    }
+
+    public static void Main() {
+        int[][] mat = {
+            new int[] {1, 0, 1, 1, 1},
+            new int[] {1, 1, 1, 1, 1},
+            new int[] {1, 1, 1, 1, 1},
+            new int[] {1, 1, 1, 0, 1},
+            new int[] {1, 1, 1, 1, 0}
+        };
+
+        int result = shortestPath(mat);
+        Console.WriteLine(result);
+    }
+}
+
+JavaScript
+
+// Function to mark unsafe cells (landmines and their adjacent cells)
+function markUnsafeCells(mat) {
+    const r = mat.length;
+    const c = mat[0].length;
+
+    const rowDir = [-1, 1, 0, 0];
+    const colDir = [0, 0, -1, 1];
+
+    // Create a copy to avoid modifying original safe cells prematurely
+    const temp = mat.map(row => row.slice());
+
+    // Mark adjacent cells of landmines (0) as unsafe (0)
+    for (let i = 0; i < r; i++) {
+        for (let j = 0; j < c; j++) {
+            if (temp[i][j] === 0) {
+                for (let k = 0; k < 4; k++) {
+                    const ni = i + rowDir[k];
+                    const nj = j + colDir[k];
+                    if (ni >= 0 && ni < r && nj >= 0 && nj < c) {
+                        mat[ni][nj] = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// DFS to find shortest path from (i, j) to any cell in last column
+function dfs(mat, visited, i, j, c) {
+    const r = mat.length;
+
+    // If out of bounds, blocked, or already visited
+    if (i < 0 || i >= r || j < 0 || j >= c || mat[i][j] === 0 || visited[i][j]) {
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    // If last column reached
+    if (j === c - 1) return 1;
+
+    visited[i][j] = true;
+
+    const rowDir = [-1, 1, 0, 0];
+    const colDir = [0, 0, -1, 1];
+
+    let minPath = Number.MAX_SAFE_INTEGER;
+
+    // Explore all four directions
+    for (let k = 0; k < 4; k++) {
+        const ni = i + rowDir[k];
+        const nj = j + colDir[k];
+
+        const pathLength = dfs(mat, visited, ni, nj, c);
+        if (pathLength !== Number.MAX_SAFE_INTEGER) {
+            minPath = Math.min(minPath, 1 + pathLength);
+        }
+    }
+
+    // Backtrack - unmark current cell
+    visited[i][j] = false;
+
+    return minPath;
+}
+
+function shortestPath(mat) {
+    const r = mat.length;
+    const c = mat[0].length;
+
+    markUnsafeCells(mat);
+
+    const visited = Array.from({length: r}, () => Array(c).fill(false));
+
+    let minPath = Number.MAX_SAFE_INTEGER;
+
+    // Try starting from each safe cell in the first column
+    for (let i = 0; i < r; i++) {
+        if (mat[i][0] === 1) {
+            const pathLength = dfs(mat, visited, i, 0, c);
+            if (pathLength !== Number.MAX_SAFE_INTEGER) {
+                minPath = Math.min(minPath, pathLength);
+            }
+        }
+    }
+
+    return minPath === Number.MAX_SAFE_INTEGER ? -1 : minPath;
+}
+
+//Driver Code Starts
+// Driver code
+const mat = [
+    [1, 0, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 0, 1],
+    [1, 1, 1, 1, 0]
+];
+
+const result = shortestPath(mat);
+console.log(result);
+
+//Driver Code Ends
+
+Output
+
+6
+
+### [Expected Approach] Using Breadth First Search - O(n*m) Time and O(n*m) Space
+
+The idea is to use BFS to find the shortest safe path from any cell in the first column to the last column in a binary matrix. BFS is ideal here because it explores cells level by level, so the first time we reach a cell in the last column, we are guaranteed that it is via the shortest path.
+
+> For each cell we visit, we check if it is safe by ensuring it is not a landmine and none of its four neighbors is a landmine. Safe cells are added to the queue with their current distance, and we mark them visited directly in the matrix to avoid revisiting. BFS continues until a last-column cell is reached, returning its distance, or returns -1 if no safe path exists.
+
+C++
+
+//Driver Code Starts
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+//Driver Code Ends
+
+// Check if a cell (i,j) is safe to step on
+bool isSafe(vector<vector<int>> &mat, int i, int j) {
+    int r = mat.size();
+    int c = mat[0].size();
+
+    // cell itself is a landmine or visited
+    if (mat[i][j] != 1) return false;
+
+    // Check all four neighbors
+    int rowDir[] = {-1, 1, 0, 0};
+    int colDir[] = {0, 0, -1, 1};
+
+    for (int k = 0; k < 4; k++) {
+        int ni = i + rowDir[k];
+        int nj = j + colDir[k];
+        if (ni >= 0 && ni < r && nj >= 0 && nj < c && mat[ni][nj] == 0)
+
+            // adjacent to a landmine
+            return false;
+    }
+
+    return true;
+}
+
+// function to find shortest safe path from first column to last column
+int shortestPath(vector<vector<int>> &mat) {
+    int r = mat.size();
+    int c = mat[0].size();
+
+    int rowDir[] = {-1, 1, 0, 0};
+    int colDir[] = {0, 0, -1, 1};
+
+    // {i, j, distance}
+    queue<array<int,3>> q;
+
+    // Enqueue all safe cells in the first column
+    for (int i = 0; i < r; i++) {
+        if (isSafe(mat, i, 0)) {
+            q.push({i, 0, 1});
+
+            // mark visited
+            mat[i][0] = -1;
+        }
+    }
+
+    while (!q.empty()) {
+        auto front = q.front();
+        q.pop();
+        int i = front[0];
+        int j = front[1];
+        int dist = front[2];
+
+        // Reached last column
+        if (j == c - 1) return dist;
+
+        // Explore four directions
+        for (int k = 0; k < 4; k++) {
+            int ni = i + rowDir[k];
+            int nj = j + colDir[k];
+
+            if (ni >= 0 && ni < r && nj >= 0 && nj < c && isSafe(mat, ni, nj)) {
+                q.push({ni, nj, dist + 1});
+
+                // mark visited
+                mat[ni][nj] = -1;
+            }
+        }
+    }
+
+    // no path found
+    return -1;
+}
+
+//Driver Code Starts
+
+int main() {
+    vector<vector<int>> mat = {
+        {1, 0, 1, 1, 1},
+        {1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1},
+        {1, 1, 1, 0, 1},
+        {1, 1, 1, 1, 0}
+    };
+
+    int result = shortestPath(mat);
+    cout << result << endl;
+
+    return 0;
+}
+
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+class GFG {
+
+//Driver Code Ends
+
+    // Check if a cell (i,j) is safe to step on
+    static boolean isSafe(int[][] mat, int i, int j) {
+        int r = mat.length;
+        int c = mat[0].length;
+
+        // cell itself is a landmine or visited
+        if (mat[i][j] != 1) return false;
+
+        // Check all four neighbors
+        int[] rowDir = {-1, 1, 0, 0};
+        int[] colDir = {0, 0, -1, 1};
+
+        for (int k = 0; k < 4; k++) {
+            int ni = i + rowDir[k];
+            int nj = j + colDir[k];
+            if (ni >= 0 && ni < r && nj >= 0 && nj < c && mat[ni][nj] == 0)
+
+                // adjacent to a landmine
+                return false;
+        }
+        return true;
+    }
+
+    // Function to find shortest safe path
+    // from first column to last column
+    static int shortestPath(int[][] mat) {
+        int r = mat.length;
+        int c = mat[0].length;
+
+        int[] rowDir = {-1, 1, 0, 0};
+        int[] colDir = {0, 0, -1, 1};
+
+        // {i, j, distance}
+        Deque<int[]> q = new ArrayDeque<>();
+
+        // Enqueue all safe cells in the first column
+        for (int i = 0; i < r; i++) {
+            if (isSafe(mat, i, 0)) {
+                q.add(new int[]{i, 0, 1});
+                mat[i][0] = -1; // mark visited
+            }
+        }
+
+        while (!q.isEmpty()) {
+            int[] front = q.poll();
+            int i = front[0], j = front[1], dist = front[2];
+
+            // Reached last column
+            if (j == c - 1) return dist;
+
+            // Explore four directions
+            for (int k = 0; k < 4; k++) {
+                int ni = i + rowDir[k];
+                int nj = j + colDir[k];
+                if (ni >= 0 && ni < r && nj >= 0 && nj < c
+                                    && isSafe(mat, ni, nj)) {
+                    q.add(new int[]{ni, nj, dist + 1});
+                    mat[ni][nj] = -1;
+                }
+            }
+        }
+
+        // No path found
+        return -1;
+    }
+
+//Driver Code Starts
+
+    public static void main(String[] args) {
+        int[][] mat = {
+            {1, 0, 1, 1, 1},
+            {1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1},
+            {1, 1, 1, 0, 1},
+            {1, 1, 1, 1, 0}
+        };
+
+        int result = shortestPath(mat);
+        System.out.println(result);
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+from collections import deque
+
+#Driver Code Ends
+
+# Check if a cell (i,j) is safe to step on
+def isSafe(mat, i, j):
+    r, c = len(mat), len(mat[0])
+
+    # cell itself is a landmine or visited
+    if mat[i][j] != 1:
+        return False
+
+    # Check all four neighbors
+    rowDir = [-1, 1, 0, 0]
+    colDir = [0, 0, -1, 1]
+
+    for k in range(4):
+        ni, nj = i + rowDir[k], j + colDir[k]
+        if 0 <= ni < r and 0 <= nj < c and mat[ni][nj] == 0:
+
+            # adjacent to a landmine
+            return False
+    return True
+
+# Function to find shortest safe path
+# from first column to last column
+def shortestPath(mat):
+    r, c = len(mat), len(mat[0])
+    rowDir = [-1, 1, 0, 0]
+    colDir = [0, 0, -1, 1]
+
+    q = deque()  # stores [i, j, distance]
+
+    # Enqueue all safe cells in the first column
+    for i in range(r):
+        if isSafe(mat, i, 0):
+            q.append([i, 0, 1])
+            mat[i][0] = -1
+
+    while q:
+        i, j, dist = q.popleft()
+
+        # Reached last column
+        if j == c - 1:
+            return dist
+
+        # Explore four directions
+        for k in range(4):
+            ni, nj = i + rowDir[k], j + colDir[k]
+            if 0 <= ni < r and 0 <= nj < c and isSafe(mat, ni, nj):
+                q.append([ni, nj, dist + 1])
+                mat[ni][nj] = -1
+
+    # No path found
+    return -1
+
+#Driver Code Starts
+
+if __name__ == "__main__":
+    mat = [
+        [1, 0, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 0, 1],
+        [1, 1, 1, 1, 0]
+    ]
+
+    result = shortestPath(mat)
+    print(result)
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+//Driver Code Ends
+
+    // Check if a cell (i,j) is safe to step on
+    static bool isSafe(int[][] mat, int i, int j) {
+        int r = mat.Length;
+        int c = mat[0].Length;
+
+        // cell itself is a landmine or visited
+        if (mat[i][j]!= 1) return false;
+
+        int[] rowDir = {-1, 1, 0, 0};
+        int[] colDir = {0, 0, -1, 1};
+
+        for (int k = 0; k < 4; k++) {
+            int ni = i + rowDir[k];
+            int nj = j + colDir[k];
+            if (ni >= 0 && ni < r && nj >= 0 && nj < c && mat[ni][nj] == 0)
+
+                // adjacent to a landmine
+                return false;
+        }
+        return true;
+    }
+
+    // Function to find shortest safe path
+    // from first column to last column
+    static int shortestPath(int[][] mat) {
+        int r = mat.Length;
+        int c = mat[0].Length;
+
+        int[] rowDir = {-1, 1, 0, 0};
+        int[] colDir = {0, 0, -1, 1};
+
+        // {i, j, distance}
+        Queue<int[]> q = new Queue<int[]>();
+
+        // Enqueue all safe cells in the first column
+        for (int i = 0; i < r; i++) {
+            if (isSafe(mat, i, 0)) {
+                q.Enqueue(new int[]{i, 0, 1});
+
+                // mark visited
+                mat[i][0] = -1;
+            }
+        }
+
+        while (q.Count > 0) {
+            var front = q.Dequeue();
+            int i = front[0], j = front[1], dist = front[2];
+
+            // reached last column
+            if (j == c - 1) return dist;
+
+            for (int k = 0; k < 4; k++) {
+                int ni = i + rowDir[k];
+                int nj = j + colDir[k];
+                if (ni >= 0 && ni < r && nj >= 0 && nj < c
+                                    && isSafe(mat, ni, nj)) {
+                    q.Enqueue(new int[]{ni, nj, dist + 1});
+
+                    // mark visited
+                    mat[ni][nj] = -1;
+                }
+            }
+        }
+
+        // no path found
+        return -1;
+    }
+
+//Driver Code Starts
+
+    static void Main() {
+        int[][] mat = {
+            new int[]{1, 0, 1, 1, 1},
+            new int[]{1, 1, 1, 1, 1},
+            new int[]{1, 1, 1, 1, 1},
+            new int[]{1, 1, 1, 0, 1},
+            new int[]{1, 1, 1, 1, 0}
+        };
+
+        int result = shortestPath(mat);
+        Console.WriteLine(result);
+    }
+}
+
+//Driver Code Ends
+
+JavaScript
+
+const Denque = require("denque");
+
+// Check if a cell (i,j) is safe to step on
+function isSafe(mat, i, j) {
+    let r = mat.length;
+    let c = mat[0].length;
+
+    if (mat[i][j] !== 1) return false;
+
+    let rowDir = [-1, 1, 0, 0];
+    let colDir = [0, 0, -1, 1];
+
+    for (let k = 0; k < 4; k++) {
+        let ni = i + rowDir[k];
+        let nj = j + colDir[k];
+        if (ni >= 0 && ni < r && nj >= 0 && nj < c
+                                && mat[ni][nj] === 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Function to find shortest safe path
+// from first column to last column
+function shortestPath(mat) {
+    let r = mat.length;
+    let c = mat[0].length;
+
+    let rowDir = [-1, 1, 0, 0];
+    let colDir = [0, 0, -1, 1];
+
+    let q = new Denque();
+
+    // Enqueue all safe cells in the first column
+    for (let i = 0; i < r; i++) {
+        if (isSafe(mat, i, 0)) {
+            q.push([i, 0, 1]);
+
+            // mark visited
+            mat[i][0] = -1;
+        }
+    }
+
+    // BFS traversal
+    while (!q.isEmpty()) {
+        let [i, j, dist] = q.shift();
+
+        // Reached last column
+        if (j === c - 1) return dist;
+
+        // Explore four directions
+        for (let k = 0; k < 4; k++) {
+            let ni = i + rowDir[k];
+            let nj = j + colDir[k];
+            if (ni >= 0 && ni < r && nj >= 0 && nj < c
+                                    && isSafe(mat, ni, nj)) {
+                q.push([ni, nj, dist + 1]);
+
+                // mark visited
+                mat[ni][nj] = -1;
+            }
+        }
+    }
+
+    // No safe path found
+    return -1;
+}
+
+//Driver Code Starts
+// Driver Code
+let mat = [
+    [1, 0, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 0, 1],
+    [1, 1, 1, 1, 0]
+];
+
+console.log(shortestPath(mat));
+
+//Driver Code Ends
+
+Output
+
+6

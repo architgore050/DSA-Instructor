@@ -1,0 +1,1369 @@
+Source: https://www.geeksforgeeks.org/dsa/optimum-location-point-minimize-total-distance/
+Title: Optimum location of point to minimize total distance
+Extractor: 2
+
+Given a set of points points[][] of size 2 * n , where each point is represented as [p, q], and a line L[] represented by the equation ax + by + c = 0.
+
+Find a point on the line L[] such that the sum of its Euclidean distances from all the given points is minimized. Return the minimum possible sum of distances, rounded to 2 decimal places.
+
+Examples:
+
+> Input: n = 5, L[] = [1, -1, -3], points[][] = [[-3, 2], [-1, 0], [-1, 2], [1, 2], [3, 4]] Output: 20.77 Explanation: In the given figure optimum location of point of x - y - 3 = 0 line is (2, -1), whose total distance with other points is 20.77, which is minimum obtainable total distance. Input: n = 3, L[] = [2, 1, 4], points[][] = [[-1, 2], [1, 3], [2, 4]] Output: 11.20 Explanation: The line represented by L[] is 2x + y + 4 = 0. The optimum point on this line is approximately (-2.64, 1.27). The sum of its Euclidean distances from all the given points is approximately 11.20, which is the minimum possible value.
+
+Table of Content
+
+- Using Ternary Search - O(n * log(1/ε)) Time and O(1) Space
+- Using Golden Section Search - O(n * log(1/ε)) Time and O(1) Space
+
+### Using Ternary Search - O(n * log(1/ε)) Time and O(1) Space
+
+> A straightforward linear search is therefore not suitable because we would have to sample many points along the line, and there is no fixed step size that guarantees finding the exact minimum. Instead, we can parameterize every point on the line using a single variable t. This converts the original 2D optimization problem into a 1D problem. If (x0, y0)(x_0, y_0) is any point on the line and (dx, dy)(dx, dy) is a unit direction vector along the line, every point on the line can be written as: (x, y) = (x_0 + td_x, y_0 + td_y) For a particular value of t, we calculate the sum of distances from this point to all the given points. The resulting function is convex (unimodal), meaning it decreases until reaching its minimum and then increases. Therefore, instead of checking every possible t, we can use ternary search to efficiently locate the minimum.
+
+- Take the line ax + by + c = 0 and find any point (x0, y0) on it.
+- Use (b, -a) as the direction vector of the line and normalize it to a unit vector (dirX, dirY).
+- Project all given points onto the line to determine the search range [low, high] for parameter t.
+- Since the sum of Euclidean distances is a convex function, apply ternary search on [low, high].
+- For each iteration, calculate the total distance at mid1 and mid2, and discard the one-third that cannot contain the minimum.
+- After convergence, take the midpoint of the final range, convert it back to (x, y), and return the minimum sum of distances.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Calculate the sum of Euclidean distances from (x, y)
+// to all the given points.
+double getDistanceSum(vector<vector<int>> &points, double x, double y)
+{
+    double sum = 0.0;
+
+    for (auto &point : points)
+    {
+        double dx = x - point[0];
+        double dy = y - point[1];
+
+        sum += sqrt(dx * dx + dy * dy);
+    }
+
+    return sum;
+}
+
+double findOptimumCost(vector<int> &L, vector<vector<int>> &points)
+{
+    double a = L[0];
+    double b = L[1];
+    double c = L[2];
+
+    // Find any point (x0, y0) lying on the line:
+    // ax + by + c = 0
+    double x0 = 0.0, y0 = 0.0;
+
+    if (b != 0)
+        y0 = -c / b;
+    else
+        x0 = -c / a;
+
+    // (b, -a) is a direction vector parallel to the line.
+    // Normalize it to get a unit direction vector.
+    double len = sqrt(a * a + b * b);
+
+    double dirX = b / len;
+    double dirY = -a / len;
+
+    // We represent every point on the line as:
+    //
+    // (x, y) = (x0 + t * dirX, y0 + t * dirY)
+    //
+    // Find the range of t values corresponding to the
+    // projections of all given points onto the line.
+    double low = 1e18;
+    double high = -1e18;
+
+    for (auto &point : points)
+    {
+        // Projection of (point - (x0, y0)) onto
+        // the unit direction vector.
+        double t = (point[0] - x0) * dirX + (point[1] - y0) * dirY;
+
+        low = min(low, t);
+        high = max(high, t);
+    }
+
+    // The sum-of-distances function is convex, so
+    // ternary search can be used to find its minimum.
+    double eps = 1e-7;
+
+    while (high - low > eps)
+    {
+        // Divide the current range into three parts.
+        double mid1 = low + (high - low) / 3.0;
+        double mid2 = high - (high - low) / 3.0;
+
+        // Point corresponding to mid1.
+        double x1 = x0 + mid1 * dirX;
+        double y1 = y0 + mid1 * dirY;
+
+        // Point corresponding to mid2.
+        double x2 = x0 + mid2 * dirX;
+        double y2 = y0 + mid2 * dirY;
+
+        // Calculate the total distance at both points.
+        double cost1 = getDistanceSum(points, x1, y1);
+        double cost2 = getDistanceSum(points, x2, y2);
+
+        // If cost1 is smaller, the minimum lies
+        // in the left two-thirds.
+        if (cost1 < cost2)
+        {
+            high = mid2;
+        }
+        // Otherwise, the minimum lies in the
+        // right two-thirds.
+        else
+        {
+            low = mid1;
+        }
+    }
+
+    // Take the middle of the final range as the
+    // approximate optimal value of t.
+    double t = (low + high) / 2.0;
+
+    // Convert t back to the corresponding point on the line.
+    double x = x0 + t * dirX;
+    double y = y0 + t * dirY;
+
+    // Return the minimum possible sum of distances.
+    return getDistanceSum(points, x, y);
+}
+
+int main()
+{
+    vector<int> L = {1, -1, -3};
+    vector<vector<int>> points = {{-3, -2}, {-1, 0}, {-1, 2}, {1, 2}, {3, 4}};
+
+    double ans = findOptimumCost(L, points);
+    cout << fixed << setprecision(2) << ans << '\n';
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+    static double getDistanceSum(int[][] points, double x,
+                                 double y)
+    {
+        double sum = 0.0;
+
+        for (int[] point : points) {
+            double dx = x - point[0];
+            double dy = y - point[1];
+
+            sum += Math.sqrt(dx * dx + dy * dy);
+        }
+
+        return sum;
+    }
+
+    static double findOptimumCost(int[] L, int[][] points)
+    {
+        double a = L[0];
+        double b = L[1];
+        double c = L[2];
+
+        // Find any point (x0, y0) lying on the line:
+        // ax + by + c = 0
+        double x0 = 0.0, y0 = 0.0;
+
+        if (b != 0)
+            y0 = -c / b;
+        else
+            x0 = -c / a;
+
+        // (b, -a) is a direction vector parallel to the
+        // line. Normalize it to get a unit direction
+        // vector.
+        double len = Math.sqrt(a * a + b * b);
+
+        double dirX = b / len;
+        double dirY = -a / len;
+
+        // We represent every point on the line as:
+        //
+        // (x, y) = (x0 + t * dirX, y0 + t * dirY)
+        //
+        // Find the range of t values corresponding to the
+        // projections of all given points onto the line.
+        double low = 1e18;
+        double high = -1e18;
+
+        for (int[] point : points) {
+            // Projection of (point - (x0, y0)) onto
+            // the unit direction vector.
+            double t = (point[0] - x0) * dirX
+                       + (point[1] - y0) * dirY;
+
+            low = Math.min(low, t);
+            high = Math.max(high, t);
+        }
+
+        // The sum-of-distances function is convex, so
+        // ternary search can be used to find its minimum.
+        double eps = 1e-7;
+
+        while (high - low > eps) {
+            // Divide the current range into three parts.
+            double mid1 = low + (high - low) / 3.0;
+            double mid2 = high - (high - low) / 3.0;
+
+            // Point corresponding to mid1.
+            double x1 = x0 + mid1 * dirX;
+            double y1 = y0 + mid1 * dirY;
+
+            // Point corresponding to mid2.
+            double x2 = x0 + mid2 * dirX;
+            double y2 = y0 + mid2 * dirY;
+
+            // Calculate the total distance at both points.
+            double cost1 = getDistanceSum(points, x1, y1);
+            double cost2 = getDistanceSum(points, x2, y2);
+
+            // If cost1 is smaller, the minimum lies
+            // in the left two-thirds.
+            if (cost1 < cost2) {
+                high = mid2;
+            }
+            // Otherwise, the minimum lies in the
+            // right two-thirds.
+            else {
+                low = mid1;
+            }
+        }
+
+        // Take the middle of the final range as the
+        // approximate optimal value of t.
+        double t = (low + high) / 2.0;
+
+        // Convert t back to the corresponding point on the
+        // line.
+        double x = x0 + t * dirX;
+        double y = y0 + t * dirY;
+
+        // Return the minimum possible sum of distances.
+        return getDistanceSum(points, x, y);
+    }
+
+    public static void main(String[] args)
+    {
+        int[] L = { 1, -1, -3 };
+        int[][] points = { { -3, -2 },
+                           { -1, 0 },
+                           { -1, 2 },
+                           { 1, 2 },
+                           { 3, 4 } };
+
+        double ans = findOptimumCost(L, points);
+
+        System.out.printf("%.2f%n", ans);
+    }
+}
+
+Python
+
+import math
+
+# Calculate the sum of Euclidean distances from (x, y)
+# to all the given points.
+def getDistanceSum(points, x, y):
+    sum = 0.0
+
+    for point in points:
+        dx = x - point[0]
+        dy = y - point[1]
+
+        sum += math.sqrt(dx * dx + dy * dy)
+
+    return sum
+
+def findOptimumCost(L, points):
+    a = L[0]
+    b = L[1]
+    c = L[2]
+
+    # Find any point (x0, y0) lying on the line:
+    # ax + by + c = 0
+    x0 = 0.0
+    y0 = 0.0
+
+    if b != 0:
+        y0 = -c / b
+    else:
+        x0 = -c / a
+
+    # (b, -a) is a direction vector parallel to the line.
+    # Normalize it to get a unit direction vector.
+    length = math.sqrt(a * a + b * b)
+
+    dirX = b / length
+    dirY = -a / length
+
+    # We represent every point on the line as:
+    #
+    # (x, y) = (x0 + t * dirX, y0 + t * dirY)
+    #
+    # Find the range of t values corresponding to the
+    # projections of all given points onto the line.
+    low = 1e18
+    high = -1e18
+
+    for point in points:
+        # Projection of (point - (x0, y0)) onto
+        # the unit direction vector.
+        t = (point[0] - x0) * dirX + (point[1] - y0) * dirY
+
+        low = min(low, t)
+        high = max(high, t)
+
+    # The sum-of-distances function is convex, so
+    # ternary search can be used to find its minimum.
+    eps = 1e-7
+
+    while high - low > eps:
+
+        # Divide the current range into three parts.
+        mid1 = low + (high - low) / 3.0
+        mid2 = high - (high - low) / 3.0
+
+        # Point corresponding to mid1.
+        x1 = x0 + mid1 * dirX
+        y1 = y0 + mid1 * dirY
+
+        # Point corresponding to mid2.
+        x2 = x0 + mid2 * dirX
+        y2 = y0 + mid2 * dirY
+
+        # Calculate the total distance at both points.
+        cost1 = getDistanceSum(points, x1, y1)
+        cost2 = getDistanceSum(points, x2, y2)
+
+        # If cost1 is smaller, the minimum lies
+        # in the left two-thirds.
+        if cost1 < cost2:
+            high = mid2
+
+        # Otherwise, the minimum lies in the
+        # right two-thirds.
+        else:
+            low = mid1
+
+    # Take the middle of the final range as the
+    # approximate optimal value of t.
+    t = (low + high) / 2.0
+
+    # Convert t back to the corresponding point on the line.
+    x = x0 + t * dirX
+    y = y0 + t * dirY
+
+    # Return the minimum possible sum of distances.
+    return getDistanceSum(points, x, y)
+
+# Driver Code
+if __name__ == "__main__":
+    L = [1, -1, -3]
+
+    points = [
+        [-3, -2],
+        [-1, 0],
+        [-1, 2],
+        [1, 2],
+        [3, 4]
+    ]
+
+    ans = findOptimumCost(L, points)
+
+    print(f"{ans:.2f}")
+
+C#
+
+using System;
+
+class GFG {
+    static double GetDistanceSum(int[, ] points, double x,
+                                 double y)
+    {
+        double sum = 0.0;
+
+        int n = points.GetLength(0);
+
+        for (int i = 0; i < n; i++) {
+            double dx = x - points[i, 0];
+            double dy = y - points[i, 1];
+
+            sum += Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        return sum;
+    }
+
+    static double findOptimumCost(int[] L, int[, ] points)
+    {
+        double a = L[0];
+        double b = L[1];
+        double c = L[2];
+
+        // Find any point (x0, y0) lying on the line:
+        // ax + by + c = 0
+        double x0 = 0.0;
+        double y0 = 0.0;
+
+        if (b != 0)
+            y0 = -c / b;
+        else
+            x0 = -c / a;
+
+        // (b, -a) is a direction vector parallel to the
+        // line. Normalize it to get a unit direction
+        // vector.
+        double len = Math.Sqrt(a * a + b * b);
+
+        double dirX = b / len;
+        double dirY = -a / len;
+
+        // We represent every point on the line as:
+        //
+        // (x, y) = (x0 + t * dirX, y0 + t * dirY)
+        //
+        // Find the range of t values corresponding to the
+        // projections of all given points onto the line.
+        double low = 1e18;
+        double high = -1e18;
+
+        int n = points.GetLength(0);
+
+        for (int i = 0; i < n; i++) {
+
+            // Projection of (point - (x0, y0)) onto
+            // the unit direction vector.
+            double proj = (points[i, 0] - x0) * dirX
+                          + (points[i, 1] - y0) * dirY;
+
+            low = Math.Min(low, proj);
+            high = Math.Max(high, proj);
+        }
+
+        // The sum-of-distances function is convex, so
+        // ternary search can be used to find its minimum.
+        double eps = 1e-7;
+
+        while (high - low > eps) {
+            // Divide the current range into three parts.
+            double mid1 = low + (high - low) / 3.0;
+            double mid2 = high - (high - low) / 3.0;
+
+            // Point corresponding to mid1.
+            double x1 = x0 + mid1 * dirX;
+            double y1 = y0 + mid1 * dirY;
+
+            // Point corresponding to mid2.
+            double x2 = x0 + mid2 * dirX;
+            double y2 = y0 + mid2 * dirY;
+
+            // Calculate the total distance at both points.
+            double cost1 = GetDistanceSum(points, x1, y1);
+            double cost2 = GetDistanceSum(points, x2, y2);
+
+            // If cost1 is smaller, the minimum lies
+            // in the left two-thirds.
+            if (cost1 < cost2) {
+                high = mid2;
+            }
+            // Otherwise, the minimum lies in the
+            // right two-thirds.
+            else {
+                low = mid1;
+            }
+        }
+
+        // Take the middle of the final range as the
+        // approximate optimal value of t.
+        double t = (low + high) / 2.0;
+
+        // Convert t back to the corresponding point on the
+        // line.
+        double x = x0 + t * dirX;
+        double y = y0 + t * dirY;
+
+        // Return the minimum possible sum of distances.
+        return GetDistanceSum(points, x, y);
+    }
+
+    public static void Main()
+    {
+        int[] L = { 1, -1, -3 };
+
+        int[, ] points = { { -3, -2 },
+                           { -1, 0 },
+                           { -1, 2 },
+                           { 1, 2 },
+                           { 3, 4 } };
+
+        double ans = findOptimumCost(L, points);
+        Console.WriteLine(ans.ToString("F2"));
+    }
+}
+
+JavaScript
+
+// Calculate the sum of Euclidean distances from (x, y)
+// to all the given points.
+function getDistanceSum(points, x, y)
+{
+    let sum = 0.0;
+
+    for (const point of points) {
+        const dx = x - point[0];
+        const dy = y - point[1];
+
+        sum += Math.sqrt(dx * dx + dy * dy);
+    }
+
+    return sum;
+}
+
+function findOptimumCost(L, points)
+{
+    const a = L[0];
+    const b = L[1];
+    const c = L[2];
+
+    // Find any point (x0, y0) lying on the line:
+    // ax + by + c = 0
+    let x0 = 0.0;
+    let y0 = 0.0;
+
+    if (b !== 0)
+        y0 = -c / b;
+    else
+        x0 = -c / a;
+
+    // (b, -a) is a direction vector parallel to the line.
+    // Normalize it to get a unit direction vector.
+    const len = Math.sqrt(a * a + b * b);
+
+    const dirX = b / len;
+    const dirY = -a / len;
+
+    // We represent every point on the line as:
+    //
+    // (x, y) = (x0 + t * dirX, y0 + t * dirY)
+    //
+    // Find the range of t values corresponding to the
+    // projections of all given points onto the line.
+    let low = 1e18;
+    let high = -1e18;
+
+    for (const point of points) {
+        // Projection of (point - (x0, y0)) onto
+        // the unit direction vector.
+        const t = (point[0] - x0) * dirX
+                  + (point[1] - y0) * dirY;
+
+        low = Math.min(low, t);
+        high = Math.max(high, t);
+    }
+
+    // The sum-of-distances function is convex, so
+    // ternary search can be used to find its minimum.
+    const eps = 1e-7;
+
+    while (high - low > eps) {
+        // Divide the current range into three parts.
+        const mid1 = low + (high - low) / 3.0;
+        const mid2 = high - (high - low) / 3.0;
+
+        // Point corresponding to mid1.
+        const x1 = x0 + mid1 * dirX;
+        const y1 = y0 + mid1 * dirY;
+
+        // Point corresponding to mid2.
+        const x2 = x0 + mid2 * dirX;
+        const y2 = y0 + mid2 * dirY;
+
+        // Calculate the total distance at both points.
+        const cost1 = getDistanceSum(points, x1, y1);
+        const cost2 = getDistanceSum(points, x2, y2);
+
+        // If cost1 is smaller, the minimum lies
+        // in the left two-thirds.
+        if (cost1 < cost2) {
+            high = mid2;
+        }
+        // Otherwise, the minimum lies in the
+        // right two-thirds.
+        else {
+            low = mid1;
+        }
+    }
+
+    // Take the middle of the final range as the
+    // approximate optimal value of t.
+    const t = (low + high) / 2.0;
+
+    // Convert t back to the corresponding point on the
+    // line.
+    const x = x0 + t * dirX;
+    const y = y0 + t * dirY;
+
+    // Return the minimum possible sum of distances.
+    return getDistanceSum(points, x, y);
+}
+
+// Driver Code
+
+const L = [ 1, -1, -3 ];
+
+const points = [
+    [ -3, -2 ], [ -1, 0 ], [ -1, 2 ], [ 1, 2 ], [ 3, 4 ]
+];
+
+const ans = findOptimumCost(L, points);
+console.log(ans.toFixed(2));
+
+Output
+
+20.77
+
+### Using Golden Section Search - O(n * log(1/ε)) Time and O(1) Space
+
+> Ternary search checks two new points in every iteration, so it calculates the distance sum twice. Golden Section Search improves this by choosing the points using the golden ratio φ = (√5 - 1) / 2 ≈ 0.618 , so that after shrinking the range, one of the old points can be reused. Thus, in every iteration, we calculate the distance sum for only one new point, making the search more efficient while still finding the minimum of the convex function.
+
+- Find a point (x0, y0) on the line and obtain the unit direction vector (dirX, dirY).
+- Project all given points onto the line to determine the search range [low, high].
+- Use the golden ratio to divide the range into two points x1 and x2.
+- Calculate the sum of distances at these two points.
+- Compare the costs and shrink the interval; reuse the previously calculated cost whenever possible.
+- Continue until the interval is sufficiently small, then evaluate the middle point to get the minimum cost.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Calculate the sum of Euclidean distances from (x, y)
+// to all the given points.
+double getDistanceSum(vector<vector<int>> &points, double x, double y)
+{
+    double sum = 0.0;
+
+    for (auto &point : points)
+    {
+        double dx = x - point[0];
+        double dy = y - point[1];
+
+        sum += sqrt(dx * dx + dy * dy);
+    }
+
+    return sum;
+}
+
+double findOptimumCost(vector<int> &L, vector<vector<int>> &points)
+{
+    double a = L[0];
+    double b = L[1];
+    double c = L[2];
+
+    // Find any point (x0, y0) lying on the line:
+    // ax + by + c = 0
+    double x0 = 0.0, y0 = 0.0;
+
+    if (b != 0)
+        y0 = -c / b;
+    else
+        x0 = -c / a;
+
+    // (b, -a) is a direction vector parallel to the line.
+    // Normalize it to get a unit direction vector.
+    double len = sqrt(a * a + b * b);
+
+    double dirX = b / len;
+    double dirY = -a / len;
+
+    // We represent every point on the line as:
+    //
+    // (x, y) = (x0 + t * dirX, y0 + t * dirY)
+    //
+    // Find the range of t values corresponding to the
+    // projections of all given points onto the line.
+    double low = 1e18;
+    double high = -1e18;
+
+    for (auto &point : points)
+    {
+        // Projection of (point - (x0, y0)) onto
+        // the unit direction vector.
+        double t = (point[0] - x0) * dirX + (point[1] - y0) * dirY;
+
+        low = min(low, t);
+        high = max(high, t);
+    }
+
+    // The sum-of-distances function is convex, so
+    // Golden Section Search can be used to find its minimum.
+
+    // Golden ratio value.
+    double phi = (sqrt(5.0) - 1.0) / 2.0;
+
+    double eps = 1e-7;
+
+    // Initial two points using the golden ratio.
+    double mid1 = high - phi * (high - low);
+    double mid2 = low + phi * (high - low);
+
+    // Calculate the total distance at both points.
+    double cost1 = getDistanceSum(points, x0 + mid1 * dirX, y0 + mid1 * dirY);
+
+    double cost2 = getDistanceSum(points, x0 + mid2 * dirX, y0 + mid2 * dirY);
+
+    while (high - low > eps)
+    {
+        // If cost1 is smaller, the minimum lies
+        // in the left part of the range.
+        if (cost1 < cost2)
+        {
+            high = mid2;
+
+            // Reuse the previous point and its cost.
+            mid2 = mid1;
+            cost2 = cost1;
+
+            // Calculate only one new point.
+            mid1 = high - phi * (high - low);
+
+            cost1 = getDistanceSum(points, x0 + mid1 * dirX, y0 + mid1 * dirY);
+        }
+        // Otherwise, the minimum lies in the
+        // right part of the range.
+        else
+        {
+            low = mid1;
+
+            // Reuse the previous point and its cost.
+            mid1 = mid2;
+            cost1 = cost2;
+
+            // Calculate only one new point.
+            mid2 = low + phi * (high - low);
+
+            cost2 = getDistanceSum(points, x0 + mid2 * dirX, y0 + mid2 * dirY);
+        }
+    }
+
+    // Take the middle of the final range as the
+    // approximate optimal value of t.
+    double t = (low + high) / 2.0;
+
+    // Convert t back to the corresponding point on the line.
+    double x = x0 + t * dirX;
+    double y = y0 + t * dirY;
+
+    // Return the minimum possible sum of distances.
+    return getDistanceSum(points, x, y);
+}
+
+int main()
+{
+    vector<int> L = {1, -1, -3};
+
+    vector<vector<int>> points = {{-3, -2}, {-1, 0}, {-1, 2}, {1, 2}, {3, 4}};
+    double ans = findOptimumCost(L, points);
+
+    cout << fixed << setprecision(2) << ans << '\n';
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+    static double getDistanceSum(int[][] points, double x, double y)
+    {
+        double sum = 0.0;
+
+        for (int[] point : points) {
+            double dx = x - point[0];
+            double dy = y - point[1];
+
+            sum += Math.sqrt(dx * dx + dy * dy);
+        }
+
+        return sum;
+    }
+
+    static double findOptimumCost(int[] L, int[][] points)
+    {
+        double a = L[0];
+        double b = L[1];
+        double c = L[2];
+
+        // Find any point (x0, y0) lying on the line:
+        // ax + by + c = 0
+        double x0 = 0.0;
+        double y0 = 0.0;
+
+        if (b != 0)
+            y0 = -c / b;
+        else
+            x0 = -c / a;
+
+        // (b, -a) is a direction vector parallel to the
+        // line. Normalize it to get a unit direction
+        // vector.
+        double len = Math.sqrt(a * a + b * b);
+
+        double dirX = b / len;
+        double dirY = -a / len;
+
+        // We represent every point on the line as:
+        //
+        // (x, y) = (x0 + t * dirX, y0 + t * dirY)
+        //
+        // Find the range of t values corresponding to the
+        // projections of all given points onto the line.
+        double low = 1e18;
+        double high = -1e18;
+
+        for (int[] point : points) {
+            // Projection of (point - (x0, y0)) onto
+            // the unit direction vector.
+            double t = (point[0] - x0) * dirX
+                       + (point[1] - y0) * dirY;
+
+            low = Math.min(low, t);
+            high = Math.max(high, t);
+        }
+
+        // The sum-of-distances function is convex, so
+        // Golden Section Search can be used to find its
+        // minimum.
+
+        // Golden ratio value.
+        double phi = (Math.sqrt(5.0) - 1.0) / 2.0;
+
+        double eps = 1e-7;
+
+        // Initial two points using the golden ratio.
+        double mid1 = high - phi * (high - low);
+        double mid2 = low + phi * (high - low);
+
+        // Calculate the total distance at both points.
+        double cost1 = getDistanceSum(
+            points, x0 + mid1 * dirX, y0 + mid1 * dirY);
+
+        double cost2 = getDistanceSum(
+            points, x0 + mid2 * dirX, y0 + mid2 * dirY);
+
+        while (high - low > eps) {
+            // If cost1 is smaller, the minimum lies
+            // in the left part of the range.
+            if (cost1 < cost2) {
+                high = mid2;
+
+                // Reuse the previous point and its cost.
+                mid2 = mid1;
+                cost2 = cost1;
+
+                // Calculate only one new point.
+                mid1 = high - phi * (high - low);
+
+                cost1 = getDistanceSum(points,
+                                       x0 + mid1 * dirX,
+                                       y0 + mid1 * dirY);
+            }
+            // Otherwise, the minimum lies in the
+            // right part of the range.
+            else {
+                low = mid1;
+
+                // Reuse the previous point and its cost.
+                mid1 = mid2;
+                cost1 = cost2;
+
+                // Calculate only one new point.
+                mid2 = low + phi * (high - low);
+
+                cost2 = getDistanceSum(points,
+                                       x0 + mid2 * dirX,
+                                       y0 + mid2 * dirY);
+            }
+        }
+
+        // Take the middle of the final range as the
+        // approximate optimal value of t.
+        double t = (low + high) / 2.0;
+
+        // Convert t back to the corresponding point on the
+        // line.
+        double x = x0 + t * dirX;
+        double y = y0 + t * dirY;
+
+        // Return the minimum possible sum of distances.
+        return getDistanceSum(points, x, y);
+    }
+    public static void main(String[] args)
+    {
+        int[] L = { 1, -1, -3 };
+
+        int[][] points = { { -3, -2 },
+                           { -1, 0 },
+                           { -1, 2 },
+                           { 1, 2 },
+                           { 3, 4 } };
+
+        double ans = findOptimumCost(L, points);
+        System.out.printf("%.2f%n", ans);
+    }
+}
+
+Python
+
+import math
+
+# Calculate the sum of Euclidean distances from (x, y)
+# to all the given points.
+def getDistanceSum(points, x, y):
+    sum = 0.0
+
+    for point in points:
+        dx = x - point[0]
+        dy = y - point[1]
+
+        sum += math.sqrt(dx * dx + dy * dy)
+
+    return sum
+
+def findOptimumCost(L, points):
+    a = L[0]
+    b = L[1]
+    c = L[2]
+
+    # Find any point (x0, y0) lying on the line:
+    # ax + by + c = 0
+    x0 = 0.0
+    y0 = 0.0
+
+    if b != 0:
+        y0 = -c / b
+    else:
+        x0 = -c / a
+
+    # (b, -a) is a direction vector parallel to the line.
+    # Normalize it to get a unit direction vector.
+    length = math.sqrt(a * a + b * b)
+
+    dirX = b / length
+    dirY = -a / length
+
+    # We represent every point on the line as:
+    #
+    # (x, y) = (x0 + t * dirX, y0 + t * dirY)
+    #
+    # Find the range of t values corresponding to the
+    # projections of all given points onto the line.
+    low = 1e18
+    high = -1e18
+
+    for point in points:
+        # Projection of (point - (x0, y0)) onto
+        # the unit direction vector.
+        t = (point[0] - x0) * dirX + (point[1] - y0) * dirY
+
+        low = min(low, t)
+        high = max(high, t)
+
+    # The sum-of-distances function is convex, so
+    # Golden Section Search can be used to find its minimum.
+
+    # Golden ratio value.
+    phi = (math.sqrt(5.0) - 1.0) / 2.0
+
+    eps = 1e-7
+
+    # Initial two points using the golden ratio.
+    mid1 = high - phi * (high - low)
+    mid2 = low + phi * (high - low)
+
+    # Calculate the total distance at both points.
+    cost1 = getDistanceSum(
+        points,
+        x0 + mid1 * dirX,
+        y0 + mid1 * dirY
+    )
+
+    cost2 = getDistanceSum(
+        points,
+        x0 + mid2 * dirX,
+        y0 + mid2 * dirY
+    )
+
+    while high - low > eps:
+
+        # If cost1 is smaller, the minimum lies
+        # in the left part of the range.
+        if cost1 < cost2:
+            high = mid2
+
+            # Reuse the previous point and its cost.
+            mid2 = mid1
+            cost2 = cost1
+
+            # Calculate only one new point.
+            mid1 = high - phi * (high - low)
+
+            cost1 = getDistanceSum(
+                points,
+                x0 + mid1 * dirX,
+                y0 + mid1 * dirY
+            )
+
+        # Otherwise, the minimum lies in the
+        # right part of the range.
+        else:
+            low = mid1
+
+            # Reuse the previous point and its cost.
+            mid1 = mid2
+            cost1 = cost2
+
+            # Calculate only one new point.
+            mid2 = low + phi * (high - low)
+
+            cost2 = getDistanceSum(
+                points,
+                x0 + mid2 * dirX,
+                y0 + mid2 * dirY
+            )
+
+    # Take the middle of the final range as the
+    # approximate optimal value of t.
+    t = (low + high) / 2.0
+
+    # Convert t back to the corresponding point on the line.
+    x = x0 + t * dirX
+    y = y0 + t * dirY
+
+    # Return the minimum possible sum of distances.
+    return getDistanceSum(points, x, y)
+
+# Driver Code
+if __name__ == "__main__":
+    L = [1, -1, -3]
+
+    points = [
+        [-3, -2],
+        [-1, 0],
+        [-1, 2],
+        [1, 2],
+        [3, 4]
+    ]
+
+    ans = findOptimumCost(L, points)
+
+    print(f"{ans:.2f}")
+
+C#
+
+using System;
+
+class GFG {
+    static double GetDistanceSum(int[, ] points, double x,
+                                 double y)
+    {
+        double sum = 0.0;
+
+        int n = points.GetLength(0);
+
+        for (int i = 0; i < n; i++) {
+            double dx = x - points[i, 0];
+            double dy = y - points[i, 1];
+
+            sum += Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        return sum;
+    }
+
+    static double findOptimumCost(int[] L, int[, ] points)
+    {
+        double a = L[0];
+        double b = L[1];
+        double c = L[2];
+
+        // Find any point (x0, y0) lying on the line:
+        // ax + by + c = 0
+        double x0 = 0.0;
+        double y0 = 0.0;
+
+        if (b != 0)
+            y0 = -c / b;
+        else
+            x0 = -c / a;
+
+        // (b, -a) is a direction vector parallel to the
+        // line. Normalize it to get a unit direction
+        // vector.
+        double len = Math.Sqrt(a * a + b * b);
+
+        double dirX = b / len;
+        double dirY = -a / len;
+
+        // We represent every point on the line as:
+        //
+        // (x, y) = (x0 + t * dirX, y0 + t * dirY)
+        //
+        // Find the range of t values corresponding to the
+        // projections of all given points onto the line.
+        double low = 1e18;
+        double high = -1e18;
+
+        int n = points.GetLength(0);
+
+        for (int i = 0; i < n; i++) {
+            // Projection of (point - (x0, y0)) onto
+            // the unit direction vector.
+            double proj = (points[i, 0] - x0) * dirX
+                          + (points[i, 1] - y0) * dirY;
+
+            low = Math.Min(low, proj);
+            high = Math.Max(high, proj);
+        }
+
+        // The sum-of-distances function is convex, so
+        // Golden Section Search can be used to find its
+        // minimum.
+
+        // Golden ratio value.
+        double phi = (Math.Sqrt(5.0) - 1.0) / 2.0;
+
+        double eps = 1e-7;
+
+        // Initial two points using the golden ratio.
+        double mid1 = high - phi * (high - low);
+        double mid2 = low + phi * (high - low);
+
+        // Calculate the total distance at both points.
+        double cost1 = GetDistanceSum(
+            points, x0 + mid1 * dirX, y0 + mid1 * dirY);
+
+        double cost2 = GetDistanceSum(
+            points, x0 + mid2 * dirX, y0 + mid2 * dirY);
+
+        while (high - low > eps) {
+            // If cost1 is smaller, the minimum lies
+            // in the left part of the range.
+            if (cost1 < cost2) {
+                high = mid2;
+
+                // Reuse the previous point and its cost.
+                mid2 = mid1;
+                cost2 = cost1;
+
+                // Calculate only one new point.
+                mid1 = high - phi * (high - low);
+
+                cost1 = GetDistanceSum(points,
+                                       x0 + mid1 * dirX,
+                                       y0 + mid1 * dirY);
+            }
+
+            // Otherwise, the minimum lies in the
+            // right part of the range.
+            else {
+                low = mid1;
+
+                // Reuse the previous point and its cost.
+                mid1 = mid2;
+                cost1 = cost2;
+
+                // Calculate only one new point.
+                mid2 = low + phi * (high - low);
+
+                cost2 = GetDistanceSum(points,
+                                       x0 + mid2 * dirX,
+                                       y0 + mid2 * dirY);
+            }
+        }
+
+        // Take the middle of the final range as the
+        // approximate optimal value of t.
+        double t = (low + high) / 2.0;
+
+        // Convert t back to the corresponding point on the
+        // line.
+        double x = x0 + t * dirX;
+        double y = y0 + t * dirY;
+
+        // Return the minimum possible sum of distances.
+        return GetDistanceSum(points, x, y);
+    }
+
+    public static void Main()
+    {
+        int[] L = { 1, -1, -3 };
+
+        int[, ] points = { { -3, -2 },
+                           { -1, 0 },
+                           { -1, 2 },
+                           { 1, 2 },
+                           { 3, 4 } };
+
+        double ans = findOptimumCost(L, points);
+        Console.WriteLine(ans.ToString("F2"));
+    }
+}
+
+JavaScript
+
+// Calculate the sum of Euclidean distances from (x, y)
+// to all the given points.
+function getDistanceSum(points, x, y)
+{
+    let sum = 0.0;
+
+    for (const point of points) {
+        const dx = x - point[0];
+        const dy = y - point[1];
+
+        sum += Math.sqrt(dx * dx + dy * dy);
+    }
+
+    return sum;
+}
+
+function findOptimumCost(L, points)
+{
+    const a = L[0];
+    const b = L[1];
+    const c = L[2];
+
+    // Find any point (x0, y0) lying on the line:
+    // ax + by + c = 0
+    let x0 = 0.0;
+    let y0 = 0.0;
+
+    if (b !== 0)
+        y0 = -c / b;
+    else
+        x0 = -c / a;
+
+    // (b, -a) is a direction vector parallel to the line.
+    // Normalize it to get a unit direction vector.
+    const len = Math.sqrt(a * a + b * b);
+
+    const dirX = b / len;
+    const dirY = -a / len;
+
+    // We represent every point on the line as:
+    //
+    // (x, y) = (x0 + t * dirX, y0 + t * dirY)
+    //
+    // Find the range of t values corresponding to the
+    // projections of all given points onto the line.
+    let low = 1e18;
+    let high = -1e18;
+
+    for (const point of points) {
+        // Projection of (point - (x0, y0)) onto
+        // the unit direction vector.
+        const t = (point[0] - x0) * dirX
+                  + (point[1] - y0) * dirY;
+
+        low = Math.min(low, t);
+        high = Math.max(high, t);
+    }
+
+    // The sum-of-distances function is convex, so
+    // Golden Section Search can be used to find its
+    // minimum.
+
+    // Golden ratio value.
+    const phi = (Math.sqrt(5.0) - 1.0) / 2.0;
+
+    const eps = 1e-7;
+
+    // Initial two points using the golden ratio.
+    let mid1 = high - phi * (high - low);
+    let mid2 = low + phi * (high - low);
+
+    // Calculate the total distance at both points.
+    let cost1 = getDistanceSum(points, x0 + mid1 * dirX,
+                               y0 + mid1 * dirY);
+
+    let cost2 = getDistanceSum(points, x0 + mid2 * dirX,
+                               y0 + mid2 * dirY);
+
+    while (high - low > eps) {
+
+        // If cost1 is smaller, the minimum lies
+        // in the left part of the range.
+        if (cost1 < cost2) {
+            high = mid2;
+
+            // Reuse the previous point and its cost.
+            mid2 = mid1;
+            cost2 = cost1;
+
+            // Calculate only one new point.
+            mid1 = high - phi * (high - low);
+
+            cost1 = getDistanceSum(points, x0 + mid1 * dirX,
+                                   y0 + mid1 * dirY);
+        }
+
+        // Otherwise, the minimum lies in the
+        // right part of the range.
+        else {
+            low = mid1;
+
+            // Reuse the previous point and its cost.
+            mid1 = mid2;
+            cost1 = cost2;
+
+            // Calculate only one new point.
+            mid2 = low + phi * (high - low);
+
+            cost2 = getDistanceSum(points, x0 + mid2 * dirX,
+                                   y0 + mid2 * dirY);
+        }
+    }
+
+    // Take the middle of the final range as the
+    // approximate optimal value of t.
+    const t = (low + high) / 2.0;
+
+    // Convert t back to the corresponding point on the
+    // line.
+    const x = x0 + t * dirX;
+    const y = y0 + t * dirY;
+
+    // Return the minimum possible sum of distances.
+    return getDistanceSum(points, x, y);
+}
+
+// Driver Code
+
+const L = [ 1, -1, -3 ];
+const points = [
+    [ -3, -2 ], [ -1, 0 ], [ -1, 2 ], [ 1, 2 ], [ 3, 4 ]
+];
+
+const ans = findOptimumCost(L, points);
+console.log(ans.toFixed(2));
+
+Output
+
+20.77

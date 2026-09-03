@@ -1,0 +1,862 @@
+Source: https://www.geeksforgeeks.org/dsa/print-shortest-path-print-string-screen/
+Title: Print shortest path to print a string on screen
+Extractor: 2
+
+Given a string s and a screen containing lowercase English alphabets from a to z arranged in a fixed grid, movement between adjacent cells is allowed using a remote control with UP, DOWN, LEFT, RIGHT keys. The characters are arranged in the following grid:
+
+Initially, the pointer is placed at the cell containing 'a'. The remote also has an OK button, used to select the current character. Find the minimum number of moves required to type the string s in order, where each movement to an adjacent cell and each OK press both count as one move.
+
+Examples:
+
+> Input: s = "abc" Output: 5 Explanation: Remote's position is at 'a' initially. So 'a' -> 'b' = 1 step,'b'-> 'c'= 1 step. Three OK moves will also be needed to print the three characters. Input: s = "a" Output: 1 Explanation: Already at 'a', only OK press is required.
+
+Table of Content
+
+- [Naive Approach] BFS (Matrix Traversal) - O(26 × N) Time and O(26) Space
+- [Expected Approach] Direct Coordinate Simulation - O(N) Time and O(1) Space
+
+### [Naive Approach] BFS (Matrix Traversal) - O(26 × N) Time and O(26) Space
+
+> The grid is treated as an unweighted graph where each cell represents a node and movement between adjacent cells has equal cost. Hence, the shortest path between any two characters can be found using BFS. For each character in the string, BFS is used to compute the minimum distance from the current position to the target character. After reaching the character, one additional move is added for pressing the OK button. This process is repeated for all characters.
+
+- Represent the grid as a 2D matrix.
+- Start from position of 'a'.
+- For each character in S:
+- Find current and target positions.
+- Run BFS to get shortest distance.
+- Add distance + 1 (OK press) to answer and update current position.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// 2D grid of characters a-z
+vector<vector<char>> grid = {
+    {'a','b','c','d','e'},
+    {'f','g','h','i','j'},
+    {'k','l','m','n','o'},
+    {'p','q','r','s','t'},
+    {'u','v','w','x','y'},
+    {'z','\0','\0','\0','\0'}
+};
+
+// Directions: UP, LEFT, DOWN, RIGHT
+int dx[4] = {-1, 0, 1, 0};
+int dy[4] = {0, -1, 0, 1};
+
+// Check valid cell
+bool isValid(int x, int y) {
+    return (x >= 0 && x < 6 && y >= 0 && y < 5 && grid[x][y] != '\0');
+}
+
+// Find position of a character
+pair<int,int> find(char ch) {
+    for (int i = 0; i < 6; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (grid[i][j] == ch) {
+                return {i, j};
+            }
+        }
+    }
+    return {-1, -1};
+}
+
+// BFS to find shortest distance between two cells
+int bfs(int sx, int sy, int tx, int ty) {
+
+    queue<array<int,3>> q;
+    vector<vector<bool>> vis(6, vector<bool>(5, false));
+
+    // {x, y, distance}
+    q.push({sx, sy, 0});
+    vis[sx][sy] = true;
+
+    while (!q.empty()) {
+
+        array<int,3> cur = q.front(); q.pop();
+        int x = cur[0], y = cur[1], dist = cur[2];
+
+        // destination reached
+        if (x == tx && y == ty) {
+            return dist;
+        }
+
+        // explore all 4 directions
+        for (int i = 0; i < 4; i++) {
+            int nx = x + dx[i];
+            int ny = y + dy[i];
+
+            if (isValid(nx, ny) && !vis[nx][ny]) {
+                vis[nx][ny] = true;
+                q.push({nx, ny, dist + 1});
+            }
+        }
+    }
+
+    return 0;
+}
+
+// Function to find total moves
+int findPath(string s) {
+
+    // start at 'a'
+    pair<int,int> start = find('a');
+    int x = start.first, y = start.second;
+
+    int result = 0;
+
+    // traverse string
+    for (char c : s) {
+
+        // target position
+        pair<int,int> target = find(c);
+
+        // BFS distance
+        result += bfs(x, y, target.first, target.second);
+
+        // OK press
+        result += 1;
+
+        // update position
+        x = target.first;
+        y = target.second;
+    }
+
+    return result;
+}
+
+// Driver
+int main() {
+    cout << findPath("abc") << endl;
+    cout << findPath("a") << endl;
+}
+
+Java
+
+import java.util.Queue;
+import java.util.LinkedList;
+class GFG {
+
+    // 2D grid of characters a-z
+    static char[][] grid = {
+        {'a','b','c','d','e'},
+        {'f','g','h','i','j'},
+        {'k','l','m','n','o'},
+        {'p','q','r','s','t'},
+        {'u','v','w','x','y'},
+        {'z','\0','\0','\0','\0'}
+    };
+
+    // Directions: UP, LEFT, DOWN, RIGHT
+    static int[] dx = {-1, 0, 1, 0};
+    static int[] dy = {0, -1, 0, 1};
+
+    // Check valid cell
+    static boolean isValid(int x, int y) {
+        return (x >= 0 && x < 6 && y >= 0 && y < 5 && grid[x][y] != '\0');
+    }
+
+    // Find position of a character
+    static int[] find(char ch) {
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < 5; j++) {
+                if (grid[i][j] == ch) {
+                    return new int[]{i, j};
+                }
+            }
+        }
+        return new int[]{-1, -1};
+    }
+
+    // BFS to find shortest distance between two cells
+    static int bfs(int sx, int sy, int tx, int ty) {
+
+        Queue<int[]> q = new LinkedList<>();
+        boolean[][] vis = new boolean[6][5];
+
+        q.add(new int[]{sx, sy, 0});
+        vis[sx][sy] = true;
+
+        while (!q.isEmpty()) {
+
+            int[] cur = q.poll();
+            int x = cur[0], y = cur[1], dist = cur[2];
+
+            // destination reached
+            if (x == tx && y == ty) {
+                return dist;
+            }
+
+            // explore all 4 directions
+            for (int i = 0; i < 4; i++) {
+                int nx = x + dx[i];
+                int ny = y + dy[i];
+
+                if (isValid(nx, ny) && !vis[nx][ny]) {
+                    vis[nx][ny] = true;
+                    q.add(new int[]{nx, ny, dist + 1});
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    // Function to find total moves
+    static int findPath(String s) {
+
+        // start at 'a'
+        int[] start = find('a');
+        int x = start[0], y = start[1];
+
+        int result = 0;
+
+        // traverse string
+        for (char c : s.toCharArray()) {
+
+            // target position
+            int[] target = find(c);
+
+            // BFS distance
+            result += bfs(x, y, target[0], target[1]);
+
+            // OK press
+            result += 1;
+
+            // update position
+            x = target[0];
+            y = target[1];
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(findPath("abc"));
+        System.out.println(findPath("a"));
+    }
+}
+
+Python
+
+from collections import deque
+
+# 2D grid of characters a-z
+grid = [
+    ['a','b','c','d','e'],
+    ['f','g','h','i','j'],
+    ['k','l','m','n','o'],
+    ['p','q','r','s','t'],
+    ['u','v','w','x','y'],
+    ['z','\0','\0','\0','\0']
+]
+
+# Directions: UP, LEFT, DOWN, RIGHT
+dx = [-1, 0, 1, 0]
+dy = [0, -1, 0, 1]
+
+# Check valid cell
+def isValid(x, y):
+    return 0 <= x < 6 and 0 <= y < 5 and grid[x][y] != '\0'
+
+# Find position of a character
+def find(ch):
+    for i in range(6):
+        for j in range(5):
+            if grid[i][j] == ch:
+                return (i, j)
+    return (-1, -1)
+
+# BFS to find shortest distance between two cells
+def bfs(sx, sy, tx, ty):
+
+    q = deque()
+    vis = [[False]*5 for _ in range(6)]
+
+    q.append((sx, sy, 0))
+    vis[sx][sy] = True
+
+    while q:
+
+        x, y, dist = q.popleft()
+
+        # destination reached
+        if x == tx and y == ty:
+            return dist
+
+        # explore all 4 directions
+        for i in range(4):
+            nx = x + dx[i]
+            ny = y + dy[i]
+
+            if isValid(nx, ny) and not vis[nx][ny]:
+                vis[nx][ny] = True
+                q.append((nx, ny, dist + 1))
+
+    return 0
+
+# Function to find total moves
+def findPath(s):
+
+    # start at 'a'
+    x, y = find('a')
+
+    result = 0
+
+    # traverse string
+    for c in s:
+
+        # target position
+        tx, ty = find(c)
+
+        # BFS distance
+        result += bfs(x, y, tx, ty)
+
+        # OK press
+        result += 1
+
+        # update position
+        x, y = tx, ty
+
+    return result
+
+print(findPath("abc"))
+print(findPath("a"))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // 2D grid of characters a-z
+    static char[,] grid = {
+        {'a','b','c','d','e'},
+        {'f','g','h','i','j'},
+        {'k','l','m','n','o'},
+        {'p','q','r','s','t'},
+        {'u','v','w','x','y'},
+        {'z','\0','\0','\0','\0'}
+    };
+
+    // Directions: UP, LEFT, DOWN, RIGHT
+    static int[] dx = {-1, 0, 1, 0};
+    static int[] dy = {0, -1, 0, 1};
+
+    // Check valid cell
+    static bool isValid(int x, int y) {
+        return (x >= 0 && x < 6 && y >= 0 && y < 5 && grid[x, y] != '\0');
+    }
+
+    // Find position of a character
+    static (int,int) find(char ch) {
+        for (int i = 0; i < 6; i++) {
+            for (int j = 0; j < 5; j++) {
+                if (grid[i, j] == ch) {
+                    return (i, j);
+                }
+            }
+        }
+        return (-1, -1);
+    }
+
+    // BFS to find shortest distance between two cells
+    static int bfs(int sx, int sy, int tx, int ty) {
+
+        Queue<(int,int,int)> q = new Queue<(int,int,int)>();
+        bool[,] vis = new bool[6,5];
+
+        q.Enqueue((sx, sy, 0));
+        vis[sx, sy] = true;
+
+        while (q.Count > 0) {
+
+            var cur = q.Dequeue();
+            int x = cur.Item1, y = cur.Item2, dist = cur.Item3;
+
+            // destination reached
+            if (x == tx && y == ty) {
+                return dist;
+            }
+
+            // explore all 4 directions
+            for (int i = 0; i < 4; i++) {
+                int nx = x + dx[i];
+                int ny = y + dy[i];
+
+                if (isValid(nx, ny) && !vis[nx, ny]) {
+                    vis[nx, ny] = true;
+                    q.Enqueue((nx, ny, dist + 1));
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    // Function to find total moves
+    static int findPath(string s) {
+
+        // start at 'a'
+        var start = find('a');
+        int x = start.Item1, y = start.Item2;
+
+        int result = 0;
+
+        // traverse string
+        foreach (char c in s) {
+
+            // target position
+            var target = find(c);
+
+            // BFS distance
+            result += bfs(x, y, target.Item1, target.Item2);
+
+            // OK press
+            result += 1;
+
+            // update position
+            x = target.Item1;
+            y = target.Item2;
+        }
+
+        return result;
+    }
+
+    static void Main() {
+        Console.WriteLine(findPath("abc"));
+        Console.WriteLine(findPath("a"));
+    }
+}
+
+JavaScript
+
+// 2D grid of characters a-z
+let grid = [
+    ['a','b','c','d','e'],
+    ['f','g','h','i','j'],
+    ['k','l','m','n','o'],
+    ['p','q','r','s','t'],
+    ['u','v','w','x','y'],
+    ['z','\0','\0','\0','\0']
+];
+
+// Directions: UP, LEFT, DOWN, RIGHT
+let dx = [-1, 0, 1, 0];
+let dy = [0, -1, 0, 1];
+
+// Check valid cell
+function isValid(x, y) {
+    return (x >= 0 && x < 6 && y >= 0 && y < 5 && grid[x][y] != '\0');
+}
+
+// Find position of a character
+function find(ch) {
+    for (let i = 0; i < 6; i++) {
+        for (let j = 0; j < 5; j++) {
+            if (grid[i][j] === ch) {
+                return [i, j];
+            }
+        }
+    }
+    return [-1, -1];
+}
+
+// BFS to find shortest distance between two cells
+function bfs(sx, sy, tx, ty) {
+
+    let q = [];
+    let vis = Array.from({ length: 6 }, () => Array(5).fill(false));
+
+    // {x, y, distance}
+    q.push([sx, sy, 0]);
+    vis[sx][sy] = true;
+
+    while (q.length > 0) {
+
+        let cur = q.shift();
+        let x = cur[0], y = cur[1], dist = cur[2];
+
+        // destination reached
+        if (x === tx && y === ty) {
+            return dist;
+        }
+
+        // explore all 4 directions
+        for (let i = 0; i < 4; i++) {
+            let nx = x + dx[i];
+            let ny = y + dy[i];
+
+            if (isValid(nx, ny) && !vis[nx][ny]) {
+                vis[nx][ny] = true;
+                q.push([nx, ny, dist + 1]);
+            }
+        }
+    }
+
+    return 0;
+}
+
+// Function to find total moves
+function findPath(s) {
+
+    // start at 'a'
+    let start = find('a');
+    let x = start[0], y = start[1];
+
+    let result = 0;
+
+    // traverse string
+    for (let c of s) {
+
+        // target position
+        let target = find(c);
+
+        // BFS distance
+        result += bfs(x, y, target[0], target[1]);
+
+        // OK press
+        result += 1;
+
+        // update position
+        x = target[0];
+        y = target[1];
+    }
+
+    return result;
+}
+
+// Driver
+console.log(findPath("abc"));
+console.log(findPath("a"));
+
+Output
+
+5
+1
+
+### [Expected Approach] Direct Coordinate Simulation - O(N) Time and O(1) Space
+
+> In this approach, the grid is treated as a fixed coordinate system. Each character is mapped to its position using its alphabetical index. The movement between two characters is computed using simple row and column differences instead of BFS. Each movement and OK press is counted as one step.
+
+- Start from position of 'a' (0,0)
+- For each character in s:
+- Convert character to coordinates using formula
+- Move step-by-step using row/column differences
+- Add 1 for OK press
+- Update current position
+
+Consider String : s = " abc "
+
+- Start at 'a' (0,0), result = 0
+- 'a' -> (0,0): 0 moves + OK = 1 -> result = 1
+- 'b' -> (0,1): 1 move (RIGHT) + OK = 2 -> result = 3
+- 'c' -> (0,2): 1 move (RIGHT) + OK = 2 -> result = 5
+
+Final Answer = 5
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to find total moves
+int FindPath(string s) {
+
+    // Initial position on the grid
+    int curX = 0, curY = 0;
+
+    // To store total steps required
+    int res = 0;
+
+    // Traverse each character in the string
+    for (int i = 0; i < s.length(); i++) {
+
+        char ch = s[i];
+
+        // Convert character to grid position
+        int nextX = (ch - 'a') / 5;
+        int nextY = (ch - 'a') % 5;
+
+        // Move UP
+        while (curX > nextX) {
+            res++;
+            curX--;
+        }
+
+        // Move LEFT
+        while (curY > nextY) {
+            res++;
+            curY--;
+        }
+
+        // Move DOWN
+        while (curX < nextX) {
+            res++;
+            curX++;
+        }
+
+        // Move RIGHT
+        while (curY < nextY) {
+            res++;
+            curY++;
+        }
+
+        // Press the character
+        res++;
+    }
+
+    return res;
+}
+
+int main() {
+
+    string s1 = "abc";
+    cout << FindPath(s1) << endl;
+
+    string s2 = "a";
+    cout << FindPath(s2) << endl;
+
+    return 0;
+}
+
+Java
+
+class GFG {
+
+    public static int FindPath(String s) {
+
+        // Initial position on the grid
+        int curX = 0, curY = 0;
+
+        // To store total steps required
+        int res = 0;
+
+        // Traverse each character in the string
+        for (int i = 0; i < s.length(); i++) {
+
+            char ch = s.charAt(i);
+
+            // Convert character to grid position
+            int nextX = (ch - 'a') / 5;
+            int nextY = (ch - 'a') % 5;
+
+            // Move UP
+            while (curX > nextX) {
+                res++;
+                curX--;
+            }
+
+            // Move LEFT
+            while (curY > nextY) {
+                res++;
+                curY--;
+            }
+
+            // Move DOWN
+            while (curX < nextX) {
+                res++;
+                curX++;
+            }
+
+            // Move RIGHT
+            while (curY < nextY) {
+                res++;
+                curY++;
+            }
+
+            // Press the character
+            res++;
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+
+        String s1 = "abc";
+        System.out.println(FindPath(s1));
+
+        String s2 = "a";
+        System.out.println(FindPath(s2));
+    }
+}
+
+Python
+
+# Function to find total moves
+def FindPath(s):
+
+    # Initial position on the grid
+    curX, curY = 0, 0
+
+    # To store total steps required
+    res = 0
+
+    # Traverse each character in the string
+    for i in range(len(s)):
+
+        ch = s[i]
+
+        # Convert character to grid position
+        nextX = (ord(ch) - ord('a')) // 5
+        nextY = (ord(ch) - ord('a')) % 5
+
+        # Move UP
+        while curX > nextX:
+            res += 1
+            curX -= 1
+
+        # Move LEFT
+        while curY > nextY:
+            res += 1
+            curY -= 1
+
+        # Move DOWN
+        while curX < nextX:
+            res += 1
+            curX += 1
+
+        # Move RIGHT
+        while curY < nextY:
+            res += 1
+            curY += 1
+
+        # Press the character
+        res += 1
+
+    return res
+
+s1 = "abc"
+print(FindPath(s1))
+
+s2 = "a"
+print(FindPath(s2))
+
+C#
+
+using System;
+
+class GFG
+{
+    // Function to find total moves
+    static int FindPath(string s)
+    {
+        // Initial position on the grid
+        int curX = 0, curY = 0;
+
+        // To store total steps required
+        int res = 0;
+
+        // Traverse each character in the string
+        for (int i = 0; i < s.Length; i++)
+        {
+            char ch = s[i];
+
+            // Convert character to grid position
+            int nextX = (ch - 'a') / 5;
+            int nextY = (ch - 'a') % 5;
+
+            // Move UP
+            while (curX > nextX)
+            {
+                res++;
+                curX--;
+            }
+
+            // Move LEFT
+            while (curY > nextY)
+            {
+                res++;
+                curY--;
+            }
+
+            // Move DOWN
+            while (curX < nextX)
+            {
+                res++;
+                curX++;
+            }
+
+            // Move RIGHT
+            while (curY < nextY)
+            {
+                res++;
+                curY++;
+            }
+
+            // Press the character
+            res++;
+        }
+
+        return res;
+    }
+
+    static void Main()
+    {
+        Console.WriteLine(FindPath("abc"));
+        Console.WriteLine(FindPath("a"));
+    }
+}
+
+JavaScript
+
+// Function to find total moves
+function FindPath(s) {
+
+    // Initial position on the grid
+    let curX = 0, curY = 0;
+
+    // To store total steps required
+    let res = 0;
+
+    // Traverse each character in the string
+    for (let i = 0; i < s.length; i++) {
+
+        let ch = s[i];
+
+        // Convert character to grid position
+        let nextX = Math.floor((ch.charCodeAt(0) - 97) / 5);
+        let nextY = (ch.charCodeAt(0) - 97) % 5;
+
+        // Move UP
+        while (curX > nextX) {
+            res++;
+            curX--;
+        }
+
+        // Move LEFT
+        while (curY > nextY) {
+            res++;
+            curY--;
+        }
+
+        // Move DOWN
+        while (curX < nextX) {
+            res++;
+            curX++;
+        }
+
+        // Move RIGHT
+        while (curY < nextY) {
+            res++;
+            curY++;
+        }
+
+        // Press the character
+        res++;
+    }
+
+    return res;
+}
+
+// Driver code
+console.log(FindPath("abc"));
+console.log(FindPath("a"));
+
+Output
+
+5
+1

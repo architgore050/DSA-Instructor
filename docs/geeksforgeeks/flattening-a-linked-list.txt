@@ -1,0 +1,1864 @@
+Source: https://www.geeksforgeeks.org/dsa/flattening-a-linked-list/
+Title: Flattening a Linked List
+Extractor: 2
+
+Given a linked list containing n head nodes where every node in the linked list contains two pointers :
+
+- next points to the next node in the list.
+- bottom pointer to a sub-linked list where the current node is the head.    Each of the sub-linked lists nodes and the head
+
+nodes are sorted in ascending order based on their data .We need to flatten the linked list so that all the nodes appear in a single level while maintaining the sorted order.
+
+Examples:
+
+> Input : Output: 5 -> 7 -> 8 -> 10 -> 19 -> 20 -> 22 -> 28 -> 40 -> 45 Input: Output: 5-> 7-> 8-> 10-> 19-> 22-> 28-> 30-> 50
+
+Table of Content
+
+- [Approach 1] Using Sorting - O(n * m * log(n * m)) Time and O(n*m) Space
+- [Approach 2] Using Recursion and Merging list - O(n * n * m) Time and O(n) Space
+- [Approach 3] Using Priority Queues - O(n * m * log(n)) Time and O(n) Space
+
+### [Approach 1] Using Sorting - O(n * m * log(n * m)) Time and O(n*m) Space
+
+> The idea is to traverse the linked list and push values of all the nodes in an array. Now, we can sort the array in ascending order, and create a new linked list by traversing the sorted array.
+
+Follow the steps to solve the problem:
+
+- Traverse the entire  linked list using:
+- Outer loop → move along the next pointer.
+- Inner loop → move along the bottom pointer.
+- Push every node's data into the array.
+- After traversal, sort the array in ascending order.
+- Now, create a new linked list using the sorted array:
+- Return the bottom of the dummy node — this is the head of the flattened, sorted list.
+
+C++
+
+// C++ program for flattening a Linked List
+
+#include<iostream>
+#include<algorithm>
+#include<vector>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node *next, *bottom;
+
+    Node(int newdata) {
+        data = newdata;
+        next = bottom = nullptr;
+    }
+};
+
+// function to flatten the linked list
+Node* flatten(Node* root) {
+
+    vector<int> values;
+
+    // Push values of all nodes into an array
+    while (root != nullptr) {
+
+        // Push the head node of the sub-linked-list
+        values.push_back(root->data);
+
+        // Push all the nodes of the sub-linked-list
+        Node* temp = root->bottom;
+        while (temp != nullptr) {
+            values.push_back(temp->data);
+            temp = temp->bottom;
+        }
+
+        // Move to the next head node
+        root = root->next;
+    }
+
+    // Sort the node values in ascending order
+    sort(values.begin(), values.end());
+
+    // Construct the new flattened linked list
+    Node* tail = nullptr;
+    Node* head = nullptr;
+    for (int i = 0; i < values.size(); i++) {
+        Node* newNode = new Node(values[i]);
+
+        // If this is the first node of the linked list,
+        // make the node as head
+        if (head == nullptr) {
+            head = newNode;
+        }
+        else {
+            tail->bottom = newNode;
+        }
+        tail = newNode;
+    }
+    return head;
+}
+
+void printList(Node* head) {
+    Node* temp = head;
+    while (temp != nullptr) {
+        cout << temp->data;
+        if(temp->bottom)
+        cout<<" -> ";
+        temp = temp->bottom;
+    }
+    cout << endl;
+}
+
+int main() {
+
+    // Create a hard-coded linked list:
+    //   5 -> 10 -> 19 -> 28
+    //   |    |     |
+    //   V    V     V
+    //   7    20    22
+    //   |          |
+    //   V          V
+    //   8          50
+    //   |
+    //   V
+    //   30
+
+    Node* head = new Node(5);
+    head->bottom = new Node(7);
+    head->bottom->bottom = new Node(8);
+    head->bottom->bottom->bottom = new Node(30);
+
+    head->next = new Node(10);
+    head->next->bottom = new Node(20);
+
+    head->next->next = new Node(19);
+    head->next->next->bottom = new Node(22);
+    head->next->next->bottom->bottom = new Node(50);
+
+    head->next->next->next = new Node(28);
+
+    head = flatten(head);
+
+    printList(head);
+    return 0;
+}
+
+Java
+
+// Java Program for flattening a linked list
+
+import java.util.*;
+
+class Node {
+    int data;
+    Node next, bottom;
+
+    Node(int newData) {
+        data = newData;
+        next = bottom = null;
+    }
+}
+
+class GfG {
+
+    // Function to flatten the linked list
+    static Node flatten(Node root) {
+        List<Integer> values = new ArrayList<>();
+
+        // Push values of all nodes into a list
+        while (root != null) {
+            // Push the head node of the sub-linked-list
+            values.add(root.data);
+
+            // Push all the nodes of the sub-linked-list
+            Node temp = root.bottom;
+            while (temp != null) {
+                values.add(temp.data);
+                temp = temp.bottom;
+            }
+
+            // Move to the next head node
+            root = root.next;
+        }
+
+        // Sort the node values in ascending order
+        Collections.sort(values);
+
+        // Construct the new flattened linked list
+        Node tail = null;
+        Node head = null;
+        for (int value : values) {
+            Node newNode = new Node(value);
+
+            // If this is the first node of the linked list,
+            // make the node as head
+            if (head == null)
+                head = newNode;
+            else
+                tail.bottom = newNode;
+            tail = newNode;
+        }
+
+        return head;
+    }
+
+    // Function to print the linked list
+    static void printList(Node head) {
+        Node temp = head;
+        while (temp != null) {
+            System.out.print(temp.data);
+            if(temp.bottom!=null)
+            System.out.print(" -> ");
+            temp = temp.bottom;
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+
+        // Create a hard-coded linked list:
+        // 5 -> 10 -> 19 -> 28
+        // |    |     |
+        // V    V     V
+        // 7    20    22
+        // |          |
+        // V          V
+        // 8          50
+        // |
+        // V
+        // 30
+
+        Node head = new Node(5);
+        head.bottom = new Node(7);
+        head.bottom.bottom = new Node(8);
+        head.bottom.bottom.bottom = new Node(30);
+
+        head.next = new Node(10);
+        head.next.bottom = new Node(20);
+
+        head.next.next = new Node(19);
+        head.next.next.bottom = new Node(22);
+        head.next.next.bottom.bottom = new Node(50);
+
+        head.next.next.next = new Node(28);
+
+        head = flatten(head);
+
+        printList(head);
+    }
+}
+
+Python
+
+# Python program for flattening a Linked List
+class Node:
+    def __init__(self, new_data):
+        self.data = new_data
+        self.next = None
+        self.bottom = None
+
+# Function to flatten the linked list
+def flatten(root):
+    values = []
+
+    # Push values of all nodes into an array
+    while root is not None:
+
+        # Push the head node of the sub-linked-list
+        values.append(root.data)
+
+        # Push all the nodes of the sub-linked-list
+        temp = root.bottom
+        while temp is not None:
+            values.append(temp.data)
+            temp = temp.bottom
+
+        # Move to the next head node
+        root = root.next
+
+    # Sort the node values in ascending order
+    values.sort()
+
+    # Construct the new flattened linked list
+    tail = None
+    head = None
+    for value in values:
+        newNode = Node(value)
+
+        # If this is the first node of the linked list,
+        # make the node as head
+        if head is None:
+            head = newNode
+        else:
+            tail.bottom = newNode
+        tail = newNode
+
+    return head
+
+def printList(node):
+    while node is not None:
+        print(f"{node.data}", end="")
+        if node.next is not None:
+            print(" -> ", end="")
+        node = node.next
+    print()
+
+if __name__ == "__main__":
+
+    # Create a hard-coded linked list:
+    # 5 -> 10 -> 19 -> 28
+    # |    |     |
+    # V    V     V
+    # 7    20    22
+    # |          |
+    # V          V
+    # 8          50
+    # |
+    # V
+    # 30
+    head = Node(5)
+    head.bottom = Node(7)
+    head.bottom.bottom = Node(8)
+    head.bottom.bottom.bottom = Node(30)
+
+    head.next = Node(10)
+    head.next.bottom = Node(20)
+
+    head.next.next = Node(19)
+    head.next.next.bottom = Node(22)
+    head.next.next.bottom.bottom = Node(50)
+
+    head.next.next.next = Node(28)
+
+    head = flatten(head)
+
+    printList(head)
+
+C#
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Node {
+    public int Data;
+    public Node Next, Bottom;
+
+    public Node(int newData) {
+        Data = newData;
+        Next = Bottom = null;
+    }
+}
+
+class GfG {
+
+  	// Function to flatten the linked list
+    static Node Flatten(Node root) {
+        List<int> values = new List<int>();
+
+        // Push values of all nodes into a list
+        while (root != null) {
+
+          	// Push the head node of the sub-linked-list
+            values.Add(root.Data);
+
+            // Push all the nodes of the sub-linked-list
+            Node temp = root.Bottom;
+            while (temp != null) {
+                values.Add(temp.Data);
+                temp = temp.Bottom;
+            }
+
+            // Move to the next head node
+            root = root.Next;
+        }
+
+        // Sort the node values in ascending order
+        values.Sort();
+
+        // Construct the new flattened linked list
+        Node tail = null;
+        Node head = null;
+        foreach(int value in values) {
+            Node newNode = new Node(value);
+
+            // If this is the first node of the linked list,
+            // make the node as head
+            if (head == null) {
+                head = newNode;
+            }
+            else {
+                tail.Bottom = newNode;
+            }
+            tail = newNode;
+        }
+
+        return head;
+    }
+
+    // Function to print the linked list
+    static void PrintList(Node head) {
+        Node temp = head;
+        while (temp != null) {
+            Console.Write(temp.Data + "");
+            if(temp.Bottom!=null)
+            Console.Write(" -> ");
+            temp = temp.Bottom;
+        }
+        Console.WriteLine();
+    }
+
+    static void Main() {
+
+        /* Create a hard-coded linked list:
+            5 -> 10 -> 19 -> 28
+            |    |     |
+            V    V     V
+            7    20    22
+            |          |
+            V          V
+            8          50
+            |
+            V
+            30
+        */
+        Node head = new Node(5);
+        head.Bottom = new Node(7);
+        head.Bottom.Bottom = new Node(8);
+        head.Bottom.Bottom.Bottom = new Node(30);
+
+        head.Next = new Node(10);
+        head.Next.Bottom = new Node(20);
+
+        head.Next.Next = new Node(19);
+        head.Next.Next.Bottom = new Node(22);
+        head.Next.Next.Bottom.Bottom = new Node(50);
+
+        head.Next.Next.Next = new Node(28);
+
+        head = Flatten(head);
+        PrintList(head);
+    }
+}
+
+JavaScript
+
+// Javascript Program for flattening a linked list
+class Node {
+    constructor(newData) {
+        this.data = newData;
+        this.next = null;
+        this.bottom = null;
+    }
+}
+
+// Function to flatten the linked list
+function flatten(root) {
+    let values = [];
+
+    // Push values of all nodes into an array
+    while (root !== null) {
+
+        // Push the head node of the sub-linked-list
+        values.push(root.data);
+
+        // Push all the nodes of the sub-linked-list
+        let temp = root.bottom;
+        while (temp !== null) {
+            values.push(temp.data);
+            temp = temp.bottom;
+        }
+
+        // Move to the next head node
+        root = root.next;
+    }
+
+    // Sort the node values in ascending order
+    values.sort((a, b) => a - b);
+
+    // Construct the new flattened linked list
+    let head = null;
+    let tail = null;
+    for (let value of values) {
+        let newNode = new Node(value);
+
+        // If this is the first node of the linked list,
+        // make the node as head
+        if (head === null)
+            head = newNode;
+        else
+            tail.bottom = newNode;
+        tail = newNode;
+    }
+    return head;
+}
+
+// Function to print the linked list
+function printList(node) {
+    while (node !== null) {
+        process.stdout.write(node.data.toString());
+        if (node.bottom !== null) {
+            process.stdout.write(" -> ");
+        }
+        node = node.bottom;
+    }
+}
+
+/* Create a hard-coded linked list:
+    5 -> 10 -> 19 -> 28
+    |    |     |
+    V    V     V
+    7    20    22
+    |          |
+    V          V
+    8          50
+    |
+    V
+    30
+*/
+let head = new Node(5);
+head.bottom = new Node(7);
+head.bottom.bottom = new Node(8);
+head.bottom.bottom.bottom = new Node(30);
+
+head.next = new Node(10);
+head.next.bottom = new Node(20);
+
+head.next.next = new Node(19);
+head.next.next.bottom = new Node(22);
+head.next.next.bottom.bottom = new Node(50);
+
+head.next.next.next = new Node(28);
+
+head = flatten(head);
+
+printList(head);
+
+Output
+
+5 -> 7 -> 8 -> 10 -> 19 -> 20 -> 22 -> 28 -> 30 -> 50
+
+### [Approach 2] Using Recursion and Merging list
+
+> The idea is similar to Merge two sorted linked lists .
+
+Follow the steps to solve the problem:
+
+- Using recursion, we first go to the last head node .
+- Then, we keep merging each linked list (connected via bottom pointers) with the result of the already flattened list in sorted order.
+- Move one step back and keep merging the previous list with the merged result.
+- Continue this process until the first list is merged.
+- The final result is a single flattened and sorted list using bottom pointers.
+
+C++
+
+// C++ program for flattening a Linked List
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node *next, *bottom;
+
+    Node(int newdata) {
+        data = newdata;
+        next = bottom = nullptr;
+    }
+};
+
+// Utility function to merge two sorted linked lists
+// using their bottom pointers
+Node* merge(Node* head1, Node* head2) {
+
+    // A dummy first node to store the result list
+    Node dummy(-1);
+
+    // Tail points to the last result node to add new nodes
+    // to the result
+    Node* tail = &dummy;
+
+    // Iterate till either head1 or head2 does not reach NULL
+    while (head1 && head2) {
+
+        if (head1->data <= head2->data) {
+
+            // append head1 to the result
+            tail->bottom = head1;
+            head1 = head1->bottom;
+        }
+        else {
+
+            // append head2 to the result
+            tail->bottom = head2;
+            head2 = head2->bottom;
+        }
+
+        // Move tail pointer to the next node
+        tail = tail->bottom;
+    }
+
+  	// Append the remaining nodes of non-null linked list
+    if (!head1)
+        tail->bottom = head2;
+    else
+        tail->bottom = head1;
+    return (dummy.bottom);
+}
+
+// function to flatten the linked list
+Node* flatten(Node* root) {
+
+    // Base Cases
+    if (root == nullptr || root->next == nullptr)
+        return root;
+
+    // Recur for next list
+    root->next = flatten(root->next);
+
+    // Now merge the current and next list
+    root = merge(root, root->next);
+
+    // Return the root
+    return root;
+}
+
+void printList(Node* head) {
+    Node* temp = head;
+    while (temp != nullptr) {
+        cout << temp->data ;
+        if(temp->bottom)
+        cout<<" -> ";
+        temp = temp->bottom;
+    }
+    cout << endl;
+}
+
+int main() {
+
+    /* Create a hard-coded linked list:
+        5 -> 10 -> 19 -> 28
+        |    |     |
+        V    V     V
+        7    20    22
+        |          |
+        V          V
+        8          50
+        |
+        V
+        30
+    */
+
+    Node* head = new Node(5);
+    head->bottom = new Node(7);
+    head->bottom->bottom = new Node(8);
+    head->bottom->bottom->bottom = new Node(30);
+
+    head->next = new Node(10);
+    head->next->bottom = new Node(20);
+
+    head->next->next = new Node(19);
+    head->next->next->bottom = new Node(22);
+    head->next->next->bottom->bottom = new Node(50);
+
+    head->next->next->next = new Node(28);
+
+    head = flatten(head);
+
+    printList(head);
+    return 0;
+}
+
+C
+
+// C program for flattening a Linked List
+
+#include <stdio.h>
+
+struct Node {
+    int data;
+    struct Node *next, *bottom;
+};
+
+// Utility function to merge two sorted linked lists using
+// their bottom pointers
+struct Node* merge(struct Node* head1, struct Node* head2) {
+
+    // A dummy first node to store the result list
+    struct Node dummy;
+    dummy.data = -1;
+    dummy.bottom = NULL;
+
+    // Tail points to the last result node to add new nodes
+    // to the result
+    struct Node* tail = &dummy;
+
+    // Iterate till either head1 or head2 does not reach
+    // NULL
+    while (head1 && head2) {
+
+        if (head1->data <= head2->data) {
+
+            // append head1 to the result
+            tail->bottom = head1;
+            head1 = head1->bottom;
+        }
+        else {
+
+            // append head2 to the result
+            tail->bottom = head2;
+            head2 = head2->bottom;
+        }
+
+        // Move tail pointer to the next node
+        tail = tail->bottom;
+    }
+
+	// Append the remaining nodes of non-null linked list
+    if (!head1)
+        tail->bottom = head2;
+    else
+        tail->bottom = head1;
+
+    return dummy.bottom;
+}
+
+// Function to flatten the linked list
+struct Node* flatten(struct Node* root) {
+
+    // Base Cases
+    if (root == NULL || root->next == NULL)
+        return root;
+
+    // Recur for next list
+    root->next = flatten(root->next);
+
+    // Now merge the current and next list
+    root = merge(root, root->next);
+
+    // Return the root
+    return root;
+}
+
+void printList(struct Node* head) {
+    struct Node* temp = head;
+    while (temp != NULL) {
+        printf("%d", temp->data);
+        if(temp->bottom)
+        printf(" -> ");
+        temp = temp->bottom;
+    }
+    printf("\n");
+}
+
+// Function to create a new node
+struct Node* createNode(int newdata) {
+    struct Node* newnode
+        = (struct Node*)malloc(sizeof(struct Node));
+    newnode->data = newdata;
+    newnode->next = NULL;
+  	newnode->bottom = NULL;
+    return newnode;
+}
+
+int main() {
+
+    /* Create a hard-coded linked list:
+        5 -> 10 -> 19 -> 28
+        |    |     |
+        V    V     V
+        7    20    22
+        |          |
+        V          V
+        8          50
+        |
+        V
+        30
+    */
+
+    struct Node* head = createNode(5);
+    head->bottom = createNode(7);
+    head->bottom->bottom = createNode(8);
+    head->bottom->bottom->bottom = createNode(30);
+
+    head->next = createNode(10);
+    head->next->bottom = createNode(20);
+
+    head->next->next = createNode(19);
+    head->next->next->bottom = createNode(22);
+    head->next->next->bottom->bottom = createNode(50);
+
+    head->next->next->next = createNode(28);
+
+    head = flatten(head);
+
+    printList(head);
+
+    return 0;
+}
+
+Java
+
+// Java program for flattening a Linked List
+
+class Node {
+    int data;
+    Node next, bottom;
+
+    Node(int newData) {
+        data = newData;
+        next = bottom = null;
+    }
+}
+
+class GfG {
+
+    // Utility function to merge two sorted linked lists
+    // using their bottom pointers
+    static Node merge(Node head1, Node head2) {
+
+        // A dummy first node to store the result list
+        Node dummy = new Node(-1);
+
+        // Tail points to the last result node to add new
+        // nodes to the result
+        Node tail = dummy;
+
+        // Iterate till either head1 or head2 does not reach
+        // null
+        while (head1 != null && head2 != null) {
+            if (head1.data <= head2.data) {
+
+                // Append head1 to the result
+                tail.bottom = head1;
+                head1 = head1.bottom;
+            }
+            else {
+
+                // Append head2 to the result
+                tail.bottom = head2;
+                head2 = head2.bottom;
+            }
+
+            // Move tail pointer to the next node
+            tail = tail.bottom;
+        }
+
+        // Append the remaining nodes of the non-null list
+        if (head1 != null)
+            tail.bottom = head1;
+        else
+            tail.bottom = head2;
+
+        return dummy.bottom;
+    }
+
+    // Function to flatten the linked list
+    static Node flatten(Node root) {
+
+        // Base Cases
+        if (root == null || root.next == null)
+            return root;
+
+        // Recur for next list
+        root.next = flatten(root.next);
+
+        // Now merge the current and next list
+        root = merge(root, root.next);
+
+        // Return the root
+        return root;
+    }
+
+    static void printList(Node head) {
+        Node temp = head;
+        while (temp != null) {
+            System.out.print(temp.data);
+            if(temp.bottom!=null)
+            {
+                System.out.print(" -> ");
+            }
+            temp = temp.bottom;
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+
+        /* Create a hard-coded linked list:
+            5 -> 10 -> 19 -> 28
+            |    |     |
+            V    V     V
+            7    20    22
+            |          |
+            V          V
+            8          50
+            |
+            V
+            30
+        */
+
+        Node head = new Node(5);
+        head.bottom = new Node(7);
+        head.bottom.bottom = new Node(8);
+        head.bottom.bottom.bottom = new Node(30);
+
+        head.next = new Node(10);
+        head.next.bottom = new Node(20);
+
+        head.next.next = new Node(19);
+        head.next.next.bottom = new Node(22);
+        head.next.next.bottom.bottom = new Node(50);
+
+        head.next.next.next = new Node(28);
+
+        head = flatten(head);
+
+        printList(head);
+    }
+}
+
+Python
+
+# Python3 program for flattening a Linked List
+
+class Node:
+    def __init__(self, new_data):
+        self.data = new_data
+        self.next = None
+        self.bottom = None
+
+# Utility function to merge two sorted linked lists
+# using their bottom pointers
+def merge(head1, head2):
+
+    # A dummy first node to store the result list
+    dummy = Node(-1)
+    tail = dummy
+
+    # Iterate till either head1 or head2 does not reach None
+    while head1 and head2:
+        if head1.data <= head2.data:
+
+            # Append head1 to the result
+            tail.bottom = head1
+            head1 = head1.bottom
+        else:
+
+            # Append head2 to the result
+            tail.bottom = head2
+            head2 = head2.bottom
+
+        # Move tail pointer to the next node
+        tail = tail.bottom
+
+    # Append the remaining nodes of the non-null linked list
+    if head1:
+        tail.bottom = head1
+    else:
+        tail.bottom = head2
+
+    return dummy.bottom
+
+# Function to flatten the linked list
+def flatten(root):
+
+    # Base Cases
+    if root is None or root.next is None:
+        return root
+
+    # Recur for next list
+    root.next = flatten(root.next)
+
+    # Now merge the current and next list
+    root = merge(root, root.next)
+
+    # Return the root
+    return root
+
+def printList(node):
+    while node is not None:
+        print(f"{node.data}", end="")
+        if node.bottom is not None:
+            print(" -> ", end="")
+        node = node.bottom
+    print()
+
+if __name__ == "__main__":
+
+    # Create a hard-coded linked list:
+    #     5 -> 10 -> 19 -> 28
+    #     |    |     |
+    #     V    V     V
+    #     7    20    22
+    #     |          |
+    #     V          V
+    #     8          50
+    #     |
+    #     V
+    #     30
+
+    head = Node(5)
+    head.bottom = Node(7)
+    head.bottom.bottom = Node(8)
+    head.bottom.bottom.bottom = Node(30)
+
+    head.next = Node(10)
+    head.next.bottom = Node(20)
+
+    head.next.next = Node(19)
+    head.next.next.bottom = Node(22)
+    head.next.next.bottom.bottom = Node(50)
+
+    head.next.next.next = Node(28)
+
+    head = flatten(head)
+
+    printList(head)
+
+C#
+
+// C# program for flattening a Linked List
+
+using System;
+
+class Node {
+    public int Data;
+    public Node Next;
+    public Node Bottom;
+
+    public Node(int newData) {
+        Data = newData;
+        Next = null;
+        Bottom = null;
+    }
+}
+
+class GfG {
+
+    // Utility function to merge two sorted linked lists
+    // using their bottom pointers
+    static Node Merge(Node head1, Node head2) {
+
+        // A dummy first node to store the result list
+        Node dummy = new Node(-1);
+
+        // Tail points to the last result node to add new
+        // nodes to the result
+        Node tail = dummy;
+
+        // Iterate till either head1 or head2 does not reach
+        // null
+        while (head1 != null && head2 != null) {
+            if (head1.Data <= head2.Data) {
+
+                // Append head1 to the result
+                tail.Bottom = head1;
+                head1 = head1.Bottom;
+            }
+            else {
+
+                // Append head2 to the result
+                tail.Bottom = head2;
+                head2 = head2.Bottom;
+            }
+
+            // Move tail pointer to the next node
+            tail = tail.Bottom;
+        }
+
+        // Append the remaining nodes of the
+        // non-null linked list
+        if (head1 == null)
+            tail.Bottom = head2;
+        else
+            tail.Bottom = head1;
+
+        return dummy.Bottom;
+    }
+
+    // Function to flatten the linked list
+    static Node Flatten(Node root) {
+
+        // Base Cases
+        if (root == null || root.Next == null)
+            return root;
+
+        // Recur for next list
+        root.Next = Flatten(root.Next);
+
+        // Now merge the current and next list
+        root = Merge(root, root.Next);
+
+        // Return the root
+        return root;
+    }
+
+    static void PrintList(Node head) {
+        Node temp = head;
+        while (temp != null) {
+            Console.Write(temp.Data + "");
+            if(temp.Bottom!=null)
+            Console.Write(" -> ");
+            temp = temp.Bottom;
+        }
+        Console.WriteLine();
+    }
+
+    static void Main() {
+
+        /* Create a hard-coded linked list:
+            5 -> 10 -> 19 -> 28
+            |    |     |
+            V    V     V
+            7    20    22
+            |          |
+            V          V
+            8          50
+            |
+            V
+            30
+        */
+
+        Node head = new Node(5);
+        head.Bottom = new Node(7);
+        head.Bottom.Bottom = new Node(8);
+        head.Bottom.Bottom.Bottom = new Node(30);
+
+        head.Next = new Node(10);
+        head.Next.Bottom = new Node(20);
+
+        head.Next.Next = new Node(19);
+        head.Next.Next.Bottom = new Node(22);
+        head.Next.Next.Bottom.Bottom = new Node(50);
+
+        head.Next.Next.Next = new Node(28);
+
+        head = Flatten(head);
+
+        PrintList(head);
+    }
+}
+
+JavaScript
+
+// Javascript program for flattening a Linked List
+
+class Node {
+    constructor(newData) {
+        this.data = newData;
+        this.next = null;
+        this.bottom = null;
+    }
+}
+
+// Utility function to merge two sorted linked lists
+// using their bottom pointers
+function merge(head1, head2) {
+
+    // A dummy first node to store the result list
+    let dummy = new Node(-1);
+
+    // Tail points to the last result node to add new nodes to the result
+    let tail = dummy;
+
+    // Iterate till either head1 or head2 does not reach null
+    while (head1 !== null && head2 !== null) {
+        if (head1.data <= head2.data) {
+
+            // Append head1 to the result
+            tail.bottom = head1;
+            head1 = head1.bottom;
+        } else {
+
+            // Append head2 to the result
+            tail.bottom = head2;
+            head2 = head2.bottom;
+        }
+
+        // Move tail pointer to the next node
+        tail = tail.bottom;
+    }
+
+    // Append the remaining nodes of non-null linked list
+    if (head1 === null)
+        tail.bottom = head2;
+    else
+        tail.bottom = head1;
+
+    return dummy.bottom;
+}
+
+// Function to flatten the linked list
+function flatten(root) {
+
+    // Base Cases
+    if (root === null || root.next === null) {
+        return root;
+    }
+
+    // Recur for next list
+    root.next = flatten(root.next);
+
+    // Now merge the current and next list
+    root = merge(root, root.next);
+
+    // Return the root
+    return root;
+}
+
+function printList(node) {
+    while (node !== null) {
+        process.stdout.write(node.data.toString());
+        if (node.bottom !== null) {
+            process.stdout.write(" -> ");
+        }
+        node = node.bottom;
+    }
+}
+
+/* Create a hard-coded linked list:
+    5 -> 10 -> 19 -> 28
+    |    |     |
+    V    V     V
+    7    20    22
+    |          |
+    V          V
+    8          50
+    |
+    V
+    30
+*/
+
+let head = new Node(5);
+head.bottom = new Node(7);
+head.bottom.bottom = new Node(8);
+head.bottom.bottom.bottom = new Node(30);
+
+head.next = new Node(10);
+head.next.bottom = new Node(20);
+
+head.next.next = new Node(19);
+head.next.next.bottom = new Node(22);
+head.next.next.bottom.bottom = new Node(50);
+
+head.next.next.next = new Node(28);
+
+head = flatten(head);
+printList(head);
+
+Output
+
+5 -> 7 -> 8 -> 10 -> 19 -> 20 -> 22 -> 28 -> 30 -> 50
+
+Time Complexity: O(n * n * m) - where n is the no of nodes in the main linked list and m is the no of nodes in a single sub-linked list.
+
+- After adding the first 2 lists, the time taken will be O(m+m) = O(2m).
+- Then we will merge another list to above merged list -> time = O(2m + m) = O(3m).
+- We will keep merging lists to previously merged lists until all lists are merged.
+- Total time taken will be O(2m + 3m + 4m + .... n*m) = (2 + 3 + 4 + ... + n) * m = O(n * n * m)
+
+Auxiliary Space: O(n), the recursive functions will use a recursive stack of a size equivalent to a total number of nodes in the main linked list.
+
+### [Approach 3] Using Priority Queues - O(n * m * log(n)) Time and O(n) Space
+
+> The idea is to use a Min Heap, push all the head nodes into it, and always extract the node with the minimum value from the top.
+
+Follow the steps to solve the problem:
+
+- Create a min-heap with custom comparator.
+- Push all  head nodes to heap.
+- Use a dummy node to build the result.
+- While heap is not empty:
+- Pop smallest node.
+- Add it to result.
+- If it has a bottom node, push that into heap.
+- Return  dummy node.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node *next, *bottom;
+
+    Node(int newdata) {
+        data = newdata;
+        next = bottom = nullptr;
+    }
+};
+
+// comparator function for priority queue
+struct mycomp {
+    bool operator()(Node* a, Node* b) {
+        return a->data > b->data;
+    }
+};
+
+// function to flatten the given linked list
+Node* flatten(Node* root) {
+
+    priority_queue<Node*, vector<Node*>, mycomp> pq;
+
+    Node* head = nullptr;
+    Node* tail = nullptr;
+
+    // pushing main link nodes into priority_queue
+    while (root != nullptr) {
+        pq.push(root);
+        root = root->next;
+    }
+
+    // Extracting the minimum node
+    // while priority queue is not empty
+    while (!pq.empty()) {
+
+        // extracting min
+        auto minNode = pq.top();
+        pq.pop();
+
+        if (head == nullptr) {
+            head = minNode;
+            tail = minNode;
+        }
+        else {
+            tail->bottom = minNode;
+            tail = tail->bottom;
+        }
+
+        // If we have another node at the bottom of the
+        // popped node, push that node into the priority
+        // queue
+        if (minNode->bottom) {
+            pq.push(minNode->bottom);
+            minNode->bottom = nullptr;
+        }
+    }
+
+  	return head;
+}
+
+void printList(Node* head) {
+    Node* temp = head;
+    while (temp != nullptr) {
+        cout << temp->data ;
+        if(temp->bottom)
+        cout<<" -> ";
+        temp = temp->bottom;
+    }
+    cout << endl;
+}
+
+int main() {
+
+    /* Create a hard-coded linked list:
+        5 -> 10 -> 19 -> 28
+        |    |     |
+        V    V     V
+        7    20    22
+        |          |
+        V          V
+        8          50
+        |
+        V
+        30
+    */
+
+    Node* head = new Node(5);
+    head->bottom = new Node(7);
+    head->bottom->bottom = new Node(8);
+    head->bottom->bottom->bottom = new Node(30);
+
+    head->next = new Node(10);
+    head->next->bottom = new Node(20);
+
+    head->next->next = new Node(19);
+    head->next->next->bottom = new Node(22);
+    head->next->next->bottom->bottom = new Node(50);
+
+    head->next->next->next = new Node(28);
+
+    head = flatten(head);
+
+    printList(head);
+    return 0;
+}
+
+Java
+
+// Java program for flattening a Linked List
+
+import java.util.PriorityQueue;
+
+class Node {
+    int data;
+    Node next, bottom;
+
+    Node(int newData) {
+        data = newData;
+        next = bottom = null;
+    }
+}
+
+// Comparator class for the priority queue
+class NodeComparator implements java.util.Comparator<Node> {
+    @Override
+    public int compare(Node a, Node b) {
+        return Integer.compare(a.data, b.data);
+    }
+}
+
+// Function to flatten the linked list
+class GfG {
+
+    static Node flatten(Node root) {
+
+        // Create a priority queue with custom comparator
+        PriorityQueue<Node> pq = new PriorityQueue<>(new NodeComparator());
+
+        Node head = null;
+        Node tail = null;
+
+        // Pushing main link nodes into the priority_queue.
+        while (root != null) {
+            pq.add(root);
+            root = root.next;
+        }
+
+        // Extracting the minimum node while the priority
+      	// queue is not empty
+        while (!pq.isEmpty()) {
+
+            // Extracting min
+            Node minNode = pq.poll();
+
+            if (head == null) {
+                head = minNode;
+                tail = minNode;
+            } else {
+                tail.bottom = minNode;
+                tail = tail.bottom;
+            }
+
+            // If we have another node at the bottom of the
+            // popped node, push that node into the priority queue
+            if (minNode.bottom != null) {
+                pq.add(minNode.bottom);
+                minNode.bottom = null;
+            }
+        }
+
+        return head;
+    }
+
+    // Function to print the linked list
+    static void printList(Node head) {
+        Node temp = head;
+        while (temp != null) {
+            System.out.print(temp.data);
+            if(temp.bottom!=null)
+            {
+                System.out.print(" -> ");
+            }
+            temp = temp.bottom;
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+
+        /* Create a hard-coded linked list:
+            5 -> 10 -> 19 -> 28
+            |    |     |
+            V    V     V
+            7    20    22
+            |          |
+            V          V
+            8          50
+            |
+            V
+            30
+        */
+
+        Node head = new Node(5);
+        head.bottom = new Node(7);
+        head.bottom.bottom = new Node(8);
+        head.bottom.bottom.bottom = new Node(30);
+
+        head.next = new Node(10);
+        head.next.bottom = new Node(20);
+
+        head.next.next = new Node(19);
+        head.next.next.bottom = new Node(22);
+        head.next.next.bottom.bottom = new Node(50);
+
+        head.next.next.next = new Node(28);
+
+        head = flatten(head);
+        printList(head);
+    }
+}
+
+Python
+
+# Python program for flattening a Linked List
+from heapq import heappush, heappop
+
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = self.bottom = None
+
+# Utility function to insert a node at beginning
+# of the linked list
+def push(head, data):
+
+    # 1 & 2: Allocate the Node & Put in the data
+    newNode = Node(data)
+
+    # Make next of newNode as head
+    newNode.bottom = head
+
+    # Move the head to point to newNode
+    head = newNode
+
+    # Return to link it back
+    return head
+
+def printList(node):
+    while node is not None:
+        print(f"{node.data}", end="")
+        if node.bottom is not None:
+            print(" -> ", end="")
+        node = node.bottom
+    print()
+
+# Class to compare two node objects
+class Cmp:
+    def __init__(self, node):
+        self.node = node
+
+    def __lt__(self, other):
+        return self.node.data < other.node.data
+
+def flatten(root):
+    pq = []
+    head = None
+    tail = None
+
+    # Pushing main link nodes into priority_queue
+    while root:
+        heappush(pq, Cmp(root))
+        root = root.next
+
+    # Extracting the minimum node while the priority
+    # queue is not empty
+    while pq:
+        minNode = heappop(pq).node
+
+        if head is None:
+            head = minNode
+            tail = minNode
+        else:
+            tail.bottom = minNode
+            tail = tail.bottom
+
+        # If we have another node at the bottom of the popped
+        # node, push that node into the priority queue
+        if minNode.bottom:
+            heappush(pq, Cmp(minNode.bottom))
+            minNode.bottom = None
+
+    return head
+
+if __name__ == '__main__':
+    head = Node(5)
+    head.bottom = Node(7)
+    head.bottom.bottom = Node(8)
+    head.bottom.bottom.bottom = Node(30)
+
+    head.next = Node(10)
+    head.next.bottom = Node(20)
+
+    head.next.next = Node(19)
+    head.next.next.bottom = Node(22)
+    head.next.next.bottom.bottom = Node(50)
+
+    head.next.next.next = Node(28)
+
+    head = flatten(head)
+
+    printList(head)
+
+C#
+
+// C# implementation for above approach
+
+using System;
+using System.Collections.Generic;
+
+public class Node {
+    public int Data;
+    public Node Next;
+    public Node Bottom;
+
+    public Node(int newData) {
+        Data = newData;
+        Next = null;
+        Bottom = null;
+    }
+}
+
+// Comparator class for the priority queue
+public class NodeComparer : IComparer<Node> {
+    public int Compare(Node a, Node b) {
+        return a.Data.CompareTo(b.Data);
+    }
+}
+
+class GfG {
+     static Node Flatten(Node root) {
+
+        // Priority queue (min-heap) using a sorted list for
+        // simplicity
+        SortedList<int, Node> pq
+            = new SortedList<int, Node>();
+        Node head = null;
+        Node tail = null;
+
+        // Push main link nodes into the priority queue
+        while (root != null) {
+            pq.Add(root.Data, root);
+            root = root.Next;
+        }
+
+        // Extracting the minimum node while priority queue
+        // is not empty
+        while (pq.Count > 0) {
+
+            // Extracting min
+            Node minNode = pq.Values[0];
+            pq.RemoveAt(0);
+
+            if (head == null) {
+                head = minNode;
+                tail = minNode;
+            }
+            else {
+                tail.Bottom = minNode;
+                tail = tail.Bottom;
+            }
+
+            // If we have another node at the bottom of the
+            // popped node, push that node into the priority
+            // queue
+            if (minNode.Bottom != null) {
+                pq.Add(minNode.Bottom.Data, minNode.Bottom);
+                minNode.Bottom = null;
+            }
+        }
+
+        return head;
+    }
+
+    static void PrintList(Node head) {
+        Node temp = head;
+        while (temp != null) {
+            Console.Write(temp.Data + "");
+            if(temp.Bottom!=null)
+            Console.Write(" -> ");
+            temp = temp.Bottom;
+        }
+        Console.WriteLine();
+    }
+
+    static void Main() {
+
+        /*
+            Create a hard-coded linked list:
+            5 -> 10 -> 19 -> 28
+            |    |     |
+            V    V     V
+            7    20    22
+            |          |
+            V          V
+            8          50
+            |
+            V
+            30
+        */
+
+        Node head = new Node(5);
+        head.Bottom = new Node(7);
+        head.Bottom.Bottom = new Node(8);
+        head.Bottom.Bottom.Bottom = new Node(30);
+
+        head.Next = new Node(10);
+        head.Next.Bottom = new Node(20);
+
+        head.Next.Next = new Node(19);
+        head.Next.Next.Bottom = new Node(22);
+        head.Next.Next.Bottom.Bottom = new Node(50);
+
+        head.Next.Next.Next = new Node(28);
+
+        head = Flatten(head);
+        PrintList(head);
+    }
+}
+
+JavaScript
+
+// Javascript implementation for above approach
+
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.next = null;
+        this.bottom = null;
+    }
+}
+
+// Comparator function for the priority queue
+class MinHeap {
+    constructor() { this.heap = []; }
+
+    push(node) {
+        this.heap.push(node);
+        this._heapifyUp(this.heap.length - 1);
+    }
+
+    pop() {
+        if (this.size() === 0)
+            return null;
+        const root = this.heap[0];
+        const last = this.heap.pop();
+        if (this.size() > 0) {
+            this.heap[0] = last;
+            this._heapifyDown(0);
+        }
+        return root;
+    }
+
+    size() { return this.heap.length; }
+
+    _heapifyUp(index) {
+        const parentIndex = Math.floor((index - 1) / 2);
+        if (index > 0
+            && this.heap[index].data
+                   < this.heap[parentIndex].data) {
+            [this.heap[index], this.heap[parentIndex]] = [
+                this.heap[parentIndex], this.heap[index]
+            ];
+            this._heapifyUp(parentIndex);
+        }
+    }
+
+    _heapifyDown(index) {
+        const leftChildIndex = 2 * index + 1;
+        const rightChildIndex = 2 * index + 2;
+        let smallest = index;
+
+        if (leftChildIndex < this.size()
+            && this.heap[leftChildIndex].data
+                   < this.heap[smallest].data) {
+            smallest = leftChildIndex;
+        }
+        if (rightChildIndex < this.size()
+            && this.heap[rightChildIndex].data
+                   < this.heap[smallest].data) {
+            smallest = rightChildIndex;
+        }
+        if (smallest !== index) {
+            [this.heap[index], this.heap[smallest]] =
+                [ this.heap[smallest], this.heap[index] ];
+            this._heapifyDown(smallest);
+        }
+    }
+}
+
+function flatten(root) {
+    const pq = new MinHeap();
+    let head = null;
+    let tail = null;
+
+    // Push main linked list nodes into the priority queue
+    while (root !== null) {
+        pq.push(root);
+        root = root.next;
+    }
+
+    // Extracting the minimum node while priority queue is
+    // not empty
+    while (pq.size() > 0) {
+        const minNode = pq.pop();
+
+        if (head === null) {
+            head = minNode;
+            tail = minNode;
+        }
+        else {
+            tail.bottom = minNode;
+            tail = tail.bottom;
+        }
+
+        // If we have another node at the bottom of the
+        // popped node, push that node into the priority
+        // queue
+        if (minNode.bottom !== null) {
+            pq.push(minNode.bottom);
+            minNode.bottom = null;
+        }
+    }
+
+    return head;
+}
+
+function printList(node) {
+    while (node !== null) {
+        process.stdout.write(node.data.toString());
+        if (node.bottom !== null) {
+            process.stdout.write(" -> ");
+        }
+        node = node.bottom;
+    }
+}
+
+/*
+    Create a hard-coded linked list:
+    5 -> 10 -> 19 -> 28
+    |    |     |
+    V    V     V
+    7    20    22
+    |          |
+    V          V
+    8          50
+    |
+    V
+    30
+*/
+// Driver Code
+let head = new Node(5);
+head.bottom = new Node(7);
+head.bottom.bottom = new Node(8);
+head.bottom.bottom.bottom = new Node(30);
+
+head.next = new Node(10);
+head.next.bottom = new Node(20);
+
+head.next.next = new Node(19);
+head.next.next.bottom = new Node(22);
+head.next.next.bottom.bottom = new Node(50);
+
+head.next.next.next = new Node(28);
+
+head = flatten(head);
+
+printList(head);
+
+Output
+
+5 -> 7 -> 8 -> 10 -> 19 -> 20 -> 22 -> 28 -> 30 -> 50

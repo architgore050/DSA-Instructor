@@ -1,0 +1,414 @@
+Source: https://www.geeksforgeeks.org/dsa/represent-the-fraction-of-two-numbers-in-the-string-format/
+Title: Fraction to Recurring Decimal
+Extractor: 2
+
+Given two integers a and b (b != 0), the task is to return the fraction a/b in string format. If the fractional part is repeating, enclose the repeating part in parentheses.
+
+Examples:
+
+> Input : a = 1, b = 2 Output : "0.5" Explanation: 1/2 = 0.5 with no repeating part. Input : a = 50, b = 22 Output : "2.(27)" Explanation: 50/22 = 2.27272727... Since fractional part (27) is repeating, it is enclosed in parentheses.
+
+Approach :
+
+> The idea is to first calculate the integral quotient (absolute part before decimal point) and then calculate the fractional part. To check if the fractional part is repeating, insert the remainder (a % b) in a hash map with key as remainder and value as the index position at which this remainder occurs. If at any point of time, the remainder becomes zero, then there doesn't exist a repeating fraction otherwise if the remainder is already found in the map, then there exists a repeating fraction.
+
+C++
+
+// C++ Program to convert fraction to string
+
+#include <iostream>
+#include <unordered_map>
+using namespace std;
+
+string calculateFraction(int a, int b) {
+
+    // If the numerator is zero, answer is 0
+    if (a == 0)
+        return "0";
+
+    // If exactly one of the numerator or denominator
+    // is negative, then result will be negative
+    string res = (a < 0) ^ (b < 0) ? "-" : "";
+
+    a = abs(a);
+    b = abs(b);
+
+    // Calculate and Append the part before decimal point
+    res += to_string(a / b);
+
+    int rem = a % b;
+
+    // If completely divisible, return res
+    if (rem == 0)
+        return res;
+
+    res.append(".");
+    unordered_map<int, int> mp;
+
+    while (rem > 0) {
+
+        // If this remainder is already seen,
+        // then there exists a repeating fraction.
+        if (mp.find(rem) != mp.end()) {
+
+            res.insert(mp[rem], "(");
+            res.append(")");
+            break;
+        }
+
+        // If the remainder is seen for the first time,
+        // store its index
+        mp[rem] = res.size();
+
+        rem = rem * 10;
+
+        // Calculate quotient, append it to result and
+        // calculate next remainder
+        res += to_string(rem / b);
+        rem = rem % b;
+    }
+
+    return res;
+}
+
+int main() {
+    int a = 50, b = 22;
+    cout << calculateFraction(a, b) << endl;
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char* calculateFraction(int a, int b) {
+    // If the numerator is zero, answer is 0
+    if (a == 0) {
+        char* result = (char*)malloc(2);
+        strcpy(result, "0");
+        return result;
+    }
+
+    // If exactly one of the numerator or denominator
+    // is negative, then result will be negative
+    char* res = (char*)malloc(100);
+    int isNegative = (a < 0) ^ (b < 0);
+    if (isNegative) {
+        strcpy(res, "-");
+    } else {
+        strcpy(res, "");
+    }
+
+    a = abs(a);
+    b = abs(b);
+
+    // Calculate and Append the part before decimal point
+    char temp[20];
+    sprintf(temp, "%d", a / b);
+    strcat(res, temp);
+
+    int rem = a % b;
+
+    // If completely divisible, return res
+    if (rem == 0) {
+        return res;
+    }
+
+    strcat(res, ".");
+    int index = strlen(res);
+    int seen[10000] = {0}; // To store the index of seen remainders
+
+    while (rem > 0) {
+        // If this remainder is already seen,
+        // then there exists a repeating fraction.
+        if (seen[rem] != 0) {
+            // Insert '(' at the index of first occurrence
+            memmove(res + seen[rem] + 1, res + seen[rem], index - seen[rem] + 1);
+            res[seen[rem]] = '(';
+            strcat(res, ")");
+            break;
+        }
+
+        // If the remainder is seen for the first time,
+        // store its index
+        seen[rem] = index;
+
+        rem = rem * 10;
+
+        // Calculate quotient, append it to result and
+        // calculate next remainder
+        sprintf(temp, "%d", rem / b);
+        strcat(res, temp);
+        rem = rem % b;
+        index = strlen(res);
+    }
+
+    return res;
+}
+
+int main() {
+    int a = 50, b = 22;
+    char* result = calculateFraction(a, b);
+    printf("%s\n", result);
+    free(result);
+    return 0;
+}
+
+Java
+
+// Java Program to convert fraction to string
+
+import java.util.HashMap;
+
+class GfG {
+    static String calculateFraction(int a, int b) {
+
+        // If the numerator is zero, answer is "0"
+        if (a == 0)
+            return "0";
+
+        // If exactly one of the numerator or denominator
+        // is negative, then result will be negative
+        String res = (a < 0) ^ (b < 0) ? "-" : "";
+
+        a = Math.abs(a);
+        b = Math.abs(b);
+
+        // Calculate and Append the part before decimal point
+        res += Integer.toString(a / b);
+
+        int rem = a % b;
+
+        // If completely divisible, return res
+        if (rem == 0)
+            return res;
+
+        res += ".";
+        HashMap<Integer, Integer> mp = new HashMap<>();
+
+        while (rem > 0) {
+
+            // If this remainder is already seen,
+            // then there exists a repeating fraction.
+            if (mp.containsKey(rem)) {
+                res = res.substring(0, mp.get(rem)) + "(" + res.substring(mp.get(rem)) + ")";
+                break;
+            }
+
+            // If the remainder is seen for the first time,
+            // store its index
+            mp.put(rem, res.length());
+
+            rem = rem * 10;
+
+            // Calculate quotient, append it to result and
+            // calculate next remainder
+            res += Integer.toString(rem / b);
+            rem = rem % b;
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int a = 50, b = 22;
+        System.out.println(calculateFraction(a, b));
+    }
+}
+
+Python
+
+# Python Program to convert fraction to string
+
+def calculateFraction(a, b):
+
+    # If the numerator is zero, answer is "0"
+    if a == 0:
+        return "0"
+
+    # If exactly one of the numerator or denominator
+    # is negative, then result will be negative
+    res = "-" if (a < 0) ^ (b < 0) else ""
+
+    a = abs(a)
+    b = abs(b)
+
+    # Calculate and Append the part before decimal point
+    res += str(a // b)
+
+    rem = a % b
+
+    # If completely divisible, return res
+    if rem == 0:
+        return res
+
+    res += "."
+    mp = {}
+
+    while rem > 0:
+
+        # If this remainder is already seen,
+        # then there exists a repeating fraction.
+        if rem in mp:
+            res = res[:mp[rem]] + "(" + res[mp[rem]:] + ")"
+            break
+
+        # If the remainder is seen for the first time,
+        # store its index
+        mp[rem] = len(res)
+
+        rem = rem * 10
+
+        # Calculate quotient, append it to result and
+        # calculate next remainder
+        res += str(rem // b)
+        rem = rem % b
+
+    return res
+
+if __name__ == "__main__":
+    a = 50
+    b = 22
+    print(calculateFraction(a, b))
+
+C#
+
+// C# Program to convert fraction to string
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static string calculateFraction(int a, int b) {
+
+        // If the numerator is zero, answer is "0"
+        if (a == 0)
+            return "0";
+
+        // If exactly one of the numerator or denominator
+        // is negative, then result will be negative
+        string res = (a < 0) ^ (b < 0) ? "-" : "";
+
+        a = Math.Abs(a);
+        b = Math.Abs(b);
+
+        // Calculate and Append the part before decimal point
+        res += a / b;
+
+        int rem = a % b;
+
+        // If completely divisible, return res
+        if (rem == 0)
+            return res;
+
+        res += ".";
+        Dictionary<int, int> mp = new Dictionary<int, int>();
+
+        while (rem > 0) {
+
+            // If this remainder is already seen,
+            // then there exists a repeating fraction.
+            if (mp.ContainsKey(rem)) {
+                res = res.Insert(mp[rem], "(");
+                res += ")";
+                break;
+            }
+
+            // If the remainder is seen for the first time,
+            // store its index
+            mp[rem] = res.Length;
+
+            rem = rem * 10;
+
+            // Calculate quotient, append it to result and
+            // calculate next remainder
+            res += rem / b;
+            rem = rem % b;
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int a = 50, b = 22;
+        Console.WriteLine(calculateFraction(a, b));
+    }
+}
+
+JavaScript
+
+// JavaScript Program to convert fraction to string
+
+function calculateFraction(a, b) {
+
+    // If the numerator is zero, answer is "0"
+    if (a === 0) {
+        return "0";
+    }
+
+    // If exactly one of the numerator or denominator
+    // is negative, then result will be negative
+    let res = (a < 0) ^ (b < 0) ? "-" : "";
+
+    a = Math.abs(a);
+    b = Math.abs(b);
+
+    // Calculate and Append the part before decimal point
+    res += Math.floor(a / b);
+
+    let rem = a % b;
+
+    // If completely divisible, return res
+    if (rem === 0) {
+        return res;
+    }
+
+    res += ".";
+    let mp = new Map();
+
+    while (rem > 0) {
+        // If this remainder is already seen,
+        // then there exists a repeating fraction.
+        if (mp.has(rem)) {
+            let repeatIndex = mp.get(rem);
+            res = res.substring(0, repeatIndex) + "("
+            			+ res.substring(repeatIndex) + ")";
+            break;
+        }
+
+        // If the remainder is seen for the first time,
+        // store its index
+        mp.set(rem, res.length);
+
+        rem = rem * 10;
+
+        // Calculate quotient, append it to result and
+        // calculate next remainder
+        res += Math.floor(rem / b);
+        rem = rem % b;
+    }
+
+    return res;
+}
+
+// Driver Code
+let a = 50, b = 22;
+console.log(calculateFraction(a, b));
+
+Output
+
+2.(27)
+
+Time Complexity : O(max(log 10 (a), log 10 (b))), we can make any number of recurring digits in the fraction. For example:
+
+- 2/9 = 0.22222..
+- 21/99 = 0.212121...
+- 213/999 = 0.213213...
+- 2134/9999 = 0.21342134...
+- 21345/99999 = 0.2134521345... and so on.
+
+Auxiliary Space : O(max(log 10 (a), log 10 (b))), to store the result.
+
+Related Article : Recurring Sequence in a Fraction

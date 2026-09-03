@@ -1,0 +1,643 @@
+Source: https://www.geeksforgeeks.org/dsa/binary-array-range-queries-to-find-the-minimum-distance-between-two-zeros/
+Title: Binary Array Range Queries to find the minimum distance between two Zeros
+Extractor: 2
+
+Prerequisite: Segment Trees Given a binary array arr[] consisting of only 0's and 1's and a 2D array Q[][] consisting of K queries, the task is to find the minimum distance between two 0's in the range [L, R] of the array for every query {L, R}.
+
+Examples:
+
+> Input: arr[] = {1, 0, 0, 1}, Q[][] = {{0, 2}} Output: 1 Explanation: Clearly, in the range [0, 2], the first 0 lies at index 1 and last at index 2. Minimum distance = 2 - 1 = 1. Input: arr[] = {1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0}, Q[][] = {{3, 9}, {10, 13}} Output: 2 3 Explanation: In the range [3, 9], the minimum distance between 0's is 2 (Index 4 and 6). In the range [10, 13], the minimum distance between 0's is 3 (Index 10 and 13).
+
+Approach: The idea is to use a segment tree to solve this problem:
+
+1. Every node in the segment tree will have the index of leftmost 0 as well as rightmost 0 and an integer containing the minimum distance between 0's in the subarray {L, R}.
+2. Let min be the minimum distance between two zeroes. Then, the value of min can be found after forming the segment tree as: min = minimum(value of min in the left node, the value of min in the right node, and the difference between the leftmost index of 0 in right node and rightmost index of 0 in left node).
+3. After computing and storing the minimum distance for every node, all the queries can be answered in logarithmic time.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ program to find the minimum
+// distance between two elements
+// with value 0 within a subarray (l, r)
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Structure for each node
+// in the segment tree
+struct node {
+    int l0, r0;
+    int min0;
+} seg[100001];
+
+// A utility function for
+// merging two nodes
+node task(node l, node r)
+{
+    node x;
+
+    x.l0 = (l.l0 != -1) ? l.l0 : r.l0;
+
+    x.r0 = (r.r0 != -1) ? r.r0 : l.r0;
+
+    x.min0 = min(l.min0, r.min0);
+
+    // If both the nodes are valid
+    if (l.r0 != -1 && r.l0 != -1)
+
+        // Computing the minimum distance to store
+        // in the segment tree
+        x.min0 = min(x.min0, r.l0 - l.r0);
+
+    return x;
+}
+
+// A recursive function that constructs
+// Segment Tree for given string
+void build(int qs, int qe, int ind, int arr[])
+{
+    // If start is equal to end then
+    // insert the array element
+    if (qs == qe) {
+
+        if (arr[qs] == 0) {
+            seg[ind].l0 = seg[ind].r0 = qs;
+            seg[ind].min0 = INT_MAX;
+        }
+
+        else {
+            seg[ind].l0 = seg[ind].r0 = -1;
+            seg[ind].min0 = INT_MAX;
+        }
+
+        return;
+    }
+
+    int mid = (qs + qe) >> 1;
+
+    // Build the segment tree
+    // for range qs to mid
+    build(qs, mid, ind << 1, arr);
+
+    // Build the segment tree
+    // for range mid+1 to qe
+    build(mid + 1, qe, ind << 1 | 1, arr);
+
+    // Merge the two child nodes
+    // to obtain the parent node
+    seg[ind] = task(seg[ind << 1],
+                    seg[ind << 1 | 1]);
+}
+
+// Query in a range qs to qe
+node query(int qs, int qe, int ns, int ne, int ind)
+{
+    node x;
+    x.l0 = x.r0 = -1;
+    x.min0 = INT_MAX;
+
+    // If the range lies in this segment
+    if (qs <= ns && qe >= ne)
+        return seg[ind];
+
+    // If the range is out of the bounds
+    // of this segment
+    if (ne < qs || ns > qe || ns > ne)
+        return x;
+
+    // Else query for the right and left
+    // child node of this subtree
+    // and merge them
+    int mid = (ns + ne) >> 1;
+
+    node l = query(qs, qe, ns, mid, ind << 1);
+    node r = query(qs, qe, mid + 1, ne, ind << 1 | 1);
+
+    x = task(l, r);
+    return x;
+}
+
+// Driver code
+int main()
+{
+
+    int arr[] = { 1, 1, 0, 1, 0, 1,
+                0, 1, 0, 1, 0, 1, 1, 0 };
+
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    // Build the segment tree
+    build(0, n - 1, 1, arr);
+
+    // Queries
+    int Q[][2] = { { 3, 9 }, { 10, 13 } };
+
+    for (int i = 0; i < 2; i++) {
+
+// Finding the answer for every query
+// and printing it
+        node ans = query(Q[i][0], Q[i][1],
+                        0, n - 1, 1);
+
+        cout << ans.min0 << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+// Java program to find the minimum
+// distance between two elements
+// with value 0 within a subarray (l, r)
+public class GFG{
+
+// Structure for each Node
+// in the segment tree
+static class Node
+{
+    int l0, r0;
+    int min0;
+};
+
+static Node[] seg = new Node[100001];
+
+// A utility function for
+// merging two Nodes
+static Node task(Node l, Node r)
+{
+    Node x = new Node();
+
+    x.l0 = (l.l0 != -1) ? l.l0 : r.l0;
+
+    x.r0 = (r.r0 != -1) ? r.r0 : l.r0;
+
+    x.min0 = Math.min(l.min0, r.min0);
+
+    // If both the Nodes are valid
+    if (l.r0 != -1 && r.l0 != -1)
+
+        // Computing the minimum distance to store
+        // in the segment tree
+        x.min0 = Math.min(x.min0, r.l0 - l.r0);
+
+    return x;
+}
+
+// A recursive function that constructs
+// Segment Tree for given string
+static void build(int qs, int qe,
+                  int ind, int arr[])
+{
+
+    // If start is equal to end then
+    // insert the array element
+    if (qs == qe)
+    {
+        if (arr[qs] == 0)
+        {
+            seg[ind].l0 = seg[ind].r0 = qs;
+            seg[ind].min0 = Integer.MAX_VALUE;
+        }
+
+        else
+        {
+            seg[ind].l0 = seg[ind].r0 = -1;
+            seg[ind].min0 = Integer.MAX_VALUE;
+        }
+        return;
+    }
+
+    int mid = (qs + qe) >> 1;
+
+    // Build the segment tree
+    // for range qs to mid
+    build(qs, mid, ind << 1, arr);
+
+    // Build the segment tree
+    // for range mid+1 to qe
+    build(mid + 1, qe, ind << 1 | 1, arr);
+
+    // Merge the two child Nodes
+    // to obtain the parent Node
+    seg[ind] = task(seg[ind << 1],
+                    seg[ind << 1 | 1]);
+}
+
+// Query in a range qs to qe
+static Node query(int qs, int qe, int ns,
+                  int ne, int ind)
+{
+    Node x = new Node();
+    x.l0 = x.r0 = -1;
+    x.min0 = Integer.MAX_VALUE;
+
+    // If the range lies in this segment
+    if (qs <= ns && qe >= ne)
+        return seg[ind];
+
+    // If the range is out of the bounds
+    // of this segment
+    if (ne < qs || ns > qe || ns > ne)
+        return x;
+
+    // Else query for the right and left
+    // child Node of this subtree
+    // and merge them
+    int mid = (ns + ne) >> 1;
+
+    Node l = query(qs, qe, ns, mid,
+                          ind << 1);
+    Node r = query(qs, qe, mid + 1,
+                  ne, ind << 1 | 1);
+
+    x = task(l, r);
+    return x;
+}
+
+// Driver code
+public static void main(String[] args)
+{
+    for(int i = 0; i < 100001; i++)
+    {
+        seg[i] = new Node();
+    }
+
+    int arr[] = { 1, 1, 0, 1, 0, 1, 0,
+                  1, 0, 1, 0, 1, 1, 0 };
+
+    int n = arr.length;
+
+    // Build the segment tree
+    build(0, n - 1, 1, arr);
+
+    // Queries
+    int[][] Q = { { 3, 9 }, { 10, 13 } };
+
+    for(int i = 0; i < 2; i++)
+    {
+
+        // Finding the answer for every query
+        // and printing it
+        Node ans = query(Q[i][0], Q[i][1],
+                         0, n - 1, 1);
+
+        System.out.println(ans.min0);
+    }
+}
+}
+
+// This code is contributed by sanjeev2552
+
+Python3
+
+# Python3 program to find the minimum
+# distance between two elements with
+# value 0 within a subarray (l, r)
+import sys
+
+# Structure for each node
+# in the segment tree
+class node():
+
+    def __init__(self):
+
+        self.l0 = 0
+        self.r0 = 0
+        min0 = 0
+
+seg = [node() for i in range(100001)]
+
+# A utility function for
+# merging two nodes
+def task(l, r):
+
+    x = node()
+
+    x.l0 = l.l0 if (l.l0 != -1) else r.l0
+    x.r0 = r.r0 if (r.r0 != -1)  else l.r0
+
+    x.min0 = min(l.min0, r.min0)
+
+    # If both the nodes are valid
+    if (l.r0 != -1 and r.l0 != -1):
+
+        # Computing the minimum distance to
+        # store in the segment tree
+        x.min0 = min(x.min0, r.l0 - l.r0)
+
+    return x
+
+# A recursive function that constructs
+# Segment Tree for given string
+def build(qs, qe, ind, arr):
+
+    # If start is equal to end then
+    # insert the array element
+    if (qs == qe):
+
+        if (arr[qs] == 0):
+            seg[ind].l0 = seg[ind].r0 = qs
+            seg[ind].min0 = sys.maxsize
+
+        else:
+            seg[ind].l0 = seg[ind].r0 = -1
+            seg[ind].min0 = sys.maxsize
+
+        return
+
+    mid = (qs + qe) >> 1
+
+    # Build the segment tree
+    # for range qs to mid
+    build(qs, mid, ind << 1, arr)
+
+    # Build the segment tree
+    # for range mid+1 to qe
+    build(mid + 1, qe, ind << 1 | 1, arr)
+
+    # Merge the two child nodes
+    # to obtain the parent node
+    seg[ind] = task(seg[ind << 1],
+                    seg[ind << 1 | 1])
+
+# Query in a range qs to qe
+def query(qs, qe, ns, ne, ind):
+
+    x = node()
+    x.l0 = x.r0 = -1
+    x.min0 = sys.maxsize
+
+    # If the range lies in this segment
+    if (qs <= ns and qe >= ne):
+        return seg[ind]
+
+    # If the range is out of the bounds
+    # of this segment
+    if (ne < qs or ns > qe or ns > ne):
+        return x
+
+    # Else query for the right and left
+    # child node of this subtree
+    # and merge them
+    mid = (ns + ne) >> 1
+
+    l = query(qs, qe, ns, mid, ind << 1)
+    r = query(qs, qe, mid + 1, ne, ind << 1 | 1)
+
+    x = task(l, r)
+
+    return x
+
+# Driver code
+if __name__=="__main__":
+
+    arr = [ 1, 1, 0, 1, 0, 1, 0,
+            1, 0, 1, 0, 1, 1, 0 ]
+
+    n = len(arr)
+
+    # Build the segment tree
+    build(0, n - 1, 1, arr)
+
+    # Queries
+    Q = [ [ 3, 9 ], [ 10, 13 ] ]
+
+    for i in range(2):
+
+        # Finding the answer for every query
+        # and printing it
+        ans = query(Q[i][0], Q[i][1], 0,
+                    n - 1, 1)
+
+        print(ans.min0)
+
+# This code is contributed by rutvik_56
+
+C#
+
+// C# program to find the minimum
+// distance between two elements
+// with value 0 within a subarray (l, r)
+using System;
+// Structure for each node
+// in the segment tree
+class Node
+{
+public int l0, r0;
+public int min0;
+}
+class GFG
+{
+static Node[] seg = new Node[100001];
+
+// A utility function for
+// merging two nodes
+static Node task(Node l, Node r)
+{
+    Node x = new Node();
+
+    x.l0 = (l.l0 != -1) ? l.l0 : r.l0;
+
+    x.r0 = (r.r0 != -1) ? r.r0 : l.r0;
+
+    x.min0 = Math.Min(l.min0, r.min0);
+ // If both the nodes are valid
+    if (l.r0 != -1 && r.l0 != -1)
+    // Computing the minimum distance to store
+        // in the segment tree
+        x.min0 = Math.Min(x.min0, r.l0 - l.r0);
+
+    return x;
+}
+// A recursive function that constructs
+// Segment Tree for given string
+static void build(int qs, int qe, int ind, int[] arr)
+{
+    // If start is equal to end then
+    // insert the array element
+    if (qs == qe)
+    {
+        if (arr[qs] == 0)
+        {
+            seg[ind].l0 = seg[ind].r0 = qs;
+            seg[ind].min0 = int.MaxValue;
+        }
+        else
+        {
+            seg[ind].l0 = seg[ind].r0 = -1;
+            seg[ind].min0 = int.MaxValue;
+        }
+        return;
+    }
+
+    int mid = (qs + qe) >> 1;
+  // Build the segment tree
+    // for range qs to mid
+    build(qs, mid, ind << 1, arr);
+  // Build the segment tree
+    // for range mid+1 to qe
+    build(mid + 1, qe, ind << 1 | 1, arr);
+  // Merge the two child nodes
+    // to obtain the parent node
+    seg[ind] = task(seg[ind << 1], seg[ind << 1 | 1]);
+}
+// Query in a range qs to qe
+static Node query(int qs, int qe, int ns, int ne, int ind)
+{
+    Node x = new Node();
+    x.l0 = x.r0 = -1;
+    x.min0 = int.MaxValue;
+  // If the range lies in this segment
+    if (qs <= ns && qe >= ne)
+        return seg[ind];
+
+    if (ne < qs || ns > qe || ns > ne)
+        return x;
+    // Else query for the right and left
+    // child node of this subtree
+    // and merge them
+    int mid = (ns + ne) >> 1;
+
+    Node l = query(qs, qe, ns, mid, ind << 1);
+    Node r = query(qs, qe, mid + 1, ne, ind << 1 | 1);
+
+    x = task(l, r);
+    return x;
+}
+
+// Driver code
+public static void Main(string[] args)
+{
+    for (int i = 0; i < 100001; i++)
+    {
+        seg[i] = new Node();
+    }
+
+    int[] arr = new int[] { 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0 };
+    int n = arr.Length;
+ // Build the segment tree
+    build(0, n - 1, 1, arr);
+  // Queries
+    int[][] Q = new int[][]  { new int[] { 3, 9 },  new int[]{ 10, 13 } };
+// Finding the answer for every query
+// and printing it
+    for (int i = 0; i < 2; i++)
+    {
+        Node ans = query(Q[i][0], Q[i][1], 0, n - 1, 1);
+        Console.WriteLine(ans.min0);
+    }
+}
+}
+
+JavaScript
+
+// JavaScript equivalent of the above code
+
+// Structure for each node
+// in the segment tree
+class Node {
+  constructor() {
+    this.l0 = 0;
+    this.r0 = 0;
+    this.min0 = 0;
+  }
+}
+
+let seg = [];
+// Creating an array of nodes
+for(let i = 0; i < 100001; i++) {
+  seg.push(new Node());
+}
+
+// A utility function for
+// merging two nodes
+function task(l, r) {
+  let x = new Node();
+  x.l0 = (l.l0 != -1) ? l.l0 : r.l0;
+  x.r0 = (r.r0 != -1) ? r.r0 : l.r0;
+  x.min0 = Math.min(l.min0, r.min0);
+  // If both the nodes are valid
+  if (l.r0 != -1 && r.l0 != -1) {
+    // Computing the minimum distance to
+    // store in the segment tree
+    x.min0 = Math.min(x.min0, r.l0 - l.r0);
+  }
+  return x;
+}
+
+// A recursive function that constructs
+// Segment Tree for given string
+function build(qs, qe, ind, arr) {
+  // If start is equal to end then
+  // insert the array element
+  if (qs == qe) {
+    if (arr[qs] == 0) {
+      seg[ind].l0 = seg[ind].r0 = qs;
+      seg[ind].min0 = Number.MAX_SAFE_INTEGER;
+    } else {
+      seg[ind].l0 = seg[ind].r0 = -1;
+      seg[ind].min0 = Number.MAX_SAFE_INTEGER;
+    }
+    return;
+  }
+  let mid = Math.floor((qs + qe) / 2);
+  // Build the segment tree
+  // for range qs to mid
+  build(qs, mid, ind * 2, arr);
+  // Build the segment tree
+  // for range mid+1 to qe
+  build(mid + 1, qe, ind * 2 + 1, arr);
+  // Merge the two child nodes
+  // to obtain the parent node
+  seg[ind] = task(seg[ind * 2], seg[ind * 2 + 1]);
+}
+
+// Query in a range qs to qe
+function query(qs, qe, ns, ne, ind) {
+  let x = new Node();
+  x.l0 = x.r0 = -1;
+  x.min0 = Number.MAX_SAFE_INTEGER;
+  // If the range lies in this segment
+  if (qs <= ns && qe >= ne) return seg[ind];
+  // If the range is out of the bounds
+  // of this segment
+  if (ne < qs || ns > qe || ns > ne) return x;
+  // Else query for the right and left
+  // child node of this subtree
+  // and merge them
+  let mid = Math.floor((ns + ne) / 2);
+  let l = query(qs, qe, ns, mid, ind * 2);
+  let r = query(qs, qe, mid + 1, ne, ind * 2 + 1);
+  x = task(l, r);
+  return x;
+}
+
+// Driver code
+
+let arr = [ 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0 ];
+let n = arr.length;
+
+// Build the segment tree
+build(0, n - 1, 1, arr);
+
+// Queries
+let Q = [ [ 3, 9 ], [ 10, 13 ] ];
+
+for(let i = 0; i < 2; i++) {
+  // Finding the answer for every query
+  // and printing it
+  let ans = query(Q[i][0], Q[i][1], 0, n - 1, 1);
+  console.log(ans.min0);
+}
+
+Output:
+
+2
+3
+
+Time Complexity: O(N * logN) Auxiliary Space: O(N* logN)
+
+Related Topic: Segment Tree

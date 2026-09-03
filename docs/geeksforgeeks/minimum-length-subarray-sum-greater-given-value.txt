@@ -1,0 +1,643 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-length-subarray-sum-greater-given-value/
+Title: Smallest subarray with sum greater than a given value
+Extractor: 2
+
+Given an array arr[] of integers and a number x , the task is to find the smallest subarray with a sum strictly greater than x .
+
+Examples:
+
+> Input: x = 51, arr[] = [1, 4, 45, 6, 0, 19] Output: 3 Explanation: Minimum length subarray is [4, 45, 6] Input: x = 100, arr[] = [1, 10, 5, 2, 7] Output: 0 Explanation: No subarray exist
+
+Table of Content
+
+- [Naive Approach] Using Two Nested Loops - O(n^2) Time and O(1) Space
+- [Better Approach] - Prefix Sum and Binary Search - O(n Log n) Time and O(n) Space
+- [Expected Approach] - Using Sliding Window - O(n) Time and O(1) Space
+
+### [Naive Approach] Using Two Nested Loops - O(n^2) Time and O(1) Space
+
+> The idea is to use two nested loops. The outer loop picks a starting element, the inner loop considers all elements (on right side of current start) as ending element. Whenever sum of elements between current start and end becomes greater than x, update the result if current length is smaller than the smallest length so far.
+
+C++
+
+#include <iostream>
+using namespace std;
+
+int smallestSubWithSum(int x, vector<int> &arr)
+{
+    int n = arr.size();
+    int res = INT_MAX;
+
+    // Pick every element as starting point
+    for (int i = 0; i < n; i++)
+    {
+        int curr = 0;
+
+        for (int j = i; j < n; j++)
+        {
+            curr += arr[j];
+
+            if (curr > x)
+            {
+                res = min(res, j - i + 1);
+                break;
+            }
+        }
+    }
+
+    // Return 0 if answer does not exist
+    if (res == INT_MAX)
+        return 0;
+
+    return res;
+}
+
+int main()
+{
+    vector<int> arr = {1, 4, 45, 6, 10, 19};
+    int x = 51;
+
+    cout << smallestSubWithSum(x, arr);
+
+    return 0;
+}
+
+Java
+
+class GfG {
+    static int smallestSubWithSum(int x, int[] arr)
+    {
+        int n = arr.length;
+        int res = Integer.MAX_VALUE;
+
+        // Pick every element as starting point
+        for (int i = 0; i < n; i++) {
+            int curr = 0;
+
+            for (int j = i; j < n; j++) {
+                curr += arr[j];
+
+                if (curr > x) {
+                    res = Math.min(res, j - i + 1);
+                    break;
+                }
+            }
+        }
+
+        // Return 0 if answer does exist.
+        if (res == Integer.MAX_VALUE)
+            return 0;
+        return res;
+    }
+
+    public static void main(String[] args)
+    {
+        int[] arr = { 1, 4, 45, 6, 10, 19 };
+        int x = 51;
+
+        System.out.println(smallestSubWithSum(x, arr));
+    }
+}
+
+Python
+
+def smallestSubWithSum(x, arr):
+    n = len(arr)
+    res = float('inf')
+
+    # Pick every element as starting point
+    for i in range(n):
+        curr = 0
+
+        for j in range(i, n):
+            curr += arr[j]
+
+            if curr > x:
+                res = min(res, j - i + 1)
+                break
+
+    # Return 0 if answer does not exist.
+    if res == float('inf'):
+        return 0
+    return res
+
+if __name__ == "__main__":
+    arr = [1, 4, 45, 6, 10, 19]
+    x = 51
+
+    print(smallestSubWithSum(x, arr))
+
+C#
+
+using System;
+class GfG {
+    static int smallestSubWithSum(int x, int[] arr)
+    {
+        int n = arr.Length;
+        int res = int.MaxValue;
+
+        // Pick every element as starting point
+        for (int i = 0; i < n; i++) {
+            int curr = 0;
+
+            for (int j = i; j < n; j++) {
+                curr += arr[j];
+
+                if (curr > x) {
+                    res = Math.Min(res, j - i + 1);
+                    break;
+                }
+            }
+        }
+
+        // Return 0 if answer does not exist.
+        if (res == int.MaxValue)
+            return 0;
+        return res;
+    }
+
+    static void Main(string[] args)
+    {
+        int[] arr = { 1, 4, 45, 6, 10, 19 };
+        int x = 51;
+
+        Console.WriteLine(smallestSubWithSum(x, arr));
+    }
+}
+
+Javascript
+
+function smallestSubWithSum(x, arr)
+{
+    let n = arr.length;
+    let res = Infinity;
+
+    // Pick every element as starting point
+    for (let i = 0; i < n; i++) {
+        let curr = 0;
+
+        for (let j = i; j < n; j++) {
+            curr += arr[j];
+
+            if (curr > x) {
+                res = Math.min(res, j - i + 1);
+                break;
+            }
+        }
+    }
+
+    // Return 0 if answer does not exist.
+    if (res === Infinity)
+        return 0;
+    return res;
+}
+
+// driver code
+let arr = [ 1, 4, 45, 6, 10, 19 ];
+let x = 51;
+
+console.log(smallestSubWithSum(x, arr));
+
+Output
+
+3
+
+### [Better Approach] - Prefix Sum and Binary Search - O(n Log n) Time and O(n) Space
+
+> The idea is to store the prefix sum in an array and then for every index i, perform binary search in the range [i+1, n] to find the minimum index such that preSum[j] > preSum[i] + x .
+
+Below is the step by step of above approach:
+
+- Compute prefix sum in an array preSum[].
+- Iterate through preSum[] and find lower bound for x + preSum[i], here lower bound means index of first value greater than x + preSum[i].
+- If the lower bound is found and it's not equal to x i.e., the subarray sum is greater than the x, calculate the length of current subarray and update result if the current result is a smaller value.
+
+C++
+
+#include <iostream>
+using namespace std;
+int smallestSubWithSum(int x, vector<int> &arr)
+{
+    int n = arr.size();
+    int res = INT_MAX;
+    vector<int> preSum(n + 1, 0);
+
+    // Compute the prefix sums
+    for (int i = 1; i <= n; i++)
+        preSum[i] = preSum[i - 1] + arr[i - 1];
+
+    // Iterate through each starting index
+    for (int i = 1; i <= n; i++)
+    {
+        int toFind = x + preSum[i - 1];
+        auto bound = lower_bound(preSum.begin(), preSum.end(), toFind);
+
+        if (bound != preSum.end() && *bound != toFind)
+        {
+            int len = bound - (preSum.begin() + i - 1);
+            res = min(res, len);
+        }
+    }
+
+    // If subarray does not exists
+    if (res == INT_MAX)
+        return 0;
+
+    return res;
+}
+
+int main()
+{
+
+    vector<int> arr = {1, 4, 45, 6, 10, 19};
+    int x = 51;
+
+    cout << smallestSubWithSum(x, arr);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+class GfG {
+    static int smallestSubWithSum(int x, int[] arr)
+    {
+        int n = arr.length;
+
+        int res = Integer.MAX_VALUE;
+        int[] preSum = new int[n + 1];
+
+        // Compute the prefix sums
+        for (int i = 1; i <= n; i++) {
+            preSum[i] = preSum[i - 1] + arr[i - 1];
+        }
+
+        // Iterate through each starting index
+        for (int i = 1; i <= n; i++) {
+            int toFind = x + preSum[i - 1] + 1;
+            int bound = Arrays.binarySearch(preSum, toFind);
+            if (bound < 0) {
+                bound = -(bound + 1);
+            }
+
+            if (bound <= n) {
+                int len = bound - (i - 1);
+                res = Math.min(res, len);
+            }
+        }
+
+        // If subarray does not exists
+        if (res == Integer.MAX_VALUE)
+            return 0;
+        return res;
+    }
+
+    public static void main(String[] args)
+    {
+        int[] arr = { 1, 4, 45, 6, 10, 19 };
+        int x = 51;
+
+        System.out.println(smallestSubWithSum(x, arr));
+    }
+}
+
+Python
+
+from bisect import bisect_left
+
+def smallestSubWithSum(x, arr):
+    n = len(arr)
+
+    res = float('inf')
+    preSum = [0] * (n + 1)
+
+    # Compute the prefix sums
+    for i in range(1, n + 1):
+        preSum[i] = preSum[i - 1] + arr[i - 1]
+
+    # Iterate through each starting index
+    for i in range(1, n + 1):
+        toFind = x + preSum[i - 1] + 1
+        bound = bisect_left(preSum, toFind)
+        if bound <= n:
+            len_sub = bound - (i - 1)
+            res = min(res, len_sub)
+
+    # If subarray does not exists
+    if res == float('inf'):
+        return 0
+
+    return res
+
+if __name__ == "__main__":
+    arr = [1, 4, 45, 6, 10, 19]
+    x = 51
+
+    print(smallestSubWithSum(x, arr))
+
+C#
+
+using System;
+class GfG {
+    static int smallestSubWithSum(int x, int[] arr)
+    {
+        int n = arr.Length;
+
+        int res = int.MaxValue;
+        int[] preSum = new int[n + 1];
+
+        // Compute the prefix sums
+        for (int i = 1; i <= n; i++) {
+            preSum[i] = preSum[i - 1] + arr[i - 1];
+        }
+
+        // Iterate through each starting index
+        for (int i = 1; i <= n; i++) {
+            int toFind = x + preSum[i - 1] + 1;
+            int bound = Array.BinarySearch(preSum, toFind);
+            if (bound < 0) {
+                bound = ~bound;
+            }
+
+            if (bound <= n) {
+                int len = bound - (i - 1);
+                res = Math.Min(res, len);
+            }
+        }
+
+        // If subarray does not exists
+        if (res == int.MaxValue)
+            return 0;
+
+        return res;
+    }
+
+    static void Main(string[] args)
+    {
+        int[] arr = { 1, 4, 45, 6, 10, 19 };
+        int x = 51;
+
+        Console.WriteLine(smallestSubWithSum(x, arr));
+    }
+}
+
+JavaScript
+
+function smallestSubWithSum(x, arr)
+{
+    let n = arr.length;
+
+    let res = Infinity;
+    let preSum = new Array(n + 1).fill(0);
+
+    // Compute the prefix sums
+    for (let i = 1; i <= n; i++) {
+        preSum[i] = preSum[i - 1] + arr[i - 1];
+    }
+
+    // Iterate through each starting index
+    for (let i = 1; i <= n; i++) {
+        let toFind = x + preSum[i - 1] + 1;
+        let bound = preSum.findIndex(val => val >= toFind);
+
+        if (bound !== -1) {
+            let len = bound - (i - 1);
+            res = Math.min(res, len);
+        }
+    }
+
+    // If subarray does not exists
+    if (res === Infinity)
+        return 0;
+
+    return res;
+}
+
+// driver code
+let arr = [ 1, 4, 45, 6, 10, 19 ];
+let x = 51;
+
+console.log(smallestSubWithSum(x, arr));
+
+Output
+
+3
+
+### [Expected Approach] - Using Sliding Window - O(n) Time and O(1) Space
+
+> The idea is to maintain a sliding window, where we keep expanding the window by adding elements until the sum becomes greater than x, then we try to minimize this window by shrinking it from the start while maintaining the sum > x condition. This way, we explore all possible subarrays and keep track of the smallest valid length.
+
+C++
+
+#include <iostream>
+using namespace std;
+int smallestSubWithSum(int x, vector<int> &arr)
+{
+
+    int i = 0, j = 0;
+    int sum = 0;
+    int ans = INT_MAX;
+
+    while (j < arr.size())
+    {
+        while (j < arr.size() && sum <= x)
+        {
+            sum += arr[j++];
+        }
+        if (j == arr.size() && sum <= x)
+            break;
+
+        // Minimize window from start while maintaining sum > x
+        while (i < j && sum - arr[i] > x)
+        {
+            sum -= arr[i++];
+        }
+
+        ans = min(ans, j - i);
+
+        // Remove current start element and shift window
+        sum -= arr[i];
+        i++;
+    }
+    if (ans == INT_MAX)
+        return 0;
+    return ans;
+}
+
+int main()
+{
+    vector<int> arr = {1, 4, 45, 6, 10, 19};
+    int x = 51;
+
+    cout << smallestSubWithSum(x, arr);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+    static int smallestSubWithSum(int x, int[] arr)
+    {
+        int i = 0, j = 0;
+        int sum = 0;
+        int ans = Integer.MAX_VALUE;
+
+        while (j < arr.length) {
+            while (j < arr.length && sum <= x) {
+                sum += arr[j++];
+            }
+            if (j == arr.length && sum <= x)
+                break;
+
+            // Minimize window from start while maintaining
+            // sum > x
+            while (i < j && sum - arr[i] > x) {
+                sum -= arr[i++];
+            }
+
+            ans = Math.min(ans, j - i);
+
+            // Remove current start element and shift window
+            sum -= arr[i];
+            i++;
+        }
+        if (ans == Integer.MAX_VALUE)
+            return 0;
+        return ans;
+    }
+
+    public static void main(String[] args)
+    {
+        int[] arr = { 1, 4, 45, 6, 10, 19 };
+        int x = 51;
+
+        System.out.println(smallestSubWithSum(x, arr));
+    }
+}
+
+Python
+
+def smallestSubWithSum(x, arr):
+
+    i, j = 0, 0
+    sum = 0
+    ans = float('inf')
+
+    while j < len(arr):
+        while j < len(arr) and sum <= x:
+            sum += arr[j]
+            j += 1
+        if j == len(arr) and sum <= x:
+            break
+
+        # Minimize window from start while maintaining sum > x
+        while i < j and sum - arr[i] > x:
+            sum -= arr[i]
+            i += 1
+
+        ans = min(ans, j - i)
+
+        # Remove current start element and shift window
+        sum -= arr[i]
+        i += 1
+    if ans == float('inf'):
+        return 0
+    return ans
+
+if __name__ == "__main__":
+    arr = [1, 4, 45, 6, 10, 19]
+    x = 51
+
+    print(smallestSubWithSum(x, arr))
+
+C#
+
+using System;
+
+class GfG {
+    static int smallestSubWithSum(int x, int[] arr)
+    {
+
+        int i = 0, j = 0;
+        int sum = 0;
+        int ans = int.MaxValue;
+
+        while (j < arr.Length) {
+            while (j < arr.Length && sum <= x) {
+                sum += arr[j++];
+            }
+            if (j == arr.Length && sum <= x)
+                break;
+
+            // Minimize window from start while maintaining
+            // sum > x
+            while (i < j && sum - arr[i] > x) {
+                sum -= arr[i++];
+            }
+
+            ans = Math.Min(ans, j - i);
+
+            // Remove current start element and shift window
+            sum -= arr[i];
+            i++;
+        }
+        if (ans == int.MaxValue)
+            return 0;
+        return ans;
+    }
+
+    static void Main(string[] args)
+    {
+        int[] arr = { 1, 4, 45, 6, 10, 19 };
+        int x = 51;
+
+        Console.WriteLine(smallestSubWithSum(x, arr));
+    }
+}
+
+Javascript
+
+function smallestSubWithSum(x, arr)
+{
+
+    let i = 0, j = 0;
+    let sum = 0;
+    let ans = Infinity;
+
+    while (j < arr.length) {
+        while (j < arr.length && sum <= x) {
+            sum += arr[j++];
+        }
+        if (j === arr.length && sum <= x)
+            break;
+
+        // Minimize window from start while maintaining sum
+        // > x
+        while (i < j && sum - arr[i] > x) {
+            sum -= arr[i++];
+        }
+
+        ans = Math.min(ans, j - i);
+
+        // Remove current start element and shift window
+        sum -= arr[i];
+        i++;
+    }
+    if (ans === Infinity)
+        return 0;
+    return ans;
+}
+
+// driver code
+let arr = [ 1, 4, 45, 6, 10, 19 ];
+let x = 51;
+
+console.log(smallestSubWithSum(x, arr));
+
+Output
+
+3

@@ -1,0 +1,855 @@
+Source: https://www.geeksforgeeks.org/dsa/ternary-search-tree-deletion/
+Title: Ternary Search Tree (Deletion)
+Extractor: 2
+
+In the SET 1 post on TST we have described how to insert and search a node in TST. In this article, we will discuss algorithm on how to delete a node from TST.
+
+During delete operation we delete the key in bottom-up manner using recursion. The following are possible cases when deleting a key from trie.
+
+> Key may not be there in TST. Solution: Delete operation should not modify TST. Key present as unique key (no part of key contains another key (prefix), nor the key itself is prefix of another key in TST). Solution: Delete all the nodes. Key is prefix key of another long key in TST. Solution: Unmark the leaf node. Key present in TST, having atleast one other key as prefix key. Solution: Delete nodes from end of key until first leaf node of longest prefix key.
+
+Explanation for delete_node function
+
+1. Let suppose we want to delete string "BIG",since it is not present in TST so after matching with first character 'B', delete_node function will return zero. Hence nothing is deleted.
+2. Now we want to delete string "BUG", it is Uniquely present in TST i.e neither it has part which is the prefix of other string nor it is prefix to any other string, so it will be deleted completely.
+3. Now we want to delete string "CAT", since it is prefix of string "CATS", we cannot delete anything from the string "CAT" and we can only unmark the leaf node which will ensure that "CAT" is no longer a member string of TST.
+4. Now we want to delete string "CATS", since it has a prefix string "CAT" which also is a member string of TST so we can only delete last character of string "CATS" which will ensure that string "CAT" still remains the part of TST.
+
+Implementation:
+
+C
+
+// C program to demonstrate deletion in
+// Ternary Search Tree (TST). For insert
+// and other functions, refer
+// https://www.geeksforgeeks.org/dsa/ternary-search-tree/
+#include<stdio.h>
+#include<stdlib.h>
+
+// structure of a node in TST
+struct Node
+{
+    char key;
+    int isleaf;
+    struct Node *left;
+    struct Node *eq;
+    struct Node *right;
+};
+
+// function to create a Node in TST
+struct Node *createNode(char key)
+{
+    struct Node *temp =
+        (struct Node*)malloc(sizeof(struct Node));
+    temp->key = key;
+    temp->isleaf = 0;
+    temp->left = NULL;
+    temp->eq = NULL;
+    temp->right = NULL;
+    return temp;
+};
+
+// function to insert a Node in TST
+void insert_node(struct Node **root ,char *s)
+{
+    if (!(*root))
+        (*root) = createNode(*s);
+
+    if ((*s)<(*root)->key)
+        insert_node( &(*root)->left ,s);
+
+    else if ((*s)>(*root)->key)
+        insert_node( &(*root)->right ,s);
+
+    else if ((*s) == (*root)->key)
+    {
+        if (*(s+1) == '\0')
+        {
+            (*root)->isleaf = 1;
+            return;
+        }
+        insert_node( &(*root)->eq ,s+1);
+    }
+}
+
+// function to display the TST
+void display(struct Node *root, char str[], int level)
+{
+    if (!root)
+        return;
+
+    display(root->left ,str ,level);
+    str[level] = root->key;
+
+    if (root->isleaf == 1)
+    {
+        str[level+1] = '\0';
+        printf("%s\n",str);
+    }
+
+    display(root->eq ,str ,level+1);
+    display(root->right ,str ,level);
+}
+
+// to check if current Node is leaf node or not
+int isLeaf(struct Node *root)
+{
+    return root->isleaf == 1;
+}
+
+// to check if current node has any child node or not
+int isFreeNode(struct Node *root)
+{
+    if (root->left ||root->eq ||root->right)
+        return 0;
+    return 1;
+}
+
+// function to delete a string in TST
+int delete_node(struct Node *root, char str[],
+                int level ,int n)
+{
+    if (root == NULL)
+        return 0;
+
+    // CASE 4 Key present in TST, having
+    // atleast one other key as prefix key.
+    if (str[level+1] == '\0')
+    {
+        // Unmark leaf node if present
+        if (isLeaf(root))
+        {
+            root->isleaf=0;
+            return isFreeNode(root);
+        }
+
+        // else string is not present in TST and
+        // return 0
+        else
+            return 0;
+    }
+    else
+    {
+        // CASE 3 Key is prefix key of another
+        // long key in TST.
+        if (str[level] < root->key)
+            delete_node(root->left ,str ,level ,n);
+        else if (str[level] > root->key)
+            delete_node(root->right ,str ,level ,n);
+
+        // CASE 1 Key may not be there in TST.
+        else if (str[level] == root->key)
+        {
+            // CASE 2 Key present as unique key
+            if( delete_node(root->eq ,str ,level+1 ,n) )
+            {
+                // delete the last node, neither it
+                // has any child
+                // nor it is part of any other string
+                free(root->eq);
+                return !isLeaf(root) && isFreeNode(root);
+            }
+        }
+    }
+
+    return 0;
+}
+
+// Driver function
+int main()
+{
+    struct Node *temp = NULL;
+
+    insert_node(&temp ,"CAT");
+    insert_node(&temp ,"BUGS");
+    insert_node(&temp ,"CATS");
+    insert_node(&temp ,"UP");
+
+    int level = 0;
+    char str[20];
+    int p = 0;
+
+    printf( "1.Content of the TST before "
+            "deletion:\n" );
+    display(temp ,str ,level);
+
+    level = 0;
+    delete_node(temp ,"CAT" ,level ,5);
+
+    level = 0;
+    printf("\n2.Content of the TST after "
+           "deletion:\n");
+    display(temp, str, level);
+    return 0;
+}
+
+C++
+
+// C++ program to demonstrate deletion in
+// Ternary Search Tree (TST)
+// For insert and other functions, refer
+// https://www.geeksforgeeks.org/dsa/ternary-search-tree/
+
+#include<bits/stdc++.h>
+using namespace std;
+
+// structure of a node in TST
+struct Node
+{
+    char key;
+    int isleaf;
+    struct Node *left;
+    struct Node *eq;
+    struct Node *right;
+};
+
+// function to create a node in TST
+struct Node *createNode(char key)
+{
+    struct Node *temp = new Node;
+    temp->key = key;
+    temp->isleaf = 0;
+    temp->left = NULL;
+    temp->eq = NULL;
+    temp->right = NULL;
+    return temp;
+};
+
+// function to insert a Node in TST
+void insert_node(struct Node **root, string s)
+{
+    if((int)s.length()==0)
+        return;
+    if (!(*root))
+    {
+        (*root) = createNode(s[0]);
+        // return;
+    }
+
+    if ((s[0])<(*root)->key)
+        insert_node( &(*root)->left, s);
+
+    else if ((s[0])>(*root)->key)
+        insert_node( &(*root)->right, s);
+
+    else if ((s[0]) == (*root)->key)
+    {
+        if ((int)s.length() == 1)
+        {
+            (*root)->isleaf = 1;
+            return;
+        }
+        insert_node( &(*root)->eq, s.substr(1));
+    }
+}
+
+// function to display the TST
+void display(struct Node *root, char str[], int level)
+{
+    if (!root)
+        return;
+
+    display(root->left, str, level);
+    str[level] = root->key;
+
+    if (root->isleaf == 1)
+    {
+        str[level+1] = '\0';
+        cout<< str <<endl;
+    }
+
+    display(root->eq, str, level+1);
+    display(root->right, str, level);
+}
+
+//to check if current node is leaf node or not
+int isLeaf(struct Node *root)
+{
+    return root->isleaf == 1;
+}
+
+// to check if current node has any child
+// node or not
+int isFreeNode(struct Node *root)
+{
+    if (root->left ||root->eq ||root->right)
+        return 0;
+    return 1;
+}
+
+// function to delete a string in TST
+int delete_node(struct Node *root, string str,
+                int level, int n)
+{
+    if (root == NULL)
+        return 0;
+
+    // CASE 4 Key present in TST, having atleast
+    // one other key as prefix key.
+    if (str[level+1] == '\0')
+    {
+        // Unmark leaf node if present
+        if (isLeaf(root))
+        {
+            root->isleaf = 0;
+            return isFreeNode(root);
+        }
+
+        // else string is not present in TST and
+        // return 0
+        else
+            return 0;
+    }
+
+    // CASE 3 Key is prefix key of another long
+    // key in TST.
+    if (str[level] < root->key)
+        return delete_node(root->left, str, level, n);
+    if (str[level] > root->key)
+        return delete_node(root->right, str, level, n);
+
+    // CASE 1 Key may not be there in TST.
+    if (str[level] == root->key)
+    {
+        // CASE 2 Key present as unique key
+        if (delete_node(root->eq, str, level+1, n))
+        {
+            // delete the last node, neither it has
+            // any child nor it is part of any other
+            // string
+            delete(root->eq);
+            return !isLeaf(root) && isFreeNode(root);
+        }
+    }
+
+    return 0;
+}
+
+// Driver function
+int main()
+{
+    struct Node *temp = NULL;
+
+    insert_node(&temp, "CAT");
+    insert_node(&temp, "BUGS");
+    insert_node(&temp, "CATS");
+    insert_node(&temp, "UP");
+
+    int level = 0;
+    char str[20];
+    int p = 0;
+
+    cout << "1.Content of the TST before deletion:\n";
+    display(temp, str, 0);
+
+    level = 0;
+    delete_node(temp,"CAT", level, 5);
+
+    level = 0;
+    cout << "\n2.Content of the TST after deletion:\n";
+    display(temp, str, level);
+    return 0;
+}
+
+Python3
+
+# Python 3 program to demonstrate deletion in
+# Ternary Search Tree (TST)
+# For insert and other functions, refer
+# https://www.geeksforgeeks.org/dsa/ternary-search-tree/
+
+# class of a node in TST
+class Node:
+    def __init__(self,key):
+        self.key=key
+        self.isleaf=False
+        self.left=None
+        self.eq=None
+        self.right=None
+
+# function to insert a Node in TST
+def insert_node(root, s):
+
+    if s=='':
+        return root
+    if not root:
+        root = Node(s[0])
+
+    if ((s[0])<root.key):
+        root.left=insert_node(root.left, s)
+
+    elif (s[0]>root.key):
+        root.right=insert_node(root.right, s)
+    else:
+        if (len(s) == 1):
+            root.isleaf = True
+            return root
+        root.eq=insert_node(root.eq, s[1:])
+
+    return root
+
+# function to display the TST
+def display(root, s, level):
+    if not root:
+        return
+
+    display(root.left, s, level)
+    s[level] = root.key
+
+    if (root.isleaf):
+        s[level+1] = ''
+        print(''.join(s[:level+1]))
+
+    display(root.eq, s, level+1)
+    display(root.right, s, level)
+
+# to check if current node has any child
+# node or not
+def isFreeNode(root):
+    return not (root.left or root.eq or root.right)
+
+# function to delete a string in TST
+def delete_node(root, s, level):
+    if not root:
+        return False
+
+    # CASE 4 Key present in TST, having atleast
+    # one other key as prefix key.
+    if level+1 == len(s):
+        # Unmark leaf node if present
+        if root.isleaf:
+            root.isleaf = False
+            return isFreeNode(root)
+
+        # else string is not present in TST and
+        # return 0
+        return False
+
+    # CASE 3 Key is prefix key of another long
+    # key in TST.
+    if s[level] < root.key:
+        return delete_node(root.left, s, level)
+    if s[level] > root.key:
+        return delete_node(root.right, s, level)
+
+    # CASE 1 Key may not be there in TST.
+    if s[level] == root.key and delete_node(root.eq, s, level+1):
+        # delete the last node, neither it has
+        # any child nor it is part of any other
+        # string
+        root.eq = None
+        return not root.isleaf and isFreeNode(root)
+
+    return False
+
+# Driver function
+if __name__ == '__main__':
+    temp = None
+
+    temp=insert_node(temp, "CAT")
+    temp=insert_node(temp, "BUGS")
+    temp=insert_node(temp, "CATS")
+    temp=insert_node(temp, "UP")
+
+    level = 0;s=['']*20
+
+    print("1.Content of the TST before deletion:")
+    display(temp, s, 0)
+
+    print("2.Content of the TST after deletion:")
+    delete_node(temp,"CAT", level)
+    display(temp, s, level)
+
+JavaScript
+
+class Node {
+    constructor(key) {
+        this.key = key;
+        this.isleaf = false;
+        this.left = null;
+        this.eq = null;
+        this.right = null;
+    }
+}
+
+function insert_node(root, s) {
+    if (s === "") {
+        return root;
+    }
+    if (!root) {
+        root = new Node(s[0]);
+    }
+
+    if (s[0] < root.key) {
+        root.left = insert_node(root.left, s);
+    } else if (s[0] > root.key) {
+        root.right = insert_node(root.right, s);
+    } else {
+        if (s.length === 1) {
+            root.isleaf = true;
+            return root;
+        }
+        root.eq = insert_node(root.eq, s.substring(1));
+    }
+
+    return root;
+}
+
+function display(root, s, level) {
+    if (!root) {
+        return;
+    }
+
+    display(root.left, s, level);
+    s[level] = root.key;
+
+    if (root.isleaf) {
+        s[level + 1] = "";
+        document.write(s.slice(0, level + 1).join(""));
+    }
+
+    display(root.eq, s, level + 1);
+    display(root.right, s, level);
+}
+
+function isFreeNode(root) {
+    return !root.left && !root.eq && !root.right;
+}
+
+function delete_node(root, s, level) {
+    if (!root) {
+        return false;
+    }
+
+    // CASE 4 Key present in TST, having atleast
+    // one other key as prefix key.
+    if (level + 1 === s.length) {
+        // Unmark leaf node if present
+        if (root.isleaf) {
+            root.isleaf = false;
+            return isFreeNode(root);
+        }
+
+        // else string is not present in TST and
+        // return 0
+        return false;
+    }
+
+    // CASE 3 Key is prefix key of another long
+    // key in TST.
+    if (s[level] < root.key) {
+        return delete_node(root.left, s, level);
+    }
+    if (s[level] > root.key) {
+        return delete_node(root.right, s, level);
+    }
+
+    // CASE 1 Key may not be there in TST.
+    if (s[level] === root.key && delete_node(root.eq, s, level + 1))
+    {
+
+        // delete the last node, neither it has
+        // any child nor it is part of any other
+        // string
+        root.eq = null;
+        return !root.isleaf && isFreeNode(root);
+    }
+
+    return false;
+}
+
+let temp = null;
+
+temp = insert_node(temp, "CAT");
+temp = insert_node(temp, "BUGS");
+temp = insert_node(temp, "CATS");
+temp = insert_node(temp, "UP");
+
+let
+level = 0;
+let s = new Array(20).fill("");
+
+console.log("1.Content of the TST before deletion:");
+display(temp, s, 0);
+
+console.log("2.Content of the TST after deletion:");
+delete_node(temp, "CAT", level);
+display(temp, s, level);
+
+// This code is contributed by Potta Lokesh
+
+C#
+
+// C++ program to demonstrate deletion in
+// Ternary Search Tree (TST)
+// For insert and other functions, refer
+// https://www.geeksforgeeks.org/dsa/ternary-search-tree/
+
+using System;
+
+class TST {
+    // class of a node in TST
+    class Node {
+        public char key;
+        public bool isleaf;
+        public Node left, eq, right;
+
+        public Node(char key)
+        {
+            this.key = key;
+            isleaf = false;
+            left = eq = right = null;
+        }
+    }
+
+    // function to insert a Node in TST
+    static Node InsertNode(Node root, string s)
+    {
+        if (s == "") {
+            return root;
+        }
+        if (root == null) {
+            root = new Node(s[0]);
+        }
+
+        if (s[0] < root.key) {
+            root.left = InsertNode(root.left, s);
+        }
+        else if (s[0] > root.key) {
+            root.right = InsertNode(root.right, s);
+        }
+        else {
+            if (s.Length == 1) {
+                root.isleaf = true;
+                return root;
+            }
+            root.eq = InsertNode(root.eq, s.Substring(1));
+        }
+
+        return root;
+    }
+
+    // function to display the TST
+    static void Display(Node root, char[] s, int level)
+    {
+        if (root == null) {
+            return;
+        }
+
+        Display(root.left, s, level);
+        s[level] = root.key;
+
+        if (root.isleaf) {
+            s[level + 1] = '\0';
+            Console.WriteLine(new string(s, 0, level + 1));
+        }
+
+        Display(root.eq, s, level + 1);
+        Display(root.right, s, level);
+    }
+
+    // to check if current node has any child
+    // node or not
+    static bool IsFreeNode(Node root)
+    {
+        return root.left == null && root.eq == null
+            && root.right == null;
+    }
+
+    // function to delete a string in TST
+    static bool DeleteNode(ref Node root, string s,
+                           int level)
+    {
+        if (root == null) {
+            return false;
+        }
+
+        // CASE 4 Key present in TST, having atleast
+        // one other key as prefix key.
+        if (level + 1 == s.Length) {
+            // Unmark leaf node if present
+            if (root.isleaf) {
+                root.isleaf = false;
+                return IsFreeNode(root);
+            }
+
+            // else string is not present in TST and
+            // return 0
+            return false;
+        }
+
+        // CASE 3 Key is prefix key of another long
+        // key in TST.
+        if (s[level] < root.key) {
+            return DeleteNode(ref root.left, s, level);
+        }
+        if (s[level] > root.key) {
+            return DeleteNode(ref root.right, s, level);
+        }
+
+        // CASE 1 Key may not be there in TST.
+        if (s[level] == root.key
+            && DeleteNode(ref root.eq,
+                          s.Substring(level + 1),
+                          level + 1)) {
+            // delete the last node, neither it has
+            // any child nor it is part of any other
+            // string
+            root.eq = null;
+            return !root.isleaf && IsFreeNode(root);
+        }
+
+        return false;
+    }
+
+    // Driver function
+    static void Main(string[] args)
+    {
+        Node root = null;
+
+        root = InsertNode(root, "CAT");
+        root = InsertNode(root, "BUGS");
+        root = InsertNode(root, "CATS");
+        root = InsertNode(root, "UP");
+
+        int level = 0;
+        char[] str = new char[20];
+
+        Console.WriteLine("1. Content of the TST before deletion:");
+        Display(root, str, 0);
+        Console.WriteLine("\n2. Content of the TST after deletion:");
+        DeleteNode(ref root, "CAT", level);
+        Display(root, str, level);
+    }
+}
+
+//This code is Contributed by NarasingaNikhil
+
+Java
+
+// Java program to demonstrate deletion in
+// Ternary Search Tree (TST). For insert
+// and other functions, refer
+// https://www.geeksforgeeks.org/dsa/ternary-search-tree/
+
+class Node {
+    char key;
+    boolean isLeaf;
+    Node left, eq, right;
+
+  // structure of a node in TST
+    public Node(char key) {
+        this.key = key;
+        this.isLeaf = false;
+        this.left = null;
+        this.eq = null;
+        this.right = null;
+    }
+}
+
+ // class of a node in TST
+class TST {
+    public Node root;
+
+    public void insert(String s) {
+        root = insertUtil(root, s, 0);
+    }
+      // function to insert a Node in TST
+    private Node insertUtil(Node root, String s, int i) {
+        if (root == null)
+            root = new Node(s.charAt(i));
+
+        if (s.charAt(i) < root.key)
+            root.left = insertUtil(root.left, s, i);
+        else if (s.charAt(i) > root.key)
+            root.right = insertUtil(root.right, s, i);
+        else {
+            if (i + 1 < s.length()) {
+                root.eq = insertUtil(root.eq, s, i + 1);
+            } else {
+                root.isLeaf = true;
+            }
+        }
+        return root;
+    }
+
+    // function to delete a string in TST
+    public void delete(String s) {
+        deleteUtil(root, s, 0);
+    }
+
+    private boolean deleteUtil(Node root, String s, int i) {
+        if (root == null)
+            return false;
+
+        if (s.charAt(i) < root.key) {
+            deleteUtil(root.left, s, i);
+        } else if (s.charAt(i) > root.key) {
+            deleteUtil(root.right, s, i);
+        } else {
+             // CASE 4 Key present in TST, having atleast
+        // one other key as prefix key.
+            if (i + 1 == s.length()) {
+                root.isLeaf = false;
+                if (isFreeNode(root))
+                    root = null;
+            } else {
+                deleteUtil(root.eq, s, i + 1);
+            }
+        }
+        return true;
+    }
+// to check if current node has any child
+// node or not
+    private boolean isFreeNode(Node root) {
+        return (!(root.left != null || root.eq != null || root.right != null));
+    }
+
+    public void print(Node root, String s, int level) {
+            // delete the last node, neither it has
+            // any child nor it is part of any other
+            // string
+        if (root == null)
+            return;
+
+        print(root.left, s, level);
+        s += root.key;
+
+        if (root.isLeaf)
+            System.out.println(s);
+
+        print(root.eq, s, level + 1);
+        print(root.right, s, level);
+    }
+  // Driver function
+    public static void main(String[] args) {
+        TST tst = new TST();
+        tst.insert("CAT");
+        tst.insert("BUGS");
+        tst.insert("CATS");
+        tst.insert("UP");
+
+        System.out.print("1.Content of the TST before deletion: \n");
+        tst.print(tst.root, "", 0);
+
+        tst.delete("CAT");
+
+        System.out.print("2.Content of the TST after deletion: \n");
+        tst.print(tst.root, "", 0);
+    }
+}
+
+//This code is contributed by NarasingaNikhil
+
+Output
+
+1.Content of the TST before deletion:
+BUGS
+CAT
+CATS
+UP
+
+2.Content of the TST after deletion:
+BUGS
+CATS
+UP

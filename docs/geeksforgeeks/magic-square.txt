@@ -1,0 +1,1531 @@
+Source: https://www.geeksforgeeks.org/dsa/magic-square/
+Title: Fill Magic Square
+Extractor: 2
+
+Given an integer n and an n × n matrix mat[][] . Fill the matrix with distinct integers from 1 to n² such that the sum of every row, every column, and both main diagonals are equal. If it is possible to construct such a matrix, fill mat[][] with any valid arrangement. Otherwise, fill every cell of mat[][] with -1.
+
+Note: In the practice problem, the driver code will verify the filled matrix and print true if:
+
+- It forms a valid magic square using all integers from 1 to n² exactly once, or
+- Every element of the matrix is -1 when no magic square exists.
+
+Otherwise, it will print false.
+
+Example :
+
+> Input: n = 3 Output: true Explanation: A valid matrix exists: where each row ([2, 7, 6], [9, 5, 1], [4, 3, 8]), each column ([2, 9, 4], [7, 5, 3], [6, 1, 8]) and both diagonals ([2, 5, 8], [6, 5, 4]) all have sum equal to 15. Input: n = 2 Output: [[-1, -1], [-1, -1]] Explanation: No valid magic square possible for n  = 2.
+
+Note: Sum of all numbers in any magic square (both even and odd order) is 1 + 2 + 3, ... n 2 which is equal to n 2 × (n 2 + 1)/2 [We have simply applied natural number sum formula for n = n 2 ]. Now a magic square contains n divisions of sum M where M is row or column or diagonal sum, so we can write n x M = n 2 × (n 2 + 1)/2. From this expression, we can derive, M = n × (n 2 + 1)/2 .
+
+For the first few “normal” magic squares (i.e. using 1…n²), the magic constants are :
+
+Order (n) | Magic Constant (M)
+3 | 3(3^2 + 1) / 2 = 15
+5 | 5(5^2 + 1) / 2 = 65
+7 | 7(7^2 + 1) / 2 = 175
+
+Table of Content
+
+- [Naive Approach] Magic Square Construction Using Backtracking – O((n²)!) Time and O(n²) Space
+- [Expected Approach] Magic Square Construction Based on Order of n - O(n²) Time and O(n²) Space
+
+### [Naive Approach] Magic Square Construction Using Backtracking – O((n²)!) Time and O(n²) Space
+
+> Instead of generating all permutations, we fill the matrix cell by cell and maintain running sums for rows, columns, and diagonals. At each step, we check whether the current configuration can still lead to a valid solution. If any constraint is violated, we backtrack immediately, which helps in pruning invalid states early and improves efficiency.
+
+- Compute k = n 2 and magic sum S = k(k+1)/2n
+- Initialize row, column, diagonal sums, and visited array
+- Start filling matrix from (0, 0) in row-wise order
+- For each cell, try all unused numbers from 1 to n²
+- Place number and update row/column/diagonal sums
+- Check constraints only when row/column/diagonal is completed
+- If valid, move to next cell recursively, else undo changes (backtrack)
+- Continue until all cells are filled or all options fail
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// r[i] -> sum of row i
+// c[j] -> sum of column j
+// d[0] -> main diagonal sum
+// d[1] -> anti-diagonal sum
+// vis[val] -> whether number val is already used
+int r[25], c[25], d[2], vis[205], s, k;
+
+bool solve(int i, int j, int n, vector<vector<int>> &mat)
+{
+    // Base case: if all rows are filled, solution is found
+    if (i == n)
+        return true;
+
+    // Move to next cell in row-wise order
+    int ni = (j == n - 1) ? i + 1 : i;
+    int nj = (j == n - 1) ? 0 : j + 1;
+
+    // Try all values from 1 to n*n
+    for (int val = 1; val <= k; val++)
+    {
+        // If value is not used yet
+        if (!vis[val])
+        {
+            // Place value in matrix
+            mat[i][j] = val;
+            vis[val] = 1;
+
+            // Update row and column sums
+            r[i] += val;
+            c[j] += val;
+
+            // Update diagonal sums if needed
+            if (i == j)
+                d[0] += val;
+
+            if (i + j == n - 1)
+                d[1] += val;
+
+            // Pruning condition:
+            bool bad = false;
+
+            if (j == n - 1 && r[i] != s)
+                bad = true;
+
+            if (i == n - 1 && c[j] != s)
+                bad = true;
+
+            if (i == n - 1 && j == n - 1 && d[0] != s)
+                bad = true;
+
+            if (i == n - 1 && j == 0 && d[1] != s)
+                bad = true;
+
+            // If valid so far, continue recursion
+            if (!bad && solve(ni, nj, n, mat))
+                return true;
+
+            // Backtracking step: undo changes
+            vis[val] = 0;
+            r[i] -= val;
+            c[j] -= val;
+
+            if (i == j)
+                d[0] -= val;
+
+            if (i + j == n - 1)
+                d[1] -= val;
+
+            mat[i][j] = 0;
+        }
+    }
+
+    return false;
+}
+
+void fillMagicSquare(int n, vector<vector<int>> &mat)
+{
+    // Initialize matrix with 0
+    mat.assign(n, vector<int>(n, 0));
+
+    // Special case: no magic square possible for n = 2
+    if (n == 2)
+    {
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                mat[i][j] = -1;
+        return;
+    }
+
+    // Total numbers from 1 to n*n
+    k = n * n;
+
+    // Magic constant (sum of each row/column/diagonal)
+    s = (k * (k + 1)) / 2 / n;
+
+    // Initialize helper arrays
+    memset(r, 0, sizeof(r));
+    memset(c, 0, sizeof(c));
+    memset(d, 0, sizeof(d));
+    memset(vis, 0, sizeof(vis));
+
+    // Start backtracking from first cell
+    solve(0, 0, n, mat);
+
+    // If solution not fully filled, mark invalid cells as -1
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            if (mat[i][j] == 0)
+                mat[i][j] = -1;
+        }
+    }
+}
+
+int main()
+{
+    int n = 3;
+    vector<vector<int>> mat;
+
+    fillMagicSquare(n, mat);
+
+    for (auto &row : mat)
+    {
+        for (auto x : row)
+            cout << x << " ";
+        cout << endl;
+    }
+}
+
+Java
+
+import java.util.Arrays;
+
+class GFG {
+
+    // r[i] -> sum of row i
+    // c[j] -> sum of column j
+    // d[0] -> main diagonal sum
+    // d[1] -> anti-diagonal sum
+    // vis[val] -> whether number val is already used
+    static int[] r = new int[25];
+    static int[] c = new int[25];
+    static int[] d = new int[2];
+    static int[] vis = new int[205];
+    static int s, k;
+
+    static boolean solve(int i, int j, int n, int[][] mat) {
+
+        // Base case: if all rows are filled, solution is found
+        if (i == n)
+            return true;
+
+        // Move to next cell in row-wise order
+        int ni = (j == n - 1) ? i + 1 : i;
+        int nj = (j == n - 1) ? 0 : j + 1;
+
+        // Try all values from 1 to n*n
+        for (int val = 1; val <= k; val++) {
+
+            // If value is not used yet
+            if (vis[val] == 0) {
+
+                // Place value in matrix
+                mat[i][j] = val;
+                vis[val] = 1;
+
+                // Update row and column sums
+                r[i] += val;
+                c[j] += val;
+
+                // Update diagonal sums if needed
+                if (i == j)
+                    d[0] += val;
+
+                if (i + j == n - 1)
+                    d[1] += val;
+
+                // Pruning condition
+                boolean bad = false;
+
+                if (j == n - 1 && r[i] != s)
+                    bad = true;
+
+                if (i == n - 1 && c[j] != s)
+                    bad = true;
+
+                if (i == n - 1 && j == n - 1 && d[0] != s)
+                    bad = true;
+
+                if (i == n - 1 && j == 0 && d[1] != s)
+                    bad = true;
+
+                if (!bad && solve(ni, nj, n, mat))
+                    return true;
+
+                // Backtracking
+                vis[val] = 0;
+                r[i] -= val;
+                c[j] -= val;
+
+                if (i == j)
+                    d[0] -= val;
+
+                if (i + j == n - 1)
+                    d[1] -= val;
+
+                mat[i][j] = 0;
+            }
+        }
+
+        return false;
+    }
+
+    static void fillMagicSquare(int n, int[][] mat) {
+
+        // Initialize matrix with 0
+        for (int[] row : mat)
+            Arrays.fill(row, 0);
+
+        // Special case: n = 2 not possible
+        if (n == 2) {
+            for (int i = 0; i < n; i++)
+                Arrays.fill(mat[i], -1);
+            return;
+        }
+
+        k = n * n;
+        s = (k * (k + 1)) / 2 / n;
+
+        Arrays.fill(r, 0);
+        Arrays.fill(c, 0);
+        Arrays.fill(d, 0);
+        Arrays.fill(vis, 0);
+
+        solve(0, 0, n, mat);
+
+        // If not filled properly → mark -1
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (mat[i][j] == 0)
+                    mat[i][j] = -1;
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+
+        int n = 3;
+        int[][] mat = new int[n][n];
+
+        fillMagicSquare(n, mat);
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++)
+                System.out.print(mat[i][j] + " ");
+            System.out.println();
+        }
+    }
+}
+
+Python
+
+# r[i] -> sum of row i
+# c[j] -> sum of column j
+# d[0] -> main diagonal sum
+# d[1] -> anti-diagonal sum
+# vis[val] -> whether number val is already used
+
+r = [0] * 25
+c = [0] * 25
+d = [0] * 2
+vis = [0] * 205
+s = 0
+k = 0
+
+def solve(i, j, n, mat):
+
+    # Base case: if all rows are filled, solution is found
+    if i == n:
+        return True
+
+    # Move to next cell in row-wise order
+    ni = (i + 1) if (j == n - 1) else i
+    nj = 0 if (j == n - 1) else j + 1
+
+    # Try all values from 1 to n*n
+    for val in range(1, k + 1):
+
+        # If value is not used yet
+        if vis[val] == 0:
+
+            # Place value in matrix
+            mat[i][j] = val
+            vis[val] = 1
+
+            # Update row and column sums
+            r[i] += val
+            c[j] += val
+
+            # Update diagonal sums if needed
+            if i == j:
+                d[0] += val
+
+            if i + j == n - 1:
+                d[1] += val
+
+            # Pruning condition:
+            # Only check constraints when row/col/diagonal is complete
+            bad = False
+
+            if j == n - 1 and r[i] != s:
+                bad = True
+
+            if i == n - 1 and c[j] != s:
+                bad = True
+
+            if i == n - 1 and j == n - 1 and d[0] != s:
+                bad = True
+
+            if i == n - 1 and j == 0 and d[1] != s:
+                bad = True
+
+            # If valid so far, continue recursion
+            if not bad and solve(ni, nj, n, mat):
+                return True
+
+            # Backtracking step: undo changes
+            vis[val] = 0
+            r[i] -= val
+            c[j] -= val
+
+            if i == j:
+                d[0] -= val
+
+            if i + j == n - 1:
+                d[1] -= val
+
+            mat[i][j] = 0
+
+    return False
+
+def fillMagicSquare(n, mat):
+
+    global s, k
+
+    # Initialize matrix with 0
+    for i in range(n):
+        for j in range(n):
+            mat[i][j] = 0
+
+    # Special case: no magic square possible for n = 2
+    if n == 2:
+        for i in range(n):
+            for j in range(n):
+                mat[i][j] = -1
+        return
+
+    # Total numbers from 1 to n*n
+    k = n * n
+
+    # Magic constant (sum of each row/column/diagonal)
+    s = (k * (k + 1)) // 2 // n
+
+    # Initialize helper arrays
+    for i in range(205):
+        vis[i] = 0
+    for i in range(25):
+        r[i] = 0
+        c[i] = 0
+    d[0] = d[1] = 0
+
+    # Start backtracking from first cell
+    solve(0, 0, n, mat)
+
+if __name__ == "__main__":
+
+    n = 3
+    mat = [[0 for _ in range(n)] for _ in range(n)]
+
+    fillMagicSquare(n, mat)
+
+    for row in mat:
+        print(*row)
+
+C#
+
+using System;
+
+class Solution
+{
+    // r[i] -> sum of row i
+    // c[j] -> sum of column j
+    // d[0] -> main diagonal sum
+    // d[1] -> anti-diagonal sum
+    // vis[val] -> whether number val is already used
+    static int[] r = new int[25];
+    static int[] c = new int[25];
+    static int[] d = new int[2];
+    static int[] vis = new int[205];
+    static int s, k;
+
+    static bool solve(int i, int j, int n, int[,] mat)
+    {
+        // Base case: if all rows are filled, solution is found
+        if (i == n)
+            return true;
+
+        // Move to next cell in row-wise order
+        int ni = (j == n - 1) ? i + 1 : i;
+        int nj = (j == n - 1) ? 0 : j + 1;
+
+        // Try all values from 1 to n*n
+        for (int val = 1; val <= k; val++)
+        {
+            // If value is not used yet
+            if (vis[val] == 0)
+            {
+                // Place value in matrix
+                mat[i, j] = val;
+                vis[val] = 1;
+
+                // Update row and column sums
+                r[i] += val;
+                c[j] += val;
+
+                // Update diagonal sums if needed
+                if (i == j)
+                    d[0] += val;
+
+                if (i + j == n - 1)
+                    d[1] += val;
+
+                // Pruning condition:
+                bool bad = false;
+
+                if (j == n - 1 && r[i] != s)
+                    bad = true;
+
+                if (i == n - 1 && c[j] != s)
+                    bad = true;
+
+                if (i == n - 1 && j == n - 1 && d[0] != s)
+                    bad = true;
+
+                if (i == n - 1 && j == 0 && d[1] != s)
+                    bad = true;
+
+                // If valid so far, continue recursion
+                if (!bad && solve(ni, nj, n, mat))
+                    return true;
+
+                // Backtracking step: undo changes
+                vis[val] = 0;
+                r[i] -= val;
+                c[j] -= val;
+
+                if (i == j)
+                    d[0] -= val;
+
+                if (i + j == n - 1)
+                    d[1] -= val;
+
+                mat[i, j] = 0;
+            }
+        }
+
+        return false;
+    }
+
+    public static void fillMagicSquare(int n, int[,] mat)
+    {
+        // Initialize matrix with 0
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                mat[i, j] = 0;
+
+        // Special case: no magic square possible for n = 2
+        if (n == 2)
+        {
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                    mat[i, j] = -1;
+            return;
+        }
+
+        // Total numbers from 1 to n*n
+        k = n * n;
+
+        // Magic constant (sum of each row/column/diagonal)
+        s = (k * (k + 1)) / 2 / n;
+
+        // Initialize helper arrays
+        Array.Clear(r, 0, r.Length);
+        Array.Clear(c, 0, c.Length);
+        Array.Clear(d, 0, d.Length);
+        Array.Clear(vis, 0, vis.Length);
+
+        // Start backtracking from first cell
+        solve(0, 0, n, mat);
+
+        // If solution not fully filled, mark invalid cells as -1
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                if (mat[i, j] == 0)
+                    mat[i, j] = -1;
+            }
+        }
+    }
+
+    public static void Main()
+    {
+        int n = 3;
+        int[,] mat = new int[n, n];
+
+        fillMagicSquare(n, mat);
+
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+                Console.Write(mat[i, j] + " ");
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+// r[i] -> sum of row i
+// c[j] -> sum of column j
+// d[0] -> main diagonal sum
+// d[1] -> anti-diagonal sum
+// vis[val] -> whether number val is already used
+
+let r = new Array(25).fill(0);
+let c = new Array(25).fill(0);
+let d = new Array(2).fill(0);
+let vis = new Array(205).fill(0);
+let s = 0, k = 0;
+
+function solve(i, j, n, mat) {
+
+    // Base case: if all rows are filled, solution is found
+    if (i == n)
+        return true;
+
+    // Move to next cell in row-wise order
+    let ni = (j == n - 1) ? i + 1 : i;
+    let nj = (j == n - 1) ? 0 : j + 1;
+
+    // Try all values from 1 to n*n
+    for (let val = 1; val <= k; val++) {
+
+        // If value is not used yet
+        if (vis[val] == 0) {
+
+            // Place value in matrix
+            mat[i][j] = val;
+            vis[val] = 1;
+
+            // Update row and column sums
+            r[i] += val;
+            c[j] += val;
+
+            // Update diagonal sums if needed
+            if (i == j)
+                d[0] += val;
+
+            if (i + j == n - 1)
+                d[1] += val;
+
+            // Pruning condition:
+            // Only check constraints when row/col/diagonal is complete
+            let bad = false;
+
+            if (j == n - 1 && r[i] != s)
+                bad = true;
+
+            if (i == n - 1 && c[j] != s)
+                bad = true;
+
+            if (i == n - 1 && j == n - 1 && d[0] != s)
+                bad = true;
+
+            if (i == n - 1 && j == 0 && d[1] != s)
+                bad = true;
+
+            // If valid so far, continue recursion
+            if (!bad && solve(ni, nj, n, mat))
+                return true;
+
+            // Backtracking step: undo changes
+            vis[val] = 0;
+            r[i] -= val;
+            c[j] -= val;
+
+            if (i == j)
+                d[0] -= val;
+
+            if (i + j == n - 1)
+                d[1] -= val;
+
+            mat[i][j] = 0;
+        }
+    }
+
+    return false;
+}
+
+function fillMagicSquare(n, mat) {
+
+    // Initialize matrix with 0
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            mat[i][j] = 0;
+        }
+    }
+
+    // Special case: no magic square possible for n = 2
+    if (n == 2) {
+        for (let i = 0; i < n; i++)
+            for (let j = 0; j < n; j++)
+                mat[i][j] = -1;
+        return;
+    }
+
+    // Total numbers from 1 to n*n
+    k = n * n;
+
+    // Magic constant (sum of each row/column/diagonal)
+    s = Math.floor((k * (k + 1)) / 2 / n);
+
+    // Initialize helper arrays
+    r.fill(0);
+    c.fill(0);
+    d.fill(0);
+    vis.fill(0);
+
+    // Start backtracking from first cell
+    solve(0, 0, n, mat);
+
+    // If solution not fully filled, mark invalid cells as -1
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            if (mat[i][j] == 0)
+                mat[i][j] = -1;
+        }
+    }
+}
+
+// Driver code
+let n = 3;
+let mat = Array.from({ length: n }, () => Array(n).fill(0));
+
+fillMagicSquare(n, mat);
+
+for (let i = 0; i < n; i++) {
+    console.log(mat[i].join(" "));
+}
+
+Output
+
+2 7 6
+9 5 1
+4 3 8
+
+### [Expected Approach] Magic Square Construction Based on Order of n - O(n²) Time and O(n²) Space
+
+The construction technique for a magic square depends on the value of n. Based on the order of the square, magic squares are classified into three categories:
+
+Case 1: Odd Order (Siamese Method)
+
+> The idea is to place each integer from 1 up to n² one at a time, always moving up one row and right one column from the last placement-wrapping around the edges as if rows and columns were circular-and applying two special corrections when that move lands outside the square on both axes or on an already‑filled cell.
+
+Let us take a look at first few magic squares to find a pattern for filling numbers.
+
+Did you find any pattern in which the numbers are stored?
+
+- The first number 1 is placed at position (n / 2, n − 1). Let this position be (i, j).
+- The next number is placed at position (i − 1, j + 1).
+- The matrix is treated as a circular grid, so if i < 0, it wraps to n − 1, and if j == n, it wraps to 0.
+- If the calculated position is already filled, we move to a new position by setting i = i + 1 and j = j − 2, and then continue the process.
+- If both conditions occur together (i == −1 and j == n), the position is reset to (0, n − 2).
+- This process is repeated until all numbers from 1 to n² are placed in the matrix.
+
+Case 2: Doubly Even (n % 4 == 0)
+
+> For a doubly even order magic square (n%4=0), the matrix is first filled sequentially with numbers from 1 to n^2. After filling the matrix, certain cells are replaced by their complements, where the complement of a value x is given by n 2 +1-x. The cells to be replaced follow a fixed pattern that repeats in every 4 × 4 block of the matrix.
+
+For example, when n = 8 .
+
+Step 1: First, fill numbers from 1 to n² (1 to 64) in row-wise order:
+
+Step 2: Since 8 is divisible by 4, we divide the matrix into four 4×4 blocks:
+
+Each block follows the same pattern.
+
+Step 3: In every 4 × 4 block, mark cells like this:
+
+Step 4: For each x cell, replace value using: new Value = n² + 1 - old value
+
+Step 5: Consider the first 4 × 4 block:
+
+After replacing the cells marked by the pattern, it becomes:
+
+For instance, 2 is replaced by 65-2 = 63, 3 by 65 - 3 = 62, and 12 by 65 - 12 = 53. Applying the same pattern to every 4 × 4 block of the matrix produces a valid doubly even magic square.
+
+This works because every replaced value and its complement add up to the same constant (65 in this case), ensuring that all rows, columns, and diagonals have the same sum.
+
+For n = 8, the magic sum is: n(n 2 +1)​/2=8(64+1)​/2 = 260. Thus, every row, every column, and both diagonals sum to 260, forming a valid magic square.
+
+Case 3: Singly Even (n % 4 == 2)
+
+> For a singly even order magic square (n is divisible by 2 but not by 4), the construction is not direct. Instead, the matrix is built using a quadrant decomposition technique combined with the Siamese method on smaller odd-order squares.
+
+Step 1: Divide the n x n matrix into four equal quadrants of size (n/2) x (n/2):
+
+Step 2: Construct a magic square of size (n/2) using the Siamese method and fill all four quadrants with it. Each quadrant is filled with shifted values to cover the full range from 1 to n²:
+
+- A -> +0
+- B -> + (n² / 4)
+- C -> + 2(n² / 4)
+- D -> + 3(n² / 4)
+
+This ensures all numbers are unique and lie between 1 and n². Example for n = 6 .
+
+Step 3: After filling, the matrix is not yet a valid magic square. To balance row and column sums, a column swapping step is applied. Swap specific columns between:
+
+- Left part of A and C
+- Right part of B and D
+
+This rearrangement fixes the structural imbalance caused by quadrant filling. After performing the swaps, the matrix becomes a valid magic square.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Case 1: Odd order magic square (Siamese method)
+vector<vector<int>> fillOddMagicSquare(int n)
+{
+    vector<vector<int>> mat(n, vector<int>(n, 0));
+
+    int i = n / 2;
+    int j = n - 1;
+
+    for (int num = 1; num <= n * n;)
+    {
+        if (i == -1 && j == n)
+        {
+            i = 0;
+            j = n - 2;
+        }
+        else
+        {
+            if (j == n)
+                j = 0;
+            if (i == -1)
+                i = n - 1;
+        }
+
+        if (mat[i][j] != 0)
+        {
+            i++;
+            j -= 2;
+            continue;
+        }
+
+        mat[i][j] = num++;
+
+        i--;
+        j++;
+    }
+
+    return mat;
+}
+
+// Case 2: Doubly even (n % 4 == 0)
+vector<vector<int>> fillDoublyEvenMagicSquare(int n)
+{
+    vector<vector<int>> mat(n, vector<int>(n));
+
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            mat[i][j] = i * n + j + 1;
+        }
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            if (((i % 4 == 0 || i % 4 == 3) && (j % 4 == 1 || j % 4 == 2)) ||
+                ((i % 4 == 1 || i % 4 == 2) && (j % 4 == 0 || j % 4 == 3)))
+            {
+                mat[i][j] = n * n + 1 - mat[i][j];
+            }
+        }
+    }
+
+    return mat;
+}
+
+// Case 3: Singly even (n = 4k + 2)
+vector<vector<int>> fillSinglyEvenMagicSquare(int n)
+{
+    vector<vector<int>> mat(n, vector<int>(n));
+
+    vector<vector<int>> half = fillOddMagicSquare(n / 2);
+
+    int add = (n * n) / 4;
+    int k = (n - 2) / 4;
+
+    // A (top-left)
+    for (int i = 0; i < n / 2; i++)
+        for (int j = 0; j < n / 2; j++)
+            mat[i][j] = half[i][j];
+
+    // C (top-right)
+    for (int i = 0; i < n / 2; i++)
+        for (int j = n / 2; j < n; j++)
+            mat[i][j] = half[i][j - n / 2] + 2 * add;
+
+    // D (bottom-left)
+    for (int i = n / 2; i < n; i++)
+        for (int j = 0; j < n / 2; j++)
+            mat[i][j] = half[i - n / 2][j] + 3 * add;
+
+    // B (bottom-right)
+    for (int i = n / 2; i < n; i++)
+        for (int j = n / 2; j < n; j++)
+            mat[i][j] = half[i - n / 2][j - n / 2] + add;
+
+    return mat;
+}
+
+void fillMagicSquare(int n, vector<vector<int>> &mat)
+{
+    if (n % 2 == 1)
+        mat = fillOddMagicSquare(n);
+    else if (n % 4 == 0)
+        mat = fillDoublyEvenMagicSquare(n);
+    else
+        mat = fillSinglyEvenMagicSquare(n);
+}
+
+int main()
+{
+    int n = 3;
+    vector<vector<int>> mat;
+
+    fillMagicSquare(n, mat);
+
+    for (auto &row : mat)
+    {
+        for (auto x : row)
+            cout << x << " ";
+        cout << endl;
+    }
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    // Case 1: Odd order magic square
+    // Using Siamese method
+    static int[][] fillOddMagicSquare(int n) {
+
+        // initialize matrix with 0
+        int[][] mat = new int[n][n];
+
+        // Start position (middle row, last column)
+        int i = n / 2;
+        int j = n - 1;
+
+        // Fill numbers from 1 to n*n
+        for (int num = 1; num <= n * n;) {
+
+            // If we go out of both bounds (special wrap case)
+            if (i == -1 && j == n) {
+                i = 0;
+                j = n - 2;
+            } else {
+                // Wrap column
+                if (j == n) j = 0;
+
+                // Wrap row
+                if (i == -1) i = n - 1;
+            }
+
+            // If cell already filled ? move down-left
+            if (mat[i][j] != 0) {
+                i++;
+                j -= 2;
+                continue;
+            }
+
+            // Place current number
+            mat[i][j] = num++;
+
+            // Move diagonally up-right
+            i--;
+            j++;
+        }
+
+        return mat;
+    }
+
+    // Case 2: Doubly even magic square (n % 4 == 0)
+   static int[][] fillDoublyEvenMagicSquare(int n) {
+
+        int[][] mat = new int[n][n];
+
+        // Step 1: Fill matrix normally from 1 to n^2
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++) mat[i][j] = i * n + j + 1;
+
+        // Step 2: Replace selected cells with complement value
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+
+                // Pattern-based replacement
+                if (((i % 4 == 0 || i % 4 == 3) && (j % 4 == 1 || j % 4 == 2)) ||
+                    ((i % 4 == 1 || i % 4 == 2) && (j % 4 == 0 || j % 4 == 3))) {
+
+                    // Replace with (n*n + 1 - current value)
+                    mat[i][j] = n * n + 1 - mat[i][j];
+                }
+            }
+        }
+
+        return mat;
+    }
+
+    // Case 3: Singly even magic square (n = 4k + 2)
+     static int[][] fillSinglyEvenMagicSquare(int n) {
+
+        // used for swapping columns
+        int k = (n - 2) / 4;
+
+        int[][] mat = new int[n][n];
+
+        // Step 1: create smaller odd-order magic square
+        int[][] half = fillOddMagicSquare(n / 2);
+
+        // offset value for quadrants
+        int add = (n * n) / 4;
+
+        // Divide matrix into 4 parts:
+        // A | C
+        // -----
+        // D | B
+
+        // A (top-left)
+        for (int i = 0; i < n / 2; i++)
+            for (int j = 0; j < n / 2; j++) mat[i][j] = half[i][j];
+
+        // B (bottom-right)
+        for (int i = n / 2; i < n; i++)
+            for (int j = n / 2; j < n; j++)
+                mat[i][j] = half[i - n / 2][j - n / 2] + add;
+
+        // C (top-right)
+        for (int i = 0; i < n / 2; i++)
+            for (int j = n / 2; j < n; j++) mat[i][j] = half[i][j - n / 2] + 2 * add;
+
+        // D (bottom-left)
+        for (int i = n / 2; i < n; i++)
+            for (int j = 0; j < n / 2; j++) mat[i][j] = half[i - n / 2][j] + 3 * add;
+
+        // Swap left k columns between A and D
+        for (int i = 0; i < n / 2; i++) {
+            for (int j = 0; j < k; j++) {
+                int temp = mat[i][j];
+                mat[i][j] = mat[i + n / 2][j];
+                mat[i + n / 2][j] = temp;
+            }
+        }
+
+        // Swap right (k-1) columns between C and B
+        for (int i = 0; i < n / 2; i++) {
+            for (int j = n - 1; j > n - k; j--) {
+                int temp = mat[i][j];
+                mat[i][j] = mat[i + n / 2][j];
+                mat[i + n / 2][j] = temp;
+            }
+        }
+
+        // Final adjustment swaps
+        int temp = mat[n / 4][0];
+        mat[n / 4][0] = mat[n - 1 - n / 4][0];
+        mat[n - 1 - n / 4][0] = temp;
+
+        temp = mat[n / 4][n / 4];
+        mat[n / 4][n / 4] = mat[n - 1 - n / 4][n / 4];
+        mat[n - 1 - n / 4][n / 4] = temp;
+
+        return mat;
+    }
+
+     public  static void fillMagicSquare(int n, int[][] mat) {
+
+        // Special case: n = 2 (not possible)
+        if (n == 2) {
+            for (int i = 0; i < n; i++) Arrays.fill(mat[i], -1);
+            return;
+        }
+
+        int[][] res;
+
+        // Choose method based on n
+        if (n % 2 == 1)
+            res = fillOddMagicSquare(n);
+        else if (n % 4 == 0)
+            res = fillDoublyEvenMagicSquare(n);
+        else
+            res = fillSinglyEvenMagicSquare(n);
+
+        // Copy result into original matrix
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++) mat[i][j] = res[i][j];
+    }
+
+    // PRINT FUNCTION
+    void print(int[][] mat, int n) {
+
+    }
+
+    public static void main(String[] args) {
+
+        int n = 3;
+
+        int[][] mat = new int[n][n];
+
+        fillMagicSquare(n, mat);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++)
+                System.out.print(mat[i][j] + " ");
+            System.out.println();
+        }
+
+    }
+}
+
+Python
+
+# Case 1: Odd order magic square
+# Using Siamese method
+def fillOddMagicSquare(n):
+
+    # initialize matrix with 0
+    mat = [[0 for _ in range(n)] for _ in range(n)]
+
+    # Start position (middle row, last column)
+    i = n // 2
+    j = n - 1
+
+    # Fill numbers from 1 to n*n
+    num = 1
+    while num <= n * n:
+
+        # If we go out of both bounds (special wrap case)
+        if i == -1 and j == n:
+            i = 0
+            j = n - 2
+        else:
+            # Wrap column
+            if j == n:
+                j = 0
+
+            # Wrap row
+            if i == -1:
+                i = n - 1
+
+        # If cell already filled ? move down-left
+        if mat[i][j] != 0:
+            i += 1
+            j -= 2
+            continue
+
+        # Place current number
+        mat[i][j] = num
+
+        # Move diagonally up-right
+        i -= 1
+        j += 1
+        num += 1
+
+    return mat
+
+# Case 2: Doubly even magic square (n % 4 == 0)
+def fillDoublyEvenMagicSquare(n):
+
+    mat = [[0 for _ in range(n)] for _ in range(n)]
+
+    # Step 1: Fill matrix normally from 1 to n^2
+    for i in range(n):
+        for j in range(n):
+            mat[i][j] = i * n + j + 1
+
+    # Step 2: Replace selected cells with complement value
+    for i in range(n):
+        for j in range(n):
+
+            # Pattern-based replacement
+            if (((i % 4 == 0 or i % 4 == 3) and (j % 4 == 1 or j % 4 == 2)) or
+                ((i % 4 == 1 or i % 4 == 2) and (j % 4 == 0 or j % 4 == 3))):
+
+                # Replace with (n*n + 1 - current value)
+                mat[i][j] = n * n + 1 - mat[i][j]
+
+    return mat
+
+# Case 3: Singly even magic square (n = 4k + 2)
+def fillSinglyEvenMagicSquare(n):
+
+    # used for swapping columns
+    k = (n - 2) // 4
+
+    mat = [[0 for _ in range(n)] for _ in range(n)]
+
+    # Step 1: create smaller odd-order magic square
+    half = fillOddMagicSquare(n // 2)
+
+    # offset value for quadrants
+    add = (n * n) // 4
+
+    # Divide matrix into 4 parts:
+    # A | C
+    # -----
+    # D | B
+
+    # A (top-left)
+    for i in range(n // 2):
+        for j in range(n // 2):
+            mat[i][j] = half[i][j]
+
+    # C (top-right)
+    for i in range(n // 2):
+        for j in range(n // 2, n):
+            mat[i][j] = half[i][j - n // 2] + 2 * add
+
+    # D (bottom-left)
+    for i in range(n // 2, n):
+        for j in range(n // 2):
+            mat[i][j] = half[i - n // 2][j] + 3 * add
+
+    # B (bottom-right)
+    for i in range(n // 2, n):
+        for j in range(n // 2, n):
+            mat[i][j] = half[i - n // 2][j - n // 2] + add
+
+    return mat
+
+def fillMagicSquare(n, mat):
+
+    # Special case: n = 2 (not possible)
+    if n == 2:
+        for i in range(n):
+            for j in range(n):
+                mat[i][j] = -1
+        return
+
+    # Choose method based on n
+    if n % 2 == 1:
+        res = fillOddMagicSquare(n)
+    elif n % 4 == 0:
+        res = fillDoublyEvenMagicSquare(n)
+    else:
+        res = fillSinglyEvenMagicSquare(n)
+
+    # Copy result into original matrix
+    for i in range(n):
+        for j in range(n):
+            mat[i][j] = res[i][j]
+
+if __name__ == "__main__":
+    n = 3
+    mat = [[0 for _ in range(n)] for _ in range(n)]
+
+    fillMagicSquare(n, mat)
+
+    # print matrix
+    for row in mat:
+        print(*row)
+
+C#
+
+using System;
+
+class GFG
+{
+    // Case 1: Odd order magic square (Siamese method)
+    static int[,] fillOddMagicSquare(int n)
+    {
+        int[,] mat = new int[n, n];
+
+        int i = n / 2;
+        int j = n - 1;
+
+        for (int num = 1; num <= n * n;)
+        {
+            if (i == -1 && j == n)
+            {
+                i = 0;
+                j = n - 2;
+            }
+            else
+            {
+                if (j == n) j = 0;
+                if (i == -1) i = n - 1;
+            }
+
+            if (mat[i, j] != 0)
+            {
+                i++;
+                j -= 2;
+                continue;
+            }
+
+            mat[i, j] = num++;
+            i--;
+            j++;
+        }
+
+        return mat;
+    }
+
+    // Case 2: Doubly even (n % 4 == 0)
+    static int[,] fillDoublyEvenMagicSquare(int n)
+    {
+        int[,] mat = new int[n, n];
+
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                mat[i, j] = i * n + j + 1;
+
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                if (((i % 4 == 0 || i % 4 == 3) && (j % 4 == 1 || j % 4 == 2)) ||
+                    ((i % 4 == 1 || i % 4 == 2) && (j % 4 == 0 || j % 4 == 3)))
+                    mat[i, j] = n * n + 1 - mat[i, j];
+
+        return mat;
+    }
+
+    // Case 3: Singly even (n = 4k + 2)
+    static int[,] fillSinglyEvenMagicSquare(int n)
+    {
+        int[,] mat = new int[n, n];
+
+        int[,] half = fillOddMagicSquare(n / 2);
+
+        int add = (n * n) / 4;
+        int k = (n - 2) / 4;
+
+        for (int i = 0; i < n / 2; i++)
+            for (int j = 0; j < n / 2; j++)
+                mat[i, j] = half[i, j];
+
+        for (int i = 0; i < n / 2; i++)
+            for (int j = n / 2; j < n; j++)
+                mat[i, j] = half[i, j - n / 2] + 2 * add;
+
+        for (int i = n / 2; i < n; i++)
+            for (int j = 0; j < n / 2; j++)
+                mat[i, j] = half[i - n / 2, j] + 3 * add;
+
+        for (int i = n / 2; i < n; i++)
+            for (int j = n / 2; j < n; j++)
+                mat[i, j] = half[i - n / 2, j - n / 2] + add;
+
+        return mat;
+    }
+
+    // FINAL FUNCTION (required signature)
+    static void fillMagicSquare(int n, int[,] mat)
+    {
+        int[,] result;
+
+        if (n % 2 == 1)
+            result = fillOddMagicSquare(n);
+        else if (n % 4 == 0)
+            result = fillDoublyEvenMagicSquare(n);
+        else
+            result = fillSinglyEvenMagicSquare(n);
+
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                mat[i, j] = result[i, j];
+    }
+
+    static void Main()
+    {
+        int n = 3;
+
+        int[,] mat = new int[n, n];
+
+        fillMagicSquare(n, mat);
+
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+                Console.Write(mat[i, j] + " ");
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+// Case 1: Odd order magic square
+// Using Siamese method
+function fillOddMagicSquare(n) {
+
+    // initialize matrix with 0
+    let mat = Array.from({ length: n }, () => Array(n).fill(0));
+
+    // Start position (middle row, last column)
+    let i = Math.floor(n / 2);
+    let j = n - 1;
+
+    // Fill numbers from 1 to n*n
+    for (let num = 1; num <= n * n;) {
+
+        // If we go out of both bounds (special wrap case)
+        if (i == -1 && j == n) {
+            i = 0;
+            j = n - 2;
+        }
+        else {
+            // Wrap column
+            if (j == n)
+                j = 0;
+
+            // Wrap row
+            if (i == -1)
+                i = n - 1;
+        }
+
+        // If cell already filled ? move down-left
+        if (mat[i][j] != 0) {
+            i++;
+            j -= 2;
+            continue;
+        }
+
+        // Place current number
+        mat[i][j] = num++;
+
+        // Move diagonally up-right
+        i--;
+        j++;
+    }
+
+    return mat;
+}
+
+// Case 2: Doubly even magic square (n % 4 == 0)
+function fillDoublyEvenMagicSquare(n) {
+
+    let mat = Array.from({ length: n }, () => Array(n).fill(0));
+
+    // Step 1: Fill matrix normally from 1 to n^2
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            mat[i][j] = i * n + j + 1;
+        }
+    }
+
+    // Step 2: Replace selected cells with complement value
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+
+            // Pattern-based replacement
+            if (((i % 4 == 0 || i % 4 == 3) &&
+                (j % 4 == 1 || j % 4 == 2)) ||
+                ((i % 4 == 1 || i % 4 == 2) &&
+                (j % 4 == 0 || j % 4 == 3))) {
+
+                // Replace with (n*n + 1 - current value)
+                mat[i][j] = n * n + 1 - mat[i][j];
+            }
+        }
+    }
+
+    return mat;
+}
+
+// Case 3: Singly even magic square (n = 4k + 2)
+function fillSinglyEvenMagicSquare(n) {
+
+    // used for swapping columns
+    let k = (n - 2) / 4;
+
+    let mat = Array.from({ length: n }, () => Array(n).fill(0));
+
+    // Step 1: create smaller odd-order magic square
+    let half = fillOddMagicSquare(Math.floor(n / 2));
+
+    // offset value for quadrants
+    let add = (n * n) / 4;
+
+    // Divide matrix into 4 parts:
+    // A | C
+    // -----
+    // D | B
+
+    // A (top-left)
+    for (let i = 0; i < n / 2; i++)
+        for (let j = 0; j < n / 2; j++)
+            mat[i][j] = half[i][j];
+
+    // C (top-right)
+    for (let i = 0; i < n / 2; i++)
+        for (let j = n / 2; j < n; j++)
+            mat[i][j] = half[i][j - n / 2] + 2 * add;
+
+    // D (bottom-left)
+    for (let i = n / 2; i < n; i++)
+        for (let j = 0; j < n / 2; j++)
+            mat[i][j] = half[i - n / 2][j] + 3 * add;
+
+    // B (bottom-right)
+    for (let i = n / 2; i < n; i++)
+        for (let j = n / 2; j < n; j++)
+            mat[i][j] = half[i - n / 2][j - n / 2] + add;
+
+    return mat;
+}
+
+// MAIN FUNCTION
+function fillMagicSquare(n, mat) {
+
+    // Special case: n = 2 (not possible)
+    if (n == 2) {
+        for (let i = 0; i < n; i++)
+            for (let j = 0; j < n; j++)
+                mat[i][j] = -1;
+        return;
+    }
+
+    let res;
+
+    // Choose method based on n
+    if (n % 2 == 1)
+        res = fillOddMagicSquare(n);
+    else if (n % 4 == 0)
+        res = fillDoublyEvenMagicSquare(n);
+    else
+        res = fillSinglyEvenMagicSquare(n);
+
+    // Copy result into original matrix
+    for (let i = 0; i < n; i++)
+        for (let j = 0; j < n; j++)
+            mat[i][j] = res[i][j];
+}
+
+// DRIVER CODE
+let n = 3;
+
+let mat = Array.from({ length: n }, () => Array(n).fill(0));
+
+fillMagicSquare(n, mat);
+
+// print matrix
+for (let i = 0; i < n; i++) {
+    console.log(mat[i].join(" "));
+}
+
+Output
+
+2 7 6
+9 5 1
+4 3 8

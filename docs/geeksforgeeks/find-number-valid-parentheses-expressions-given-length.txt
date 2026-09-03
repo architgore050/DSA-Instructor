@@ -1,0 +1,601 @@
+Source: https://www.geeksforgeeks.org/dsa/find-number-valid-parentheses-expressions-given-length/
+Title: Number of Valid Parentheses Expressions
+Extractor: 2
+
+Given an integer n , find the number of valid parentheses expressions of length n.
+
+Examples :
+
+> Input: n = 2 Output: 1 Explanation: There is only one possible valid expression of length 2, "()" Input: n = 4 Output: 2 Explanation: Possible valid expression of length 4 are "(())" and "()()" Input: n = 6 Output: 5 Explanation: Possible valid expressions are "((()))", "()(())", "()()()", "(())()" and "(()())"
+
+Table of Content
+
+- [Naive Approach] Using recursion - O(2^n) Time and O(n) Space
+- [Better Approach] Using Dynamic Programming - O(n^2) Time and O(n^2) Space
+- [Expected Approach] Using Dynamic Programming (Catalan Numbers) - O(n) Time and O(1) Space
+
+### [Naive Approach] Using recursion - O(2 n ) Time and O(n) Space
+
+Breakdown:
+
+For a valid parentheses string, the number of opening brackets (is always equal to the number of closing brackets). This immediately implies that if n is odd, it is impossible to form a valid arrangement, because parentheses come in pairs.
+
+Do we really need to generate the entire string like "(())" ?
+
+To count the number of valid parentheses, it is enough to keep track of the number of opening and closing brackets left to place. We don’t care about the exact string unless we want to print all arrangements—just the counts are enough to ensure validity.
+
+> The idea is to place the opening and closing brackets while maintaining validity. At each step, we can either place an opening bracket (if any are left) or a closing bracket (only if the number of remaining closing brackets is greater than the number of remaining opening brackets). This ensures that the partially formed string is always valid, and by recursively exploring these choices and count all possible valid arrangements.
+
+C++
+
+#include <iostream>
+using namespace std;
+
+// Recursive function to count the valid ways
+int countValid(int open, int close) {
+
+    // Invalid case
+    if (close < open)
+        return 0;
+
+    if (!open)
+        return 1;
+
+    return countValid(open - 1, close) + countValid(open, close - 1);
+}
+
+// Function to count valid parentheses
+// arrangements of length n
+int findWays(int n) {
+
+    // If n is odd, no valid arrangements possible
+    if (n % 2 == 1)
+        return 0;
+    return countValid(n / 2, n / 2);
+}
+
+int main() {
+    int n = 6;
+    int res = findWays(n);
+    cout << res << endl;
+    return 0;
+}
+
+Java
+
+class GFG {
+
+    // Recursive function to count the valid ways
+    static int countValid(int open, int close) {
+
+        // Invalid case
+        if (close < open)
+            return 0;
+
+        if (open == 0)
+            return 1;
+
+        return countValid(open - 1, close) + countValid(open, close - 1);
+    }
+
+    // Function to count valid parentheses
+    // arrangements of length n
+    static int findWays(int n) {
+
+        // If n is odd, no valid arrangements possible
+        if (n % 2 == 1)
+            return 0;
+        return countValid(n / 2, n / 2);
+    }
+
+    public static void main(String[] args) {
+        int n = 6;
+        int res = findWays(n);
+        System.out.println(res);
+    }
+}
+
+Python
+
+# Recursive function to count the valid ways
+def countValid(open, close):
+
+    # Invalid case
+    if close < open:
+        return 0
+
+    if open == 0:
+        return 1
+
+    return countValid(open - 1, close) + countValid(open, close - 1)
+
+# Function to count valid parentheses
+# arrangements of length n
+def findWays(n):
+
+    # If n is odd, no valid arrangements possible
+    if n % 2 == 1:
+        return 0
+    return countValid(n // 2, n // 2)
+
+if __name__ == '__main__':
+    n = 6
+    res = findWays(n)
+    print(res)
+
+C#
+
+using System;
+
+class GFG {
+
+    // Recursive function to count the valid ways
+    static int countValid(int open, int close) {
+
+        // Invalid case
+        if (close < open)
+            return 0;
+
+        if (open == 0)
+            return 1;
+
+        return countValid(open - 1, close) + countValid(open, close - 1);
+    }
+
+    // Function to count valid parentheses
+    // arrangements of length n
+    static int findWays(int n) {
+
+        // If n is odd, no valid arrangements possible
+        if (n % 2 == 1)
+            return 0;
+        return countValid(n / 2, n / 2);
+    }
+
+    static void Main() {
+        int n = 6;
+        int res = findWays(n);
+        Console.WriteLine(res);
+    }
+}
+
+JavaScript
+
+// Recursive function to count the valid ways
+function countValid(open, close) {
+
+    // Invalid case
+    if (close < open)
+        return 0;
+
+    if (open === 0)
+        return 1;
+
+    return countValid(open - 1, close) + countValid(open, close - 1);
+}
+
+// Function to count valid parentheses
+// arrangements of length n
+function findWays(n) {
+
+    // If n is odd, no valid arrangements possible
+    if (n % 2 === 1)
+        return 0;
+    return countValid(Math.floor(n / 2), Math.floor(n / 2));
+}
+
+// Driver Code
+const n = 6;
+const res = findWays(n);
+console.log(res);
+
+Output
+
+5
+
+### [Better Approach] Using Dynamic Programming - O(n 2 ) Time and O(n 2 ) Space
+
+To generate valid parentheses sequences, we only need to keep track of two quantities while building the sequence:
+
+- Open → the number of opening brackets '(' left to place
+- Close → the number of closing brackets ')' left to place
+
+At each step, we can choose to place either an opening or a closing bracket, and we reduce the corresponding count. By maintaining these two states, we ensure that every choice keeps the sequence valid.
+
+We define the DP state as:
+
+> dp[open][close] = number of ways to form valid parentheses using open opening brackets and close closing brackets still left. Key rule: close >= open to ensure sequences remain valid. Base case: if open = 0, there’s only one way: place all remaining closing brackets. Recurrence: dp[open][close] = dp[open-1][close] + dp[open][close-1]
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int findWays(int n) {
+    if (n % 2 == 1)
+        return 0;
+
+    int pairs = n / 2;
+    vector<vector<int>> dp(pairs + 1, vector<int>(pairs + 1, 0));
+
+    // Base case: when no opening brackets left
+    for (int close = 0; close <= pairs; close++) {
+        dp[0][close] = 1;
+    }
+
+    // Fill the DP table
+    for (int open = 1; open <= pairs; open++) {
+
+        // valid only if closes left ≥ opens left
+        for (int close = open; close <= pairs; close++) {
+            dp[open][close] = dp[open-1][close] + dp[open][close-1];
+        }
+    }
+
+    return dp[pairs][pairs];
+}
+
+int main() {
+    int n = 6;
+    int res = findWays(n);
+    cout << res << endl;
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+class GFG {
+    static int findWays(int n) {
+        if (n % 2 == 1)
+            return 0;
+
+        int pairs = n / 2;
+        int[][] dp = new int[pairs + 1][pairs + 1];
+
+        // Base case: when no opening brackets left
+        for (int close = 0; close <= pairs; close++) {
+            dp[0][close] = 1;
+        }
+
+        // Fill the DP table
+        for (int open = 1; open <= pairs; open++) {
+
+            // valid only if closes left ≥ opens left
+            for (int close = open; close <= pairs; close++) {
+                dp[open][close] = dp[open-1][close] + dp[open][close-1];
+            }
+        }
+
+        return dp[pairs][pairs];
+    }
+
+    public static void main(String[] args) {
+        int n = 6;
+        int res = findWays(n);
+        System.out.println(res);
+    }
+}
+
+Python
+
+def findWays(n):
+    if n % 2 == 1:
+        return 0
+
+    pairs = n // 2
+    dp = [[0] * (pairs + 1) for _ in range(pairs + 1)]
+
+    # Base case: when no opening brackets left
+    for close in range(pairs + 1):
+        dp[0][close] = 1
+
+    # Fill the DP table
+    for open in range(1, pairs + 1):
+
+        # valid only if closes left ≥ opens left
+        for close in range(open, pairs + 1):
+            dp[open][close] = dp[open-1][close] + dp[open][close-1]
+
+    return dp[pairs][pairs]
+
+if __name__ == '__main__':
+    n = 6
+    res = findWays(n)
+    print(res)
+
+C#
+
+using System;
+
+class GFG {
+    static int findWays(int n) {
+        if (n % 2 == 1)
+            return 0;
+
+        int pairs = n / 2;
+        int[,] dp = new int[pairs + 1, pairs + 1];
+
+        // Base case: when no opening brackets left
+        for (int close = 0; close <= pairs; close++) {
+            dp[0, close] = 1;
+        }
+
+        // Fill the DP table
+        for (int open = 1; open <= pairs; open++) {
+
+            // valid only if closes left ≥ opens left
+            for (int close = open; close <= pairs; close++) {
+                dp[open, close] = dp[open-1, close] + dp[open, close-1];
+            }
+        }
+
+        return dp[pairs, pairs];
+    }
+
+    public static void Main() {
+        int n = 6;
+        int res = FindWays(n);
+        Console.WriteLine(res);
+    }
+}
+
+JavaScript
+
+function findWays(n) {
+    if (n % 2 === 1)
+        return 0;
+
+    const pairs = Math.floor(n / 2);
+    const dp = Array.from({ length: pairs + 1 }, () => Array(pairs + 1).fill(0));
+
+    // Base case: when no opening brackets left
+    for (let close = 0; close <= pairs; close++) {
+        dp[0][close] = 1;
+    }
+
+    // Fill the DP table
+    for (let open = 1; open <= pairs; open++) {
+
+        // valid only if closes left ≥ opens left
+        for (let close = open; close <= pairs; close++) {
+            dp[open][close] = dp[open-1][close] + dp[open][close-1];
+        }
+    }
+
+    return dp[pairs][pairs];
+}
+
+// Driver Code
+const n = 6;
+const res = findWays(n);
+console.log(res);
+
+Output
+
+5
+
+### [Expected Approach] Using Dynamic Programming (Catalan Numbers) - O(n) Time and O(1) Space
+
+If n is odd, it is impossible to form valid parentheses because parentheses always come in pairs. If n is even, there are n/2 pairs of parentheses so the problem reduces to arranging these n/2 pairs in all possible valid ways.
+
+> The idea is to use Catalan number to find the number of ways to arrange n/2 pairs of parentheses so that the resulting sequence is valid.
+
+The nth Catalan number can be calculated using the formula:
+
+C++
+
+#include <iostream>
+using namespace std;
+
+// function to find of Binomial Coefficient C(n, k)
+int binomialCoeff(int n, int k) {
+    int res = 1;
+
+    // Since C(n, k) = C(n, n-k)
+    if (k > n - k)
+        k = n - k;
+
+    for (int i = 0; i < k; ++i) {
+        res *= (n - i);
+        res /= (i + 1);
+    }
+
+    return res;
+}
+
+// A Binomial coefficient based function to
+// find nth catalan number in O(n) time
+int catalan(int n) {
+
+    // Calculate value of 2nCn
+    int c = binomialCoeff(2 * n, n);
+
+    // return 2nCn/(n+1)
+    return c / (n + 1);
+}
+
+// Function to find possible ways
+int findWays(int n) {
+    if (n & 1)
+        return 0;
+    return catalan(n / 2);
+}
+
+int main() {
+    int n = 6;
+    cout << findWays(n);
+    return 0;
+}
+
+Java
+
+class GFG {
+
+    // function to find of Binomial Coefficient C(n, k)
+    static int binomialCoeff(int n, int k) {
+        int res = 1;
+
+        // Since C(n, k) = C(n, n-k)
+        if (k > n - k)
+            k = n - k;
+
+        for (int i = 0; i < k; ++i) {
+            res *= (n - i);
+            res /= (i + 1);
+        }
+
+        return res;
+    }
+
+    // A Binomial coefficient based function to
+    // find nth catalan number in O(n) time
+    static int catalan(int n) {
+
+        // Calculate value of 2nCn
+        int c = binomialCoeff(2 * n, n);
+
+        // return 2nCn/(n+1)
+        return c / (n + 1);
+    }
+
+    // Function to find possible ways
+    static int findWays(int n) {
+        if (n % 2 != 0)
+            return 0;
+        return catalan(n / 2);
+    }
+
+    public static void main(String[] args) {
+        int n = 6;
+        System.out.println(findWays(n));
+    }
+}
+
+Python
+
+# function to find of Binomial Coefficient C(n, k)
+def binomialCoeff(n, k):
+    res = 1
+
+    # Since C(n, k) = C(n, n-k)
+    if k > n - k:
+        k = n - k
+
+    for i in range(k):
+        res *= (n - i)
+        res //= (i + 1)
+
+    return res
+
+# A Binomial coefficient based function to
+# find nth catalan number in O(n) time
+def catalan(n):
+
+    # Calculate value of 2nCn
+    c = binomialCoeff(2 * n, n)
+
+    # return 2nCn/(n+1)
+    return c // (n + 1)
+
+# Function to find possible ways
+def findWays(n):
+    if n % 2 != 0:
+        return 0
+    return catalan(n // 2)
+
+if __name__ == "__main__":
+    n = 6
+    print(findWays(n))
+
+C#
+
+using System;
+
+class GFG {
+
+    // function to find of Binomial Coefficient C(n, k)
+    static int binomialCoeff(int n, int k) {
+        int res = 1;
+
+        // Since C(n, k) = C(n, n-k)
+        if (k > n - k)
+            k = n - k;
+
+        for (int i = 0; i < k; ++i) {
+            res *= (n - i);
+            res /= (i + 1);
+        }
+
+        return res;
+    }
+
+    // A Binomial coefficient based function to
+    // find nth catalan number in O(n) time
+    static int catalan(int n) {
+
+        // Calculate value of 2nCn
+        int c = binomialCoeff(2 * n, n);
+
+        // return 2nCn/(n+1)
+        return c / (n + 1);
+    }
+
+    // Function to find possible ways
+    static int findWays(int n) {
+        if (n % 2 != 0)
+            return 0;
+        return catalan(n / 2);
+    }
+
+    public static void Main() {
+        int n = 6;
+        Console.WriteLine(findWays(n));
+    }
+}
+
+JavaScript
+
+//function to find of Binomial Coefficient C(n, k)
+function binomialCoeff(n, k) {
+    let res = 1;
+
+    // Since C(n, k) = C(n, n-k)
+    if (k > n - k)
+        k = n - k;
+
+    for (let i = 0; i < k; ++i) {
+        res *= (n - i);
+        res = Math.floor(res / (i + 1));
+    }
+
+    return res;
+}
+
+// A Binomial coefficient based function to
+// find nth catalan number in O(n) time
+function catalan(n) {
+
+    // Calculate value of 2nCn
+    let c = binomialCoeff(2 * n, n);
+
+    // return 2nCn/(n+1)
+    return Math.floor(c / (n + 1));
+}
+
+// Function to find possible ways
+function findWays(n) {
+    if (n % 2 !== 0)
+        return 0;
+    return catalan(Math.floor(n / 2));
+}
+
+// Driver Code
+let n = 6;
+console.log(findWays(n));
+
+Output
+
+5

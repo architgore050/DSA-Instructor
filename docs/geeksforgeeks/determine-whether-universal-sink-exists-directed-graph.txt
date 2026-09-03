@@ -1,0 +1,387 @@
+Source: https://www.geeksforgeeks.org/dsa/determine-whether-universal-sink-exists-directed-graph/
+Title: Universal sink  in a directed graph
+Extractor: 2
+
+A universal sink is a vertex which has no edge emanating from it, and all other vertices have an edge towards the sink. Determine whether a universal sink exists in a directed graph
+
+Example:
+
+> Input : Output : Sink found at vertex 2 Input : Output : No Sink
+
+### Adjacency Matrix Elimination Approach - O(V^2) Time and O(V^2) Space
+
+> Instead of examining each vertex one by one, we can efficiently eliminate non-sink vertices by using the adjacency matrix. We begin with the first vertex (i = 0) and the first column (j = 0) and traverse the matrix following simple rules: if adj[i][j] == 1, it means vertex i cannot be a sink, so we increment i; if adj[i][j] == 0, it means vertex j cannot be a sink, so we increment j. This process continues until either i or j exceeds the total number of vertices, leaving only one candidate vertex. Finally, we verify this candidate by checking that its row contains all 0s and its column contains all 1s except for the diagonal element to confirm whether it is indeed a universal sink.
+
+Example : Consider the graph
+
+Step 1 : Create adjacency matrix
+
+Step 2: Eliminate non-sink vertices
+
+Start with i = 0 and j = 0.
+
+Rules:
+
+- If adj[i][j] equals 1, vertex i cannot be a sink since it has an outgoing edge to j, so increment i.
+- If adj[i][j] equals 0, vertex j cannot be a sink since it is missing an incoming edge from i, so increment j.
+
+Iteration:
+
+- i=0, j=0, adj[0][0]=0, increment j to j=1
+- i=0, j=1, adj[0][1]=1,  increment i to i=1
+- i=1, j=1, adj[1][1]=0, increment j to j=2
+- i=1, j=2, adj[1][2]=0, increment j to j=3
+- i=1, j=3, adj[1][3]=0, increment j to j=4
+- i=1, j=4, adj[1][4]=0, increment j to j=5
+- i=1, j=5, adj[1][5]=0, increment j to j=6
+
+j exceeds number of vertices - stop scanning. Candidate sink = vertex 1 (0-based index), which is vertex 2 in 1-based indexing.
+
+Step 3 : Verify candidate sink
+
+- Row of v2 - all 0s
+- Column of v2 - all 1s except diagonal
+- v2 is the universal sink.
+
+C++
+
+using namespace std;
+
+// Function to check if vertex i is a universal sink
+bool isSink(vector<vector<int>> &adj, int i) {
+    int V = adj.size();
+    for (int j = 0; j < V; j++) {
+
+        // Row should be all 0s
+        if (adj[i][j] == 1)
+            return false;
+
+        // Column should be all 1s except diagonal
+        if (adj[j][i] == 0 && j != i)
+            return false;
+    }
+    return true;
+}
+
+// Function to find the universal sink by elimination
+int findSink(vector<vector<int>> &adj) {
+    int V = adj.size();
+    int i = 0, j = 0;
+    while (i < V && j < V) {
+        if (adj[i][j] == 1)
+            // Row i cannot be sink
+            i++;
+        else
+            // Column j cannot be sink
+            j++;
+    }
+
+    // Check if the found sink is valid
+    if (i >= V || ! isSink(adj, i))
+        return -1;
+
+    // Candidate sink (0-based index)
+    return i;
+}
+
+// Function to add a directed edge from i to j
+void addEdge(vector<vector<int>> &adj, int i, int j) {
+    adj[i][j] = 1;
+}
+
+int main() {
+    int V = 6;
+    vector<vector<int>> adj(V, vector<int>(V, 0));
+
+    // Add directed edges
+    addEdge(adj, 0, 1); // v1 -> v2
+    addEdge(adj, 2, 1); // v3 -> v2
+    addEdge(adj, 3, 1); // v4 -> v2
+    addEdge(adj, 4, 1); // v5 -> v2
+    addEdge(adj, 5, 1); // v6 -> v2
+
+    int sink = findSink(adj);
+    if (sink >= 0)
+        cout << "Sink found at vertex " << (sink + 1) << endl;
+    else
+        cout << "No Sink" << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+public class GFG {
+
+    // Function to check if vertex i is a universal sink
+    static boolean
+    is_sink(ArrayList<ArrayList<Integer> > adj, int i)
+    {
+        int V = adj.size();
+        for (int j = 0; j < V; j++) {
+            // Row should be all 0s
+            if (adj.get(i).get(j) == 1)
+                return false;
+
+            // Column should be all 1s except diagonal
+            if (adj.get(j).get(i) == 0 && j != i)
+                return false;
+        }
+        return true;
+    }
+
+    // Function to find the universal sink by elimination
+    static int findSink(ArrayList<ArrayList<Integer> > adj)
+    {
+        int V = adj.size();
+        int i = 0, j = 0;
+        while (i < V && j < V) {
+            if (adj.get(i).get(j) == 1)
+                // Row i cannot be sink
+                i++;
+            else
+                // Column j cannot be sink
+                j++;
+        }
+
+        if (i >= V || !is_sink(adj, i))
+            // No sink exists
+            return -1;
+
+        // Candidate sink (0-based index)
+        return i;
+    }
+
+    // Function to add a directed edge from i to j
+    static void addEdge(ArrayList<ArrayList<Integer> > adj,
+                        int i, int j)
+    {
+        adj.get(i).set(j, 1);
+    }
+
+    public static void main(String[] args)
+    {
+        int V = 6;
+        ArrayList<ArrayList<Integer> > adj
+            = new ArrayList<>();
+
+        // Initialize adjacency matrix with 0
+        for (int i = 0; i < V; i++) {
+            ArrayList<Integer> row = new ArrayList<>();
+            for (int j = 0; j < V; j++)
+                row.add(0);
+            adj.add(row);
+        }
+
+        // Add directed edges
+        addEdge(adj, 0, 1);
+        addEdge(adj, 2, 1);
+        addEdge(adj, 3, 1);
+        addEdge(adj, 4, 1);
+        addEdge(adj, 5, 1);
+
+        int sink = findSink(adj);
+        if (sink >= 0)
+            System.out.println("Sink found at vertex "
+                               + (sink + 1));
+        else
+            System.out.println("No Sink");
+    }
+}
+
+Python
+
+# Function to check if vertex i is a universal sink
+def is_sink(adj, i):
+    V = len(adj)
+    for j in range(V):
+        # Row should be all 0s
+        if adj[i][j] == 1:
+            return False
+
+        # Column should be all 1s except diagonal
+        if adj[j][i] == 0 and j != i:
+            return False
+    return True
+
+# Function to find the universal sink by elimination
+
+def findSink(adj):
+    V = len(adj)
+    i = j = 0
+    while i < V and j < V:
+        if adj[i][j] == 1:
+            # Row i cannot be sink
+            i += 1
+        else:
+            # Column j cannot be sink
+            j += 1
+
+    if i >= V or not is_sink(adj, i):
+        # No sink exists
+        return -1
+
+    # Candidate sink (0-based index)
+    return i
+
+# Function to add a directed edge from i to j
+
+def addEdge(adj, i, j):
+    adj[i][j] = 1
+
+if __name__ == "__main__":
+    V = 6
+    adj = [[0 for _ in range(V)] for _ in range(V)]
+
+    # Add directed edges
+    addEdge(adj, 0, 1)
+    addEdge(adj, 2, 1)
+    addEdge(adj, 3, 1)
+    addEdge(adj, 4, 1)
+    addEdge(adj, 5, 1)
+
+    sink = findSink(adj)
+    if sink >= 0:
+        print("Sink found at vertex", sink + 1)
+    else:
+        print("No Sink")
+
+C#
+
+using System;
+
+class GFG {
+
+    // Function to check if vertex i is a universal sink
+    static bool is_sink(int[, ] adj, int i)
+    {
+        int V = adj.GetLength(0);
+        for (int j = 0; j < V; j++) {
+            // Row should be all 0s
+            if (adj[i, j] == 1)
+                return false;
+
+            // Column should be all 1s except diagonal
+            if (adj[j, i] == 0 && j != i)
+                return false;
+        }
+        return true;
+    }
+
+    // Function to find the universal sink by elimination
+    static int findSink(int[, ] adj)
+    {
+        int V = adj.GetLength(0);
+        int i = 0, j = 0;
+        while (i < V && j < V) {
+            if (adj[i, j] == 1)
+                // Row i cannot be sink
+                i++;
+            else
+                // Column j cannot be sink
+                j++;
+        }
+
+        if (i >= V || !is_sink(adj, i))
+            // No sink exists
+            return -1;
+
+        // Candidate sink (0-based index)
+        return i;
+    }
+
+    // Function to add a directed edge from i to j
+    static void addEdge(int[, ] adj, int i, int j)
+    {
+        adj[i, j] = 1;
+    }
+
+    public static void Main(String[] args)
+    {
+        int V = 6;
+        int[, ] adj = new int[V, V];
+
+        // Add directed edges
+        addEdge(adj, 0, 1);
+        addEdge(adj, 2, 1);
+        addEdge(adj, 3, 1);
+        addEdge(adj, 4, 1);
+        addEdge(adj, 5, 1);
+
+        int sink = findSink(adj);
+        if (sink >= 0)
+            Console.WriteLine("Sink found at vertex "
+                              + (sink + 1));
+        else
+            Console.WriteLine("No Sink");
+    }
+}
+
+JavaScript
+
+// Function to check if vertex i is a universal sink
+function is_sink(adj, i) {
+    let V = adj.length;
+    for (let j = 0; j < V; j++) {
+        // Row should be all 0s
+        if (adj[i][j] === 1)
+            return false;
+
+        // Column should be all 1s except diagonal
+        if (adj[j][i] === 0 && j !== i)
+            return false;
+    }
+    return true;
+}
+
+// Function to find the universal sink by elimination
+function findSink(adj) {
+    let V = adj.length;
+    let i = 0, j = 0;
+    while (i < V && j < V) {
+        if (adj[i][j] === 1) {
+            // Row i cannot be sink
+            i++;
+        } else {
+            // Column j cannot be sink
+            j++;
+        }
+    }
+
+    if (i >= V || !is_sink(adj, i))
+        // No sink exists
+        return -1;
+
+    // Candidate sink (0-based index)
+    return i;
+}
+
+// Function to add a directed edge from i to j
+function addEdge(adj, i, j) {
+    adj[i][j] = 1;
+}
+
+// driver code
+    let V = 6;
+    let adj = Array.from({length: V}, () => Array(V).fill(0));
+
+    // Add directed edges
+    addEdge(adj, 0, 1);
+    addEdge(adj, 2, 1);
+    addEdge(adj, 3, 1);
+    addEdge(adj, 4, 1);
+    addEdge(adj, 5, 1);
+
+    let sink = findSink(adj);
+    if (sink >= 0)
+        console.log("Sink found at vertex " + (sink + 1));
+    else
+        console.log("No Sink");
+
+Output
+
+Sink found at vertex 2
+
+There exist better approaches to solve this problem. Please refer The Celebrity Problem for more efficient approaches.

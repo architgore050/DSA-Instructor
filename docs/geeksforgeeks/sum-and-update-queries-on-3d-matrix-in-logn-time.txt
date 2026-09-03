@@ -1,0 +1,456 @@
+Source: https://www.geeksforgeeks.org/dsa/sum-and-update-queries-on-3d-matrix-in-logn-time/
+Title: Sum and Update Queries on 3D Matrix in log(N) time
+Extractor: 2
+
+Given a 3D matrix mat[][][] of size N X N X N with all its elements initialized to 0, the task is to answer Q queries. The queries are given in the form of 2D matrix queries[][] , where each queries[i] can be one of the following types:
+
+Type 1 [1, x, y, z, ele] : Update the value of cell(x, y, z) to Val .
+
+Type 2 [2, x, y, z, X, Y, Z] : Print the sum of the submatrix (x, y, z) to (X, Y, Z)
+
+Print the answer to all the queries of type 2. The matrix and queries follow 0-based indexing.
+
+Examples:
+
+> Input: N = 2, Q = 2, queries[][] = {{1, 0, 0, 0, 1}, {2, 0, 0, 0, 1, 1, 1}} Output: 1 Explanation: In the type-2 query, the sum of subarray from (0, 0, 0) to (1, 1, 1) is 1. Input: N = 10, Q = 6, queries[][] = {{1, 0, 0, 6, 6}, {1, 9, 9, 9, 10}, {1, 8, 5, 9, 5}, {2, 3, 4, 5, 9, 10, 9}, {1, 6, 6, 1, 23}, {2, 0, 0, 0, 8, 9, 10}} Output: 6 10 Explanation: In the first type-2 query, the sum of subarray from (3, 4, 5) to (9, 10, 9) is 6. In the subsequent type-2 query, the sum of subarray from (0,0,0) to (8,9,10) is 10.
+
+Approach: The problem can be solved using the following approach:
+
+> The approach is to implement a 3D binary indexed tree (also known as a Fenwick Tree ) to store the Partial Sums of ranges and efficiently update and query ranges in a 3D space. The program takes a series of queries, where each query is either an update or a range query.
+
+Steps to solve the problem:
+
+- Use a 3D array BIT[][][] to store Partial Sums of mat[][][].
+- Define a function updateQuery(x, y, z, val) to update the BIT with a given value at position (x, y, z) by updating the values at positions where Partial sum of submatrix[0][0][0] to [x][y][z] is stored.
+- It uses three nested loops to iterate over all positions in the BIT that need to be updated based on the given position (x, y, z).
+- Define a function sumQuery(x, y, z) to calculate the cumulative sum of the values in the BIT up to position (x, y, z), that is the sum of submatrix[0, 0, 0] to [x, y, z].
+- It uses three nested loops similar to updateQuery() but only sums up the values instead of updating them.
+- Define a function matrixSumQuery(x, y, z, X, Y, Z) to calculate the sum of values in the given 3D submatrix defined by two opposite corners (x, y, z) and (X, Y, Z).
+- It uses the cumulative sum calculated by reading at the eight corners of the cube defined by the given range and get its sum.
+
+Below is the implementation of the above approach:
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+#define ll long long int
+
+// 3D Binary Indexed Tree to store Partial Sums
+ll BIT[102][102][102];
+int N;
+
+// Function to handle updates
+void updateQuery(int x, int y, int z, ll val)
+{
+    int i, j, k;
+    // Update all the cells that store the partial sum of
+    // cell (x, y, z)
+    for (i = x; i <= N; i += i & -i) {
+        for (j = y; j <= N; j += j & -j) {
+            for (k = z; k <= N; k += k & -k) {
+                BIT[i][j][k] += val;
+            }
+        }
+    }
+}
+
+// Function to get the prefix sum from (0, 0, 0) to
+// (x, y, z)
+ll sumQuery(int x, int y, int z)
+{
+    ll sum = 0;
+    int i, j, k;
+    // Calculate prefix sum by summing up all the cells
+    // storing the partial sums
+    for (i = x; i > 0; i -= i & -i) {
+        for (j = y; j > 0; j -= j & -j) {
+            for (k = z; k > 0; k -= k & -k) {
+                sum += BIT[i][j][k];
+            }
+        }
+    }
+    return sum;
+}
+
+// Function to get the submatrix sum from (x, y, z) to (X,
+// Y, Z)
+ll matrixSumQuery(int x, int y, int z, int X, int Y, int Z)
+{
+    return sumQuery(X, Y, Z) - sumQuery(x, Y, Z)
+        - sumQuery(X, y, Z) - sumQuery(X, Y, z)
+        + sumQuery(x, y, Z) + sumQuery(x, Y, z)
+        + sumQuery(X, y, z) - sumQuery(x, y, z);
+}
+
+int main()
+{
+    int Q, type, x, y, z, val, X, Y, Z;
+
+    // Predefined input values
+    N = 10;
+    Q = 6;
+    ll queries[Q][7]
+        = { { 1, 0, 0, 6, 6 }, { 1, 9, 9, 9, 10 },
+            { 1, 8, 5, 9, 5 }, { 2, 3, 4, 5, 9, 10, 9 },
+            { 1, 6, 6, 1, 23 }, { 2, 0, 0, 0, 8, 9, 10 } };
+
+    for (int i = 0; i < Q; i++) {
+        type = queries[i][0];
+        if (type == 1) {
+            x = queries[i][1];
+            y = queries[i][2];
+            z = queries[i][3];
+            val = queries[i][4];
+            updateQuery(x + 1, y + 1, z + 1, val);
+        }
+        else {
+            x = queries[i][1];
+            y = queries[i][2];
+            z = queries[i][3];
+            X = queries[i][4];
+            Y = queries[i][5];
+            Z = queries[i][6];
+            cout << matrixSumQuery(x, y, z, X + 1, Y + 1,
+                                Z + 1)
+                << "\n";
+        }
+    }
+    return 0;
+}
+
+Java
+
+import java.util.Scanner;
+
+public class BIT3D {
+    static long[][][] BIT;
+    static int N;
+
+    // Function to handle updates
+    static void updateQuery(int x, int y, int z, long val) {
+        // Update all the cells that store the partial sum of cell (x, y, z)
+        for (int i = x; i <= N + 1; i += i & -i) {
+            for (int j = y; j <= N + 1; j += j & -j) {
+                for (int k = z; k <= N + 1; k += k & -k) {
+                    BIT[i][j][k] += val;
+                }
+            }
+        }
+    }
+
+    // Function to get the prefix sum from (0, 0, 0) to (x, y, z)
+    static long sumQuery(int x, int y, int z) {
+        long sum = 0;
+        for (int i = x; i > 0; i -= i & -i) {
+            for (int j = y; j > 0; j -= j & -j) {
+                for (int k = z; k > 0; k -= k & -k) {
+                    sum += BIT[i][j][k];
+                }
+            }
+        }
+        return sum;
+    }
+
+    // Function to get the submatrix sum from (x, y, z) to (X, Y, Z)
+    static long matrixSumQuery(int x, int y, int z, int X, int Y, int Z) {
+        return sumQuery(X, Y, Z) - sumQuery(x - 1, Y, Z) - sumQuery(X, y - 1, Z) - sumQuery(X, Y, z - 1)
+                + sumQuery(x - 1, y - 1, z - 1) - sumQuery(x - 1, Y, z - 1) - sumQuery(X, y - 1, z - 1)
+                + sumQuery(x - 1, y - 1, Z) + sumQuery(x - 1, Y, z) + sumQuery(X, y - 1, z);
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        // Predefined input values
+        N = 10;
+        int Q = 6;
+        BIT = new long[N + 2][N + 2][N + 2];
+
+        long[][] queries = { { 1, 0, 0, 6, 6 }, { 1, 9, 9, 9, 10 }, { 1, 8, 5, 9, 5 }, { 2, 3, 4, 5, 9, 10, 9 },
+                { 1, 6, 6, 1, 23 }, { 2, 0, 0, 0, 8, 9, 10 } };
+
+        for (int i = 0; i < Q; i++) {
+            int type = (int) queries[i][0];
+            if (type == 1) {
+                int x = (int) queries[i][1];
+                int y = (int) queries[i][2];
+                int z = (int) queries[i][3];
+                long val = queries[i][4];
+                updateQuery(x + 1, y + 1, z + 1, val);
+            } else {
+                int x = (int) queries[i][1];
+                int y = (int) queries[i][2];
+                int z = (int) queries[i][3];
+                int X = (int) queries[i][4];
+                int Y = (int) queries[i][5];
+                int Z = (int) queries[i][6];
+                System.out.println(matrixSumQuery(x, y, z, X + 1, Y + 1, Z + 1));
+            }
+        }
+
+        sc.close();
+    }
+}
+
+Python3
+
+# Python Implementation
+# 3D Binary Indexed Tree to store Partial Sums
+BIT = [[[0 for _ in range(102)] for _ in range(102)] for _ in range(102)]
+N = 0
+
+# Function to handle updates
+def updateQuery(x, y, z, val):
+    global BIT
+    # Update all the cells that store the partial sum of
+    # cell (x, y, z)
+    i, j, k = x, y, z
+    while i <= N:
+        j = y
+        while j <= N:
+            k = z
+            while k <= N:
+                BIT[i][j][k] += val
+                k += k & -k
+            j += j & -j
+        i += i & -i
+
+# Function to get the prefix sum from (0, 0, 0) to
+# (x, y, z)
+def sumQuery(x, y, z):
+    global BIT
+    sum = 0
+    i, j, k = x, y, z
+    # Calculate prefix sum by summing up all the cells
+    # storing the partial sums
+    while i > 0:
+        j = y
+        while j > 0:
+            k = z
+            while k > 0:
+                sum += BIT[i][j][k]
+                k -= k & -k
+            j -= j & -j
+        i -= i & -i
+    return sum
+
+# Function to get the submatrix sum from (x, y, z) to (X,
+# Y, Z)
+def matrixSumQuery(x, y, z, X, Y, Z):
+    return sumQuery(X, Y, Z) - sumQuery(x, Y, Z) - sumQuery(X, y, Z) - sumQuery(X, Y, z) + sumQuery(x, y, Z) + sumQuery(x, Y, z) + sumQuery(X, y, z) - sumQuery(x, y, z)
+
+# Predefined input values
+N = 10
+Q = 6
+queries = [[1, 0, 0, 6, 6], [1, 9, 9, 9, 10], [1, 8, 5, 9, 5], [2, 3, 4, 5, 9, 10, 9], [1, 6, 6, 1, 23], [2, 0, 0, 0, 8, 9, 10]]
+
+for i in range(Q):
+    type = queries[i][0]
+    if type == 1:
+        x = queries[i][1]
+        y = queries[i][2]
+        z = queries[i][3]
+        val = queries[i][4]
+        updateQuery(x + 1, y + 1, z + 1, val)
+    else:
+        x = queries[i][1]
+        y = queries[i][2]
+        z = queries[i][3]
+        X = queries[i][4]
+        Y = queries[i][5]
+        Z = queries[i][6]
+        print(matrixSumQuery(x, y, z, X + 1, Y + 1, Z + 1))
+# This code is contributed by Sakshi
+
+C#
+
+using System;
+
+class MainClass
+{
+    const int N = 10;
+    const int Q = 6;
+
+    // 3D Binary Indexed Tree to store Partial Sums
+    static int[][][] BIT = new int[102][][];
+
+    static void Main()
+    {
+        // Initialize BIT array
+        for (int i = 0; i < BIT.Length; i++)
+        {
+            BIT[i] = new int[102][];
+            for (int j = 0; j < BIT[i].Length; j++)
+            {
+                BIT[i][j] = new int[102];
+            }
+        }
+
+        int[][] queries = new int[][] {
+            new int[] {1, 0, 0, 6, 6},
+            new int[] {1, 9, 9, 9, 10},
+            new int[] {1, 8, 5, 9, 5},
+            new int[] {2, 3, 4, 5, 9, 10, 9},
+            new int[] {1, 6, 6, 1, 23},
+            new int[] {2, 0, 0, 0, 8, 9, 10},
+        };
+
+        for (int i = 0; i < Q; i++)
+        {
+            int type = queries[i][0];
+            int x, y, z, val, X, Y, Z;
+            if (type == 1)
+            {
+                x = queries[i][1];
+                y = queries[i][2];
+                z = queries[i][3];
+                val = queries[i][4];
+                UpdateQuery(x + 1, y + 1, z + 1, val);
+            }
+            else
+            {
+                x = queries[i][1];
+                y = queries[i][2];
+                z = queries[i][3];
+                X = queries[i][4];
+                Y = queries[i][5];
+                Z = queries[i][6];
+                Console.WriteLine(MatrixSumQuery(x, y, z, X + 1, Y + 1, Z + 1));
+            }
+        }
+    }
+
+    // Function to handle updates
+    static void UpdateQuery(int x, int y, int z, int val)
+    {
+        // Update all the cells that store the partial sum of cell (x, y, z)
+        for (int i = x; i <= N; i += i & -i)
+        {
+            for (int j = y; j <= N; j += j & -j)
+            {
+                for (int k = z; k <= N; k += k & -k)
+                {
+                    BIT[i][j][k] += val;
+                }
+            }
+        }
+    }
+
+    // Function to get the prefix sum from (0, 0, 0) to (x, y, z)
+    static int SumQuery(int x, int y, int z)
+    {
+        int sum = 0;
+        // Calculate prefix sum by summing up all the cells storing the partial sums
+        for (int i = x; i > 0; i -= i & -i)
+        {
+            for (int j = y; j > 0; j -= j & -j)
+            {
+                for (int k = z; k > 0; k -= k & -k)
+                {
+                    sum += BIT[i][j][k];
+                }
+            }
+        }
+        return sum;
+    }
+
+    // Function to get the submatrix sum from (x, y, z) to (X, Y, Z)
+    static int MatrixSumQuery(int x, int y, int z, int X, int Y, int Z)
+    {
+        return (
+            SumQuery(X, Y, Z) - SumQuery(x, Y, Z) - SumQuery(X, y, Z) - SumQuery(X, Y, z) +
+            SumQuery(x, y, Z) + SumQuery(x, Y, z) + SumQuery(X, y, z) - SumQuery(x, y, z)
+        );
+    }
+}
+
+JavaScript
+
+const N = 10;
+const Q = 6;
+
+// 3D Binary Indexed Tree to store Partial Sums
+const BIT = new Array(102).fill(null).map(() =>
+  new Array(102).fill(null).map(() => new Array(102).fill(0))
+);
+
+// Function to handle updates
+function updateQuery(x, y, z, val) {
+    // Update all the cells that store the partial sum of
+    // cell (x, y, z)
+    for (let i = x; i <= N; i += i & -i) {
+        for (let j = y; j <= N; j += j & -j) {
+            for (let k = z; k <= N; k += k & -k) {
+                BIT[i][j][k] += val;
+            }
+        }
+    }
+}
+
+// Function to get the prefix sum from (0, 0, 0) to
+// (x, y, z)
+function sumQuery(x, y, z) {
+    let sum = 0;
+    // Calculate prefix sum by summing up all the cells
+    // storing the partial sums
+    for (let i = x; i > 0; i -= i & -i) {
+        for (let j = y; j > 0; j -= j & -j) {
+            for (let k = z; k > 0; k -= k & -k) {
+                sum += BIT[i][j][k];
+            }
+        }
+    }
+    return sum;
+}
+
+// Function to get the submatrix sum from (x, y, z) to (X,
+// Y, Z)
+function matrixSumQuery(x, y, z, X, Y, Z) {
+    return (
+        sumQuery(X, Y, Z) - sumQuery(x, Y, Z) - sumQuery(X, y, Z) - sumQuery(X, Y, z) +
+        sumQuery(x, y, Z) + sumQuery(x, Y, z) + sumQuery(X, y, z) - sumQuery(x, y, z)
+    );
+}
+
+const queries = [
+    [1, 0, 0, 6, 6],
+    [1, 9, 9, 9, 10],
+    [1, 8, 5, 9, 5],
+    [2, 3, 4, 5, 9, 10, 9],
+    [1, 6, 6, 1, 23],
+    [2, 0, 0, 0, 8, 9, 10],
+];
+
+for (let i = 0; i < Q; i++) {
+    const type = queries[i][0];
+    let x, y, z, val, X, Y, Z;
+    if (type === 1) {
+        x = queries[i][1];
+        y = queries[i][2];
+        z = queries[i][3];
+        val = queries[i][4];
+        updateQuery(x + 1, y + 1, z + 1, val);
+    }
+    else {
+        x = queries[i][1];
+        y = queries[i][2];
+        z = queries[i][3];
+        X = queries[i][4];
+        Y = queries[i][5];
+        Z = queries[i][6];
+        console.log(matrixSumQuery(x, y, z, X + 1, Y + 1, Z + 1));
+    }
+}
+
+Output
+
+15
+34
+
+Time Complexity: O(Q * log(N) * log(N) * log(N))
+
+- Both updateQuery(x, y, z, val) function and matrixSumQuery(x, y, z, X, Y, Z) function takes O(log(N)*log(N)*log(N)) time.
+- So, the overall time complexity for Q queries is O(Q*log(N)*log(N)*log(N)).
+
+Auxiliary Space: O(N * N * N)

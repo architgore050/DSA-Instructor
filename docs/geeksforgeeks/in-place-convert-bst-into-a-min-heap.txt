@@ -1,0 +1,784 @@
+Source: https://www.geeksforgeeks.org/dsa/in-place-convert-bst-into-a-min-heap/
+Title: Convert BST into a Min-Heap without using array
+Extractor: 2
+
+Given a binary search tree which is also a complete binary tree . The problem is to convert the given BST into a Min Heap with the condition that all the values in the left subtree of a node should be less than all the values in the right subtree of the node. This condition is applied to all the nodes, in the resultant converted Min Heap.
+
+Examples:
+
+> Input: Output: Explanation: The given BST has been transformed into a Min Heap. All the nodes in the Min Heap satisfies the given condition, that is, values in the left subtree of a node should be less than the values in the right subtree of the node.
+
+If we are allowed to use extra space, we can perform inorder traversal of the tree and store the keys in an auxiliary array. As we’re doing inorder traversal on a BST, array will be sorted. Finally, we construct a complete binary tree from the sorted array. We construct the binary tree level by level and from left to right by taking next minimum element from sorted array. The constructed binary tree will be a min-Heap. This solution works in O(n) time, but is not in-place. Please refer to Convert BST to Min Heap for implementation.
+
+Approach:
+
+> The idea is to convert the binary search tree into a sorted linked list first. We can do this by traversing the BST in inorder fashion. We add nodes at the beginning of current linked list and update head of the list using pointer to head pointer. Since we insert at the beginning, to maintain sorted order, we first traverse the right subtree before the left subtree. i.e. do a reverse inorder traversal. Finally we convert the sorted linked list into a min-Heap by setting the left and right pointers appropriately. We can do this by doing a Level order traversal of the partially built Min-Heap Tree using queue and traversing the linked list at the same time. At every step, we take the parent node from queue, make next two nodes of linked list as children of the parent node, and enqueue the next two nodes to queue. As the linked list is sorted, the min-heap property is maintained.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ Program to convert a BST into a Min-Heap
+// in O(n) time and in-place
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+  public:
+    int data;
+    Node *left, *right;
+
+    Node(int val) {
+        data = val;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Utility function to print Min-Heap
+// level by level
+void printLevelOrder(Node *root) {
+
+    // Base Case
+    if (root == nullptr)
+        return;
+
+    // Create an empty queue for level
+    // order traversal
+    queue<Node *> q;
+    q.push(root);
+
+    while (!q.empty()) {
+        int nodeCount = q.size();
+        while (nodeCount > 0) {
+            Node *node = q.front();
+            cout << node->data << " ";
+            q.pop();
+            if (node->left)
+                q.push(node->left);
+            if (node->right)
+                q.push(node->right);
+            nodeCount--;
+        }
+        cout << endl;
+    }
+}
+
+// A simple recursive function to convert a given
+// Binary Search Tree to Sorted Linked List
+Node *bstToSortedLL(Node *root, Node *head) {
+
+    // Base cases
+    if (root == nullptr)
+        return head;
+
+    // Recursively convert right subtree
+    head = bstToSortedLL(root->right, head);
+
+    // insert root into linked list
+    root->right = head;
+
+    // Change left pointer of previous
+  	// head to point to NULL
+    if (head != nullptr)
+        head->left = nullptr;
+
+    head = root;
+
+    // Recursively convert left subtree
+    return bstToSortedLL(root->left, head);
+}
+
+// Function to convert a sorted Linked
+// List to Min-Heap
+Node *sortedLLToMinHeap(Node *head) {
+
+    // Base Case
+    if (head == nullptr)
+        return nullptr;
+
+    queue<Node *> q;
+
+    Node *root = head;
+    head = head->right;
+    root->right = nullptr;
+
+    q.push(root);
+
+    // Run until the end of linked
+  	// list is reached
+    while (head) {
+
+        // Take the parent node from the queue and
+        // remove it from the queue
+        Node *parent = q.front();
+        q.pop();
+
+        // Take next two nodes from the linked list and
+        // add them as children of the current parent node
+        // Also push them into the queue so that they
+        // will be parents to the future nodes
+        Node *leftChild = head;
+        head = head->right;
+        leftChild->right = nullptr;
+        q.push(leftChild);
+
+        // Assign the left child of parent
+        parent->left = leftChild;
+
+        if (head) {
+            Node *rightChild = head;
+            head = head->right;
+            rightChild->right = nullptr;
+            q.push(rightChild);
+
+            // Assign the right child of parent
+            parent->right = rightChild;
+        }
+    }
+
+    return root;
+}
+
+// Function to convert BST into a Min-Heap
+// without using any extra space
+Node *bstToMinHeap(Node *root) {
+
+    // Head of Linked List
+    Node *head = nullptr;
+
+    // Convert a given BST to Sorted
+  	// Linked List
+    head = bstToSortedLL(root, head);
+
+    root = nullptr;
+
+    // Convert Sorted Linked List to Min-Heap
+    return sortedLLToMinHeap(head);
+}
+
+int main() {
+
+    // Constructing below tree
+    //          8
+    //        /   \
+    //       4     12
+    //     /  \   /  \
+    //    2    6 10   14
+    //
+
+    Node *root = new Node(8);
+    root->left = new Node(4);
+    root->right = new Node(12);
+    root->right->left = new Node(10);
+    root->right->right = new Node(14);
+    root->left->left = new Node(2);
+    root->left->right = new Node(6);
+
+    root = bstToMinHeap(root);
+    printLevelOrder(root);
+
+    return 0;
+}
+
+Java
+
+// Java Program to convert a BST into a
+// Min-Heap in O(n) time and in-place
+
+import java.util.LinkedList;
+import java.util.Queue;
+
+class Node {
+    int data;
+    Node left, right;
+
+    public Node(int val) {
+        data = val;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Utility function to print Min-Heap level by level
+    static void printLevelOrder(Node root) {
+
+        // Base Case
+        if (root == null) return;
+
+        // Create an empty queue for level
+      	// order traversal
+        Queue<Node> q = new LinkedList<>();
+        q.add(root);
+
+        while (!q.isEmpty()) {
+            int nodeCount = q.size();
+            while (nodeCount > 0) {
+                Node node = q.poll();
+                System.out.print(node.data + " ");
+                if (node.left != null)
+                    q.add(node.left);
+                if (node.right != null)
+                    q.add(node.right);
+                nodeCount--;
+            }
+            System.out.println();
+        }
+    }
+
+    // A simple recursive function to convert a given
+    // Binary Search Tree to Sorted Linked List
+    static Node bstToSortedLL(Node root, Node head) {
+
+        if (root == null)
+            return head;
+
+        // Recursively convert right subtree
+        head = bstToSortedLL(root.right, head);
+
+        // Insert root into linked list
+        root.right = head;
+
+        // Change left pointer of previous
+      	// head to point to NULL
+        if (head != null)
+            head.left = null;
+
+        head = root;
+
+        // Recursively convert left subtree
+        return bstToSortedLL(root.left, head);
+    }
+
+    // Function to convert a sorted Linked
+  	// List to Min-Heap
+    static Node sortedLLToMinHeap(Node head) {
+
+        // Base Case
+        if (head == null)
+            return null;
+
+        Queue<Node> q = new LinkedList<>();
+
+        Node root = head;
+        head = head.right;
+        root.right = null;
+
+        q.add(root);
+
+        // Run until the end of linked list
+      	// is reached
+        while (head != null) {
+
+            // Take the parent node from the queue and
+            // remove it from the queue
+            Node parent = q.poll();
+
+            // Take next two nodes from the linked list and
+            // add them as children of the current parent node
+            // Also push them into the queue so that they
+            // will be parents to the future nodes
+            Node leftChild = head;
+            head = head.right;
+            leftChild.right = null;
+            q.add(leftChild);
+
+            // Assign the left child of parent
+            parent.left = leftChild;
+
+            if (head != null) {
+                Node rightChild = head;
+                head = head.right;
+                rightChild.right = null;
+                q.add(rightChild);
+
+                // Assign the right child of parent
+                parent.right = rightChild;
+            }
+        }
+
+        return root;
+    }
+
+    // Function to convert BST into a Min-Heap
+    static Node bstToMinHeap(Node root) {
+
+        Node head = null;
+
+        // Convert a given BST to Sorted
+      	// Linked List
+        head = bstToSortedLL(root, head);
+        root = null;
+
+        // Convert Sorted Linked List to Min-Heap
+        return sortedLLToMinHeap(head);
+    }
+
+    public static void main(String[] args) {
+
+        // Constructing below tree
+        //          8
+        //        /   \
+        //       4     12
+        //     /  \   /  \
+        //    2    6 10   14
+
+        Node root = new Node(8);
+        root.left = new Node(4);
+        root.right = new Node(12);
+        root.right.left = new Node(10);
+        root.right.right = new Node(14);
+        root.left.left = new Node(2);
+        root.left.right = new Node(6);
+
+        root = bstToMinHeap(root);
+        printLevelOrder(root);
+    }
+}
+
+Python
+
+# Python Program to convert a BST into a
+# Min-Heap in O(n) time and in-place
+
+class Node:
+    def __init__(self, val):
+        self.data = val
+        self.left = None
+        self.right = None
+
+# Utility function to print Min-Heap
+# level by level
+def printLevelOrder(root):
+
+    # Base Case
+    if root is None:
+        return
+
+    # Create an empty queue for level
+    # order traversal
+    queue = []
+    queue.append(root)
+
+    while queue:
+        nodeCount = len(queue)
+        while nodeCount > 0:
+            node = queue.pop(0)
+            print(node.data, end=" ")
+            if node.left:
+                queue.append(node.left)
+            if node.right:
+                queue.append(node.right)
+            nodeCount -= 1
+        print()
+
+# recursive function to convert a given
+# Binary Search Tree to Sorted Linked List
+def bstToSortedLL(root, head):
+
+    if root is None:
+        return head
+
+    # Recursively convert right subtree
+    head = bstToSortedLL(root.right, head)
+
+    root.right = head
+
+    if head is not None:
+        head.left = None
+
+    head = root
+
+    # Recursively convert left subtree
+    return bstToSortedLL(root.left, head)
+
+# Function to convert a sorted Linked
+# List to Min-Heap
+def sortedLLToMinHeap(head):
+
+    # Base Case
+    if head is None:
+        return None
+
+    queue = []
+
+    root = head
+    head = head.right
+    root.right = None
+
+    queue.append(root)
+
+    # Run until the end of linked list
+    # is reached
+    while head:
+
+        # Take the parent node from the queue
+        # and remove it
+        parent = queue.pop(0)
+
+        # Take next two nodes from the linked list and
+        # add them as children of the current parent node
+        # Also push them into the queue so that they will
+        # be parents to the future nodes
+        leftChild = head
+        head = head.right
+        leftChild.right = None
+        queue.append(leftChild)
+
+        parent.left = leftChild
+
+        if head:
+            rightChild = head
+            head = head.right
+            rightChild.right = None
+            queue.append(rightChild)
+
+            # Assign the right child of parent
+            parent.right = rightChild
+
+    return root
+
+# Function to convert BST into a Min-Heap
+def bstToMinHeap(root):
+
+    head = None
+
+    # Convert a given BST to Sorted
+    # Linked List
+    head = bstToSortedLL(root, head)
+
+    root = None
+
+    # Convert Sorted Linked List to Min-Heap
+    return sortedLLToMinHeap(head)
+
+# Constructing below tree
+#          8
+#        /   \
+#       4     12
+#     /  \   /  \
+#    2    6 10   14
+#
+
+root = Node(8)
+root.left = Node(4)
+root.right = Node(12)
+root.right.left = Node(10)
+root.right.right = Node(14)
+root.left.left = Node(2)
+root.left.right = Node(6)
+
+root = bstToMinHeap(root)
+printLevelOrder(root)
+
+C#
+
+// C# Program to convert a BST into a Min-Heap
+// in O(n) time and in-place
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int Data;
+    public Node Left, Right;
+
+    public Node(int val) {
+        Data = val;
+        Left = null;
+        Right = null;
+    }
+}
+
+class GfG {
+
+    // Utility function to print Min-Heap level by level
+    static void PrintLevelOrder(Node root) {
+
+      // Base Case
+        if (root == null) return;
+
+        // Create an empty queue for level
+      	// order traversal
+        Queue<Node> q = new Queue<Node>();
+        q.Enqueue(root);
+
+        while (q.Count > 0) {
+            int nodeCount = q.Count;
+            while (nodeCount > 0) {
+                Node node = q.Dequeue();
+                Console.Write(node.Data + " ");
+                if (node.Left != null)
+                    q.Enqueue(node.Left);
+                if (node.Right != null)
+                    q.Enqueue(node.Right);
+                nodeCount--;
+            }
+            Console.WriteLine();
+        }
+    }
+
+    // A simple recursive function to convert a given
+    // Binary Search Tree to Sorted Linked List
+    static Node BstToSortedLL(Node root, Node head) {
+
+        // Base cases
+        if (root == null)
+            return head;
+
+        // Recursively convert right subtree
+        head = BstToSortedLL(root.Right, head);
+
+        root.Right = head;
+
+        // Change left pointer of previous
+      	// head to point to NULL
+        if (head != null)
+            head.Left = null;
+
+        head = root;
+
+        // Recursively convert
+      	//left subtree
+        return BstToSortedLL(root.Left, head);
+    }
+
+    // Function to convert a sorted Linked
+  	// List to Min-Heap
+    static Node SortedLLToMinHeap(Node head) {
+
+        // Base Case
+        if (head == null)
+            return null;
+
+        Queue<Node> q = new Queue<Node>();
+
+        Node root = head;
+        head = head.Right;
+        root.Right = null;
+
+        q.Enqueue(root);
+
+        // Run until the end of linked
+      	// list is reached
+        while (head != null) {
+
+            // Take the parent node from the queue and
+            // remove it from the queue
+            Node parent = q.Dequeue();
+
+            // Take next two nodes from the linked list and
+            // add them as children of the current parent node
+            // Also push them into the queue so that they
+            // will be parents to the future nodes
+            Node leftChild = head;
+            head = head.Right;
+            leftChild.Right = null;
+            q.Enqueue(leftChild);
+
+            parent.Left = leftChild;
+
+            if (head != null) {
+                Node rightChild = head;
+                head = head.Right;
+                rightChild.Right = null;
+                q.Enqueue(rightChild);
+
+                // Assign the right child
+              	// of parent
+                parent.Right = rightChild;
+            }
+        }
+
+        return root;
+    }
+
+    // Function to convert BST into a Min-Heap without
+  	// using any extra space
+    static Node BstToMinHeap(Node root) {
+
+        Node head = null;
+
+        // Convert a given BST to Sorted
+      	// Linked List
+        head = BstToSortedLL(root, head);
+
+        root = null;
+
+        // Convert Sorted Linked List
+      	// to Min-Heap
+        return SortedLLToMinHeap(head);
+    }
+
+    static void Main(string[] args) {
+
+        // Constructing below tree
+        //          8
+        //        /   \
+        //       4     12
+        //     /  \   /  \
+        //    2    6 10   14
+        //
+
+        Node root = new Node(8);
+        root.Left = new Node(4);
+        root.Right = new Node(12);
+        root.Right.Left = new Node(10);
+        root.Right.Right = new Node(14);
+        root.Left.Left = new Node(2);
+        root.Left.Right = new Node(6);
+
+        root = BstToMinHeap(root);
+        PrintLevelOrder(root);
+    }
+}
+
+JavaScript
+
+// JavaScript Program to convert a BST into
+// a Min-Heap in O(n) time and in-place
+
+class Node {
+    constructor(val) {
+        this.data = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Utility function to print Min-Heap
+// level by level
+function printLevelOrder(root) {
+
+    // Base Case
+    if (root === null) return;
+
+    // Create an empty queue for
+    // level order traversal
+    const queue = [];
+    queue.push(root);
+
+    while (queue.length > 0) {
+        let nodeCount = queue.length;
+        while (nodeCount > 0) {
+            const node = queue.shift();
+            console.log(node.data + " ");
+            if (node.left) queue.push(node.left);
+            if (node.right) queue.push(node.right);
+            nodeCount--;
+        }
+        console.log();
+    }
+}
+
+// Recursive function to convert a given
+// Binary Search Tree to Sorted Linked List
+function bstToSortedLL(root, head) {
+
+    // Base cases
+    if (root === null) return head;
+
+    // Recursively convert right subtree
+    head = bstToSortedLL(root.right, head);
+    root.right = head;
+
+    if (head !== null) head.left = null;
+
+    head = root;
+
+    return bstToSortedLL(root.left, head);
+}
+
+// Function to convert a sorted Linked
+// List to Min-Heap
+function sortedLLToMinHeap(head) {
+
+    // Base Case
+    if (head === null) return null;
+
+    const queue = [];
+
+    const root = head;
+    head = head.right;
+    root.right = null;
+
+    queue.push(root);
+
+    // Run until the end of linked
+    // list is reached
+    while (head) {
+
+        // Take the parent node from the queue
+        // and remove it
+        const parent = queue.shift();
+
+        // Take next two nodes from the linked list and
+        // add them as children of the current parent node
+        // Also push them into the queue so that they will
+        // be parents to the future nodes
+        const leftChild = head;
+        head = head.right;
+        leftChild.right = null;
+        queue.push(leftChild);
+
+        parent.left = leftChild;
+
+        if (head) {
+            const rightChild = head;
+            head = head.right;
+            rightChild.right = null;
+            queue.push(rightChild);
+
+            // Assign the right child of parent
+            parent.right = rightChild;
+        }
+    }
+
+    return root;
+}
+
+// Function to convert BST into a Min-Heap
+function bstToMinHeap(root) {
+
+    let head = null;
+
+    // Convert a given BST to Sorted
+    // Linked List
+    head = bstToSortedLL(root, head);
+
+    root = null;
+
+    // Convert Sorted Linked List
+    // to Min-Heap
+    return sortedLLToMinHeap(head);
+}
+
+// Constructing below tree
+//          8
+//        /   \
+//       4     12
+//     /  \   /  \
+//    2    6 10   14
+//
+
+let root = new Node(8);
+root.left = new Node(4);
+root.right = new Node(12);
+root.right.left = new Node(10);
+root.right.right = new Node(14);
+root.left.left = new Node(2);
+root.left.right = new Node(6);
+
+root = bstToMinHeap(root);
+printLevelOrder(root);
+
+Output
+
+2
+4 6
+8 10 12 14
+
+Time Complexity: O(n), where n is the number of nodes in BST. Auxiliary Space: O(n)

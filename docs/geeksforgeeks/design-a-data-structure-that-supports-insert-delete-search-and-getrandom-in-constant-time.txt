@@ -1,0 +1,328 @@
+Source: https://www.geeksforgeeks.org/dsa/design-a-data-structure-that-supports-insert-delete-search-and-getrandom-in-constant-time/
+Title: Design a data structure that supports insert, delete, search and getRandom in constant time
+Extractor: 2
+
+Design a data structure that supports the following operations in O(1) time.
+
+- insert(x): Inserts an item x to the data structure if not already present.
+- remove(x): Removes item x from the data structure if present.
+- search(x): Searches an item x in the data structure.
+- getRandom(): Returns a random element from the current set of elements
+
+We can use hashing to support the first 3 operations in O(1) time. How to do the 4th operation? The idea is to use a resizable array (ArrayList in Java, vector in C) together with hashing. Resizable arrays support insert in O(1) amortized time complexity . To implement getRandom(), we can pick a random number from 0 to size-1 (size is the number of current elements) and return the element at that index. The hash map stores array values as keys and array indexes as values.
+
+#### Following are detailed operations.
+
+- insert(x) Check if x is already present by doing a hash map lookup. If not present, then insert it at the end of the array. In the hash table, x is added as the key, and the last array index as the index.
+- remove(x) Check if x is present by doing a hash map lookup. If present, then find its index and remove it from a hash map. Swap the last element with this element in an array and remove the last element. Swapping is done because the last element can be removed in O(1) time. Update index of the last element in a hash map.
+- getRandom() Generate a random number from 0 to last index. Return the array element at the randomly generated index.
+- search(x) Do a lookup for x in hash map.
+
+Below is the implementation of the data structure:
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class myStructure {
+    vector<int> arr;
+    unordered_map<int, int> Map;
+
+public:
+    void insert(int x)
+    {
+        if (Map.find(x) != Map.end())
+            return;
+        int index = arr.size();
+        arr.push_back(x);
+        Map.insert({ x, index });
+    }
+
+    void remove(int x)
+    {
+        if (Map.find(x) == Map.end())
+            return;
+        int index = Map.at(x);
+        Map.erase(x);
+        if (index != arr.size() - 1) {
+            int last = arr.size() - 1;
+            swap(arr[index], arr[last]);
+            if (last != index) {
+                Map[arr[index]] = index;
+            }
+        }
+        arr.pop_back();
+    }
+
+    int search(int x)
+    {
+        if (Map.find(x) != Map.end())
+            return Map.at(x);
+        return -1;
+    }
+
+    int getRandom()
+    {
+        srand(time(NULL));
+        int random_index = rand() % arr.size();
+        return arr[random_index];
+    }
+};
+
+int main()
+{
+    myStructure ds;
+    ds.insert(10);
+    ds.insert(20);
+    ds.insert(30);
+    ds.insert(40);
+    cout << ds.search(30) << endl;
+    ds.remove(40);
+    ds.insert(50);
+    cout << ds.search(50) << endl;
+    cout << ds.getRandom() << endl;
+    return 0;
+}
+
+// This code is modified by Susobhan Akhuli
+
+Java
+
+import java.util.*;
+
+class MyStructure {
+    List<Integer> arr = new ArrayList<>();
+    Map<Integer, Integer> map = new HashMap<>();
+
+    public void insert(int x)
+    {
+        if (!map.containsKey(x)) {
+            int index = arr.size();
+            arr.add(x);
+            map.put(x, index);
+        }
+    }
+
+    public void remove(int x)
+    {
+        if (map.containsKey(x)) {
+            int index = map.get(x);
+            map.remove(x);
+            if (index != arr.size() - 1) {
+                int last = arr.size() - 1;
+                Collections.swap(arr, index, last);
+                if (last != index) {
+                    map.put(arr.get(index), index);
+                }
+            }
+            arr.remove(arr.size() - 1);
+        }
+    }
+
+    public int search(int x)
+    {
+        return map.getOrDefault(x, -1);
+    }
+
+    public int getRandom()
+    {
+        Random rand = new Random();
+        int randomIndex = rand.nextInt(arr.size());
+        return arr.get(randomIndex);
+    }
+}
+
+public class Main {
+    public static void main(String[] args)
+    {
+        MyStructure ds = new MyStructure();
+        ds.insert(10);
+        ds.insert(20);
+        ds.insert(30);
+        ds.insert(40);
+        System.out.println(ds.search(30));
+        ds.remove(40);
+        ds.insert(50);
+        System.out.println(ds.search(50));
+        System.out.println(ds.getRandom());
+    }
+}
+
+// This code is modified by Susobhan Akhuli
+
+Python
+
+import random
+
+class MyStructure:
+    def __init__(self):
+        self.arr = []
+        self.map = {}
+        self.size=0
+
+    def insert(self, x):
+        if x not in self.map:
+            index = self.size
+            self.arr.append(x)
+            self.size+=1
+            self.map[x] = index
+
+    def remove(self, x):
+        if x in self.map:
+            index = self.map[x]
+            del self.map[x]
+            if index != self.size - 1:
+                last = self.size - 1
+                self.arr[index], self.arr[last] = self.arr[last], self.arr[index]
+                if last != index:
+                    self.map[self.arr[index]] = index
+            self.arr.pop()
+            self.size-=1
+
+    def search(self, x):
+        return self.map.get(x, -1)
+
+    def getRandom(self):
+        random_index = random.randint(0, self.size - 1)
+        return self.arr[random_index]
+
+ds = MyStructure()
+ds.insert(10)
+ds.insert(20)
+ds.insert(30)
+ds.insert(40)
+print(ds.search(30))
+ds.remove(40)
+ds.insert(50)
+print(ds.search(50))
+print(ds.getRandom())
+
+# This code is modified by Susobhan Akhuli
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class MyStructure {
+    List<int> arr = new List<int>();
+    Dictionary<int, int> map = new Dictionary<int, int>();
+
+    public void insert(int x)
+    {
+        if (!map.ContainsKey(x)) {
+            int index = arr.Count;
+            arr.Add(x);
+            map.Add(x, index);
+        }
+    }
+
+    public void Remove(int x)
+    {
+        if (map.ContainsKey(x)) {
+            int index = map[x];
+            map.Remove(x);
+            if (index != arr.Count - 1) {
+                int last = arr.Count - 1;
+                arr[index] = arr[last];
+                if (last != index) {
+                    map[arr[index]] = index;
+                }
+            }
+            arr.RemoveAt(arr.Count - 1);
+        }
+    }
+
+    public int Search(int x)
+    {
+        return map.ContainsKey(x) ? map[x] : -1;
+    }
+
+    public int GetRandom()
+    {
+        Random rand = new Random();
+        int randomIndex = rand.Next(arr.Count);
+        return arr[randomIndex];
+    }
+}
+
+class MainClass {
+    public static void Main(string[] args)
+    {
+        MyStructure ds = new MyStructure();
+        ds.insert(10);
+        ds.insert(20);
+        ds.insert(30);
+        ds.insert(40);
+        Console.WriteLine(ds.Search(30));
+        ds.Remove(40);
+        ds.insert(50);
+        Console.WriteLine(ds.Search(50));
+        Console.WriteLine(ds.GetRandom());
+    }
+}
+
+// This code is modified by Susobhan Akhuli
+
+JavaScript
+
+class MyStructure {
+    constructor() {
+        this.arr = [];
+        this.map = new Map();
+    }
+
+    insert(x) {
+        if (!this.map.has(x)) {
+            let index = this.arr.length;
+            this.arr.push(x);
+            this.map.set(x, index);
+        }
+    }
+
+    remove(x) {
+        if (this.map.has(x)) {
+            let index = this.map.get(x);
+            this.map.delete(x);
+            if (index !== this.arr.length - 1) {
+                let last = this.arr.length - 1;
+                this.arr[index] = this.arr[last];
+                if (last != index) {
+                    this.map.set(this.arr[index], index);
+                }
+            }
+            this.arr.pop();
+        }
+    }
+
+    search(x) {
+        return this.map.has(x) ? this.map.get(x) : -1;
+    }
+
+    getRandom() {
+        let randomIndex = Math.floor(Math.random() * this.arr.length);
+        return this.arr[randomIndex];
+    }
+}
+
+let ds = new MyStructure();
+ds.insert(10);
+ds.insert(20);
+ds.insert(30);
+ds.insert(40);
+console.log(ds.search(30));
+ds.remove(40);
+ds.insert(50);
+console.log(ds.search(50));
+console.log(ds.getRandom());
+
+// This code is modified by Susobhan Akhuli
+
+Output
+
+2
+3
+50
+
+Time Complexity: O(1) for all operations . Auxiliary Space: O(n) for storing the elements in the data structure.

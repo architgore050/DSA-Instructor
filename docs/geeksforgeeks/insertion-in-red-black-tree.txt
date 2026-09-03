@@ -1,0 +1,1100 @@
+Source: https://www.geeksforgeeks.org/dsa/insertion-in-red-black-tree/
+Title: Insertion in Red-Black Tree
+Extractor: 2
+
+In the previous post , we discussed the introduction to Red-Black Trees. In this post, insertion is discussed. In AVL tree insertion , we used rotation as a tool to do balancing after insertion. In the Red-Black tree, we use two tools to do the balancing.
+
+1. Recoloring
+2. Rotation
+
+Recolouring is the change in colour of the node i.e. if it is red then change it to black and vice versa. It must be noted that the colour of the NULL node is always black. Moreover, we always try recolouring first, if recolouring doesn't work, then we go for rotation. Following is a detailed algorithm. The algorithms have mainly two cases depending upon the colour of the uncle. If the uncle is red, we do recolour. If the uncle is black, we do rotations and/or recolouring.
+
+#### The representation we will be working with is:
+
+This representation is based on X
+
+#### Logic:
+
+First, you have to insert the node similarly to that in a binary tree and assign a red colour to it. Now, if the node is a root node then change its colour to black, but if it is not then check the colour of the parent node. If its colour is black then don’t change the colour but if it is not i.e. it is red then check the colour of the node’s uncle. If the node’s uncle has a red colour then change the colour of the node’s parent and uncle to black and that of grandfather to red colour and repeat the same process for him (i.e. grandfather).If grandfather is root then don't change grandfather to red colour.
+
+But, if the node’s uncle has black colour then there are 4 possible cases:
+
+- Left Left Case (LL rotation):
+
+- Left Right Case (LR rotation):
+
+- Right Right Case (RR rotation):
+
+- Right Left Case (RL rotation):
+
+Now, after these rotations, re-color according to rotation case (check algorithm for details).
+
+#### Algorithm:
+
+Let x be the newly inserted node.
+
+1. Perform standard BST insertion and make the colour of newly inserted nodes as RED.
+2. If x is the root, change the colour of x as BLACK (Black height of complete tree increases by 1).
+3. Do the following if the color of x's parent is not BLACK and x is not the root. a) If x's uncle is RED (Grandparent must have been black from property 4 ) (i) Change the colour of parent and uncle as BLACK. (ii) Colour of a grandparent as RED. (iii) Change x = x's grandparent, repeat steps 2 and 3 for new x. b) If x's uncle is BLACK , then there can be four configurations for x, x's parent ( p ) and x's grandparent ( g ) (This is similar to AVL Tree ) (i) Left Left Case (p is left child of g and x is left child of p) (ii) Left Right Case (p is left child of g and x is the right child of p) (iii) Right Right Case (Mirror of case i) (iv) Right Left Case (Mirror of case ii)
+
+Re-coloring after rotations : For Left Left Case [3.b (i)] and Right Right case [3.b (iii)], swap colors of grandparent and parent after rotations For Left Right Case [3.b (ii)]and Right Left Case [3.b (iv)], swap colors of grandparent and inserted node after rotations
+
+Example: Creating a red-black tree with elements 3, 21, 32 and 15 in an empty tree.
+
+Solution:
+
+When the first element is inserted it is inserted as a root node and as root node has black colour so it acquires the colour black.
+
+The new element is always inserted with a red colour and as 21 > 3 so it becomes the part of the right subtree of the root node.
+
+Now, as we insert 32 we see there is a red father-child pair which violates the Red-Black tree rule so we have to rotate it. Moreover, we see the conditions of RR rotation (considering the null node of the root node as black) so after rotation as the root node can’t be Red so we have to perform recolouring in the tree resulting in the tree shown above.
+
+Final Tree Structure:
+
+The final tree will look like this
+
+Please refer C Program for Red Black Tree Insertion for complete implementation of the above algorithm.
+
+Red-Black Tree | Set 3 (Delete)
+
+## Code for Insertion:
+
+The following code also implements tree insertion as well as tree traversal, at the end you can visualize the constructed tree too!!!.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class RedBlackTree {
+private:
+    // Node creating subclass
+    struct Node {
+        int data;
+        Node* left;
+        Node* right;
+        char colour;
+        Node* parent;
+
+        Node(int data) : data(data), left(nullptr), right(nullptr), colour('R'), parent(nullptr) {}
+    };
+
+    Node* root;
+    bool ll; // Left-Left Rotation flag
+    bool rr; // Right-Right Rotation flag
+    bool lr; // Left-Right Rotation flag
+    bool rl; // Right-Left Rotation flag
+
+    // Function to perform Left Rotation
+    Node* rotateLeft(Node* node) {
+        Node* x = node->right;
+        Node* y = x->left;
+        x->left = node;
+        node->right = y;
+        node->parent = x;
+        if (y != nullptr)
+            y->parent = node;
+        return x;
+    }
+
+    // Function to perform Right Rotation
+    Node* rotateRight(Node* node) {
+        Node* x = node->left;
+        Node* y = x->right;
+        x->right = node;
+        node->left = y;
+        node->parent = x;
+        if (y != nullptr)
+            y->parent = node;
+        return x;
+    }
+
+    // Helper function for insertion
+    Node* insertHelp(Node* root, int data) {
+        bool f = false; // Flag to check RED-RED conflict
+
+        if (root == nullptr)
+            return new Node(data);
+        else if (data < root->data) {
+            root->left = insertHelp(root->left, data);
+            root->left->parent = root;
+            if (root != this->root) {
+                if (root->colour == 'R' && root->left->colour == 'R')
+                    f = true;
+            }
+        } else {
+            root->right = insertHelp(root->right, data);
+            root->right->parent = root;
+            if (root != this->root) {
+                if (root->colour == 'R' && root->right->colour == 'R')
+                    f = true;
+            }
+        }
+
+        // Perform rotations
+        if (ll) {
+            root = rotateLeft(root);
+            root->colour = 'B';
+            root->left->colour = 'R';
+            ll = false;
+        } else if (rr) {
+            root = rotateRight(root);
+            root->colour = 'B';
+            root->right->colour = 'R';
+            rr = false;
+        } else if (rl) {
+            root->right = rotateRight(root->right);
+            root->right->parent = root;
+            root = rotateLeft(root);
+            root->colour = 'B';
+            root->left->colour = 'R';
+            rl = false;
+        } else if (lr) {
+            root->left = rotateLeft(root->left);
+            root->left->parent = root;
+            root = rotateRight(root);
+            root->colour = 'B';
+            root->right->colour = 'R';
+            lr = false;
+        }
+
+        // Handle RED-RED conflicts
+        if (f) {
+            if (root->parent->right == root) {
+                if (root->parent->left == nullptr || root->parent->left->colour == 'B') {
+                    if (root->left != nullptr && root->left->colour == 'R')
+                        rl = true;
+                    else if (root->right != nullptr && root->right->colour == 'R')
+                        ll = true;
+                } else {
+                    root->parent->left->colour = 'B';
+                    root->colour = 'B';
+                    if (root->parent != this->root)
+                        root->parent->colour = 'R';
+                }
+            } else {
+                if (root->parent->right == nullptr || root->parent->right->colour == 'B') {
+                    if (root->left != nullptr && root->left->colour == 'R')
+                        rr = true;
+                    else if (root->right != nullptr && root->right->colour == 'R')
+                        lr = true;
+                } else {
+                    root->parent->right->colour = 'B';
+                    root->colour = 'B';
+                    if (root->parent != this->root)
+                        root->parent->colour = 'R';
+                }
+            }
+            f = false;
+        }
+        return root;
+    }
+
+    // Helper function to perform Inorder Traversal
+    void inorderTraversalHelper(Node* node) {
+        if (node != nullptr) {
+            inorderTraversalHelper(node->left);
+            std::cout << node->data << " ";
+            inorderTraversalHelper(node->right);
+        }
+    }
+
+    // Helper function to print the tree
+    void printTreeHelper(Node* root, int space) {
+        if (root != nullptr) {
+            space += 10;
+            printTreeHelper(root->right, space);
+            std::cout << std::endl;
+            for (int i = 10; i < space; i++)
+                std::cout << " ";
+            std::cout << root->data << std::endl;
+            printTreeHelper(root->left, space);
+        }
+    }
+
+public:
+    RedBlackTree() : root(nullptr), ll(false), rr(false), lr(false), rl(false) {}
+
+    // Function to insert data into the tree
+    void insert(int data) {
+        if (root == nullptr) {
+            root = new Node(data);
+            root->colour = 'B';
+        } else
+            root = insertHelp(root, data);
+    }
+
+    // Function to perform Inorder Traversal of the tree
+    void inorderTraversal() {
+        inorderTraversalHelper(root);
+    }
+
+    // Function to print the tree
+    void printTree() {
+        printTreeHelper(root, 0);
+    }
+};
+
+int main() {
+    // Test the RedBlackTree
+    RedBlackTree t;
+    int arr[] = {1, 4, 6, 3, 5, 7, 8, 2, 9};
+    for (int i = 0; i < 9; i++) {
+        t.insert(arr[i]);
+        std::cout << std::endl;
+        t.inorderTraversal();
+    }
+    t.printTree();
+    return 0;
+}
+
+Java
+
+/*package whatever //do not write package name here */
+
+import java.io.*;
+
+// considering that you know what are red-black trees here is the implementation in java for insertion and traversal.
+// RedBlackTree class. This class contains subclass for node
+// as well as all the functionalities of RedBlackTree such as - rotations, insertion and
+// inoredr traversal
+public class RedBlackTree
+{
+    public Node root;//root node
+    public RedBlackTree()
+    {
+        super();
+        root = null;
+    }
+    // node creating subclass
+    class Node
+    {
+        int data;
+        Node left;
+        Node right;
+        char colour;
+        Node parent;
+
+        Node(int data)
+        {
+            super();
+            this.data = data;   // only including data. not key
+            this.left = null; // left subtree
+            this.right = null; // right subtree
+            this.colour = 'R'; // colour . either 'R' or 'B'
+            this.parent = null; // required at time of rechecking.
+        }
+    }
+    // this function performs left rotation
+    Node rotateLeft(Node node)
+    {
+        Node x = node.right;
+        Node y = x.left;
+        x.left = node;
+        node.right = y;
+        node.parent = x; // parent resetting is also important.
+        if(y!=null)
+            y.parent = node;
+        return(x);
+    }
+    //this function performs right rotation
+    Node rotateRight(Node node)
+    {
+        Node x = node.left;
+        Node y = x.right;
+        x.right = node;
+        node.left = y;
+        node.parent = x;
+        if(y!=null)
+            y.parent = node;
+        return(x);
+    }
+
+    // these are some flags.
+    // Respective rotations are performed during traceback.
+    // rotations are done if flags are true.
+    boolean ll = false;
+    boolean rr = false;
+    boolean lr = false;
+    boolean rl = false;
+    // helper function for insertion. Actually this function performs all tasks in single pass only.
+    Node insertHelp(Node root, int data)
+    {
+        // f is true when RED RED conflict is there.
+        boolean f=false;
+
+        //recursive calls to insert at proper position according to BST properties.
+        if(root==null)
+            return(new Node(data));
+        else if(data<root.data)
+        {
+            root.left = insertHelp(root.left, data);
+            root.left.parent = root;
+            if(root!=this.root)
+            {
+                if(root.colour=='R' && root.left.colour=='R')
+                    f = true;
+            }
+        }
+        else
+        {
+            root.right = insertHelp(root.right,data);
+            root.right.parent = root;
+            if(root!=this.root)
+            {
+                if(root.colour=='R' && root.right.colour=='R')
+                    f = true;
+            }
+        // at the same time of insertion, we are also assigning parent nodes
+        // also we are checking for RED RED conflicts
+        }
+
+        // now lets rotate.
+        if(this.ll) // for left rotate.
+        {
+            root = rotateLeft(root);
+            root.colour = 'B';
+            root.left.colour = 'R';
+            this.ll = false;
+        }
+        else if(this.rr) // for right rotate
+        {
+            root = rotateRight(root);
+            root.colour = 'B';
+            root.right.colour = 'R';
+            this.rr  = false;
+        }
+        else if(this.rl)  // for right and then left
+        {
+            root.right = rotateRight(root.right);
+            root.right.parent = root;
+            root = rotateLeft(root);
+            root.colour = 'B';
+            root.left.colour = 'R';
+
+            this.rl = false;
+        }
+        else if(this.lr)  // for left and then right.
+        {
+            root.left = rotateLeft(root.left);
+            root.left.parent = root;
+            root = rotateRight(root);
+            root.colour = 'B';
+            root.right.colour = 'R';
+            this.lr = false;
+        }
+        // when rotation and recolouring is done flags are reset.
+        // Now lets take care of RED RED conflict
+        if(f)
+        {
+            if(root.parent.right == root)  // to check which child is the current node of its parent
+            {
+                if(root.parent.left==null || root.parent.left.colour=='B')  // case when parent's sibling is black
+                {// perform certaing rotation and recolouring. This will be done while backtracking. Hence setting up respective flags.
+                    if(root.left!=null && root.left.colour=='R')
+                        this.rl = true;
+                    else if(root.right!=null && root.right.colour=='R')
+                        this.ll = true;
+                }
+                else // case when parent's sibling is red
+                {
+                    root.parent.left.colour = 'B';
+                    root.colour = 'B';
+                    if(root.parent!=this.root)
+                        root.parent.colour = 'R';
+                }
+            }
+            else
+            {
+                if(root.parent.right==null || root.parent.right.colour=='B')
+                {
+                    if(root.left!=null && root.left.colour=='R')
+                        this.rr = true;
+                    else if(root.right!=null && root.right.colour=='R')
+                        this.lr = true;
+                }
+                else
+                {
+                    root.parent.right.colour = 'B';
+                    root.colour = 'B';
+                    if(root.parent!=this.root)
+                        root.parent.colour = 'R';
+                }
+            }
+            f = false;
+        }
+        return(root);
+    }
+
+    // function to insert data into tree.
+    public void insert(int data)
+    {
+        if(this.root==null)
+        {
+            this.root = new Node(data);
+            this.root.colour = 'B';
+        }
+        else
+            this.root = insertHelp(this.root,data);
+    }
+    // helper function to print inorder traversal
+    void inorderTraversalHelper(Node node)
+    {
+        if(node!=null)
+        {
+            inorderTraversalHelper(node.left);
+            System.out.printf("%d ", node.data);
+            inorderTraversalHelper(node.right);
+        }
+    }
+    //function to print inorder traversal
+    public void inorderTraversal()
+    {
+        inorderTraversalHelper(this.root);
+    }
+    // helper function to print the tree.
+    void printTreeHelper(Node root, int space)
+    {
+        int i;
+        if(root != null)
+        {
+            space = space + 10;
+            printTreeHelper(root.right, space);
+            System.out.printf("\n");
+            for ( i = 10; i < space; i++)
+            {
+                System.out.printf(" ");
+            }
+            System.out.printf("%d", root.data);
+            System.out.printf("\n");
+            printTreeHelper(root.left, space);
+        }
+    }
+    // function to print the tree.
+    public void printTree()
+    {
+        printTreeHelper(this.root, 0);
+    }
+    public static void main(String[] args)
+    {
+        // let us try to insert some data into tree and try to visualize the tree as well as traverse.
+        RedBlackTree t = new RedBlackTree();
+        int[] arr = {1,4,6,3,5,7,8,2,9};
+        for(int i=0;i<9;i++)
+        {
+            t.insert(arr[i]);
+            System.out.println();
+            t.inorderTraversal();
+        }
+        // you can check colour of any node by with its attribute node.colour
+        t.printTree();
+    }
+}
+
+Python
+
+# Python code for the above approach
+class RedBlackTree:
+    class Node:
+        def __init__(self, data):
+            self.data = data
+            self.left = None
+            self.right = None
+            self.colour = 'R'
+            self.parent = None
+
+    def __init__(self):
+        self.root = None
+        self.ll = False  # Left-Left Rotation flag
+        self.rr = False  # Right-Right Rotation flag
+        self.lr = False  # Left-Right Rotation flag
+        self.rl = False  # Right-Left Rotation flag
+
+    def rotateLeft(self, node):
+        # Perform Left Rotation
+        x = node.right
+        y = x.left
+        x.left = node
+        node.right = y
+        node.parent = x
+        if y is not None:
+            y.parent = node
+        return x
+
+    def rotateRight(self, node):
+        # Perform Right Rotation
+        x = node.left
+        y = x.right
+        x.right = node
+        node.left = y
+        node.parent = x
+        if y is not None:
+            y.parent = node
+        return x
+
+    def insertHelp(self, root, data):
+        f = False  # Flag to check RED-RED conflict
+
+        if root is None:
+            return self.Node(data)
+        elif data < root.data:
+            root.left = self.insertHelp(root.left, data)
+            root.left.parent = root
+            if root != self.root:
+                if root.colour == 'R' and root.left.colour == 'R':
+                    f = True
+        else:
+            root.right = self.insertHelp(root.right, data)
+            root.right.parent = root
+            if root != self.root:
+                if root.colour == 'R' and root.right.colour == 'R':
+                    f = True
+
+        # Perform rotations
+        if self.ll:
+            root = self.rotateLeft(root)
+            root.colour = 'B'
+            root.left.colour = 'R'
+            self.ll = False
+        elif self.rr:
+            root = self.rotateRight(root)
+            root.colour = 'B'
+            root.right.colour = 'R'
+            self.rr = False
+        elif self.rl:
+            root.right = self.rotateRight(root.right)
+            root.right.parent = root
+            root = self.rotateLeft(root)
+            root.colour = 'B'
+            root.left.colour = 'R'
+            self.rl = False
+        elif self.lr:
+            root.left = self.rotateLeft(root.left)
+            root.left.parent = root
+            root = self.rotateRight(root)
+            root.colour = 'B'
+            root.right.colour = 'R'
+            self.lr = False
+
+        # Handle RED-RED conflicts
+        if f:
+            if root.parent.right == root:
+                if root.parent.left is None or root.parent.left.colour == 'B':
+                    if root.left is not None and root.left.colour == 'R':
+                        self.rl = True
+                    elif root.right is not None and root.right.colour == 'R':
+                        self.ll = True
+                else:
+                    root.parent.left.colour = 'B'
+                    root.colour = 'B'
+                    if root.parent != self.root:
+                        root.parent.colour = 'R'
+            else:
+                if root.parent.right is None or root.parent.right.colour == 'B':
+                    if root.left is not None and root.left.colour == 'R':
+                        self.rr = True
+                    elif root.right is not None and root.right.colour == 'R':
+                        self.lr = True
+                else:
+                    root.parent.right.colour = 'B'
+                    root.colour = 'B'
+                    if root.parent != self.root:
+                        root.parent.colour = 'R'
+            f = False
+        return root
+
+    def inorderTraversalHelper(self, node):
+        if node is not None:
+            # Perform Inorder Traversal
+            self.inorderTraversalHelper(node.left)
+            print(node.data, end=" ")
+            self.inorderTraversalHelper(node.right)
+
+    def printTreeHelper(self, root, space):
+        if root is not None:
+            space += 10
+            # Print the tree structure
+            self.printTreeHelper(root.right, space)
+            print("\n" + " " * (space - 10) + str(root.data))
+            self.printTreeHelper(root.left, space)
+
+    def insert(self, data):
+        if self.root is None:
+            self.root = self.Node(data)
+            self.root.colour = 'B'
+        else:
+            self.root = self.insertHelp(self.root, data)
+
+    def inorderTraversal(self):
+        # Perform Inorder Traversal of the tree
+        self.inorderTraversalHelper(self.root)
+
+    def printTree(self):
+        # Print the tree
+        self.printTreeHelper(self.root, 0)
+
+# Test the RedBlackTree
+t = RedBlackTree()
+arr = [1, 4, 6, 3, 5, 7, 8, 2, 9]
+for i in range(9):
+    t.insert(arr[i])
+    print()
+    t.inorderTraversal()
+t.printTree()
+
+# This code is contributed by Susobhan Akhuli
+
+C#
+
+// C# program for the above approach
+using System;
+
+public class RedBlackTree {
+    public Node root;
+
+    public RedBlackTree() { root = null; }
+
+    // Node class represents a node in the Red-Black Tree
+    public class Node {
+        public int data;
+        public Node left;
+        public Node right;
+        public char colour;
+        public Node parent;
+
+        public Node(int data)
+        {
+            this.data = data;
+            left = null;
+            right = null;
+            colour = 'R';
+            parent = null;
+        }
+    }
+
+    // Function to perform left rotation
+    public Node RotateLeft(Node node)
+    {
+        Node x = node.right;
+        Node y = x.left;
+        x.left = node;
+        node.right = y;
+        node.parent = x;
+
+        if (y != null)
+            y.parent = node;
+
+        return x;
+    }
+
+    // Function to perform right rotation
+    public Node RotateRight(Node node)
+    {
+        Node x = node.left;
+        Node y = x.right;
+        x.right = node;
+        node.left = y;
+        node.parent = x;
+
+        if (y != null)
+            y.parent = node;
+
+        return x;
+    }
+
+    // Flags for rotation types
+    bool ll = false;
+    bool rr = false;
+    bool lr = false;
+    bool rl = false;
+
+    // Helper function for insertion
+    public Node InsertHelp(Node root, int data)
+    {
+        bool f = false;
+
+        if (root == null)
+            return new Node(data);
+        else if (data < root.data) {
+            root.left = InsertHelp(root.left, data);
+            root.left.parent = root;
+
+            if (root != this.root) {
+                if (root.colour == 'R'
+                    && root.left.colour == 'R')
+                    f = true;
+            }
+        }
+        else {
+            root.right = InsertHelp(root.right, data);
+            root.right.parent = root;
+
+            if (root != this.root) {
+                if (root.colour == 'R'
+                    && root.right.colour == 'R')
+                    f = true;
+            }
+        }
+
+        // Rotate and recolor based on flags
+        if (ll) {
+            root = RotateLeft(root);
+            root.colour = 'B';
+            root.left.colour = 'R';
+            ll = false;
+        }
+        else if (rr) {
+            root = RotateRight(root);
+            root.colour = 'B';
+            root.right.colour = 'R';
+            rr = false;
+        }
+        else if (rl) {
+            root.right = RotateRight(root.right);
+            root.right.parent = root;
+            root = RotateLeft(root);
+            root.colour = 'B';
+            root.left.colour = 'R';
+            rl = false;
+        }
+        else if (lr) {
+            root.left = RotateLeft(root.left);
+            root.left.parent = root;
+            root = RotateRight(root);
+            root.colour = 'B';
+            root.right.colour = 'R';
+            lr = false;
+        }
+
+        // Handle RED-RED conflict
+        if (f) {
+            if (root.parent.right == root) {
+                if (root.parent.left == null
+                    || root.parent.left.colour == 'B') {
+                    if (root.left != null
+                        && root.left.colour == 'R')
+                        rl = true;
+                    else if (root.right != null
+                             && root.right.colour == 'R')
+                        ll = true;
+                }
+                else {
+                    root.parent.left.colour = 'B';
+                    root.colour = 'B';
+                    if (root.parent != this.root)
+                        root.parent.colour = 'R';
+                }
+            }
+            else {
+                if (root.parent.right == null
+                    || root.parent.right.colour == 'B') {
+                    if (root.left != null
+                        && root.left.colour == 'R')
+                        rr = true;
+                    else if (root.right != null
+                             && root.right.colour == 'R')
+                        lr = true;
+                }
+                else {
+                    root.parent.right.colour = 'B';
+                    root.colour = 'B';
+                    if (root.parent != this.root)
+                        root.parent.colour = 'R';
+                }
+            }
+            f = false;
+        }
+
+        return root;
+    }
+
+    // Public method to insert data into the tree
+    public void Insert(int data)
+    {
+        if (root == null) {
+            root = new Node(data);
+            root.colour = 'B';
+        }
+        else
+            root = InsertHelp(root, data);
+    }
+
+    // Inorder traversal helper function
+    public void InorderTraversalHelper(Node node)
+    {
+        if (node != null) {
+            InorderTraversalHelper(node.left);
+            Console.Write($"{node.data} ");
+            InorderTraversalHelper(node.right);
+        }
+    }
+
+    // Public method to perform inorder traversal
+    public void InorderTraversal()
+    {
+        InorderTraversalHelper(root);
+    }
+
+    // Print tree helper function
+    public void PrintTreeHelper(Node root, int space)
+    {
+        int i;
+        if (root != null) {
+            space = space + 10;
+            PrintTreeHelper(root.right, space);
+            Console.WriteLine();
+            for (i = 10; i < space; i++) {
+                Console.Write(" ");
+            }
+            Console.Write($"{root.data}");
+            Console.WriteLine();
+            PrintTreeHelper(root.left, space);
+        }
+    }
+
+    // Public method to print the tree
+    public void PrintTree() { PrintTreeHelper(root, 0); }
+
+    // Main method for testing the Red-Black Tree
+    public static void Main(string[] args)
+    {
+        RedBlackTree t = new RedBlackTree();
+        int[] arr = { 1, 4, 6, 3, 5, 7, 8, 2, 9 };
+        for (int i = 0; i < 9; i++) {
+            t.Insert(arr[i]);
+            Console.WriteLine();
+            t.InorderTraversal();
+        }
+        t.PrintTree();
+    }
+}
+
+// This code is contributed by Susobhan Akhuli
+
+JavaScript
+
+<script>
+// Javascript program for the above approach
+
+// Node class represents a node in the Red-Black Tree
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.left = null;
+        this.right = null;
+        this.colour = 'R';
+        this.parent = null;
+    }
+}
+
+class RedBlackTree {
+    constructor() {
+        this.root = null;
+        this.ll = false; // Left-Left Rotation flag
+        this.rr = false; // Right-Right Rotation flag
+        this.lr = false; // Left-Right Rotation flag
+        this.rl = false; // Right-Left Rotation flag
+    }
+
+    // Function to perform left rotation
+    rotateLeft(node) {
+        const x = node.right;
+        const y = x.left;
+        x.left = node;
+        node.right = y;
+        node.parent = x;
+
+        if (y !== null)
+            y.parent = node;
+
+        return x;
+    }
+
+    // Function to perform right rotation
+    rotateRight(node) {
+        const x = node.left;
+        const y = x.right;
+        x.right = node;
+        node.left = y;
+        node.parent = x;
+
+        if (y !== null)
+            y.parent = node;
+
+        return x;
+    }
+
+    // Helper function for insertion
+    insertHelp(root, data) {
+        let f = false;
+
+        if (root === null)
+            return new Node(data);
+        else if (data < root.data) {
+            root.left = this.insertHelp(root.left, data);
+            root.left.parent = root;
+
+            if (root !== this.root) {
+                if (root.colour === 'R' && root.left.colour === 'R')
+                    f = true;
+            }
+        } else {
+            root.right = this.insertHelp(root.right, data);
+            root.right.parent = root;
+
+            if (root !== this.root) {
+                if (root.colour === 'R' && root.right.colour === 'R')
+                    f = true;
+            }
+        }
+
+        // Rotate and recolor based on flags
+        if (this.ll) {
+            root = this.rotateLeft(root);
+            root.colour = 'B';
+            root.left.colour = 'R';
+            this.ll = false;
+        } else if (this.rr) {
+            root = this.rotateRight(root);
+            root.colour = 'B';
+            root.right.colour = 'R';
+            this.rr = false;
+        } else if (this.rl) {
+            root.right = this.rotateRight(root.right);
+            root.right.parent = root;
+            root = this.rotateLeft(root);
+            root.colour = 'B';
+            root.left.colour = 'R';
+            this.rl = false;
+        } else if (this.lr) {
+            root.left = this.rotateLeft(root.left);
+            root.left.parent = root;
+            root = this.rotateRight(root);
+            root.colour = 'B';
+            root.right.colour = 'R';
+            this.lr = false;
+        }
+
+        // Handle RED-RED conflict
+        if (f) {
+            if (root.parent.right === root) {
+                if (root.parent.left === null || root.parent.left.colour === 'B') {
+                    if (root.left !== null && root.left.colour === 'R')
+                        this.rl = true;
+                    else if (root.right !== null && root.right.colour === 'R')
+                        this.ll = true;
+                } else {
+                    root.parent.left.colour = 'B';
+                    root.colour = 'B';
+                    if (root.parent !== this.root)
+                        root.parent.colour = 'R';
+                }
+            } else {
+                if (root.parent.right === null || root.parent.right.colour === 'B') {
+                    if (root.left !== null && root.left.colour === 'R')
+                        this.rr = true;
+                    else if (root.right !== null && root.right.colour === 'R')
+                        this.lr = true;
+                } else {
+                    root.parent.right.colour = 'B';
+                    root.colour = 'B';
+                    if (root.parent !== this.root)
+                        root.parent.colour = 'R';
+                }
+            }
+            f = false;
+        }
+
+        return root;
+    }
+
+    // Public method to insert data into the tree
+    insert(data) {
+        if (this.root === null) {
+            this.root = new Node(data);
+            this.root.colour = 'B';
+        } else
+            this.root = this.insertHelp(this.root, data);
+    }
+
+    // Inorder traversal helper function
+    inorderTraversalHelper(node) {
+        if (node !== null) {
+            this.inorderTraversalHelper(node.left);
+            document.write(node.data);
+
+            this.inorderTraversalHelper(node.right);
+        }
+
+    }
+
+    // Public method to perform inorder traversal
+    inorderTraversal() {
+        this.inorderTraversalHelper(this.root);
+    }
+
+    // Print tree helper function
+    printTreeHelper(root, space) {
+        let i;
+        if (root !== null) {
+            space = space + 10;
+            this.printTreeHelper(root.right, space);
+            document.write("<br>");
+            for (i = 10; i < space; i++) {
+                document.write(' ');
+            }
+            document.write(root.data);
+            document.write("<br>");
+            this.printTreeHelper(root.left, space);
+        }
+    }
+
+    // Public method to print the tree
+    printTree() {
+        this.printTreeHelper(this.root, 0);
+    }
+}
+
+// Test the RedBlackTree
+const t = new RedBlackTree();
+const arr = [1, 4, 6, 3, 5, 7, 8, 2, 9];
+for (let i = 0; i < 9; i++) {
+    t.insert(arr[i]);
+    document.write("<br>");
+    t.inorderTraversal();
+}
+t.printTree();
+
+// This code is contributed by Susobhan Akhuli
+</script>
+
+Output
+
+1
+1 4
+1 4 6
+1 3 4 6
+1 3 4 5 6
+1 3 4 5 6 7
+1 3 4 5 6 7 8
+1 2 3 4 5 6 7 8
+1 2 3 4 5 6 7 8 9
+                              9
+
+                    8
+
+                              7
+
+          6
+
+                    5
+
+4
+
+                    3
+
+          2
+
+                    1
+
+Time Complexity : O(log N) , here N is the total number of nodes in the red-black trees. Space Complexity: O(N), here N is the total number of nodes in the red-black trees.

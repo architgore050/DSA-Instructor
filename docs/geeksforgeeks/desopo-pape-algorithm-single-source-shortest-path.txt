@@ -1,0 +1,480 @@
+Source: https://www.geeksforgeeks.org/dsa/desopo-pape-algorithm-single-source-shortest-path/
+Title: D'Esopo-Pape Algorithm : Single Source Shortest Path
+Extractor: 2
+
+Given an undirected weighted graph with v vertices labeled from 0 to v - 1 , and a list of edges represented as a 2D array edges[][] , where each entry is of the form [a, b, w] indicating an undirected edge between vertex a and vertex b with weight w . You are also given a source vertex src . The task is to compute the shortest paths from the source vertex to all other vertices in the graph.
+
+Note: The graph is connected and doesn't contain any negative weight edge.
+
+Examples:
+
+> Input : v = 5, edges = [[0, 1, 5], [1, 2, 1], [1, 3, 2], [2, 4, 1], [4, 3, 1]], src = 0 Output : [0, 5, 6, 7, 7] Explanation: Shortest Paths: For 0 to 1 minimum distance will be 5. By following path 0 → 1 For 0 to 2 minimum distance will be 6. By following path 0 → 1 → 2 For 0 to 3 minimum distance will be 7. By following path 0 → 1 → 3 For 0 to 4 minimum distance will be 7. By following path 0 → 1 → 2 → 4 Input: v = 5, edges[][] = [[0, 1, 4], [0, 2, 8], [1, 4, 6], [2, 3, 2], [3, 4, 10]], src = 0 Graph with 5 node Output: 0 4 8 10 10
+
+For this problem, we’ve already explored both Dijkstra's algorithm and Bellman-Ford Algorithm . However, the D’Esopo-Pape Algorithm often performs better in practice across a wide range of cases. That said, there are certain scenarios, particularly with specific graph structures where its performance may degrade and it can take exponential time to complete.
+
+### D'Esopo-Pape Algorithm - O(e) Time and O(v + e) Space
+
+- This algorithm uses a Deque (or bi-directional queue) to efficiently manage the order in which vertices are processed for shortest path updates.
+- Initialize a distance array dist[] with all values set to infinity, except for the source vertex which is set to 0 .
+- Construct the adjacency list from the given list of edges, where each vertex stores its neighbors along with the edge weights.
+- Maintain a boolean array inQueue[] to keep track of whether a vertex is already present in the queue, which prevents duplicate entries.
+- Append the source vertex to the queue and mark it as present in inQueue[] .
+- While the queue is not empty , pop a vertex a from the front, mark it as not in the queue, and iterate through all of its adjacent vertices.
+- For each neighbor b of vertex a , check if the current distance to b is greater than the distance through a (i.e., dist[a] + weight ). If yes, update dist[b] .
+- After updating, check if b is not already in the queue using inQueue[] : If b is being visited for the first time, append it to the back of the queue. If b was visited before, append it to the front of the queue to prioritize its processing.
+- Once all vertices are processed, return the dist[] array which contains the shortest distance from the source to every vertex in the graph.
+
+Illustration:
+
+> Initially, the Distance from source to itself will be 0 and for other vertices it will be infinite. Now for each Adjacent vertex of source that is 0 in this case are [1, 4] update the distance and mark the vertices as present in the with weight of 4 and 8 respectively. Now Dequeue the vertex 4 from the queue and following are the adjacent vertices are connected to the vertex 4 - Vertex 1 - As Vertex 1 have already visited and the weight to reach the vertex 1 is 4, whereas when move to vertex 1 via the edge [4, 1] from source the total weight will be 11 which is greater than weight stored in the distance array. Vertex 3 - As Vertex 3 is not visited and also not present in the queue, So the distance is updated to 9 for vertex 3 and also enqueued into the queue at the front. Similarly Dequeue the vertex 3 from the Queue and update the values for adjacent vertex. Adjacent vertices of the vertex 3 is vertex 4 and vertex 2. Vertex 4 - As vertex 4 is already visited and the weight is already minimum So Distance is not updated. Vertex 2 - As Vertex 2 is not visited and also not present in the queue, So the distance is updated to 11 for vertex 3 and also enqueued into the queue at the front.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ code for finding single source shortest
+// path using D'Esopo-Pape Algorithm
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<int> dEsopoPape(int v, vector<vector<int>> &edges, int src) {
+
+    // Create adjacency list using 3D vector
+    vector<vector<vector<int>>> graph(v);
+    for (auto &edge : edges) {
+        int a = edge[0];
+        int b = edge[1];
+        int w = edge[2];
+
+        // Since undirected graph, add both directions
+        graph[a].push_back({b, w});
+        graph[b].push_back({a, w});
+    }
+
+    // Initialize dist array to infinity
+    vector<int> dist(v, INT_MAX);
+    dist[src] = 0;
+
+    // Queue to process vertices
+    deque<int> dq;
+
+    // Boolean array to check if vertex is in queue
+    vector<bool> inQueue(v, false);
+
+    // Append source vertex to queue
+    dq.push_back(src);
+    inQueue[src] = true;
+
+    // Process queue until empty
+    while (!dq.empty()) {
+
+        // Pop vertex from front
+        int a = dq.front();
+        dq.pop_front();
+        inQueue[a] = false;
+
+        // Explore all adjacent vertices
+        for (auto &nbr : graph[a]) {
+            int b = nbr[0];
+            int w = nbr[1];
+
+            // Relaxation condition
+            if (dist[b] > dist[a] + w) {
+
+                // Update dist
+                dist[b] = dist[a] + w;
+
+                // Push b into queue if not already there
+                if (!inQueue[b]) {
+                    inQueue[b] = true;
+
+                    // Decide position based on priority
+                    if (dq.empty() || dist[b] > dist[dq.front()]) {
+                        dq.push_back(b);
+                    } else {
+                        dq.push_front(b);
+                    }
+                }
+            }
+        }
+    }
+
+    return dist;
+}
+
+// Driver code
+int main() {
+
+    int v = 5;
+    vector<vector<int>> edges = {
+        {0, 1, 5}, {1, 2, 1}, {1, 3, 2},
+        {2, 4, 1}, {4, 3, 1}
+    };
+    int src = 0;
+
+    vector<int> res = dEsopoPape(v, edges, src);
+
+    for (int x : res) {
+        cout << x << " ";
+    }
+
+    return 0;
+}
+
+Java
+
+// Java code for finding single source shortest
+// path using D'Esopo-Pape Algorithm
+import java.util.*;
+
+class GfG {
+
+    public static int[] dEsopoPape(int v, int[][] edges, int src) {
+
+        // Create adjacency list using 3D vector
+        List<List<int[]>> graph = new ArrayList<>();
+        for (int i = 0; i < v; i++) {
+            graph.add(new ArrayList<>());
+        }
+
+        for (int[] edge : edges) {
+            int a = edge[0];
+            int b = edge[1];
+            int w = edge[2];
+
+            // Since undirected graph, add both directions
+            graph.get(a).add(new int[]{b, w});
+            graph.get(b).add(new int[]{a, w});
+        }
+
+        // Initialize dist array to infinity
+        int[] dist = new int[v];
+        Arrays.fill(dist, Integer.MAX_VALUE);
+        dist[src] = 0;
+
+        // Queue to process vertices
+        Deque<Integer> dq = new ArrayDeque<>();
+
+        // Boolean array to check if vertex is in queue
+        boolean[] inQueue = new boolean[v];
+
+        // Append source vertex to queue
+        dq.addLast(src);
+        inQueue[src] = true;
+
+        // Process queue until empty
+        while (!dq.isEmpty()) {
+
+            // Pop vertex from front
+            int a = dq.pollFirst();
+            inQueue[a] = false;
+
+            // Explore all adjacent vertices
+            for (int[] nbr : graph.get(a)) {
+                int b = nbr[0];
+                int w = nbr[1];
+
+                // Relaxation condition
+                if (dist[b] > dist[a] + w) {
+
+                    // Update dist
+                    dist[b] = dist[a] + w;
+
+                    // Push b into queue if not already there
+                    if (!inQueue[b]) {
+                        inQueue[b] = true;
+
+                        // Decide position based on priority
+                        if (dq.isEmpty() || dist[b] > dist[dq.peekFirst()]) {
+                            dq.addLast(b);
+                        } else {
+                            dq.addFirst(b);
+                        }
+                    }
+                }
+            }
+        }
+
+        return dist;
+    }
+
+    public static void main(String[] args) {
+
+        int v = 5;
+        int[][] edges = {
+            {0, 1, 5}, {1, 2, 1}, {1, 3, 2},
+            {2, 4, 1}, {4, 3, 1}
+        };
+        int src = 0;
+
+        int[] res = dEsopoPape(v, edges, src);
+
+        for (int x : res) {
+            System.out.print(x + " ");
+        }
+    }
+}
+
+Python
+
+# Python code for finding single source shortest
+# path using D'Esopo-Pape Algorithm
+from collections import deque
+
+def dEsopoPape(v, edges, src):
+
+    # Create adjacency list using 3D vector
+    graph = [[] for _ in range(v)]
+    for edge in edges:
+        a = edge[0]
+        b = edge[1]
+        w = edge[2]
+
+        # Since undirected graph, add both directions
+        graph[a].append([b, w])
+        graph[b].append([a, w])
+
+    # Initialize dist array to infinity
+    dist = [float('inf')] * v
+    dist[src] = 0
+
+    # Queue to process vertices
+    dq = deque()
+
+    # Boolean array to check if vertex is in queue
+    inQueue = [False] * v
+
+    # Append source vertex to queue
+    dq.append(src)
+    inQueue[src] = True
+
+    # Process queue until empty
+    while dq:
+
+        # Pop vertex from front
+        a = dq.popleft()
+        inQueue[a] = False
+
+        # Explore all adjacent vertices
+        for nbr in graph[a]:
+            b = nbr[0]
+            w = nbr[1]
+
+            # Relaxation condition
+            if dist[b] > dist[a] + w:
+
+                # Update dist
+                dist[b] = dist[a] + w
+
+                # Push b into queue if not already there
+                if not inQueue[b]:
+                    inQueue[b] = True
+
+                    # Decide position based on priority
+                    if not dq or dist[b] > dist[dq[0]]:
+                        dq.append(b)
+                    else:
+                        dq.appendleft(b)
+
+    return dist
+
+if __name__ == "__main__":
+
+    v = 5
+    edges = [
+        [0, 1, 5], [1, 2, 1], [1, 3, 2],
+        [2, 4, 1], [4, 3, 1]
+    ]
+    src = 0
+
+    res = dEsopoPape(v, edges, src)
+
+    for x in res:
+        print(x, end=" ")
+
+C#
+
+// C# code for finding single source shortest
+// path using D'Esopo-Pape Algorithm
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    public static int[] dEsopoPape(int v, int[][] edges, int src) {
+
+        // Create adjacency list using 3D vector
+        List<List<int[]>> graph = new List<List<int[]>>();
+        for (int i = 0; i < v; i++) {
+            graph.Add(new List<int[]>());
+        }
+
+        foreach (var edge in edges) {
+            int a = edge[0];
+            int b = edge[1];
+            int w = edge[2];
+
+            // Since undirected graph, add both directions
+            graph[a].Add(new int[] { b, w });
+            graph[b].Add(new int[] { a, w });
+        }
+
+        // Initialize dist array to infinity
+        int[] dist = new int[v];
+        for (int i = 0; i < v; i++) {
+            dist[i] = int.MaxValue;
+        }
+        dist[src] = 0;
+
+        // Queue to process vertices
+        LinkedList<int> dq = new LinkedList<int>();
+
+        // Boolean array to check if vertex is in queue
+        bool[] inQueue = new bool[v];
+
+        // Append source vertex to queue
+        dq.AddLast(src);
+        inQueue[src] = true;
+
+        // Process queue until empty
+        while (dq.Count > 0) {
+
+            // Pop vertex from front
+            int a = dq.First.Value;
+            dq.RemoveFirst();
+            inQueue[a] = false;
+
+            // Explore all adjacent vertices
+            foreach (var nbr in graph[a]) {
+                int b = nbr[0];
+                int w = nbr[1];
+
+                // Relaxation condition
+                if (dist[b] > dist[a] + w) {
+
+                    // Update dist
+                    dist[b] = dist[a] + w;
+
+                    // Push b into queue if not already there
+                    if (!inQueue[b]) {
+                        inQueue[b] = true;
+
+                        // Decide position based on priority
+                        if (dq.Count == 0 || dist[b] > dist[dq.First.Value]) {
+                            dq.AddLast(b);
+                        } else {
+                            dq.AddFirst(b);
+                        }
+                    }
+                }
+            }
+        }
+
+        return dist;
+    }
+
+    public static void Main(string[] args) {
+
+        int v = 5;
+        int[][] edges = new int[][] {
+            new int[] {0, 1, 5}, new int[] {1, 2, 1},
+            new int[] {1, 3, 2}, new int[] {2, 4, 1},
+            new int[] {4, 3, 1}
+        };
+        int src = 0;
+
+        int[] res = dEsopoPape(v, edges, src);
+
+        foreach (int x in res) {
+            Console.Write(x + " ");
+        }
+    }
+}
+
+JavaScript
+
+// Javascript code for finding single source shortest
+// path using D'Esopo-Pape Algorithm
+function dEsopoPape(v, edges, src) {
+
+    // Create adjacency list using 3D vector
+    let graph = Array.from({ length: v }, () => []);
+    for (let edge of edges) {
+        let a = edge[0];
+        let b = edge[1];
+        let w = edge[2];
+
+        // Since undirected graph, add both directions
+        graph[a].push([b, w]);
+        graph[b].push([a, w]);
+    }
+
+    // Initialize dist array to infinity
+    let dist = new Array(v).fill(Infinity);
+    dist[src] = 0;
+
+    // Queue to process vertices
+    let dq = [];
+
+    // Boolean array to check if vertex is in queue
+    let inQueue = new Array(v).fill(false);
+
+    // Append source vertex to queue
+    dq.push(src);
+    inQueue[src] = true;
+
+    // Process queue until empty
+    while (dq.length > 0) {
+
+        // Pop vertex from front
+        let a = dq.shift();
+        inQueue[a] = false;
+
+        // Explore all adjacent vertices
+        for (let nbr of graph[a]) {
+            let b = nbr[0];
+            let w = nbr[1];
+
+            // Relaxation condition
+            if (dist[b] > dist[a] + w) {
+
+                // Update dist
+                dist[b] = dist[a] + w;
+
+                // Push b into queue if not already there
+                if (!inQueue[b]) {
+                    inQueue[b] = true;
+
+                    // Decide position based on priority
+                    if (dq.length === 0 || dist[b] > dist[dq[0]]) {
+                        dq.push(b);
+                    } else {
+                        dq.unshift(b);
+                    }
+                }
+            }
+        }
+    }
+
+    return dist;
+}
+
+// Driver Code
+let v = 5;
+let edges = [
+    [0, 1, 5], [1, 2, 1], [1, 3, 2],
+    [2, 4, 1], [4, 3, 1]
+];
+let src = 0;
+
+let res = dEsopoPape(v, edges, src);
+
+for (let x of res) {
+    console.log(x + " ");
+}
+
+Output
+
+0 5 6 7 7
+
+Time Complexity: O(e) , where e is number of edges. Each edge is relaxed at most once; deque operations are constant time. Space Complexity: O(v + e) , where v is number of vertices. Space used for distance array, inQueue array, and adjacency list.

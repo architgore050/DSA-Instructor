@@ -1,0 +1,554 @@
+Source: https://www.geeksforgeeks.org/dsa/number-triangles-can-formed-given-set-lines-euclidean-plane/
+Title: Number of Triangles that can be formed given a set of lines in Euclidean Plane
+Extractor: 2
+
+Given a set L = {l 1 , l 2 , ……..., l n } of ‘n’ distinct lines on the Euclidean Plane. The i th line is given by an equation in the form a i x + b i y = c i . Find the number of triangles that can be formed using the lines in the set L. Note that no two pairs of lines intersect at the same point. Note: This problem doesn’t mention that the lines can’t be parallel which makes the problem difficult to solve.
+
+Examples:
+
+Input: a[] = {1, 2, 3, 4}
+       b[] = {2, 4, 5, 5}
+       c[] = {5, 7, 8, 6}
+Output: 2
+The number of triangles that can be formed are: 2
+
+Input: a[] = {1, 2, 3, 2, 4, 1, 2, 3, 4, 5}
+       b[] = {2, 4, 6, 3, 6, 5, 10, 15, 20, 25}
+       c[] = {3, 5, 11, 10, 9, 17, 13, 11, 7, 3}
+Output: 30
+The number of triangles that can be formed are: 30
+
+### Naive Algorithm
+
+The naive algorithm can be described as:
+
+1. Pick up 3 arbitrary lines from the set L.
+2. Now check if a triangle can be formed using the selected 3 lines. This can be done easily by checking that none of them is pairwise parallel.
+3. Increment the counter if the triangle can be formed.
+
+Time Complexity: There are n C 3 triplets of lines. For each triplet, we have to do 3 comparisons to check that any 2 lines are not parallel which means the check can be done in O(1) time. This makes the naive algorithm O(n 3 ).
+
+### Efficient Algorithm
+
+This can also be achieved in O(n log n). The logic behind the efficient algorithm is described below. We divide the set L in various subsets. The formation of subsets is based on slopes i.e. all the lines in a particular subset have the same slope i.e. they are parallel to each other.
+
+Let us consider three sets (say A, B and C). For a particular set (say A) the lines belonging to this are all parallel to each other. If we have A, B, and C, we can pick one line from each set to get a triangle because none of these lines will be parallel. By making the subsets we have ensured that no two lines which are parallel are being picked together.
+
+Now if we have only these 3 subsets ,
+
+Number of triangles = (Number of ways to pick a line from A) *
+                      (Number of ways to pick a line from B) *
+                      (Number of ways to pick a line from C)
+                   = m1*m2*m3
+Here m1 is count of elements with first slope (in Set A)
+Here m2 is count of elements with first slope (in Set B)
+Here m3 is count of elements with first slope (in Set C)
+
+Similarly, if we have 4 subsets , we can extend this logic to get, Number of triangles = m1*m2*m3 + m1*m2*m4 + m1*m3*m4 + m2*m3*m4
+
+For number of subsets greater than 3, If we have ‘k’ subsets, our task is to find the sum of number of elements of the subset taken 3 at a time. This can be done by maintaining a count array. We make a count array where count i denotes the count of the i th subset of parallel lines.
+
+We one by one compute following values.
+sum1 = m1 + m2 + m3 .....
+sum2 = m1*m2 + m1*m3 + ... + m2*m3 + m2*m4 + ...
+sum3 = m1*m2*m3 + m1*m2*m4 + ...... m2*m3*m4 + ....
+sum3 gives our final answer
+
+C++
+
+// C++ program to find the number of
+// triangles that can be formed
+// using a set of lines in Euclidean
+// Plane
+#include <bits/stdc++.h>
+using namespace std;
+
+#define EPSILON numeric_limits<double>::epsilon()
+
+// double variables can't be checked precisely
+// using '==' this function returns true if
+// the double variables are equal
+bool compareDoubles(double A, double B)
+{
+    double diff = A-B;
+    return (diff<EPSILON) && (-diff<EPSILON);
+}
+
+// This function returns the number of triangles
+// for a given set of lines
+int numberOfTringles(int a[], int b[], int c[], int n)
+{
+    //slope array stores the slope of lines
+    double slope[n];
+    for (int i=0; i<n; i++)
+        slope[i] = (a[i]*1.0)/b[i];
+
+    // slope array is sorted so that all lines
+    // with same slope come together
+    sort(slope, slope+n);
+
+    // After sorting slopes, count different
+    // slopes. k is index in count[].
+    int count[n], k = 0;
+    int this_count = 1;   // Count of current slope
+    for (int i=1; i<n; i++)
+    {
+        if (compareDoubles(slope[i], slope[i-1]))
+            this_count++;
+        else
+        {
+            count[k++] = this_count;
+            this_count = 1;
+        }
+    }
+    count[k++] = this_count;
+
+    // calculating sum1 (Sum of all slopes)
+    // sum1 = m1 + m2 + ...
+    int sum1 = 0;
+    for (int i=0; i<k; i++)
+        sum1 += count[i];
+
+    // calculating sum2. sum2 = m1*m2 + m2*m3 + ...
+    int sum2 = 0;
+    int temp[n];  // Needed for sum3
+    for (int i=0; i<k; i++)
+    {
+        temp[i] = count[i]*(sum1-count[i]);
+        sum2 += temp[i];
+    }
+    sum2 /= 2;
+
+    // calculating sum3 which gives the final answer
+    // m1 * m2 * m3 + m2 * m3 * m4 + ...
+    int sum3 = 0;
+    for (int i=0; i<k; i++)
+        sum3 += count[i]*(sum2-temp[i]);
+    sum3 /= 3;
+
+    return sum3;
+}
+
+// Driver code
+int main()
+{
+    // lines are stored as arrays of a, b
+    // and c for 'ax+by=c'
+    int a[] = {1, 2, 3, 4};
+    int b[] = {2, 4, 5, 5};
+    int c[] = {5, 7, 8, 6};
+
+    // n is the number of lines
+    int n = sizeof(a)/sizeof(a[0]);
+
+    cout << "The number of triangles that"
+            " can be formed are: "
+         << numberOfTringles(a, b, c, n);
+
+    return 0;
+}
+
+Java
+
+// Java program to find the number of
+// triangles that can be formed
+// using a set of lines in Euclidean
+// Plane
+import java.util.*;
+
+class GFG{
+
+static double EPSILON = 1.0842e-19;
+
+// Double variables can't be checked precisely
+// using '==' this function returns true if
+// the double variables are equal
+static boolean compareDoubles(double A, double B)
+{
+    double diff = A - B;
+    return (diff < EPSILON) &&
+          (-diff < EPSILON);
+}
+
+// This function returns the number of
+// triangles for a given set of lines
+static int numberOfTringles(int []a, int []b,
+                            int []c, int n)
+{
+
+    // Slope array stores the slope of lines
+    Vector<Double> slope = new Vector<>();
+    for(int i = 0; i < n; i++)
+        slope.add((double)(a[i] * 1.0) / b[i]);
+
+    // Slope array is sorted so that all lines
+    // with same slope come together
+    Collections.sort(slope);
+
+    // After sorting slopes, count different
+    // slopes. k is index in count[].
+    int []count = new int [n];
+    int k = 0;
+
+    // Count of current slope
+    int this_count = 1;
+
+    for(int i = 1; i < n; i++)
+    {
+        if (compareDoubles((double)slope.get(i),
+                           (double)slope.get(i - 1)))
+            this_count++;
+        else
+        {
+            count[k++] = this_count;
+            this_count = 1;
+        }
+    }
+    count[k++] = this_count;
+
+    // Calculating sum1 (Sum of all slopes)
+    // sum1 = m1 + m2 + ...
+    int sum1 = 0;
+    for(int i = 0; i < k; i++)
+        sum1 += count[i];
+
+    // Calculating sum2. sum2 = m1*m2 + m2*m3 + ...
+    int sum2 = 0;
+
+    // Needed for sum3
+    int temp[] = new int [n];
+
+    for(int i = 0; i < k; i++)
+    {
+        temp[i] = count[i] * (sum1 - count[i]);
+        sum2 += temp[i];
+    }
+    sum2 /= 2;
+
+    // Calculating sum3 which gives the
+    // final answer
+    // m1 * m2 * m3 + m2 * m3 * m4 + ...
+    int sum3 = 0;
+    for(int i = 0; i < k; i++)
+        sum3 += count[i] * (sum2 - temp[i]);
+
+    sum3 /= 3;
+
+    return sum3;
+}
+
+// Driver code
+public static void main(String[] args)
+{
+
+    // Lines are stored as arrays of a, b
+    // and c for 'ax+by=c'
+    int a[] = { 1, 2, 3, 4 };
+    int b[] = { 2, 4, 5, 5 };
+    int c[] = { 5, 7, 8, 6 };
+
+    // n is the number of lines
+    int n = a.length;
+
+    System.out.println("The number of triangles " +
+                       "that can be formed are: " +
+                       numberOfTringles(a, b, c, n));
+}
+}
+
+// This code is contributed by Stream_Cipher
+
+Python3
+
+#  Python program to find the number of
+#  triangles that can be formed
+#  using a set of lines in Euclidean
+#  Plane
+import math
+EPSILON = 1.0842e-19
+
+# double variables can't be checked precisely
+# using '==' this function returns true if
+# the double variables are equal
+
+def compareDoubles(A, B):
+    diff = A-B
+    return (diff < EPSILON) and (-diff < EPSILON)
+
+#  This function returns the number of triangles
+#  for a given set of lines
+
+def numberOfTringles(a, b, c, n):
+    # slope array stores the slope of lines
+    slope = []
+
+    for i in range(0, n):
+        slope.append((a[i]*1.0)/b[i])
+
+    # slope array is sorted so that all lines
+    # with same slope come together
+    slope.sort()
+
+    # After sorting slopes, count different
+    # slopes. k is index in count[].
+    k = 0
+    count = []
+    this_count = 1  # Count of current slope
+
+    for i in range(1, n):
+        if compareDoubles(slope[i], slope[i-1]):
+            this_count = this_count + 1
+        else:
+            count.append(this_count)
+            k = k + 1
+            this_count = 1
+
+    count.append(this_count)
+    k = k + 1
+
+    # calculating sum1 (Sum of all slopes)
+    # sum1 = m1 + m2 + ...
+    sum1 = 0
+    for i in range(0, k):
+        sum1 += count[i]
+
+    # calculating sum2. sum2 = m1*m2 + m2*m3 + ...
+    sum2 = 0
+    temp = []  # Needed for sum3
+    for i in range(0, k):
+        temp.append(count[i]*(sum1-count[i]))
+        sum2 += temp[i]
+
+    sum2 = math.floor(sum2/2)
+
+    # calculating sum3 which gives the final answer
+    # m1 * m2 * m3 + m2 * m3 * m4 + ...
+    sum3 = 0
+    for i in range(0, k):
+        sum3 += count[i]*(sum2-temp[i])
+
+    sum3 = math.floor(sum3/3)
+
+    return sum3
+
+# Driver Code
+# lines are stored as arrays of a, b
+# and c for 'ax+by=c'
+a = [1, 2, 3, 4]
+b = [2, 4, 5, 5]
+c = [5, 7, 8, 6]
+
+# n is the number of lines
+n = len(a)
+
+print("The number of triangles that can be formed are: ",
+      numberOfTringles(a, b, c, n))
+
+# The code is contributed by Gautam goel (gautamgoel962)
+
+C#
+
+// C# program to find the number of
+// triangles that can be formed
+// using a set of lines in Euclidean
+// Plane
+using System.Collections.Generic;
+using System;
+
+class GFG{
+
+static double EPSILON = 1.0842e-19;
+
+// Double variables can't be checked precisely
+// using '==' this function returns true if
+// the double variables are equal
+static bool compareDoubles(double A, double B)
+{
+    double diff = A - B;
+    return (diff < EPSILON) &&
+          (-diff < EPSILON);
+}
+
+// This function returns the number of
+// triangles for a given set of lines
+static int numberOfTringles(int []a, int []b,
+                            int []c, int n)
+{
+
+    // Slope array stores the slope of lines
+    List<double> slope = new List<double>();
+    for(int i = 0; i < n; i++)
+        slope.Add((double)(a[i] * 1.0) / b[i]);
+
+    // Slope array is sorted so that all lines
+    // with same slope come together
+    slope.Sort();
+
+    // After sorting slopes, count different
+    // slopes. k is index in count[].
+    int []count = new int [n];
+    int k = 0;
+
+    // Count of current slope
+    int this_count = 1;
+
+    for(int i = 1; i < n; i++)
+    {
+        if (compareDoubles((double)slope[i],
+                           (double)slope[i - 1]))
+            this_count++;
+        else
+        {
+            count[k++] = this_count;
+            this_count = 1;
+        }
+    }
+    count[k++] = this_count;
+
+    // Calculating sum1 (Sum of all slopes)
+    // sum1 = m1 + m2 + ...
+    int sum1 = 0;
+    for(int i = 0; i < k; i++)
+        sum1 += count[i];
+
+    // Calculating sum2. sum2 = m1*m2 + m2*m3 + ...
+    int sum2 = 0;
+
+    // Needed for sum3
+    int []temp = new int [n];
+    for(int i = 0; i < k; i++)
+    {
+        temp[i] = count[i] * (sum1 - count[i]);
+        sum2 += temp[i];
+    }
+    sum2 /= 2;
+
+    // Calculating sum3 which gives
+    // the final answer
+    // m1 * m2 * m3 + m2 * m3 * m4 + ...
+    int sum3 = 0;
+
+    for(int i = 0; i < k; i++)
+        sum3 += count[i] * (sum2 - temp[i]);
+
+    sum3 /= 3;
+
+    return sum3;
+}
+
+// Driver code
+public static void Main()
+{
+
+    // lines are stored as arrays of a, b
+    // and c for 'ax+by=c'
+    int []a = { 1, 2, 3, 4 };
+    int []b = { 2, 4, 5, 5 };
+    int []c = { 5, 7, 8, 6 };
+
+    // n is the number of lines
+    int n = a.Length;
+
+     Console.WriteLine("The number of triangles " +
+                       "that can be formed are: " +
+                       numberOfTringles(a, b, c, n));
+}
+}
+
+// This code is contributed by Stream_Cipher
+
+JavaScript
+
+<script>
+      // JavaScript program to find the number of
+      // triangles that can be formed
+      // using a set of lines in Euclidean
+      // Plane
+      const EPSILON = 1.0842e-19;
+
+      // Double variables can't be checked precisely
+      // using '==' this function returns true if
+      // the double variables are equal
+      function compareDoubles(A, B) {
+        var diff = A - B;
+        return diff < EPSILON && -diff < EPSILON;
+      }
+
+      // This function returns the number of
+      // triangles for a given set of lines
+      function numberOfTringles(a, b, c, n) {
+        // Slope array stores the slope of lines
+        var slope = [];
+        for (var i = 0; i < n; i++) slope.push(parseFloat(a[i] * 1.0) / b[i]);
+
+        // Slope array is sorted so that all lines
+        // with same slope come together
+        slope.sort();
+
+        // After sorting slopes, count different
+        // slopes. k is index in count[].
+        var count = new Array(n).fill(0);
+        var k = 0;
+
+        // Count of current slope
+        var this_count = 1;
+
+        for (var i = 1; i < n; i++) {
+          if (compareDoubles(parseFloat(slope[i]), parseFloat(slope[i - 1])))
+            this_count++;
+          else {
+            count[k++] = this_count;
+            this_count = 1;
+          }
+        }
+        count[k++] = this_count;
+
+        // Calculating sum1 (Sum of all slopes)
+        // sum1 = m1 + m2 + ...
+        var sum1 = 0;
+        for (var i = 0; i < k; i++) sum1 += count[i];
+
+        // Calculating sum2. sum2 = m1*m2 + m2*m3 + ...
+        var sum2 = 0;
+
+        // Needed for sum3
+        var temp = new Array(n).fill(0);
+        for (var i = 0; i < k; i++) {
+          temp[i] = count[i] * (sum1 - count[i]);
+          sum2 += temp[i];
+        }
+        sum2 /= 2;
+
+        // Calculating sum3 which gives
+        // the final answer
+        // m1 * m2 * m3 + m2 * m3 * m4 + ...
+        var sum3 = 0;
+        for (var i = 0; i < k; i++) sum3 += count[i] * (sum2 - temp[i]);
+        sum3 /= 3;
+        return sum3;
+      }
+
+      // Driver code
+      // lines are stored as arrays of a, b
+      // and c for 'ax+by=c'
+      var a = [1, 2, 3, 4];
+      var b = [2, 4, 5, 5];
+      var c = [5, 7, 8, 6];
+
+      // n is the number of lines
+      var n = a.length;
+
+      document.write(
+        "The number of triangles " +
+          "that can be formed are: " +
+          numberOfTringles(a, b, c, n)
+      );
+
+      // This code is contributed by rdtank.
+    </script>
+
+Output:
+
+The number of triangles that can be formed are: 2
+
+Time Complexity: All the loops in the code are O(n). The time complexity in this implementation is thus driven by the sort function used to sort the slope array. This makes the algorithm O(nlogn). Auxiliary Space : O(n)

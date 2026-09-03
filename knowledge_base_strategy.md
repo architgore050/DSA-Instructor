@@ -48,14 +48,19 @@ competitive-programming-style topics like segment trees, DSU, FFT).
 
 | Folder | Source | Files | Size | What it is |
 |---|---|---:|---:|---|
-| `docs/geeksforgeeks/` | geeksforgeeks.org DSA tutorial (scraped) | 416 `.txt` | ~7 MB | Core DSA tutorial articles as plain text. Each file starts with a header line containing the source URL and title, then headings/lists/code preserved as text. Covers: fundamentals & complexity, arrays/strings, searching, sorting, bit manipulation, hashing, backtracking, linked lists, stacks, queues/deques, binary trees, BSTs, heaps, graphs, greedy, DP. |
+| `docs/geeksforgeeks/` | geeksforgeeks.org DSA tutorial (scraped) | 1505 `.txt` | ~24 MB | Core DSA tutorial articles as plain text. Each file starts with a header block (`Source:` URL, `Title:`, `Extractor: 2`) then headings/lists/code preserved as text. FULL coverage of the GfG DSA tutorial hub (1506 unique article URLs): fundamentals & complexity, arrays/strings, searching, sorting, bit manipulation, hashing, backtracking, linked lists, stacks, queues/deques, binary trees, BSTs, heaps, graphs, greedy, DP — plus Maths/Pattern & Recursion, Two-Pointer, Sliding Window, Prefix Sum, Number Theory, Trie, String Matching, Range Query/Segment Tree, A2Z reference, and topic-wise index harvests (Geometric, Branch & Bound, Randomized, Divide & Conquer, Matrix, etc.). |
 
 Collection artifacts in the same folder (NOT corpus content — exclude from ingestion):
-`scrape.py`, `_build_urls.py`, `_urls.txt`, `_failures.txt`, `_run.log`.
+`scrape.py` and every file matching `_*.py`, `_*.txt`, `_*.json`, `_*.log`, `_*.html`
+(URL lists, section maps, exploration/inspection scripts, hub HTML snapshots, run logs).
 
-Scope note: ~130 secondary GfG articles were deliberately skipped (pattern-printing/math problems,
-two-pointer, sliding window, prefix sum, number theory, trie, string matching, segment-tree/range-query
-pages). They can be added later by re-running `scrape.py` if needed. One dead link logged in `_failures.txt`.
+Scope note: FULL coverage achieved (2026-09-03) — all 1506 unique article URLs from the DSA tutorial
+hub were scraped; 1505 saved. The only failure is `dsa/bottom-view-binary-tree/` (HTTP 404 on every
+attempt, incl. slug variants — page removed upstream); see `_failures.txt`. Two hub pages are
+non-articles (`excluded_non_articles`) and 28 section index/hub pages were intentionally not saved as
+articles (`index_pages_not_saved`, both lists in `_sections.json`). Extractor v2 (see `scrape.py`)
+adds an `Extractor: 2` header marker, language labels on code blocks, and fixes a defect where
+pages with bare inline markup lost all text; every file carries the marker.
 
 Role: **tutorial-style corroboration** — multiple independent phrasings of the same concepts help
 retrieval recall and source diversity (spec §20), but GfG is proprietary content: keep usage to

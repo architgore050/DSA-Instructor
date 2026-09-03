@@ -1,0 +1,500 @@
+Source: https://www.geeksforgeeks.org/dsa/memory-efficient-doubly-linked-list/
+Title: Memory efficient doubly linked list
+Extractor: 2
+
+We need to implement a doubly linked list with the use of a single pointer in each node. For that we are given a stream of data of size n for the linked list , your task is to make the function insert() and getList() . The insert() function pushes (or inserts at the beginning) the given data in the linked list and the getList() function returns the linked list as a list.
+
+Note: The List should be printed in both forward and backward direction.
+
+Examples
+
+> Input: head =  40<->30<->20<->10 Output: 40 30 20 10 10 20 30 40 Input: head =  5<->4<->3<->2<->1 Output: 5 4 3 2 1 1  2 3 4 5
+
+### [Expected Approach] Using Bitwise XOR - O(n) Time and O(1) Space
+
+> We know that each node in a doubly-linked list has two pointer fields which contain the addresses of the previous and next node. On the other hand, each node of the XOR linked list requires only a single pointer field, which doesn’t store the actual memory addresses but stores the bitwise XOR of addresses for its previous and next node.
+
+Below is the implementation of the above approach :
+
+C++
+
+// C++ program Implements a doubly linked
+// list using XOR pointers.
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* npx;
+
+    Node(int x) {
+        data = x;
+        npx = nullptr;
+    }
+};
+
+// XOR function to get XOR of two pointers
+Node* XOR(Node* a, Node* b) {
+    return reinterpret_cast<Node*>(reinterpret_cast<uintptr_t>(a)
+           ^ reinterpret_cast<uintptr_t>(b));
+}
+
+// Function to insert a node at the front of the list
+Node* insert(Node* head, int data) {
+
+    // Create a new node with the given data
+    Node* new_node = new Node(data);
+
+    // Make the new node's npx point to the head
+    new_node->npx = XOR(head, nullptr);
+
+    // Update npx of the head if it's not NULL
+    if (head != nullptr) {
+        Node* next = XOR(head->npx, nullptr);
+        head->npx = XOR(new_node, next);
+    }
+
+    // Return the new node as the new head
+    return new_node;
+}
+
+// Function to retrieve the list as a vector
+vector<int> getList(Node* head) {
+    vector<int> vec;
+    Node* curr = head;
+    Node* prev = nullptr;
+    Node* next;
+
+    while (curr != nullptr) {
+        // Add current node's data to vector
+        vec.push_back(curr->data);
+
+        // Calculate the next node using XOR
+        next = XOR(prev, curr->npx);
+
+        // Update previous and current nodes
+        prev = curr;
+        curr = next;
+    }
+
+    return vec;
+}
+
+int main() {
+
+   // Create a hard-coded linked list:
+   // 40 <-> 30 <-> 20 <-> 10 (since we insert at the
+	// front)
+    Node* head = nullptr;
+
+    head = insert(head, 10);
+    head = insert(head, 20);
+    head = insert(head, 30);
+    head = insert(head, 40);
+
+    vector<int> list = getList(head);
+
+    for(int i = 0; i < list.size(); ++i) {
+        cout<< list[i] <<" ";
+    }
+    cout << endl;
+
+    for(int i = list.size() - 1; i >= 0; --i) {
+        cout<< list[i] <<" ";
+    }
+    cout << endl;
+
+    return 0;
+}
+
+C
+
+// C program Implements a doubly linked
+// list using XOR pointers
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+struct Node {
+    int data;
+    struct Node* npx;
+};
+
+struct Node* createNode(int data);
+
+// XOR function to get XOR of two pointers
+struct Node* XOR(struct Node* a, struct Node* b) {
+    return (struct Node*)((uintptr_t)(a) ^ (uintptr_t)(b));
+}
+
+// Function to insert a node at the front of the list
+struct Node* insert(struct Node* head, int data) {
+
+    // Create a new node with the given data
+    struct Node* new_node = createNode(data);
+
+    // Make the new node's npx point to the head
+    new_node->npx = XOR(head, NULL);
+
+    // Update npx of the head if it's not NULL
+    if (head != NULL) {
+        struct Node* next = XOR(head->npx, NULL);
+        head->npx = XOR(new_node, next);
+    }
+
+    // Return the new node as the new head
+    return new_node;
+}
+
+// Function to retrieve the list as an array
+void getList(struct Node* head, int* arr, int* len) {
+    struct Node* curr = head;
+    struct Node* prev = NULL;
+    struct Node* next;
+
+    // Initialize array index
+    *len = 0;
+
+    while (curr != NULL) {
+
+        // Add current node's data to array
+        arr[(*len)++] = curr->data;
+
+        // Calculate the next node using XOR
+        next = XOR(prev, curr->npx);
+
+        // Update previous and current nodes
+        prev = curr;
+        curr = next;
+    }
+}
+
+struct Node* createNode(int data) {
+    struct Node* new_node =
+      (struct Node*)malloc(sizeof(struct Node));
+    new_node->data = data;
+    new_node->npx = NULL;
+    return new_node;
+}
+
+int main() {
+
+  	 // Create a hard-coded linked list:
+     // 40 <-> 30 <-> 20 <-> 10 (since we insert at the
+     // front)
+    struct Node* head = NULL;
+    int list[100];
+    int len, i;
+
+    head = insert(head, 10);
+    head = insert(head, 20);
+    head = insert(head, 30);
+    head = insert(head, 40);
+
+    getList(head, list, &len);
+
+    for (i = 0; i < len; ++i) {
+        printf("%d ", list[i]);
+    }
+    printf("\n");
+
+    for (i = len - 1; i >= 0; --i) {
+        printf("%d ", list[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
+
+Java
+
+// Java program Implements a doubly linked
+// list using XOR pointers
+import java.util.ArrayList;
+
+class Node {
+    int data;
+    Node prev;
+    Node next;
+
+    Node(int x) {
+        this.data = x;
+        this.prev = null;
+        this.next = null;
+    }
+}
+
+public class GfG {
+
+    // Function to insert a node at the front
+    static Node insert(Node head, int data) {
+
+        // Create a new node with the given data
+        Node newNode = new Node(data);
+
+        // Update head's previous pointer if the list is not
+        // empty
+        if (head != null) {
+            head.prev = newNode;
+            newNode.next = head;
+        }
+
+        // Return the new node as the new head
+        return newNode;
+    }
+
+    // Function to retrieve the list as an ArrayList
+    static ArrayList<Integer> getList(Node head) {
+        ArrayList<Integer> list = new ArrayList<>();
+
+        // Start from the head and traverse the list
+        Node current = head;
+        while (current != null) {
+            list.add(current.data);
+            current = current.next;
+        }
+
+        return list;
+    }
+
+    public static void main(String[] args) {
+
+        // Create a hard-coded linked list:
+        // 40 <-> 30 <-> 20 <-> 10 (since we insert at the
+        // front)
+        Node head = null;
+
+        head = insert(head, 10);
+        head = insert(head, 20);
+        head = insert(head, 30);
+        head = insert(head, 40);
+
+        ArrayList<Integer> list = getList(head);
+
+        for (int i = 0; i < list.size(); i++) {
+            System.out.print(list.get(i) + " ");
+        }
+        System.out.println();
+
+        for (int i = list.size() - 1; i >= 0; i--) {
+            System.out.print(list.get(i) + " ");
+        }
+        System.out.println();
+    }
+}
+
+Python
+
+# Python program Implements a doubly linked
+# list using XOR pointers
+
+class Node:
+    def __init__(self, data):
+
+        self.data = data
+        self.prev = None
+        self.next = None
+
+# Function to insert a node at the front
+def insert(head, data):
+
+    # Create a new node with the given data
+    new_node = Node(data)
+
+    # Update head's previous pointer if list is not empty
+    if head is not None:
+        head.prev = new_node
+        new_node.next = head
+
+    # Return the new node as the new head
+    return new_node
+
+# Function to retrieve the list as a list
+def getList(head):
+    result = []
+
+    # Start from the head and traverse the list
+    current = head
+    while current is not None:
+        result.append(current.data)
+        current = current.next
+
+    return result
+
+if __name__ == "__main__":
+
+   # Create a hard-coded linked list:
+   # 40 <-> 30 <-> 20 <-> 10 (since we insert at the
+   # front)
+    head = None
+
+    head = insert(head, 10)
+    head = insert(head, 20)
+    head = insert(head, 30)
+    head = insert(head, 40)
+
+    result_list = getList(head)
+
+    for i in range(len(result_list)):
+        print(result_list[i], end=" ")
+    print()
+
+    for i in range(len(result_list) - 1, -1, -1):
+        print(result_list[i], end=" ")
+    print()
+
+C#
+
+// C# program Implements a doubly linked
+// list using XOR pointers
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node prev;
+    public Node next;
+    public Node(int x) {
+        data = x;
+        prev = null;
+        next = null;
+    }
+}
+
+class GfG {
+
+    // Function to insert a node at the front
+    static Node Insert(Node head, int data) {
+        // Create a new node with the given data
+        Node newNode = new Node(data);
+
+        // Update head's previous pointer if
+      	// the list is not empty
+        if (head != null) {
+            head.prev = newNode;
+            newNode.next = head;
+        }
+
+        // Return the new node as the new head
+        return newNode;
+    }
+
+    // Function to retrieve the list as a List<int>
+    static List<int> GetList(Node head) {
+        List<int> result = new List<int>();
+
+        // Start from the head and traverse the list
+        Node current = head;
+        while (current != null) {
+            result.Add(current.data);
+            current = current.next;
+        }
+
+        return result;
+    }
+
+    public static void Main(string[] args) {
+
+        // Create a hard-coded linked list:
+        // 40 <-> 30 <-> 20 <-> 10
+      	//(since we insert at the front)
+        Node head = null;
+
+        head = Insert(head, 10);
+        head = Insert(head, 20);
+        head = Insert(head, 30);
+        head = Insert(head, 40);
+
+        List<int> resultList = GetList(head);
+
+        foreach (int num in resultList) {
+            Console.Write(num + " ");
+        }
+        Console.WriteLine();
+
+        for (int i = resultList.Count - 1; i >= 0; i--) {
+            Console.Write(resultList[i] + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+// Javascript program Implements a doubly linked
+// list using XOR pointers
+
+class Node {
+    constructor(data) {
+
+        // Initialize node data and pointers
+        this.data = data;
+        this.prev = null;
+        this.next = null;
+    }
+}
+
+// Function to insert a node at the front
+function insert(head, data) {
+
+    // Create a new node with the given data
+    const newNode = new Node(data);
+
+    // Update head's previous pointer if list is not empty
+    if (head !== null) {
+        head.prev = newNode;
+        newNode.next = head;
+    }
+
+    // Return the new node as the new head
+    return newNode;
+}
+
+// Function to retrieve the list as an array
+function getList(head) {
+    const result = [];
+
+    // Start from the head and traverse the list
+    let current = head;
+    while (current !== null) {
+        result.push(current.data);
+        current = current.next;
+    }
+
+    return result;
+}
+
+// Create a hard-coded linked list:
+// 40 <-> 30 <-> 20 <-> 10 (since we insert at the
+// front)
+let head = null;
+
+head = insert(head, 10);
+head = insert(head, 20);
+head = insert(head, 30);
+head = insert(head, 40);
+
+const resultList = getList(head);
+
+for (let i = 0; i < resultList.length; i++) {
+    console.log(resultList[i] + " ");
+}
+
+for (let i = resultList.length - 1; i >= 0; i--) {
+    console.log(resultList[i] + " ");
+}
+
+Output
+
+40 30 20 10
+10 20 30 40
+
+Time Complexity: O(n) for both insertion and retrieval, where n is the number of nodes. Auxiliary Space: O(1) for insertion, O(n) for storing the list in an array
+
+Related articles :
+
+- XOR Linked List - A Memory Efficient Doubly Linked List | Set 1 - GeeksforGeeks
+- XOR Linked List – A Memory Efficient Doubly Linked List | Set 2 - GeeksforGeeks

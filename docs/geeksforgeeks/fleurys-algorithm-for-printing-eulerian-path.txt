@@ -1,0 +1,539 @@
+Source: https://www.geeksforgeeks.org/dsa/fleurys-algorithm-for-printing-eulerian-path/
+Title: Fleury's Algorithm for printing Eulerian Path or Circuit
+Extractor: 2
+
+Given an undirected connected graph with v nodes, and e edges, with adjacency list adj . The task is to print an Eulerian trail or circuit using Fleury's Algorithm
+
+A graph is said to be Eulerian if it contains an Eulerian Cycle, a cycle that visits every edge exactly once and starts and ends at the same vertex. If a graph contains an Eulerian Path, a path that visits every edge exactly once but starts and ends at different vertices
+
+Examples:
+
+> Input: Output: 4-3, 3-0, 0-1, 1-2, 2-0 Input: Output: 2-1, 1-0, 0-3, 3-4, 4-0, 0-2 Input: Output: 0
+
+Before diving into this approach, it's highly recommended to explore this comprehensive article on Eulerian Path and Circuit. Please refer to this Link: Eulerian path and circuit for undirected graph The article clearly explains the fundamentals and conditions for identifying whether a graph contains an Eulerian Path or Eulerian Circuit, laying a strong foundation for the solution we’re about to implement.
+
+### Approach:
+
+> The idea is to use Fleury’s Algorithm to print an Eulerian Path or Eulerian Circuit from a graph by carefully selecting edges during traversal. Here's how the algorithm works: Ensure the graph has either 0 or 2 vertices of odd degree . If there are 0 odd-degree vertices, you can start from any vertex. If there are 2 odd-degree vertices, you must start from one of them. At each step, follow one edge at a time, making sure to prefer non-bridge edges whenever possible. A bridge is an edge that, if removed, increases the number of disconnected components. Continue traversing until a ll edges are used exactly once . This approach ensures that the path remains valid and no part of the graph becomes unreachable prematurely.
+
+The idea is, "don't burn bridges " so that we can come back to a vertex and traverse the remaining edges. For example, let us consider the following graph.
+
+> There are two vertices with odd degrees, '2' and '3', and we can start paths from any of them. Let us start the tour from vertex '2'. Three edges are going out from vertex '2', which one to pick? We don't pick the edge '2-3' because that is a bridge (we won't be able to come back to '3'). We can pick any of the remaining two edges. Let us say we pick '2-0'. We remove this edge and move to vertex '0'. There is only one edge from vertex '0', so we pick it, remove it and move to vertex '1'. Euler tour becomes '2-0 0-1'. There is only one edge from vertex '1', so we pick it, remove it and move to vertex '2'. Euler tour becomes '2-0 0-1 1-2' Again there is only one edge from vertex 2, so we pick it, remove it and move to vertex 3. Euler tour becomes '2-0 0-1 1-2 2-3' There are no more edges left, so we stop here. Final tour is '2-0 0-1 1-2 2-3'.
+
+- We first find the starting point which must be an odd vertex (if  there are odd vertices) and store it in variable ‘u’. If there are zero  odd vertices, we start from vertex '0'.
+- We call printEulerUtil() to  print Euler tour starting with u. We traverse all adjacent vertices of  u, if there is only one adjacent vertex, we immediately consider it. If  there are more than one adjacent vertices, we consider an adjacent v  only if edge u-v is not a bridge.
+- How to find if a given edge is a  bridge? We count vertices reachable from u. We remove edge u-v  and again count the number of reachable vertices from u. If the number  of reachable vertices is reduced, then edge u-v is a bridge. To count  reachable vertices, we can either use BFS or DFS, we have used DFS in  the below code.
+
+Once an edge is processed (included in the Euler tour), we remove it  from the graph. To remove the edge, we replace the vertex entry with -1  in the adjacency list. Note that simply deleting the node may not work  as the code is recursive and a parent call may be in the middle of the  adjacency list.
+
+C++
+
+// C++ program to print Eulerian Path or
+// Circuit using Fleury’s Algorithm
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to remove edge u-v from the graph
+void removeEdge(vector<int> adj[], int u, int v) {
+    adj[u].erase(find(adj[u].begin(), adj[u].end(), v));
+    adj[v].erase(find(adj[v].begin(), adj[v].end(), u));
+}
+
+// DFS to count reachable vertices from v
+void dfsCount(int v, vector<int> adj[],
+                     vector<bool> &visited) {
+    visited[v] = true;
+
+    for (int neighbor : adj[v]) {
+        if (!visited[neighbor]) {
+            dfsCount(neighbor, adj, visited);
+        }
+    }
+}
+
+// Check if edge u-v is a valid next edge to traverse
+bool isValidNextEdge(int u, int v,
+                     vector<int> adj[], int totalV) {
+
+    if (adj[u].size() == 1) {
+        return true;
+    }
+
+    vector<bool> visited(totalV, false);
+    int count1 = 0;
+    dfsCount(u, adj, visited);
+    for (bool x : visited) {
+        if (x) {
+            count1++;
+        }
+    }
+
+    removeEdge(adj, u, v);
+
+    fill(visited.begin(), visited.end(), false);
+    int count2 = 0;
+    dfsCount(u, adj, visited);
+    for (bool x : visited) {
+        if (x) {
+            count2++;
+        }
+    }
+
+    adj[u].push_back(v);
+    adj[v].push_back(u);
+
+    return count1 == count2;
+}
+
+// Recursively collect the Eulerian
+// path/circuit starting from u
+void getEulerUtil(int u, vector<int> adj[],
+                  vector<vector<int>> &edges, int v) {
+
+    for (int i = 0; i < adj[u].size(); ++i) {
+        int next = adj[u][i];
+        if (isValidNextEdge(u, next, adj, v)) {
+            edges.push_back({u, next});
+            removeEdge(adj, u, next);
+            getEulerUtil(next, adj, edges, v);
+            break;
+        }
+    }
+}
+
+// Function to return Eulerian trail or circuit
+vector<vector<int>> getEulerTour(int v,
+                                 vector<int> adj[]) {
+    int start = 0;
+
+    // Find a vertex with odd degree if exists
+    for (int i = 0; i < v; i++) {
+        if (adj[i].size() % 2 != 0) {
+            start = i;
+            break;
+        }
+    }
+
+    vector<vector<int>> edges;
+    getEulerUtil(start, adj, edges, v);
+    return edges;
+}
+
+// Driver code
+int main() {
+    int v = 5;
+    vector<int> adj[5] = {{1, 2}, {0, 2},
+                          {0, 1, 3}, {2}};
+
+    vector<vector<int>> res = getEulerTour(v, adj);
+
+    for (int i = 0; i < res.size(); i++) {
+        cout << res[i][0] << "-" << res[i][1];
+        if (i != res.size() - 1) {
+            cout << ", ";
+        }
+    }
+
+    return 0;
+}
+
+Java
+
+// Java program to print Eulerian Path or
+// Circuit using Fleury’s Algorithm
+import java.util.*;
+
+class GfG {
+
+    // Function to remove edge u-v from the graph
+    static void removeEdge(List<Integer>[] adj, int u, int v) {
+        adj[u].remove(Integer.valueOf(v));
+        adj[v].remove(Integer.valueOf(u));
+    }
+
+    // DFS to count reachable vertices from v
+    static void dfsCount(int v, List<Integer>[] adj,
+                         boolean[] visited) {
+        visited[v] = true;
+
+        for (int neighbor : adj[v]) {
+            if (!visited[neighbor]) {
+                dfsCount(neighbor, adj, visited);
+            }
+        }
+    }
+
+    // Check if edge u-v is a valid next edge to traverse
+    static boolean isValidNextEdge(int u, int v,
+                                   List<Integer>[] adj, int totalV) {
+
+        if (adj[u].size() == 1) {
+            return true;
+        }
+
+        boolean[] visited = new boolean[totalV];
+        int count1 = 0;
+        dfsCount(u, adj, visited);
+        for (boolean x : visited) {
+            if (x) {
+                count1++;
+            }
+        }
+
+        removeEdge(adj, u, v);
+
+        Arrays.fill(visited, false);
+        int count2 = 0;
+        dfsCount(u, adj, visited);
+        for (boolean x : visited) {
+            if (x) {
+                count2++;
+            }
+        }
+
+        adj[u].add(v);
+        adj[v].add(u);
+
+        return count1 == count2;
+    }
+
+    // Recursively collect the Eulerian
+    // path/circuit starting from u
+    static void getEulerUtil(int u, List<Integer>[] adj,
+                             List<int[]> edges, int v) {
+
+        for (int i = 0; i < adj[u].size(); ++i) {
+            int next = adj[u].get(i);
+            if (isValidNextEdge(u, next, adj, v)) {
+                edges.add(new int[]{u, next});
+                removeEdge(adj, u, next);
+                getEulerUtil(next, adj, edges, v);
+                break;
+            }
+        }
+    }
+
+    // Function to return Eulerian trail or circuit
+    static List<int[]> getEulerTour(int v, List<Integer>[] adj) {
+        int start = 0;
+
+        // Find a vertex with odd degree if exists
+        for (int i = 0; i < v; i++) {
+            if (adj[i].size() % 2 != 0) {
+                start = i;
+                break;
+            }
+        }
+
+        List<int[]> edges = new ArrayList<>();
+        getEulerUtil(start, adj, edges, v);
+        return edges;
+    }
+
+    public static void main(String[] args) {
+        int v = 4;
+        List<Integer>[] adj = new ArrayList[4];
+        for (int i = 0; i < 4; i++) {
+            adj[i] = new ArrayList<>();
+        }
+        adj[0].add(1); adj[0].add(2);
+        adj[1].add(0); adj[1].add(2);
+        adj[2].add(0); adj[2].add(1); adj[2].add(3);
+        adj[3].add(2);
+
+        List<int[]> res = getEulerTour(v, adj);
+
+        for (int i = 0; i < res.size(); i++) {
+            System.out.print(res.get(i)[0] + "-" + res.get(i)[1]);
+            if (i != res.size() - 1) {
+                System.out.print(", ");
+            }
+        }
+    }
+}
+
+Python
+
+# Python program to print Eulerian Path or
+# Circuit using Fleury’s Algorithm
+
+# Function to remove edge u-v from the graph
+def removeEdge(adj, u, v):
+    adj[u].remove(v)
+    adj[v].remove(u)
+
+# DFS to count reachable vertices from v
+def dfsCount(v, adj, visited):
+    visited[v] = True
+
+    for neighbor in adj[v]:
+        if not visited[neighbor]:
+            dfsCount(neighbor, adj, visited)
+
+# Check if edge u-v is a valid next edge to traverse
+def isValidNextEdge(u, v, adj, totalV):
+    if len(adj[u]) == 1:
+        return True
+
+    visited = [False] * totalV
+    count1 = 0
+    dfsCount(u, adj, visited)
+    count1 = sum(visited)
+
+    removeEdge(adj, u, v)
+
+    visited = [False] * totalV
+    count2 = 0
+    dfsCount(u, adj, visited)
+    count2 = sum(visited)
+
+    adj[u].append(v)
+    adj[v].append(u)
+
+    return count1 == count2
+
+# Recursively collect the Eulerian
+# path/circuit starting from u
+def getEulerUtil(u, adj, edges, v):
+    for i in range(len(adj[u])):
+        next = adj[u][i]
+        if isValidNextEdge(u, next, adj, v):
+            edges.append([u, next])
+            removeEdge(adj, u, next)
+            getEulerUtil(next, adj, edges, v)
+            break
+
+# Function to return Eulerian trail or circuit
+def getEulerTour(v, adj):
+    start = 0
+
+    # Find a vertex with odd degree if exists
+    for i in range(v):
+        if len(adj[i]) % 2 != 0:
+            start = i
+            break
+
+    edges = []
+    getEulerUtil(start, adj, edges, v)
+    return edges
+
+if __name__ == "__main__":
+    v = 4
+    adj = [[1, 2], [0, 2], [0, 1, 3], [2]]
+
+    res = getEulerTour(v, adj)
+
+    for i in range(len(res)):
+        print(f"{res[i][0]}-{res[i][1]}", end="")
+        if i != len(res) - 1:
+            print(", ", end="")
+
+C#
+
+// C# program to print Eulerian Path or
+// Circuit using Fleury’s Algorithm
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to remove edge u-v from the graph
+    static void removeEdge(List<int>[] adj, int u, int v) {
+        adj[u].Remove(v);
+        adj[v].Remove(u);
+    }
+
+    // DFS to count reachable vertices from v
+    static void dfsCount(int v, List<int>[] adj,
+                         bool[] visited) {
+        visited[v] = true;
+
+        foreach (int neighbor in adj[v]) {
+            if (!visited[neighbor]) {
+                dfsCount(neighbor, adj, visited);
+            }
+        }
+    }
+
+    // Check if edge u-v is a valid next edge to traverse
+    static bool isValidNextEdge(int u, int v,
+                                List<int>[] adj, int totalV) {
+
+        if (adj[u].Count == 1) {
+            return true;
+        }
+
+        bool[] visited = new bool[totalV];
+        int count1 = 0;
+        dfsCount(u, adj, visited);
+        foreach (bool x in visited) {
+            if (x) {
+                count1++;
+            }
+        }
+
+        removeEdge(adj, u, v);
+
+        Array.Clear(visited, 0, visited.Length);
+        int count2 = 0;
+        dfsCount(u, adj, visited);
+        foreach (bool x in visited) {
+            if (x) {
+                count2++;
+            }
+        }
+
+        adj[u].Add(v);
+        adj[v].Add(u);
+
+        return count1 == count2;
+    }
+
+    // Recursively collect the Eulerian
+    // path/circuit starting from u
+    static void getEulerUtil(int u, List<int>[] adj,
+                             List<int[]> edges, int v) {
+
+        for (int i = 0; i < adj[u].Count; ++i) {
+            int next = adj[u][i];
+            if (isValidNextEdge(u, next, adj, v)) {
+                edges.Add(new int[] { u, next });
+                removeEdge(adj, u, next);
+                getEulerUtil(next, adj, edges, v);
+                break;
+            }
+        }
+    }
+
+    // Function to return Eulerian trail or circuit
+    static List<int[]> getEulerTour(int v, List<int>[] adj) {
+        int start = 0;
+
+        // Find a vertex with odd degree if exists
+        for (int i = 0; i < v; i++) {
+            if (adj[i].Count % 2 != 0) {
+                start = i;
+                break;
+            }
+        }
+
+        List<int[]> edges = new List<int[]>();
+        getEulerUtil(start, adj, edges, v);
+        return edges;
+    }
+
+    static void Main() {
+        int v = 4;
+        List<int>[] adj = new List<int>[4];
+        for (int i = 0; i < 4; i++) {
+            adj[i] = new List<int>();
+        }
+        adj[0].Add(1); adj[0].Add(2);
+        adj[1].Add(0); adj[1].Add(2);
+        adj[2].Add(0); adj[2].Add(1); adj[2].Add(3);
+        adj[3].Add(2);
+
+        List<int[]> res = getEulerTour(v, adj);
+
+        for (int i = 0; i < res.Count; i++) {
+            Console.Write(res[i][0] + "-" + res[i][1]);
+            if (i != res.Count - 1) {
+                Console.Write(", ");
+            }
+        }
+    }
+}
+
+JavaScript
+
+// Javascript program to print Eulerian Path or
+// Circuit using Fleury’s Algorithm
+
+// Function to remove edge u-v from the graph
+function removeEdge(adj, u, v) {
+    adj[u].splice(adj[u].indexOf(v), 1);
+    adj[v].splice(adj[v].indexOf(u), 1);
+}
+
+// DFS to count reachable vertices from v
+function dfsCount(v, adj, visited) {
+    visited[v] = true;
+
+    for (let neighbor of adj[v]) {
+        if (!visited[neighbor]) {
+            dfsCount(neighbor, adj, visited);
+        }
+    }
+}
+
+// Check if edge u-v is a valid next edge to traverse
+function isValidNextEdge(u, v, adj, totalV) {
+    if (adj[u].length === 1) {
+        return true;
+    }
+
+    let visited = Array(totalV).fill(false);
+    dfsCount(u, adj, visited);
+    let count1 = visited.filter(x => x).length;
+
+    removeEdge(adj, u, v);
+
+    visited.fill(false);
+    dfsCount(u, adj, visited);
+    let count2 = visited.filter(x => x).length;
+
+    adj[u].push(v);
+    adj[v].push(u);
+
+    return count1 === count2;
+}
+
+// Recursively collect the Eulerian
+// path/circuit starting from u
+function getEulerUtil(u, adj, edges, v) {
+    for (let i = 0; i < adj[u].length; ++i) {
+        let next = adj[u][i];
+        if (isValidNextEdge(u, next, adj, v)) {
+            edges.push([u, next]);
+            removeEdge(adj, u, next);
+            getEulerUtil(next, adj, edges, v);
+            break;
+        }
+    }
+}
+
+// Function to return Eulerian trail or circuit
+function getEulerTour(v, adj) {
+    let start = 0;
+
+    // Find a vertex with odd degree if exists
+    for (let i = 0; i < v; i++) {
+        if (adj[i].length % 2 !== 0) {
+            start = i;
+            break;
+        }
+    }
+
+    let edges = [];
+    getEulerUtil(start, adj, edges, v);
+    return edges;
+}
+
+// Driver Code
+let v = 4;
+let adj = [[1, 2], [0, 2], [0, 1, 3], [2]];
+
+let res = getEulerTour(v, adj);
+
+for (let i = 0; i < res.length; i++) {
+    process.stdout.write(res[i][0] + "-" + res[i][1]);
+    if (i !== res.length - 1) {
+        process.stdout.write(", ");
+    }
+}
+
+Output
+
+2-0, 0-1, 1-2, 2-3
+
+Time Complexity: O(e²), each edge is checked for bridge status using DFS before traversal. Space complexity: O(v + e), adjacency list, visited array, and result storage require linear.

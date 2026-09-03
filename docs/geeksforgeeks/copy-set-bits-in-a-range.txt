@@ -1,0 +1,267 @@
+Source: https://www.geeksforgeeks.org/dsa/copy-set-bits-in-a-range/
+Title: Copy set bits in a range
+Extractor: 2
+
+Given two integers x and y , and two integers l and r representing a range of bit positions (inclusive), copy every set bit (1) from y to x for all positions between l and r. Return the modified value of x. Note: Bit positions are numbered from right to left, starting from 1. Examples :
+
+> Input: x = 10, y = 13, l = 2, r = 3 Output: 14 Explanation: Binary of x is 1010 and binary of y is 1101. In the range [2, 3], y has a set bit only at position 3. Copying this bit into x gives 1110, which is 14. Input: x = 8, y = 7, l = 1, r = 2 Output: 11 Explanation: Binary of x is 1000 and binary of y is 0111. In the range [1, 2], y has set bits at both positions 1 and 2. Copying these bits into x gives 1011, which is 11.
+
+Table of Content
+
+- [Naive Approach] Checking Every Bit in the Range - O(r - l) Time and O(1) Space
+- [Expected Approach] Building a Range Bitmask Directly - O(1) Time and O(1) Space
+
+### [Naive Approach] Checking Every Bit in the Range - O(r - l) Time and O(1) Space
+
+> The idea is simple, go through every bit position from l to r one at a time, and for each position, check if that bit is set in y. If it is, set the same bit position in x using a bitwise OR.
+
+For every position i from l to r:
+
+- Form mask = 1 << (i - 1), a number with only the i'th bit set.
+- If (y & mask) is non-zero, the i'th bit of y is set, so update x = x | mask.
+- After processing every position in the range, return the modified x.
+
+Since l and r are bounded by 32, this loop runs at most 32 times, but it still does more work than necessary by handling one bit at a time instead of the whole range together.
+
+C++
+
+#include <iostream>
+using namespace std;
+
+int setSetBit(int x, int y, int l, int r) {
+
+    // Go through every bit position from l to r
+    for (int i = l; i <= r; i++) {
+        int mask = 1 << (i - 1);
+
+        // If the i'th bit of y is set, set it in x
+        if ((y & mask) != 0) {
+            x = x | mask;
+        }
+    }
+    return x;
+}
+
+int main() {
+    int x = 10, y = 13, l = 2, r = 3;
+    cout << setSetBit(x, y, l, r) << endl;
+    return 0;
+}
+
+Java
+
+class GFG {
+    public static int setSetBit(int x, int y, int l, int r) {
+
+        // Go through every bit position from l to r
+        for (int i = l; i <= r; i++) {
+            int mask = 1 << (i - 1);
+
+            // If the i'th bit of y is set, set it in x
+            if ((y & mask) != 0) {
+                x = x | mask;
+            }
+        }
+        return x;
+    }
+
+    public static void main(String[] args) {
+        int x = 10, y = 13, l = 2, r = 3;
+        System.out.println(setSetBit(x, y, l, r));
+    }
+}
+
+Python
+
+def setSetBit(x, y, l, r):
+    # Go through every bit position from l to r
+    for i in range(l, r + 1):
+        mask = 1 << (i - 1)
+
+        # If the i'th bit of y is set, set it in x
+        if (y & mask) != 0:
+            x = x | mask
+
+    return x
+
+if __name__ == "__main__":
+    x = 10
+    y = 13
+    l = 2
+    r = 3
+    print(setSetBit(x, y, l, r))
+
+C#
+
+using System;
+
+class GFG {
+    public static int setSetBit(int x, int y, int l, int r) {
+        // Go through every bit position from l to r
+        for (int i = l; i <= r; i++) {
+            int mask = 1 << (i - 1);
+
+            // If the i'th bit of y is set, set it in x
+            if ((y & mask) != 0) {
+                x = x | mask;
+            }
+        }
+        return x;
+    }
+
+    public static void Main() {
+        int x = 10, y = 13, l = 2, r = 3;
+        Console.WriteLine(setSetBit(x, y, l, r));
+    }
+}
+
+JavaScript
+
+function setSetBit(x, y, l, r) {
+    // Go through every bit position from l to r
+    for (let i = l; i <= r; i++) {
+        let mask = 1 << (i - 1);
+
+        // If the i'th bit of y is set, set it in x
+        if ((y & mask) !== 0) {
+            x = x | mask;
+        }
+    }
+    return x;
+}
+
+// Driver Code
+let x = 10;
+let y = 13;
+let l = 2;
+let r = 3;
+console.log(setSetBit(x, y, l, r));
+
+Output
+
+14
+
+### [Expected Approach] Building a Range Bitmask Directly - O(1) Time and O(1) Space
+
+> We build a single bitmask that has 1s at every position from l to r and 0s everywhere else, Doing AND of this this mask with y directly extracts y's set bits that fall inside the range. Doing OR the result with x copies those bits.
+
+To build the mask:
+
+- Compute (1 << (r - l + 1)) - 1. This gives a number with exactly (r - l + 1) set bits, all packed at the least significant end.
+- Shift this left by (l - 1) positions. This moves that block of set bits so that it exactly covers the range [l, r]. Call the result rangeMask.
+- Compute y & rangeMask. This keeps only the set bits of y that fall within [l, r], and clears everything else.
+- Compute x | (y & rangeMask). This copies those bits into x, leaving the rest of x unchanged. This is the final answer.
+
+For example: x = 10, y = 13, l = 2, r = 3
+
+- Step 1: (1 << (r - l + 1)) - 1 = (1 << 2) - 1 = 4 - 1 = 3 (binary 0011)
+- Step 2: rangeMask = 3 << (l - 1) = 3 << 1 = 6 (binary 0110)
+- Step 3: y & rangeMask = 1101 & 0110 = 0100
+- Step 4: x | 0100 = 1010 | 0100 = 1110 = 14
+- Output: 14
+
+C++
+
+#include <iostream>
+using namespace std;
+
+int setSetBit(int x, int y, int l, int r) {
+
+    // Use 1LL (64-bit integer) to prevent undefined behavior when (r - l + 1) is 32
+    long long rangeMask = ((1LL << (r - l + 1)) - 1) << (l - 1);
+
+    // Extract set bits from y and apply them to x
+    return x | (y & rangeMask);
+}
+
+int main() {
+    int x = 25, y = 18, l = 1, r = 32;
+    cout << setSetBit(x, y, l, r) << endl;
+    return 0;
+}
+
+Java
+
+class GFG {
+    public static int setSetBit(int x, int y, int l, int r) {
+
+        // Use 1L (long) to prevent overflow when (r - l + 1) is 32
+        long rangeMask = ((1L << (r - l + 1)) - 1) << (l - 1);
+
+        // Cast the mask back to int when performing the bitwise AND
+        return x | (y & (int) rangeMask);
+    }
+
+    // Driver code
+    public static void main(String[] args) {
+        int x = 25, y = 18, l = 1, r = 32;
+        System.out.println(setSetBit(x, y, l, r));
+    }
+}
+
+Python
+
+def setSetBit(x, y, l, r):
+
+    # Step 1 & 2: Build the range mask with 1s from position l to r
+    rangeMask = ((1 << (r - l + 1)) - 1) << (l - 1)
+
+    # Step 3 & 4: Extract set bits from y and apply them to x
+    return x | (y & rangeMask)
+
+if __name__ == "__main__":
+    x = 10
+    y = 13
+    l = 2
+    r = 3
+    print(setSetBit(x, y, l, r))
+
+C#
+
+using System;
+
+class GFG {
+    public static int setSetBit(int x, int y, int l, int r) {
+
+        // Use 1L (long) to prevent overflow when (r - l + 1) is 31 or 32
+        long rangeMask = ((1L << (r - l + 1)) - 1) << (l - 1);
+
+        // Cast the mask back to int when performing the bitwise AND
+        return x | (y & (int)rangeMask);
+    }
+
+    // Driver code
+    public static void Main() {
+        int x = 10, y = 13, l = 2, r = 3;
+        Console.WriteLine(setSetBit(x, y, l, r));
+    }
+}
+
+JavaScript
+
+function setSetBit(x, y, l, r) {
+
+    // Convert inputs to BigInt to safely handle up to 32-bit shifts
+    let bigX = BigInt(x);
+    let bigY = BigInt(y);
+    let bigL = BigInt(l);
+    let bigR = BigInt(r);
+
+    // Build the range mask safely using 64-bit integer math
+    let rangeMask = ((1n << (bigR - bigL + 1n)) - 1n) << (bigL - 1n);
+
+    // Extract set bits, apply to x, and convert back to a standard Number
+    let ans = bigX | (bigY & rangeMask);
+    return Number(ans);
+}
+
+// Driver Code
+let x = 10;
+let y = 13;
+let l = 2;
+let r = 3;
+console.log(setSetBit(x, y, l, r));
+
+Output
+
+27

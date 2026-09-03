@@ -1,0 +1,919 @@
+Source: https://www.geeksforgeeks.org/dsa/atlantic-pacific-water-flow/
+Title: Towers Reaching Both Stations
+Extractor: 2
+
+Given a matrix mat[][ ] of size n x m , where mat[i][j] represents the signal strength of a communication tower. Two control stations monitor the network:
+
+- Station P covers the top and left boundaries of the grid.
+- Station Q covers the bottom and right boundaries of the grid.
+
+A signal can propagate from a tower to one of its neighbouring towers in the four directions (North, South, East, and West) only if the neighbouring tower has a signal strength less than or equal to that of the current tower.
+
+Determine the number of towers (x, y) from which a signal can eventually reach both Station P and Station Q. Any tower located on a boundary covered by a station can transmit directly to that station.
+
+Example:
+
+> Input: mat[][] = [[1, 2, 2, 3, 5], [3, 2, 3, 4, 4], [2, 4, 5, 3, 1], [6, 7, 1, 4, 5], [5, 1, 1, 2, 4]] Output: 7 Explanation: In the given matrix, there are 7 coordinates through which the signals can propagate to both the stations. They are (0, 4), (1, 3), (1, 4), (2, 2), (3, 0), (3, 1), and (4, 0). Input: mat[][] = [[2, 2], [2, 2]] Output: 4 Explanation: In the following example, all cells allow signals to propagate to both the stations.
+
+Table of Content
+
+- [Naive Approach] Using DFS/BFS from Every Cell - O((n * m) ^ 2) Time and O(n * m) Space
+- [Expected Approach] Reverse BFS from Both Stations - O(n * m) Time and O(n * m) Space
+
+### [Naive Approach] Using DFS/BFS from Every Cell - O((n * m) ^ 2) Time and O(n * m) Space
+
+> The idea is to start a DFS from every tower and move only to adjacent towers having signal strength less than or equal to the current tower. During the traversal, check whether the signal reaches both Station P and Station Q. Count all such towers.
+
+Working of Approach:
+
+- Treat each cell as a signal source and perform a DFS to explore all cells that can be reached by moving to adjacent cells with value less than or equal to the current cell.
+- During traversal, keep track of whether the signal reaches Station P (top row or left column) and Station Q (bottom row or right column).
+- For every starting cell, use a separate visited matrix to avoid revisiting cells in the same DFS traversal.
+- After completing the DFS, if the signal can reach both stations, increment the answer count.
+- Finally, return the total number of cells from which the signal can reach both Station P and Station Q.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+void dfs(int row, int col, vector<vector<int>> &mat, vector<vector<bool>> &vis, bool &stationP,
+         bool &stationQ)
+{
+    int n = mat.size();
+    int m = mat[0].size();
+
+    vis[row][col] = true;
+
+    // Signal reaches Station P
+    if (row == 0 || col == 0)
+        stationP = true;
+
+    // Signal reaches Station Q
+    if (row == n - 1 || col == m - 1)
+        stationQ = true;
+
+    int dr[] = {-1, 1, 0, 0};
+    int dc[] = {0, 0, -1, 1};
+
+    for (int k = 0; k < 4; k++)
+    {
+        int newRow = row + dr[k];
+        int newCol = col + dc[k];
+
+        if (newRow >= 0 && newRow < n && newCol >= 0 && newCol < m && !vis[newRow][newCol] &&
+            mat[newRow][newCol] <= mat[row][col])
+        {
+
+            dfs(newRow, newCol, mat, vis, stationP, stationQ);
+        }
+    }
+}
+
+int countCoordinates(vector<vector<int>> &mat)
+{
+
+    int n = mat.size();
+    int m = mat[0].size();
+
+    int ans = 0;
+
+    // Start DFS from every cell
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < m; j++)
+        {
+
+            vector<vector<bool>> vis(n, vector<bool>(m, false));
+
+            bool stationP = false;
+            bool stationQ = false;
+
+            dfs(i, j, mat, vis, stationP, stationQ);
+
+            if (stationP && stationQ)
+                ans++;
+        }
+    }
+
+    return ans;
+}
+
+int main()
+{
+    vector<vector<int>> mat = {
+        {1, 2, 2, 3, 5}, {3, 2, 3, 4, 4}, {2, 4, 5, 3, 1}, {6, 7, 1, 4, 5}, {5, 1, 1, 2, 4}};
+
+    cout << countCoordinates(mat) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+public class GFG {
+    static void dfs(int row, int col, int[][] mat,
+                    boolean[][] vis, boolean[] station)
+    {
+        int n = mat.length;
+        int m = mat[0].length;
+
+        vis[row][col] = true;
+
+        // Signal reaches Station P
+        if (row == 0 || col == 0)
+            station[0] = true;
+
+        // Signal reaches Station Q
+        if (row == n - 1 || col == m - 1)
+            station[1] = true;
+
+        int[] dr = { -1, 1, 0, 0 };
+        int[] dc = { 0, 0, -1, 1 };
+
+        for (int k = 0; k < 4; k++) {
+            int newRow = row + dr[k];
+            int newCol = col + dc[k];
+
+            if (newRow >= 0 && newRow < n && newCol >= 0
+                && newCol < m && !vis[newRow][newCol]
+                && mat[newRow][newCol] <= mat[row][col]) {
+                dfs(newRow, newCol, mat, vis, station);
+            }
+        }
+    }
+
+    static int countCoordinates(int[][] mat)
+    {
+        int n = mat.length;
+        int m = mat[0].length;
+
+        int ans = 0;
+
+        // Start DFS from every cell
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+
+                boolean[][] vis = new boolean[n][m];
+
+                boolean[] station = { false, false };
+
+                dfs(i, j, mat, vis, station);
+
+                if (station[0] && station[1])
+                    ans++;
+            }
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args)
+    {
+        int[][] mat = { { 1, 2, 2, 3, 5 },
+                        { 3, 2, 3, 4, 4 },
+                        { 2, 4, 5, 3, 1 },
+                        { 6, 7, 1, 4, 5 },
+                        { 5, 1, 1, 2, 4 } };
+
+        System.out.println(countCoordinates(mat));
+    }
+}
+
+Python
+
+def dfs(row, col, mat, vis, station):
+    n = len(mat)
+    m = len(mat[0])
+
+    vis[row][col] = True
+
+    # Signal reaches Station P
+    if row == 0 or col == 0:
+        station[0] = True
+
+    # Signal reaches Station Q
+    if row == n - 1 or col == m - 1:
+        station[1] = True
+
+    dr = [-1, 1, 0, 0]
+    dc = [0, 0, -1, 1]
+
+    for k in range(4):
+        newRow = row + dr[k]
+        newCol = col + dc[k]
+
+        if 0 <= newRow < n and 0 <= newCol < m and not vis[newRow][newCol] and mat[newRow][newCol] <= mat[row][col]:
+            dfs(newRow, newCol, mat, vis, station)
+
+def countCoordinates(mat):
+    n = len(mat)
+    m = len(mat[0])
+
+    ans = 0
+
+    # Start DFS from every cell
+    for i in range(n):
+        for j in range(m):
+            vis = [[False] * m for _ in range(n)]
+
+            station = [False, False]
+
+            dfs(i, j, mat, vis, station)
+
+            if station[0] and station[1]:
+                ans += 1
+
+    return ans
+
+if __name__ == "__main__":
+    mat = [
+        [1, 2, 2, 3, 5],
+        [3, 2, 3, 4, 4],
+        [2, 4, 5, 3, 1],
+        [6, 7, 1, 4, 5],
+        [5, 1, 1, 2, 4]
+    ]
+
+    print(countCoordinates(mat))
+
+C#
+
+using System;
+
+public class GFG {
+    static void dfs(int row, int col, int[,] mat,
+                    bool[,] vis, bool[] station)
+    {
+        int n = mat.GetLength(0);
+        int m = mat.GetLength(1);
+
+        vis[row, col] = true;
+
+        // Signal reaches Station P
+        if (row == 0 || col == 0)
+            station[0] = true;
+
+        // Signal reaches Station Q
+        if (row == n - 1 || col == m - 1)
+            station[1] = true;
+
+        int[] dr = { -1, 1, 0, 0 };
+        int[] dc = { 0, 0, -1, 1 };
+
+        for (int k = 0; k < 4; k++) {
+            int newRow = row + dr[k];
+            int newCol = col + dc[k];
+
+            if (newRow >= 0 && newRow < n && newCol >= 0
+                && newCol < m && !vis[newRow, newCol]
+                && mat[newRow, newCol] <= mat[row, col]) {
+                dfs(newRow, newCol, mat, vis, station);
+            }
+        }
+    }
+
+    static int countCoordinates(int[,] mat)
+    {
+        int n = mat.GetLength(0);
+        int m = mat.GetLength(1);
+
+        int ans = 0;
+
+        // Start DFS from every cell
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                bool[, ] vis = new bool[n, m];
+
+                bool[] station = { false, false };
+
+                dfs(i, j, mat, vis, station);
+
+                if (station[0] && station[1])
+                    ans++;
+            }
+        }
+
+        return ans;
+    }
+
+    public static void Main()
+    {
+        int[,] mat = { { 1, 2, 2, 3, 5 },
+                        { 3, 2, 3, 4, 4 },
+                        { 2, 4, 5, 3, 1 },
+                        { 6, 7, 1, 4, 5 },
+                        { 5, 1, 1, 2, 4 } };
+
+        Console.WriteLine(countCoordinates(mat));
+    }
+}
+
+JavaScript
+
+function dfs(row, col, mat, vis, station)
+{
+    const n = mat.length;
+    const m = mat[0].length;
+
+    vis[row][col] = true;
+
+    // Signal reaches Station P
+    if (row === 0 || col === 0)
+        station[0] = true;
+
+    // Signal reaches Station Q
+    if (row === n - 1 || col === m - 1)
+        station[1] = true;
+
+    const dr = [ -1, 1, 0, 0 ];
+    const dc = [ 0, 0, -1, 1 ];
+
+    for (let k = 0; k < 4; k++) {
+        const newRow = row + dr[k];
+        const newCol = col + dc[k];
+
+        if (newRow >= 0 && newRow < n && newCol >= 0
+            && newCol < m && !vis[newRow][newCol]
+            && mat[newRow][newCol] <= mat[row][col]) {
+            dfs(newRow, newCol, mat, vis, station);
+        }
+    }
+}
+
+function countCoordinates(mat)
+{
+    const n = mat.length;
+    const m = mat[0].length;
+
+    let ans = 0;
+
+    // Start DFS from every cell
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < m; j++) {
+            const vis = Array.from(
+                {length : n}, () => Array(m).fill(false));
+
+            const station = [ false, false ];
+
+            dfs(i, j, mat, vis, station);
+
+            if (station[0] && station[1])
+                ans++;
+        }
+    }
+
+    return ans;
+}
+
+// Driver Code
+const mat = [
+    [ 1, 2, 2, 3, 5 ], [ 3, 2, 3, 4, 4 ], [ 2, 4, 5, 3, 1 ],
+    [ 6, 7, 1, 4, 5 ], [ 5, 1, 1, 2, 4 ]
+];
+
+console.log(countCoordinates(mat));
+
+Output
+
+7
+
+### [Expected Approach] Reverse BFS from Both Stations - O(n * m) Time and O(n * m) Space
+
+> The idea is to perform two reverse BFS traversals starting from the boundary cells of both stations. During traversal, move only to adjacent cells with greater than or equal signal strength, mark the reachable cells for each station, and finally count the cells reachable from both stations.
+
+Let us understand with an example: Input: mat[][] = [[1, 2, 2, 3, 5], [3, 2, 3, 4, 4], [2, 4, 5, 3, 1], [6, 7, 1, 4, 5], [5, 1, 1, 2, 4]]
+
+- Start a reverse BFS from the top and left boundaries to mark all cells reachable from Station P.
+- Similarly, perform another reverse BFS from the bottom and right boundaries to mark all cells reachable from Station Q.
+- A cell is considered valid only if it is marked as reachable in both traversals.
+- The common reachable cells are (0,4), (1,3), (1,4), (2,2), (3,0), (3,1), and (4,0).
+- Hence, the total number of such cells is 7.
+
+C++
+
+#include <iostream>
+#include <queue>
+#include <utility>
+#include <vector>
+using namespace std;
+
+// Direction vectors for moving right, left, up and down
+int dx[4] = {0, 0, -1, 1};
+int dy[4] = {1, -1, 0, 0};
+
+// Check whether a cell lies inside the grid
+bool isValid(int row, int col, int n, int m)
+{
+    return row >= 0 && col >= 0 && row < n && col < m;
+}
+
+// BFS to find towers reachable from a control station
+void bfs(vector<vector<int>> &strength, int n, int m, queue<pair<int, int>> &q,
+         vector<vector<bool>> &reachable)
+{
+
+    while (!q.empty())
+    {
+        auto [row, col] = q.front();
+        q.pop();
+
+        // Visit all neighbouring towers
+        for (int k = 0; k < 4; k++)
+        {
+            int newRow = row + dx[k];
+            int newCol = col + dy[k];
+
+            // Signal can propagate only to towers having
+            // strength greater than or equal to the current tower
+            if (isValid(newRow, newCol, n, m) && !reachable[newRow][newCol] &&
+                strength[newRow][newCol] >= strength[row][col])
+            {
+
+                reachable[newRow][newCol] = true;
+                q.push({newRow, newCol});
+            }
+        }
+    }
+}
+
+int countCoordinates(vector<vector<int>> &mat)
+{
+    int n = mat.size();
+    int m = mat[0].size();
+
+    queue<pair<int, int>> stationP, stationQ;
+
+    // Stores towers reachable from Station P and Station Q
+    vector<vector<bool>> reachP(n, vector<bool>(m, false));
+    vector<vector<bool>> reachQ(n, vector<bool>(m, false));
+
+    // Towers adjacent to Station P (top boundary)
+    // and Station Q (bottom boundary)
+    for (int j = 0; j < m; j++)
+    {
+        stationP.push({0, j});
+        reachP[0][j] = true;
+
+        stationQ.push({n - 1, j});
+        reachQ[n - 1][j] = true;
+    }
+
+    // Towers adjacent to Station P (left boundary)
+    // and Station Q (right boundary)
+    for (int i = 0; i < n; i++)
+    {
+        stationP.push({i, 0});
+        reachP[i][0] = true;
+
+        stationQ.push({i, m - 1});
+        reachQ[i][m - 1] = true;
+    }
+
+    // Run BFS from both stations
+    bfs(mat, n, m, stationP, reachP);
+    bfs(mat, n, m, stationQ, reachQ);
+
+    int count = 0;
+
+    // Count towers reachable from both stations
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < m; j++)
+        {
+            if (reachP[i][j] && reachQ[i][j])
+            {
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
+int main()
+{
+    vector<vector<int>> mat = {{1, 2, 2, 3, 5},
+                            {3, 2, 3, 4, 4},
+                            {2, 4, 5, 3, 1},
+                            {6, 7, 1, 4, 5},
+                            {5, 1, 1, 2, 4}};
+
+    cout << countCoordinates(mat) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    // Direction vectors for moving right, left, up and down
+    static int[] dx = { 0, 0, -1, 1 };
+    static int[] dy = { 1, -1, 0, 0 };
+
+    // Check whether a cell lies inside the grid
+    static boolean isValid(int row, int col, int n, int m)
+    {
+        return row >= 0 && col >= 0 && row < n && col < m;
+    }
+
+    // BFS to find towers reachable from a control station
+    static void bfs(int[][] strength, int n, int m,
+                    Queue<int[]> q, boolean[][] reachable)
+    {
+
+        while (!q.isEmpty()) {
+            int[] curr = q.poll();
+            int row = curr[0];
+            int col = curr[1];
+
+            // Visit all neighbouring towers
+            for (int k = 0; k < 4; k++) {
+                int newRow = row + dx[k];
+                int newCol = col + dy[k];
+
+                // Signal can propagate only to towers
+                // having strength greater than or equal to
+                // the current tower
+                if (isValid(newRow, newCol, n, m)
+                    && !reachable[newRow][newCol]
+                    && strength[newRow][newCol]
+                           >= strength[row][col]) {
+
+                    reachable[newRow][newCol] = true;
+                    q.offer(new int[] { newRow, newCol });
+                }
+            }
+        }
+    }
+
+    static int countCoordinates(int[][] mat)
+    {
+
+        int n = mat.length;
+        int m = mat[0].length;
+
+        Queue<int[]> stationP = new LinkedList<>();
+        Queue<int[]> stationQ = new LinkedList<>();
+
+        // Stores towers reachable from Station P and
+        // Station Q
+        boolean[][] reachP = new boolean[n][m];
+        boolean[][] reachQ = new boolean[n][m];
+
+        // Towers adjacent to Station P (top boundary)
+        // and Station Q (bottom boundary)
+        for (int j = 0; j < m; j++) {
+            stationP.offer(new int[] { 0, j });
+            reachP[0][j] = true;
+
+            stationQ.offer(new int[] { n - 1, j });
+            reachQ[n - 1][j] = true;
+        }
+
+        // Towers adjacent to Station P (left boundary)
+        // and Station Q (right boundary)
+        for (int i = 0; i < n; i++) {
+            stationP.offer(new int[] { i, 0 });
+            reachP[i][0] = true;
+
+            stationQ.offer(new int[] { i, m - 1 });
+            reachQ[i][m - 1] = true;
+        }
+
+        // Run BFS from both stations
+        bfs(mat, n, m, stationP, reachP);
+        bfs(mat, n, m, stationQ, reachQ);
+
+        int count = 0;
+
+        // Count towers reachable from both stations
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (reachP[i][j] && reachQ[i][j]) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    public static void main(String[] args)
+    {
+
+        int[][] mat = { { 1, 2, 2, 3, 5 },
+                        { 3, 2, 3, 4, 4 },
+                        { 2, 4, 5, 3, 1 },
+                        { 6, 7, 1, 4, 5 },
+                        { 5, 1, 1, 2, 4 } };
+
+        System.out.println(countCoordinates(mat));
+    }
+}
+
+Python
+
+from collections import deque
+
+# Direction vectors for moving right, left, up and down
+dx = [0, 0, -1, 1]
+dy = [1, -1, 0, 0]
+
+# Check whether a cell lies inside the grid
+def isValid(row, col, n, m):
+    return 0 <= row < n and 0 <= col < m
+
+# BFS to find towers reachable from a control station
+def bfs(strength, n, m, q, reachable):
+
+    while q:
+        row, col = q.popleft()
+
+        # Visit all neighbouring towers
+        for k in range(4):
+            newRow = row + dx[k]
+            newCol = col + dy[k]
+
+            # Signal can propagate only to towers having
+            # strength greater than or equal to the current tower
+            if (isValid(newRow, newCol, n, m) and
+                not reachable[newRow][newCol] and
+                    strength[newRow][newCol] >= strength[row][col]):
+
+                reachable[newRow][newCol] = True
+                q.append((newRow, newCol))
+
+def countCoordinates(mat):
+    n = len(mat)
+    m = len(mat[0])
+
+    stationP = deque()
+    stationQ = deque()
+
+    # Stores towers reachable from Station P and Station Q
+    reachP = [[False] * m for _ in range(n)]
+    reachQ = [[False] * m for _ in range(n)]
+
+    # Towers adjacent to Station P (top boundary)
+    # and Station Q (bottom boundary)
+    for j in range(m):
+        stationP.append((0, j))
+        reachP[0][j] = True
+
+        stationQ.append((n - 1, j))
+        reachQ[n - 1][j] = True
+
+    # Towers adjacent to Station P (left boundary)
+    # and Station Q (right boundary)
+    for i in range(n):
+        stationP.append((i, 0))
+        reachP[i][0] = True
+
+        stationQ.append((i, m - 1))
+        reachQ[i][m - 1] = True
+
+    # Run BFS from both stations
+    bfs(mat, n, m, stationP, reachP)
+    bfs(mat, n, m, stationQ, reachQ)
+
+    count = 0
+
+    # Count towers reachable from both stations
+    for i in range(n):
+        for j in range(m):
+            if reachP[i][j] and reachQ[i][j]:
+                count += 1
+
+    return count
+
+if __name__ == "__main__":
+    mat = [
+        [1, 2, 2, 3, 5],
+        [3, 2, 3, 4, 4],
+        [2, 4, 5, 3, 1],
+        [6, 7, 1, 4, 5],
+        [5, 1, 1, 2, 4]
+    ]
+
+    print(countCoordinates(mat))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // Direction vectors for moving right, left, up and down
+    static int[] dx = { 0, 0, -1, 1 };
+    static int[] dy = { 1, -1, 0, 0 };
+
+    // Check whether a cell lies inside the grid
+    static bool isValid(int row, int col, int n, int m)
+    {
+        return row >= 0 && col >= 0 && row < n && col < m;
+    }
+
+    // BFS to find towers reachable from a control station
+    static void bfs(int[,] strength, int n, int m,
+                    Queue<(int, int)> q, bool[, ] reachable)
+    {
+        while (q.Count > 0) {
+            var(row, col) = q.Dequeue();
+
+            // Visit all neighbouring towers
+            for (int k = 0; k < 4; k++) {
+                int newRow = row + dx[k];
+                int newCol = col + dy[k];
+
+                // Signal can propagate only to towers
+                // having strength greater than or equal to
+                // the current tower
+                if (isValid(newRow, newCol, n, m)
+                    && !reachable[newRow, newCol]
+                    && strength[newRow, newCol]
+                           >= strength[row, col]) {
+                    reachable[newRow, newCol] = true;
+                    q.Enqueue((newRow, newCol));
+                }
+            }
+        }
+    }
+
+    static int countCoordinates(int[,] mat)
+    {
+        int n = mat.GetLength(0);
+        int m = mat.GetLength(1);
+
+        Queue<(int, int)> stationP
+            = new Queue<(int, int)>();
+        Queue<(int, int)> stationQ
+            = new Queue<(int, int)>();
+
+        // Stores towers reachable from Station P and
+        // Station Q
+        bool[,] reachP = new bool[n, m];
+        bool[,] reachQ = new bool[n, m];
+
+        // Towers adjacent to Station P (top boundary)
+        // and Station Q (bottom boundary)
+        for (int j = 0; j < m; j++) {
+            stationP.Enqueue((0, j));
+            reachP[0, j] = true;
+
+            stationQ.Enqueue((n - 1, j));
+            reachQ[n - 1, j] = true;
+        }
+
+        // Towers adjacent to Station P (left boundary)
+        // and Station Q (right boundary)
+        for (int i = 0; i < n; i++) {
+            stationP.Enqueue((i, 0));
+            reachP[i, 0] = true;
+
+            stationQ.Enqueue((i, m - 1));
+            reachQ[i, m - 1] = true;
+        }
+
+        // Run BFS from both stations
+        bfs(mat, n, m, stationP, reachP);
+        bfs(mat, n, m, stationQ, reachQ);
+
+        int count = 0;
+
+        // Count towers reachable from both stations
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (reachP[i, j] && reachQ[i, j]) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    static void Main()
+    {
+        int[,] mat = { { 1, 2, 2, 3, 5 },
+                        { 3, 2, 3, 4, 4 },
+                        { 2, 4, 5, 3, 1 },
+                        { 6, 7, 1, 4, 5 },
+                        { 5, 1, 1, 2, 4 } };
+
+        Console.WriteLine(countCoordinates(mat));
+    }
+}
+
+JavaScript
+
+// Direction vectors for moving right, left, up and down
+const dx = [ 0, 0, -1, 1 ];
+const dy = [ 1, -1, 0, 0 ];
+
+// Check whether a cell lies inside the grid
+function isValid(row, col, n, m)
+{
+    return row >= 0 && col >= 0 && row < n && col < m;
+}
+
+// BFS to find towers reachable from a control station
+function bfs(strength, n, m, queue, reachable)
+{
+
+    let front = 0;
+
+    while (front < queue.length) {
+        const [row, col] = queue[front++];
+
+        // Visit all neighbouring towers
+        for (let k = 0; k < 4; k++) {
+            const newRow = row + dx[k];
+            const newCol = col + dy[k];
+
+            // Signal can propagate only to towers having
+            // strength greater than or equal to the current
+            // tower
+            if (isValid(newRow, newCol, n, m)
+                && !reachable[newRow][newCol]
+                && strength[newRow][newCol]
+                       >= strength[row][col]) {
+
+                reachable[newRow][newCol] = true;
+                queue.push([ newRow, newCol ]);
+            }
+        }
+    }
+}
+
+function countCoordinates(mat)
+{
+
+    const n = mat.length;
+    const m = mat[0].length;
+
+    const stationP = [];
+    const stationQ = [];
+
+    // Stores towers reachable from Station P and Station Q
+    const reachP = Array.from({length : n},
+                              () => Array(m).fill(false));
+    const reachQ = Array.from({length : n},
+                              () => Array(m).fill(false));
+
+    // Towers adjacent to Station P (top boundary)
+    // and Station Q (bottom boundary)
+    for (let j = 0; j < m; j++) {
+        stationP.push([ 0, j ]);
+        reachP[0][j] = true;
+
+        stationQ.push([ n - 1, j ]);
+        reachQ[n - 1][j] = true;
+    }
+
+    // Towers adjacent to Station P (left boundary)
+    // and Station Q (right boundary)
+    for (let i = 0; i < n; i++) {
+        stationP.push([ i, 0 ]);
+        reachP[i][0] = true;
+
+        stationQ.push([ i, m - 1 ]);
+        reachQ[i][m - 1] = true;
+    }
+
+    // Run BFS from both stations
+    bfs(mat, n, m, stationP, reachP);
+    bfs(mat, n, m, stationQ, reachQ);
+
+    let count = 0;
+
+    // Count towers reachable from both stations
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < m; j++) {
+            if (reachP[i][j] && reachQ[i][j]) {
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
+// Driver code
+const mat = [
+    [ 1, 2, 2, 3, 5 ], [ 3, 2, 3, 4, 4 ], [ 2, 4, 5, 3, 1 ],
+    [ 6, 7, 1, 4, 5 ], [ 5, 1, 1, 2, 4 ]
+];
+
+console.log(countCoordinates(mat));
+
+Output
+
+7

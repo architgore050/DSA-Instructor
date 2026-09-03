@@ -1,0 +1,825 @@
+Source: https://www.geeksforgeeks.org/dsa/sum-nodes-k-th-level-tree-represented-string/
+Title: Sum of Nodes at K-th Level in Binary Tree
+Extractor: 2
+
+Given a binary tree represented as a string in the format node(left-subtree)(right-subtree), and an integer k, find the sum of the values of all nodes present at the k-th level of the tree. The root node is at level 0.
+
+Note: If no node exists at level k, return 0.
+
+Examples:
+
+> Input: s = "(0(5(6()())(4()(9()())))(7(1()())(3()())))", k = 2 Output: 14 Explanation: The tree representation is shown below: The sum of nodes at the 2nd level is 6 + 4 + 1 + 3 = 14. Input: s = "(4(8()9())", k = 1 Output: 17 Explanation: The tree representation is shown below: The sum of nodes at the 1st level is 8 + 9 = 17.
+
+Table of Content
+
+- [Naive Approach] Using Binary Tree Construction and Level Order Traversal - O(n) Time and O(n) Space
+- [Expected Approach] Using Iterative String Traversal - O(n) Time and O(1) Space
+
+### [Naive Approach] Using Binary Tree Construction and Level Order Traversal - O(n) Time and O(n) Space
+
+> The idea is to first construct the binary tree from its string representation and then perform a level order traversal to find the sum of nodes at level k. Since the tree is explicitly built, traversing it level by level becomes straightforward.
+
+Working of Approach:
+
+- Parse the string recursively to construct the binary tree.
+- Start a level order traversal from the root using a queue.
+- Traverse the tree level by level while keeping track of the current level.
+- When the current level becomes equal to k, sum the values of all nodes at that level.
+- Return the computed sum. If level k does not exist, return 0.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node *left, *right;
+
+    Node(int x) {
+        data = x;
+        left = right = nullptr;
+    }
+};
+
+Node* buildTree(string &s, int &idx) {
+
+    if (idx >= s.size())
+        return nullptr;
+
+    // Skip the opening parenthesis of the current subtree
+    if (s[idx] == '(')
+        idx++;
+
+    // Empty subtree represented as ()
+    if (idx < s.size() && s[idx] == ')') {
+        idx++;
+        return nullptr;
+    }
+
+    bool neg = false;
+    if (s[idx] == '-') {
+        neg = true;
+        idx++;
+    }
+
+    int num = 0;
+    while (idx < s.size() && isdigit(s[idx])) {
+        num = num * 10 + (s[idx] - '0');
+        idx++;
+    }
+
+    Node* root = new Node(neg ? -num : num);
+
+    // Recursively construct the left and right subtrees
+    root->left = buildTree(s, idx);
+    root->right = buildTree(s, idx);
+
+    if (idx < s.size() && s[idx] == ')')
+        idx++;
+
+    return root;
+}
+
+int kLevelSum(string &tree, int k) {
+
+    int idx = 0;
+    Node* root = buildTree(tree, idx);
+
+    if (!root)
+        return 0;
+
+    queue<Node*> q;
+    q.push(root);
+
+    int level = 0;
+
+    while (!q.empty()) {
+
+        int sz = q.size();
+
+        // Sum all nodes when the required level is reached
+        if (level == k) {
+
+            int sum = 0;
+
+            while (sz--) {
+                sum += q.front()->data;
+                q.pop();
+            }
+
+            return sum;
+        }
+
+        while (sz--) {
+
+            Node* curr = q.front();
+            q.pop();
+
+            if (curr->left)
+                q.push(curr->left);
+
+            if (curr->right)
+                q.push(curr->right);
+        }
+
+        level++;
+    }
+
+    return 0;
+}
+
+int main() {
+
+    string tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))";
+    int k = 2;
+
+    cout << kLevelSum(tree, k);
+
+    return 0;
+}
+
+Java
+
+import java.util.LinkedList;
+import java.util.Queue;
+
+class GFG {
+
+    static class Node {
+        int data;
+        Node left, right;
+
+        Node(int data) {
+            this.data = data;
+            left = right = null;
+        }
+    }
+
+    static Node buildTree(String s, int[] idx) {
+
+        if (idx[0] >= s.length())
+            return null;
+
+        // Skip the opening parenthesis of the current subtree
+        if (s.charAt(idx[0]) == '(')
+            idx[0]++;
+
+        // Empty subtree represented as ()
+        if (idx[0] < s.length() && s.charAt(idx[0]) == ')') {
+            idx[0]++;
+            return null;
+        }
+
+        boolean neg = false;
+        if (s.charAt(idx[0]) == '-') {
+            neg = true;
+            idx[0]++;
+        }
+
+        int num = 0;
+        while (idx[0] < s.length() && Character.isDigit(s.charAt(idx[0]))) {
+            num = num * 10 + (s.charAt(idx[0]) - '0');
+            idx[0]++;
+        }
+
+        Node root = new Node(neg ? -num : num);
+
+        // Recursively construct the left and right subtrees
+        root.left = buildTree(s, idx);
+        root.right = buildTree(s, idx);
+
+        if (idx[0] < s.length() && s.charAt(idx[0]) == ')')
+            idx[0]++;
+
+        return root;
+    }
+
+    static int kLevelSum(String tree, int k) {
+
+        int[] idx = {0};
+        Node root = buildTree(tree, idx);
+
+        if (root == null)
+            return 0;
+
+        Queue<Node> q = new LinkedList<>();
+        q.offer(root);
+
+        int level = 0;
+
+        while (!q.isEmpty()) {
+
+            int size = q.size();
+
+            // Sum all nodes when the required level is reached
+            if (level == k) {
+
+                int sum = 0;
+
+                while (size-- > 0)
+                    sum += q.poll().data;
+
+                return sum;
+            }
+
+            while (size-- > 0) {
+
+                Node curr = q.poll();
+
+                if (curr.left != null)
+                    q.offer(curr.left);
+
+                if (curr.right != null)
+                    q.offer(curr.right);
+            }
+
+            level++;
+        }
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+
+        String tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))";
+        int k = 2;
+
+        System.out.println(kLevelSum(tree, k));
+    }
+}
+
+Python
+
+from collections import deque
+
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.left = None
+        self.right = None
+
+def buildTree(s, idx):
+
+    if idx[0] >= len(s):
+        return None
+
+    # Skip the opening parenthesis of the current subtree
+    if s[idx[0]] == '(':
+        idx[0] += 1
+
+    # Empty subtree represented as ()
+    if idx[0] < len(s) and s[idx[0]] == ')':
+        idx[0] += 1
+        return None
+
+    neg = False
+    if s[idx[0]] == '-':
+        neg = True
+        idx[0] += 1
+
+    num = 0
+    while idx[0] < len(s) and s[idx[0]].isdigit():
+        num = num * 10 + int(s[idx[0]])
+        idx[0] += 1
+
+    root = Node(-num if neg else num)
+
+    # Recursively construct the left and right subtrees
+    root.left = buildTree(s, idx)
+    root.right = buildTree(s, idx)
+
+    if idx[0] < len(s) and s[idx[0]] == ')':
+        idx[0] += 1
+
+    return root
+
+def kLevelSum(tree, k):
+
+    idx = [0]
+    root = buildTree(tree, idx)
+
+    if root is None:
+        return 0
+
+    q = deque([root])
+    level = 0
+
+    while q:
+
+        size = len(q)
+
+        # Sum all nodes when the required level is reached
+        if level == k:
+
+            total = 0
+            for _ in range(size):
+                total += q.popleft().data
+
+            return total
+
+        for _ in range(size):
+
+            curr = q.popleft()
+
+            if curr.left:
+                q.append(curr.left)
+
+            if curr.right:
+                q.append(curr.right)
+
+        level += 1
+
+    return 0
+
+if __name__ == "__main__":
+
+    tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))"
+    k = 2
+
+    print(kLevelSum(tree, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int data) {
+        this.data = data;
+        left = right = null;
+    }
+}
+
+class GFG {
+
+    static Node buildTree(string s, ref int idx) {
+
+        if (idx >= s.Length)
+            return null;
+
+        // Skip the opening parenthesis of the current subtree
+        if (s[idx] == '(')
+            idx++;
+
+        // Empty subtree represented as ()
+        if (idx < s.Length && s[idx] == ')') {
+            idx++;
+            return null;
+        }
+
+        bool neg = false;
+        if (s[idx] == '-') {
+            neg = true;
+            idx++;
+        }
+
+        int num = 0;
+        while (idx < s.Length && char.IsDigit(s[idx])) {
+            num = num * 10 + (s[idx] - '0');
+            idx++;
+        }
+
+        Node root = new Node(neg ? -num : num);
+
+        // Recursively construct the left and right subtrees
+        root.left = buildTree(s, ref idx);
+        root.right = buildTree(s, ref idx);
+
+        if (idx < s.Length && s[idx] == ')')
+            idx++;
+
+        return root;
+    }
+
+    static int kLevelSum(string tree, int k) {
+
+        int idx = 0;
+        Node root = buildTree(tree, ref idx);
+
+        if (root == null)
+            return 0;
+
+        Queue<Node> q = new Queue<Node>();
+        q.Enqueue(root);
+
+        int level = 0;
+
+        while (q.Count > 0) {
+
+            int size = q.Count;
+
+            // Sum all nodes when the required level is reached
+            if (level == k) {
+
+                int sum = 0;
+
+                while (size-- > 0)
+                    sum += q.Dequeue().data;
+
+                return sum;
+            }
+
+            while (size-- > 0) {
+
+                Node curr = q.Dequeue();
+
+                if (curr.left != null)
+                    q.Enqueue(curr.left);
+
+                if (curr.right != null)
+                    q.Enqueue(curr.right);
+            }
+
+            level++;
+        }
+
+        return 0;
+    }
+
+    static void Main() {
+
+        string tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))";
+        int k = 2;
+
+        Console.WriteLine(kLevelSum(tree, k));
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+function buildTree(s, idx) {
+
+    if (idx.value >= s.length)
+        return null;
+
+    // Skip the opening parenthesis of the current subtree
+    if (s[idx.value] === '(')
+        idx.value++;
+
+    // Empty subtree represented as ()
+    if (idx.value < s.length && s[idx.value] === ')') {
+        idx.value++;
+        return null;
+    }
+
+    let neg = false;
+    if (s[idx.value] === '-') {
+        neg = true;
+        idx.value++;
+    }
+
+    let num = 0;
+    while (idx.value < s.length && /\d/.test(s[idx.value])) {
+        num = num * 10 + Number(s[idx.value]);
+        idx.value++;
+    }
+
+    let root = new Node(neg ? -num : num);
+
+    // Recursively construct the left and right subtrees
+    root.left = buildTree(s, idx);
+    root.right = buildTree(s, idx);
+
+    if (idx.value < s.length && s[idx.value] === ')')
+        idx.value++;
+
+    return root;
+}
+
+function kLevelSum(tree, k) {
+
+    let idx = { value: 0 };
+    let root = buildTree(tree, idx);
+
+    if (root === null)
+        return 0;
+
+    let q = [root];
+    let level = 0;
+
+    while (q.length > 0) {
+
+        let size = q.length;
+
+        // Sum all nodes when the required level is reached
+        if (level === k) {
+
+            let sum = 0;
+
+            while (size--) {
+                sum += q.shift().data;
+            }
+
+            return sum;
+        }
+
+        while (size--) {
+
+            let curr = q.shift();
+
+            if (curr.left)
+                q.push(curr.left);
+
+            if (curr.right)
+                q.push(curr.right);
+        }
+
+        level++;
+    }
+
+    return 0;
+}
+
+let tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))";
+let k = 2;
+
+console.log(kLevelSum(tree, k));
+
+Output
+
+14
+
+### [Expected Approach] Using Iterative String Traversal - O(n) Time and O(1) Space
+
+> The idea is to traverse the string directly without constructing the binary tree. While scanning the string, we keep track of the current level by updating it whenever an opening or closing parenthesis is encountered. Whenever the traversal reaches level k, the corresponding node value is parsed and added to the answer.
+
+Working of Approach:
+
+- Initialize the current level as -1 and the answer as 0.
+- Traverse the string from left to right.
+- Increment the current level when '(' is encountered and decrement it when ')' is encountered.
+- Whenever the current level is equal to k and a node value is encountered, parse the complete number and add it to the answer.
+- Continue traversing the string until all characters are processed, then return the computed sum.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int kLevelSum(string &s, int k) {
+
+    int level = -1;
+    int sum = 0;
+
+    for (int i = 0; i < s.size();) {
+
+        // Update the current level based on parentheses
+        if (s[i] == '(') {
+            level++;
+            i++;
+        }
+        else if (s[i] == ')') {
+            level--;
+            i++;
+        }
+        else {
+
+            bool neg = false;
+            if (s[i] == '-') {
+                neg = true;
+                i++;
+            }
+
+            int num = 0;
+
+            // Parse the complete node value
+            while (i < s.size() && isdigit(s[i])) {
+                num = num * 10 + (s[i] - '0');
+                i++;
+            }
+
+            if (level == k)
+                sum += neg ? -num : num;
+        }
+    }
+
+    return sum;
+}
+
+int main() {
+
+    string tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))";
+    int k = 2;
+
+    cout << kLevelSum(tree, k);
+
+    return 0;
+}
+
+Java
+
+class GFG {
+
+    static int kLevelSum(String s, int k) {
+
+        int level = -1;
+        int sum = 0;
+
+        for (int i = 0; i < s.length();) {
+
+            // Update the current level based on parentheses
+            if (s.charAt(i) == '(') {
+                level++;
+                i++;
+            }
+            else if (s.charAt(i) == ')') {
+                level--;
+                i++;
+            }
+            else {
+
+                boolean neg = false;
+                if (s.charAt(i) == '-') {
+                    neg = true;
+                    i++;
+                }
+
+                int num = 0;
+
+                // Parse the complete node value
+                while (i < s.length() && Character.isDigit(s.charAt(i))) {
+                    num = num * 10 + (s.charAt(i) - '0');
+                    i++;
+                }
+
+                if (level == k)
+                    sum += neg ? -num : num;
+            }
+        }
+
+        return sum;
+    }
+
+    public static void main(String[] args) {
+
+        String tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))";
+        int k = 2;
+
+        System.out.println(kLevelSum(tree, k));
+    }
+}
+
+Python
+
+def kLevelSum(s, k):
+
+    level = -1
+    total = 0
+    i = 0
+
+    while i < len(s):
+
+        # Update the current level based on parentheses
+        if s[i] == '(':
+            level += 1
+            i += 1
+
+        elif s[i] == ')':
+            level -= 1
+            i += 1
+
+        else:
+
+            neg = False
+            if s[i] == '-':
+                neg = True
+                i += 1
+
+            num = 0
+
+            # Parse the complete node value
+            while i < len(s) and s[i].isdigit():
+                num = num * 10 + int(s[i])
+                i += 1
+
+            if level == k:
+                total += -num if neg else num
+
+    return total
+
+if __name__ == "__main__":
+
+    tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))"
+    k = 2
+
+    print(kLevelSum(tree, k))
+
+C#
+
+using System;
+
+class GFG {
+
+    static int kLevelSum(string s, int k) {
+
+        int level = -1;
+        int sum = 0;
+
+        for (int i = 0; i < s.Length;) {
+
+            // Update the current level based on parentheses
+            if (s[i] == '(') {
+                level++;
+                i++;
+            }
+            else if (s[i] == ')') {
+                level--;
+                i++;
+            }
+            else {
+
+                bool neg = false;
+                if (s[i] == '-') {
+                    neg = true;
+                    i++;
+                }
+
+                int num = 0;
+
+                // Parse the complete node value
+                while (i < s.Length && char.IsDigit(s[i])) {
+                    num = num * 10 + (s[i] - '0');
+                    i++;
+                }
+
+                if (level == k)
+                    sum += neg ? -num : num;
+            }
+        }
+
+        return sum;
+    }
+
+    static void Main() {
+
+        string tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))";
+        int k = 2;
+
+        Console.WriteLine(kLevelSum(tree, k));
+    }
+}
+
+JavaScript
+
+function kLevelSum(s, k) {
+
+    let level = -1;
+    let sum = 0;
+
+    for (let i = 0; i < s.length;) {
+
+        // Update the current level based on parentheses
+        if (s[i] === '(') {
+            level++;
+            i++;
+        }
+        else if (s[i] === ')') {
+            level--;
+            i++;
+        }
+        else {
+
+            let neg = false;
+            if (s[i] === '-') {
+                neg = true;
+                i++;
+            }
+
+            let num = 0;
+
+            // Parse the complete node value
+            while (i < s.length && /\d/.test(s[i])) {
+                num = num * 10 + Number(s[i]);
+                i++;
+            }
+
+            if (level === k)
+                sum += neg ? -num : num;
+        }
+    }
+
+    return sum;
+}
+
+// Driver Code
+let tree = "(0(5(6()())(4()(9())))(7(1()())(3()())))";
+let k = 2;
+
+console.log(kLevelSum(tree, k));
+
+Output
+
+14

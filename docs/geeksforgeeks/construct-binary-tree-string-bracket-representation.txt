@@ -1,0 +1,1012 @@
+Source: https://www.geeksforgeeks.org/dsa/construct-binary-tree-string-bracket-representation/
+Title: Construct Binary Tree from String with bracket representation
+Extractor: 2
+
+Given a string consisting of parenthesis and integers, representing a binary tree. The task is to construct a binary tree from this string.
+
+The string contains an integer followed by zero, one or two pairs of parenthesis. The integer represents the root's value and a pair of parenthesis contains a child binary tree with the same structure. Always start to construct the left child node of the parent first if it exists.
+
+Examples:
+
+> Input : "1(2)(3)" Output : 1 2 3 Explanation : Input : "4(2(3)(1))(6(5))" Output : 4 2 3 1 6 5 Explanation :
+
+### Idea:
+
+> In a binary tree string representation, each part begins with a number representing the node's value, followed by at most two pairs of parentheses. The first pair of parentheses after a number contains the complete left subtree of that node (if it exists), and the second pair of parentheses contains the complete right subtree (if it exists). Each subtree follows the same pattern recursively, making it a self-similar structure.
+
+Table of Content
+
+- [Naive Approach] Using Recursion - O(n^2) time and O(n) space:
+- [Expected Approach] Using Pre-Order Traversal - O(n) time and O(n) space
+
+### [Naive Approach] Using Recursion - O(n^2) time and O(n) space:
+
+> The idea is to recursively parse the string by first extracting the root value (which could be multiple digits) and then finding matching pairs of parentheses that enclose the left and right subtrees. For each subtree enclosed in parentheses, we find its corresponding closing parenthesis using a counter (incrementing for '(' and decrementing for ')'), which helps us identify the correct substring for the left child. Once we have the left subtree's closing index, we can process the right subtree starting two positions after (to skip the closing parenthesis and opening parenthesis of right subtree). This process continues recursively until we either encounter an empty substring (base case) or process all characters, effectively building the tree from root to leaves.
+
+C++
+
+//Driver Code Starts
+// C++ program to construct a binary
+// tree from the given string
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node *left, *right;
+    Node(int x) {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+//Driver Code Ends
+
+// function to return the index of close parenthjs
+int findIndex(string str, int i, int j) {
+    if (i > j)
+        return -1;
+
+    int cnt = 0;
+
+    for (int k=i; k<=j; k++) {
+        if (str[k]=='(') cnt++;
+        else if (str[k]==')') {
+            cnt--;
+
+            if (cnt == 0) return k;
+        }
+    }
+
+    return -1;
+}
+
+// function to construct tree from string
+Node* constructTreeRecur(string str, int i, int j) {
+
+    // Base case
+    if (i > j)
+        return nullptr;
+
+    int val = 0;
+
+    // In case the value is having more than 1 digit
+    while(i <= j && str[i] >= '0' && str[i] <= '9') {
+        val *= 10;
+        val += (str[i] - '0');
+        i++;
+    }
+
+    // new root
+    Node* root = new Node(val);
+    int index = -1;
+
+    // if next char is '(' find the index of
+    // its complement ')'
+    if (i <= j && str[i] == '(')
+        index = findIndex(str, i, j);
+
+    // if index found
+    if (index != -1) {
+
+        // call for left subtree
+        root->left = constructTreeRecur(str, i + 1, index - 1);
+
+        // call for right subtree
+        root->right
+            = constructTreeRecur(str, index + 2, j - 1);
+    }
+
+    return root;
+}
+
+Node* treeFromString(string str) {
+    Node* root = constructTreeRecur(str, 0, str.length()-1);
+    return root;
+}
+
+//Driver Code Starts
+void levelOrder(Node *root) {
+    if (root == nullptr) {
+          cout << "N ";
+          return ;
+    }
+
+    queue<Node*> qq;
+    qq.push(root);
+
+    while (!qq.empty()) {
+        Node *curr = qq.front();
+        qq.pop();
+
+        if (curr == nullptr) {
+            cout << "N ";
+            continue;
+        }
+        cout << (curr->data) <<  " ";
+        qq.push(curr->left);
+        qq.push(curr->right);
+    }
+}
+
+int main() {
+    string str = "4(2(3)(1))(6(5))";
+    Node* root = treeFromString(str);
+    levelOrder(root);
+}
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+// Java program to construct a binary
+// tree from the given string
+
+import java.util.*;
+
+class Node {
+    int data;
+    Node left, right;
+    Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+//Driver Code Ends
+
+    // function to return the index of close parenthesis
+    static int findIndex(String str, int i, int j) {
+        if (i > j)
+            return -1;
+
+        int cnt = 0;
+
+        for (int k = i; k <= j; k++) {
+            if (str.charAt(k) == '(') cnt++;
+            else if (str.charAt(k) == ')') {
+                cnt--;
+
+                if (cnt == 0) return k;
+            }
+        }
+
+        return -1;
+    }
+
+    // function to construct tree from string
+    static Node constructTreeRecur(String str, int i, int j) {
+
+        // Base case
+        if (i > j)
+            return null;
+
+        int val = 0;
+
+        // In case the value is having more than 1 digit
+        while(i <= j && Character.isDigit(str.charAt(i))) {
+            val *= 10;
+            val += (str.charAt(i) - '0');
+            i++;
+        }
+
+        // new root
+        Node root = new Node(val);
+        int index = -1;
+
+        // if next char is '(' find the index of
+        // its complement ')'
+        if (i <= j && str.charAt(i) == '(')
+            index = findIndex(str, i, j);
+
+        // if index found
+        if (index != -1) {
+
+            // call for left subtree
+            root.left = constructTreeRecur(str, i + 1, index - 1);
+
+            // call for right subtree
+            root.right = constructTreeRecur(str, index + 2, j - 1);
+        }
+
+        return root;
+    }
+
+    static Node treeFromString(String str) {
+        return constructTreeRecur(str, 0, str.length() - 1);
+    }
+
+//Driver Code Starts
+     static void levelOrder(Node root) {
+        if (root == null) {
+            System.out.print("N ");
+            return;
+        }
+
+        Queue<Node> queue = new LinkedList<>();
+        queue.add(root);
+
+        while (!queue.isEmpty()) {
+            Node curr = queue.poll();
+
+            if (curr == null) {
+                System.out.print("N ");
+                continue;
+            }
+            System.out.print(curr.data + " ");
+            queue.add(curr.left);
+            queue.add(curr.right);
+        }
+    }
+
+    public static void main(String[] args) {
+        String[] str = {"4(2(3)(1))(6(5))"};
+        Node root = treeFromString(str[0]);
+        levelOrder(root);
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+# Python program to construct a binary
+# tree from the given string
+
+from collections import deque
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+#Driver Code Ends
+
+# function to return the index of close parenthesis
+def findIndex(str, i, j):
+    if i > j:
+        return -1
+
+    cnt = 0
+
+    for k in range(i, j + 1):
+        if str[k] == '(':
+            cnt += 1
+        elif str[k] == ')':
+            cnt -= 1
+
+            if cnt == 0:
+                return k
+
+    return -1
+
+# function to construct tree from string
+def constructTreeRecur(str, i, j):
+
+    # Base case
+    if i > j:
+        return None
+
+    val = 0
+
+    # In case the value is having more than 1 digit
+    while i <= j and str[i].isdigit():
+        val *= 10
+        val += int(str[i])
+        i += 1
+
+    # new root
+    root = Node(val)
+    index = -1
+
+    # if next char is '(' find the index of
+    # its complement ')'
+    if i <= j and str[i] == '(':
+        index = findIndex(str, i, j)
+
+    # if index found
+    if index != -1:
+
+        # call for left subtree
+        root.left = constructTreeRecur(str, i + 1, index - 1)
+
+        # call for right subtree
+        root.right = constructTreeRecur(str, index + 2, j - 1)
+
+    return root
+
+def treeFromString(str):
+    return constructTreeRecur(str, 0, len(str) - 1)
+
+#Driver Code Starts
+def levelOrder(root):
+    if root is None:
+        print("N ", end="")
+        return
+
+    queue = deque([root])
+
+    while queue:
+        curr = queue.popleft()
+
+        if curr is None:
+            print("N ", end="")
+            continue
+
+        print(curr.data, end=" ")
+        queue.append(curr.left)
+        queue.append(curr.right)
+
+if __name__ == "__main__":
+    str = ["4(2(3)(1))(6(5))"]
+    root = treeFromString(str[0])
+    levelOrder(root)
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+// C# program to construct a binary
+// tree from the given string
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+//Driver Code Ends
+
+    // function to return the index of close parenthesis
+    static int findIndex(string str, int i, int j) {
+        if (i > j)
+            return -1;
+
+        int cnt = 0;
+
+        for (int k = i; k <= j; k++) {
+            if (str[k] == '(') cnt++;
+            else if (str[k] == ')') {
+                cnt--;
+
+                if (cnt == 0) return k;
+            }
+        }
+
+        return -1;
+    }
+
+    // function to construct tree from string
+    static Node constructTreeRecur(string str, int i, int j) {
+
+        // Base case
+        if (i > j)
+            return null;
+
+        int val = 0;
+
+        // In case the value is having more than 1 digit
+        while(i <= j && char.IsDigit(str[i])) {
+            val *= 10;
+            val += (str[i] - '0');
+            i++;
+        }
+
+        // new root
+        Node root = new Node(val);
+        int index = -1;
+
+        // if next char is '(' find the index of
+        // its complement ')'
+        if (i <= j && str[i] == '(')
+            index = findIndex(str, i, j);
+
+        // if index found
+        if (index != -1) {
+
+            // call for left subtree
+            root.left = constructTreeRecur(str, i + 1, index - 1);
+
+            // call for right subtree
+            root.right = constructTreeRecur(str, index + 2, j - 1);
+        }
+
+        return root;
+    }
+
+    static Node treeFromString(string str) {
+        return constructTreeRecur(str, 0, str.Length - 1);
+    }
+
+//Driver Code Starts
+    static void levelOrder(Node root) {
+        if (root == null) {
+            Console.Write("N ");
+            return;
+        }
+
+        Queue<Node> queue = new Queue<Node>();
+        queue.Enqueue(root);
+
+        while (queue.Count > 0) {
+            Node curr = queue.Dequeue();
+
+            if (curr == null) {
+                Console.Write("N ");
+                continue;
+            }
+            Console.Write(curr.data + " ");
+            queue.Enqueue(curr.left);
+            queue.Enqueue(curr.right);
+        }
+    }
+
+    static void Main() {
+        string[] str = { "4(2(3)(1))(6(5))" };
+        Node root = treeFromString(str[0]);
+        levelOrder(root);
+    }
+}
+
+//Driver Code Ends
+
+JavaScript
+
+//Driver Code Starts
+// JavaScript program to construct a binary
+// tree from the given string
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+//Driver Code Ends
+
+// function to return the index of close parenthesis
+function findIndex(str, i, j) {
+    if (i > j)
+        return -1;
+
+    let cnt = 0;
+
+    for (let k = i; k <= j; k++) {
+        if (str[k] === '(') cnt++;
+        else if (str[k] === ')') {
+            cnt--;
+
+            if (cnt === 0) return k;
+        }
+    }
+
+    return -1;
+}
+
+// function to construct tree from string
+function constructTreeRecur(str, i, j) {
+
+    if (i > j) return null;
+
+    let val = 0;
+
+    while (i <= j && !isNaN(str[i])) {
+        val = val * 10 + (str[i] - '0');
+        i++;
+    }
+
+    let root = new Node(val);
+    let index = -1;
+
+    if (i <= j && str[i] === '(')
+        index = findIndex(str, i, j);
+
+    if (index !== -1) {
+        root.left = constructTreeRecur(str, i + 1, index - 1);
+        root.right = constructTreeRecur(str, index + 2, j - 1);
+    }
+
+    return root;
+}
+
+function treeFromString(str) {
+    return constructTreeRecur(str, 0, str.length - 1);
+}
+
+//Driver Code Starts
+function levelOrder(root) {
+    if (root === null) {
+        process.stdout.write("N ");
+        return;
+    }
+
+    let queue = [];
+    queue.push(root);
+
+    while (queue.length > 0) {
+        let curr = queue.shift();
+
+        if (curr === null) {
+            process.stdout.write("N ");
+            continue;
+        }
+        process.stdout.write(curr.data + " ");
+        queue.push(curr.left);
+        queue.push(curr.right);
+    }
+}
+
+let str = ["4(2(3)(1))(6(5))"];
+let root = treeFromString(str[0]);
+levelOrder(root);
+
+//Driver Code Ends
+
+Output
+
+4 2 6 3 1 5 N N N N N N N
+
+### [Expected Approach] Using Pre-Order Traversal - O(n) time and O(n) space
+
+> The idea is to traverse the string sequentially using a single index passed by reference, constructing the tree in a preorder manner (root-left-right) where we first extract the root value by parsing consecutive digits, then recursively build the left subtree if we encounter an opening parenthesis, and finally build the right subtree if another opening parenthesis exists after completing the left subtree construction.
+
+Step by step approach:
+
+1. Maintain a single index that traverses through the string from left to right.
+2. When encountering digits, parse them to form the complete node value and create a new node with the parsed value.
+3. If an opening parenthesis '(' is found, increment index and recursively build left subtree. After left subtree is built and index is incremented past closing parenthesis, check for another opening parenthesis.
+4. If second opening parenthesis exists, increment index and recursively build right subtree.
+5. Return the constructed node which serves as root for its subtree
+
+C++
+
+//Driver Code Starts
+// C++ program to construct a binary
+// tree from the given string
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node *left, *right;
+    Node(int x) {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+//Driver Code Ends
+
+// Recursive function to construct
+// tree using preorder traversal.
+Node* preOrder(int &i, string &s) {
+
+    // If substring is empty, return null.
+    if (s[i]==')') return nullptr;
+
+    // Find the value of root node.
+    int val = 0;
+    while (i<s.length() && s[i]!='(' && s[i]!=')') {
+        int digit = s[i]-'0';
+        i++;
+        val = val*10+digit;
+    }
+
+    // Create the root node.
+    Node* root = new Node(val);
+
+    // If left subtree exists
+    if (i<s.length() && s[i]=='(') {
+        i++;
+        root->left = preOrder(i, s);
+        i++;
+    }
+
+    // If right subtree exists
+    if (i<s.length() && s[i]=='(') {
+        i++;
+        root->right = preOrder(i, s);
+        i++;
+    }
+
+    // Return the root node.
+    return root;
+}
+
+// function to construct tree from string
+Node *treeFromString(string s){
+
+    int i = 0;
+    return preOrder(i, s);
+}
+
+//Driver Code Starts
+void levelOrder(Node *root) {
+    if (root == nullptr) {
+          cout << "N ";
+          return ;
+    }
+
+    queue<Node*> qq;
+    qq.push(root);
+
+    while (!qq.empty()) {
+        Node *curr = qq.front();
+        qq.pop();
+
+        if (curr == nullptr) {
+            cout << "N ";
+            continue;
+        }
+        cout << (curr->data) <<  " ";
+        qq.push(curr->left);
+        qq.push(curr->right);
+    }
+}
+
+int main() {
+    string str = "4(2(3)(1))(6(5))";
+    Node* root = treeFromString(str);
+    levelOrder(root);
+}
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+// Java program to construct a binary
+// tree from the given string
+import java.util.*;
+
+class Node {
+    int data;
+    Node left, right;
+    Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+//Driver Code Ends
+
+    // Recursive function to construct
+    // tree using preorder traversal.
+    static Node preOrder(int[] i, String s) {
+
+        // If substring is empty, return null.
+        if (s.charAt(i[0]) == ')') return null;
+
+        // Find the value of root node.
+        int val = 0;
+        while (i[0] < s.length() && s.charAt(i[0]) != '(' && s.charAt(i[0]) != ')') {
+            int digit = s.charAt(i[0]) - '0';
+            i[0]++;
+            val = val * 10 + digit;
+        }
+
+        // Create the root node.
+        Node root = new Node(val);
+
+        // If left subtree exists
+        if (i[0] < s.length() && s.charAt(i[0]) == '(') {
+            i[0]++;
+            root.left = preOrder(i, s);
+            i[0]++;
+        }
+
+        // If right subtree exists
+        if (i[0] < s.length() && s.charAt(i[0]) == '(') {
+            i[0]++;
+            root.right = preOrder(i, s);
+            i[0]++;
+        }
+
+        // Return the root node.
+        return root;
+    }
+
+    static Node treeFromString(String s) {
+        int[] i = {0};
+        return preOrder(i, s);
+    }
+
+//Driver Code Starts
+    static void levelOrder(Node root) {
+        if (root == null) {
+            System.out.print("N ");
+            return;
+        }
+
+        Queue<Node> queue = new LinkedList<>();
+        queue.add(root);
+
+        while (!queue.isEmpty()) {
+            Node curr = queue.poll();
+
+            if (curr == null) {
+                System.out.print("N ");
+                continue;
+            }
+            System.out.print(curr.data + " ");
+            queue.add(curr.left);
+            queue.add(curr.right);
+        }
+    }
+
+    public static void main(String[] args) {
+        String str = "4(2(3)(1))(6(5))";
+        Node root = treeFromString(str);
+        levelOrder(root);
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+#Driver Code Starts
+# Python program to construct a binary
+# tree from the given string
+from collections import deque
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+#Driver Code Ends
+
+# Recursive function to construct
+# tree using preorder traversal.
+def preOrder(i, s):
+
+    # If substring is empty, return null.
+    if s[i[0]] == ')':
+        return None
+
+    # Find the value of root node.
+    val = 0
+    while i[0] < len(s) and s[i[0]] not in ('(', ')'):
+        digit = int(s[i[0]])
+        i[0] += 1
+        val = val * 10 + digit
+
+    # Create the root node.
+    root = Node(val)
+
+    # If left subtree exists
+    if i[0] < len(s) and s[i[0]] == '(':
+        i[0] += 1
+        root.left = preOrder(i, s)
+        i[0] += 1
+
+    # If right subtree exists
+    if i[0] < len(s) and s[i[0]] == '(':
+        i[0] += 1
+        root.right = preOrder(i, s)
+        i[0] += 1
+
+    # Return the root node.
+    return root
+
+def treeFromString(s):
+    i = [0]
+    return preOrder(i, s)
+
+#Driver Code Starts
+def levelOrder(root):
+    if root is None:
+        print("N ", end="")
+        return
+
+    queue = deque([root])
+
+    while queue:
+        curr = queue.popleft()
+
+        if curr is None:
+            print("N ", end="")
+            continue
+
+        print(curr.data, end=" ")
+        queue.append(curr.left)
+        queue.append(curr.right)
+
+if __name__ == "__main__":
+    str_val = "4(2(3)(1))(6(5))"
+    root = treeFromString(str_val)
+    levelOrder(root)
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+// C# program to construct a binary
+// tree from the given string
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+    public Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+//Driver Code Ends
+
+    // Recursive function to construct
+    // tree using preorder traversal.
+    static Node preOrder(ref int i, string s) {
+
+        // If substring is empty, return null.
+        if (s[i] == ')') return null;
+
+        // Find the value of root node.
+        int val = 0;
+        while (i < s.Length && s[i] != '(' && s[i] != ')') {
+            int digit = s[i] - '0';
+            i++;
+            val = val * 10 + digit;
+        }
+
+        // Create the root node.
+        Node root = new Node(val);
+
+        // If left subtree exists
+        if (i < s.Length && s[i] == '(') {
+            i++;
+            root.left = preOrder(ref i, s);
+            i++;
+        }
+
+        // If right subtree exists
+        if (i < s.Length && s[i] == '(') {
+            i++;
+            root.right = preOrder(ref i, s);
+            i++;
+        }
+
+        // Return the root node.
+        return root;
+    }
+
+    static Node treeFromString(string s) {
+        int i = 0;
+        return preOrder(ref i, s);
+    }
+
+//Driver Code Starts
+    static void levelOrder(Node root) {
+        if (root == null) {
+            Console.Write("N ");
+            return;
+        }
+
+        Queue<Node> queue = new Queue<Node>();
+        queue.Enqueue(root);
+
+        while (queue.Count > 0) {
+            Node curr = queue.Dequeue();
+
+            if (curr == null) {
+                Console.Write("N ");
+                continue;
+            }
+            Console.Write(curr.data + " ");
+            queue.Enqueue(curr.left);
+            queue.Enqueue(curr.right);
+        }
+    }
+
+    static void Main(string[] args) {
+        string str = "4(2(3)(1))(6(5))";
+        Node root = treeFromString(str);
+        levelOrder(root);
+    }
+}
+
+//Driver Code Ends
+
+JavaScript
+
+//Driver Code Starts
+// JavaScript program to construct a binary
+// tree from the given string
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+//Driver Code Ends
+
+function preOrder(i, s) {
+    if (s[i[0]] === ')') return null;
+
+    let val = 0;
+    while (i[0] < s.length && s[i[0]] !== '(' && s[i[0]] !== ')') {
+        let digit = s[i[0]] - '0';
+        i[0]++;
+        val = val * 10 + digit;
+    }
+
+    let root = new Node(val);
+
+    if (i[0] < s.length && s[i[0]] === '(') {
+        i[0]++;
+        root.left = preOrder(i, s);
+        i[0]++;
+    }
+
+    if (i[0] < s.length && s[i[0]] === '(') {
+        i[0]++;
+        root.right = preOrder(i, s);
+        i[0]++;
+    }
+
+    return root;
+}
+
+function treeFromString(s) {
+    let i = [0];
+    return preOrder(i, s);
+}
+
+//Driver Code Starts
+function levelOrder(root) {
+    if (root === null) {
+        process.stdout.write("N ");
+        return;
+    }
+
+    let queue = [];
+    queue.push(root);
+
+    while (queue.length > 0) {
+        let curr = queue.shift();
+
+        if (curr === null) {
+            process.stdout.write("N ");
+            continue;
+        }
+        process.stdout.write(curr.data + " ");
+        queue.push(curr.left);
+        queue.push(curr.right);
+    }
+}
+
+let str = "4(2(3)(1))(6(5))";
+let root = treeFromString(str);
+levelOrder(root);
+
+//Driver Code Ends
+
+Output
+
+4 2 6 3 1 5 N N N N N N N

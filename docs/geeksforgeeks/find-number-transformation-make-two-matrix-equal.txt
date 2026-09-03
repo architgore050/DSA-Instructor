@@ -1,0 +1,294 @@
+Source: https://www.geeksforgeeks.org/dsa/find-number-transformation-make-two-matrix-equal/
+Title: Find number of transformation to make two Matrix Equal
+Extractor: 2
+
+Given two matrices a and b of size n*m . The task is to find the required number of transformation steps so that both matrices become equal. Print -1 if this is not possible.
+
+The transformation step is as follows:
+
+- Select any one matrix out of two matrices.
+- Choose either row/column of the selected matrix.
+- Increment every element of the select row/column by 1.
+
+Examples:
+
+> Input: a[][] = [[1, 1], [1, 1]] b[][] = [[1, 2], [3, 4]] Output : 3 Explanation : [[1, 1], ->  [[1, 2], -> [[1, 2],  ->  [[1, 2], [1, 1]]         [1, 2]]        [2, 3]]        [3, 4]] Input : a[][] = [[1, 1], [1, 0]] b[][] = [[1, 2], [3, 4]] Output : -1 Explanation : No transformation will make a and b equal.
+
+Approach:
+
+> The idea is that incrementing any row/column in matrix a is equivalent to decrementing the same row/column in matrix b . This means that instead of tracking both matrices, we can work with their difference (a[i][j] - b[i][j]). When we increment a row in ' a' , all elements in that row increase by 1, which is the same as all elements in that row of the difference matrix increasing by 1. Similarly, when we increment a column in ' a' , it's equivalent to increasing all elements in that column of the difference matrix by 1. This allows us to transform the problem into working with just one matrix.
+
+Determine if any solution exists or not:
+
+> After creating the difference matrix , for each cell a[i][j] (excluding the first row and first column), we check if a[i][j] - a[i][0] - a[0][j] + a[0][0] = 0. If this equation doesn't hold for any cell, we can immediately conclude that no solution exists. Why does this work? Think about how row and column operations affect each cell: when we perform x operations on row i and y operations on column j , a[i][j] changes by (x + y), a[i][0] changes by x (row operations only), a[0][j] changes by y (column operations only), and a[0][0] is affected by neither row i nor column j operations. Therefore, (x + y) - x - y + 0 = 0 must hold for any valid solution. If this equation doesn't hold for any cell, it means no sequence of row and column operations can transform one matrix into another.
+
+Calculate number of transformations required:
+
+> To calculate number of transformations required, we only need to look at the first row and first column because: We first sum up |a[i][0]| for all i (each first column element) because this represents how many row operations we need. For each row i, we need |a[i][0]| operations to make that row element zero. Then we sum up |a[0][j] - a[0][0]| for all j (each first row element minus first element) because this represents additional column operations needed. We subtract a[0][0] to avoid counting it twice since row operations have already affected this element. The sum of these two gives us the minimum number of operations needed, as row operations handle the first column differences, and column operations handle the remaining differences in the first row.
+
+C++
+
+// C++ program to find number of transformation
+// to make two Matrix Equal
+#include <bits/stdc++.h>
+using namespace std;
+
+int countOperations(vector<vector<int>> &a, vector<vector<int>> &b) {
+    int n = a.size();
+    int m = a[0].size();
+
+    // Create difference matrix (a = a - b)
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            a[i][j] -= b[i][j];
+        }
+    }
+
+    // Check if transformation is possible using the property
+    // a[i][j] - a[i][0] - a[0][j] + a[0][0] should be 0
+    for (int i = 1; i < n; i++) {
+        for (int j = 1; j < m; j++) {
+            if (a[i][j] - a[i][0] - a[0][j] + a[0][0] != 0) {
+                return -1;
+            }
+        }
+    }
+
+    int result = 0;
+
+    // Add operations needed for first column
+    for (int i = 0; i < n; i++) {
+        result += abs(a[i][0]);
+    }
+
+    // Add operations needed for
+    // first row (excluding a[0][0])
+    for (int j = 0; j < m; j++) {
+        result += abs(a[0][j] - a[0][0]);
+    }
+
+    return result;
+}
+
+int main() {
+
+    vector<vector<int>> a = {{1, 1}, {1, 1}};
+    vector<vector<int>> b = {{1, 2}, {3, 4}};
+    cout << countOperations(a, b);
+
+    return 0;
+}
+
+Java
+
+// Java program to find number of transformation
+// to make two Matrix Equal
+
+import java.util.*;
+
+class GfG {
+    static int countOperations(int[][] a, int[][] b) {
+        int n = a.length;
+        int m = a[0].length;
+
+        // Create difference matrix (a = a - b)
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                a[i][j] -= b[i][j];
+            }
+        }
+
+        // Check if transformation is possible using the
+        // property a[i][j] - a[i][0] - a[0][j] + a[0][0]
+        // should be 0
+        for (int i = 1; i < n; i++) {
+            for (int j = 1; j < m; j++) {
+                if (a[i][j] - a[i][0] - a[0][j] + a[0][0]
+                    != 0) {
+                    return -1;
+                }
+            }
+        }
+
+        int result = 0;
+
+        // Add operations needed for first column
+        for (int i = 0; i < n; i++) {
+            result += Math.abs(a[i][0]);
+        }
+
+        // Add operations needed for
+        // first row (excluding a[0][0])
+        for (int j = 0; j < m; j++) {
+            result += Math.abs(a[0][j] - a[0][0]);
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[][] a = { { 1, 1 }, { 1, 1 } };
+        int[][] b = { { 1, 2 }, { 3, 4 } };
+
+        System.out.println(countOperations(a, b));
+    }
+}
+
+Python
+
+# Python program to find number of transformation
+# to make two Matrix Equal
+
+def countOperations(a, b):
+    n = len(a)
+    m = len(a[0])
+
+    # Create difference matrix (a = a - b)
+    for i in range(n):
+        for j in range(m):
+            a[i][j] -= b[i][j]
+
+    # Check if transformation is possible using the property
+    # a[i][j] - a[i][0] - a[0][j] + a[0][0] should be 0
+    for i in range(1, n):
+        for j in range(1, m):
+            if a[i][j] - a[i][0] - a[0][j] + a[0][0] != 0:
+                return -1
+
+    result = 0
+
+    # Add operations needed for first column
+    for i in range(n):
+        result += abs(a[i][0])
+
+    # Add operations needed for
+    # first row (excluding a[0][0])
+    for j in range(m):
+        result += abs(a[0][j] - a[0][0])
+
+    return result
+
+if __name__ == "__main__":
+    a = [
+        [1, 1],
+        [1, 1]
+    ]
+
+    b = [
+        [1, 2],
+        [3, 4]
+    ]
+
+    print(countOperations(a, b))
+
+C#
+
+// C# program to find number of transformation
+// to make two Matrix Equal
+
+using System;
+
+class GfG {
+    static int countOperations(int[, ] a, int[, ] b) {
+        int n = a.GetLength(0);
+        int m = a.GetLength(1);
+
+        // Create difference matrix (a = a - b)
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                a[i, j] -= b[i, j];
+            }
+        }
+
+        // Check if transformation is possible using the
+        // property a[i, j] - a[i, 0] - a[0, j] + a[0, 0]
+        // should be 0
+        for (int i = 1; i < n; i++) {
+            for (int j = 1; j < m; j++) {
+                if (a[i, j] - a[i, 0] - a[0, j] + a[0, 0]
+                    != 0) {
+                    return -1;
+                }
+            }
+        }
+
+        int result = 0;
+
+        // Add operations needed for first column
+        for (int i = 0; i < n; i++) {
+            result += Math.Abs(a[i, 0]);
+        }
+
+        // Add operations needed for
+        // first row (excluding a[0, 0])
+        for (int j = 0; j < m; j++) {
+            result += Math.Abs(a[0, j] - a[0, 0]);
+        }
+
+        return result;
+    }
+
+    static void Main(string[] args) {
+
+        int[, ] a = { { 1, 1 }, { 1, 1 } };
+        int[, ] b = { { 1, 2 }, { 3, 4 } };
+
+        Console.WriteLine(countOperations(a, b));
+    }
+}
+
+JavaScript
+
+// JavaScript program to find number of transformation
+// to make two Matrix Equal
+
+function countOperations(a, b) {
+    let n = a.length;
+    let m = a[0].length;
+
+    // Create difference matrix (a = a - b)
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < m; j++) {
+            a[i][j] -= b[i][j];
+        }
+    }
+
+    // Check if transformation is possible using the
+    // property a[i][j] - a[i][0] - a[0][j] + a[0][0] should
+    // be 0
+    for (let i = 1; i < n; i++) {
+        for (let j = 1; j < m; j++) {
+            if (a[i][j] - a[i][0] - a[0][j] + a[0][0]
+                !== 0) {
+                return -1;
+            }
+        }
+    }
+
+    let result = 0;
+
+    // Add operations needed for first column
+    for (let i = 0; i < n; i++) {
+        result += Math.abs(a[i][0]);
+    }
+
+    // Add operations needed for
+    // first row (excluding a[0][0])
+    for (let j = 0; j < m; j++) {
+        result += Math.abs(a[0][j] - a[0][0]);
+    }
+
+    return result;
+}
+
+//Driver code
+let a = [ [ 1, 1 ], [ 1, 1 ] ];
+let b = [ [ 1, 2 ], [ 3, 4 ] ];
+
+console.log(countOperations(a, b));
+
+Output
+
+3
+
+Time Complexity: O(n*m) Auxiliary Space: O(1)

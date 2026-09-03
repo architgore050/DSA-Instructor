@@ -1,0 +1,347 @@
+Source: https://www.geeksforgeeks.org/dsa/hierholzers-algorithm-directed-graph/
+Title: Hierholzer's Algorithm for directed graph
+Extractor: 2
+
+Given a directed Eulerian graph, the task is to print an Euler circuit . An Euler circuit is a path that traverses every edge of a graph exactly once, and the path ends on the starting vertex.
+
+Note: The given graph contains a Euler circuit.
+
+Example:
+
+> Input : Directed graph Output: 0 3 4 0 2 1 0
+
+Prerequisites:
+
+- We have discussed the problem of finding out whether a given graph is Eulerian or not for an Undirected Graph
+- Conditions for Eulerian circuit in a Directed Grpag : (1)  All vertices belong to a single strongly connected component. (2) All vertices have same in-degree and out-degree. Note that for an undirected graph, the condition is different (all vertices have even degree)
+
+Approach:
+
+1. Choose any starting vertex v, and follow a trail of edges from that vertex until returning to v. It is not possible to get stuck at any vertex other than v, because indegree and outdegree of every vertex must be same, when the trail enters another vertex w there must be an unused edge leaving w. The tour formed in this way is a closed tour, but may not cover all the vertices and edges of the initial graph.
+2. As long as there exists a vertex u that belongs to the current tour, but that has adjacent edges not part of the tour, start another trail from u, following unused edges until returning to u, and join the tour formed in this way to the previous tour.
+
+Illustration:
+
+Taking example of the above graph with 5 nodes : adj = {{2, 3}, {0}, {1}, {4}, {0}}.
+
+> Start at vertex 0 : Current Path: [0] Circuit: [] Vertex 0 → 3 : Current Path: [0, 3] Circuit: [] Vertex 3 → 4 : Current Path: [0, 3, 4] Circuit: [] Vertex 4 → 0 : Current Path: [0, 3, 4, 0] Circuit: [] Vertex 0 → 2 : Current Path: [0, 3, 4, 0, 2] Circuit: [] Vertex 2 → 1 : Current Path: [0, 3, 4, 0, 2, 1] Circuit: [] Vertex 1 → 0 : Current Path: [0, 3, 4, 0, 2, 1, 0] Circuit: [] Backtrack to vertex 0 : Add 0 to circuit. Current Path: [0, 3, 4, 0, 2, 1] Circuit: [0] Backtrack to vertex 1 : Add 1 to circuit. Current Path: [0, 3, 4, 0, 2] Circuit: [0, 1] Backtrack to vertex 2 : Add 2 to circuit. Current Path: [0, 3, 4, 0] Circuit: [0, 1, 2] Backtrack to vertex 0 : Add 0 to circuit. Current Path: [0, 3, 4] Circuit: [0, 1, 2, 0] Backtrack to vertex 4 : Add 4 to circuit. Current Path: [0, 3] Circuit: [0, 1, 2, 0, 4] Backtrack to vertex 3 : Add 3 to circuit. Current Path: [0] Circuit: [0, 1, 2, 0, 4, 3] Backtrack to vertex 0 : Add 0 to circuit. Current Path: [] Circuit: [0, 1, 2, 0, 4, 3, 0]
+
+Below is the implementation for the above approach:
+
+C++
+
+// C++ program to print Eulerian circuit in given
+// directed graph using Hierholzer algorithm
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to print Eulerian circuit
+vector<int> printCircuit(vector<vector<int>> &adj) {
+    int n = adj.size();
+
+    if (n == 0)
+        return {};
+
+    // Maintain a stack to keep vertices
+    // We can start from any vertex, here we start with 0
+    vector<int> currPath;
+    currPath.push_back(0);
+
+    // list to store final circuit
+    vector<int> circuit;
+
+    while (currPath.size() > 0) {
+        int currNode = currPath[currPath.size() - 1];
+
+        // If there's remaining edge in adjacency list
+        // of the current vertex
+        if (adj[currNode].size() > 0) {
+
+            // Find and remove the next vertex that is
+            // adjacent to the current vertex
+            int nextNode = adj[currNode].back();
+            adj[currNode].pop_back();
+
+            // Push the new vertex to the stack
+            currPath.push_back(nextNode);
+        }
+
+        // back-track to find remaining circuit
+        else {
+            // Remove the current vertex and
+            // put it in the circuit
+            circuit.push_back(currPath.back());
+            currPath.pop_back();
+        }
+    }
+
+    // reverse the result vector
+    reverse(circuit.begin(), circuit.end());
+
+    return circuit;
+}
+
+int main() {
+    vector<vector<int>> adj = {{2, 3}, {0}, {1}, {4}, {0}};
+    vector<int> ans = printCircuit(adj);
+
+    for (auto v: ans) cout << v << " ";
+    cout << endl;
+    return 0;
+}
+
+Java
+
+// Java program to print Eulerian circuit in given
+// directed graph using Hierholzer algorithm
+import java.util.*;
+
+class GfG {
+
+    // Function to print Eulerian circuit
+    static List<Integer> printCircuit(List<List<Integer>> adj) {
+        int n = adj.size();
+
+        if (n == 0)
+            return new ArrayList<>();
+
+        // Maintain a stack to keep vertices
+        // We can start from any vertex, here we start with 0
+        List<Integer> currPath = new ArrayList<>();
+        currPath.add(0);
+
+        // list to store final circuit
+        List<Integer> circuit = new ArrayList<>();
+
+        while (currPath.size() > 0) {
+            int currNode = currPath.get(currPath.size() - 1);
+
+            // If there's remaining edge in adjacency list
+            // of the current vertex
+            if (adj.get(currNode).size() > 0) {
+
+                // Find and remove the next vertex that is
+                // adjacent to the current vertex
+                int nextNode = adj.get(currNode).get(adj.get(currNode).size() - 1);
+                adj.get(currNode).remove(adj.get(currNode).size() - 1);
+
+                // Push the new vertex to the stack
+                currPath.add(nextNode);
+            }
+
+            // back-track to find remaining circuit
+            else {
+                // Remove the current vertex and
+                // put it in the circuit
+                circuit.add(currPath.get(currPath.size() - 1));
+                currPath.remove(currPath.size() - 1);
+            }
+        }
+
+        // reverse the result vector
+        Collections.reverse(circuit);
+
+        return circuit;
+    }
+
+    public static void main(String[] args) {
+        List<List<Integer>> adj = new ArrayList<>();
+        adj.add(new ArrayList<>(Arrays.asList(2, 3)));
+        adj.add(new ArrayList<>(Arrays.asList(0)));
+        adj.add(new ArrayList<>(Arrays.asList(1)));
+        adj.add(new ArrayList<>(Arrays.asList(4)));
+        adj.add(new ArrayList<>(Arrays.asList(0)));
+
+        List<Integer> ans = printCircuit(adj);
+
+        for (int v : ans) System.out.print(v + " ");
+        System.out.println();
+    }
+}
+
+Python
+
+# Python program to print Eulerian circuit in given
+# directed graph using Hierholzer algorithm
+
+# Function to print Eulerian circuit
+def printCircuit(adj):
+    n = len(adj)
+
+    if n == 0:
+        return []
+
+    # Maintain a stack to keep vertices
+    # We can start from any vertex, here we start with 0
+    currPath = [0]
+
+    # list to store final circuit
+    circuit = []
+
+    while len(currPath) > 0:
+        currNode = currPath[-1]
+
+        # If there's remaining edge in adjacency list
+        # of the current vertex
+        if len(adj[currNode]) > 0:
+
+            # Find and remove the next vertex that is
+            # adjacent to the current vertex
+            nextNode = adj[currNode].pop()
+
+            # Push the new vertex to the stack
+            currPath.append(nextNode)
+
+        # back-track to find remaining circuit
+        else:
+            # Remove the current vertex and
+            # put it in the circuit
+            circuit.append(currPath.pop())
+
+    # reverse the result vector
+    circuit.reverse()
+
+    return circuit
+
+if __name__ == "__main__":
+    adj = [[2, 3], [0], [1], [4], [0]]
+    ans = printCircuit(adj)
+
+    for v in ans:
+        print(v, end=" ")
+    print()
+
+C#
+
+// C# program to print Eulerian circuit in given
+// directed graph using Hierholzer algorithm
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to print Eulerian circuit
+    static List<int> printCircuit(List<List<int>> adj) {
+        int n = adj.Count;
+
+        if (n == 0)
+            return new List<int>();
+
+        // Maintain a stack to keep vertices
+        // We can start from any vertex, here we start with 0
+        List<int> currPath = new List<int> { 0 };
+
+        // list to store final circuit
+        List<int> circuit = new List<int>();
+
+        while (currPath.Count > 0) {
+            int currNode = currPath[currPath.Count - 1];
+
+            // If there's remaining edge in adjacency list
+            // of the current vertex
+            if (adj[currNode].Count > 0) {
+
+                // Find and remove the next vertex that is
+                // adjacent to the current vertex
+                int nextNode = adj[currNode][adj[currNode].Count - 1];
+                adj[currNode].RemoveAt(adj[currNode].Count - 1);
+
+                // Push the new vertex to the stack
+                currPath.Add(nextNode);
+            }
+
+            // back-track to find remaining circuit
+            else {
+                // Remove the current vertex and
+                // put it in the circuit
+                circuit.Add(currPath[currPath.Count - 1]);
+                currPath.RemoveAt(currPath.Count - 1);
+            }
+        }
+
+        // reverse the result vector
+        circuit.Reverse();
+
+        return circuit;
+    }
+
+    static void Main(string[] args) {
+        List<List<int>> adj = new List<List<int>> {
+            new List<int> { 2, 3 },
+            new List<int> { 0 },
+            new List<int> { 1 },
+            new List<int> { 4 },
+            new List<int> { 0 }
+        };
+
+        List<int> ans = printCircuit(adj);
+
+        foreach (int v in ans) {
+            Console.Write(v + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+// JavaScript program to print Eulerian circuit in given
+// directed graph using Hierholzer algorithm
+
+// Function to print Eulerian circuit
+function printCircuit(adj) {
+    let n = adj.length;
+
+    if (n === 0)
+        return [];
+
+    // Maintain a stack to keep vertices
+    // We can start from any vertex, here we start with 0
+    let currPath = [0];
+
+    // list to store final circuit
+    let circuit = [];
+
+    while (currPath.length > 0) {
+        let currNode = currPath[currPath.length - 1];
+
+        // If there's remaining edge in adjacency list
+        // of the current vertex
+        if (adj[currNode].length > 0) {
+
+            // Find and remove the next vertex that is
+            // adjacent to the current vertex
+            let nextNode = adj[currNode].pop();
+
+            // Push the new vertex to the stack
+            currPath.push(nextNode);
+        }
+
+        // back-track to find remaining circuit
+        else {
+            // Remove the current vertex and
+            // put it in the circuit
+            circuit.push(currPath.pop());
+        }
+    }
+
+    // reverse the result vector
+    circuit.reverse();
+
+    return circuit;
+}
+
+let adj = [[2, 3], [0], [1], [4], [0]];
+let ans = printCircuit(adj);
+
+for (let v of ans) {
+    console.log(v, " ");
+}
+
+Output
+
+0 3 4 0 2 1 0
+
+Time Complexity : O(V + E), where V is the number of vertices and E is the number of edges in the graph. The reason for this is because the algorithm performs a depth-first search (DFS) and visits each vertex and each edge exactly once. So, for each vertex, it takes O(1) time to visit it and for each edge, it takes O(1) time to traverse it.
+
+Space complexity  : O(V + E), as the algorithm uses a stack to store the current path and a list to store the final circuit. The maximum size of the stack can be V + E at worst, so the space complexity is O(V + E).

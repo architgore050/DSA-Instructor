@@ -1,0 +1,551 @@
+Source: https://www.geeksforgeeks.org/dsa/morris-traversal-for-postorder/
+Title: Morris traversal for Postorder
+Extractor: 2
+
+Given the root of a binary tree, Find its postorder traversal using Morris Traversal , i.e., without using recursion or a stack.
+
+Examples:
+
+> Input: Output: [4, 5, 2, 3, 1] Explanation: Postorder traversal (Left->Right->Root) of the tree is 4, 5, 2, 3, 1. Input: Output: [10, 7, 1, 6, 10, 6, 5, 8] Explanation: Postorder traversal (Left->Right->Root) of the tree is 10, 7, 1, 6, 10, 6, 5, 8.
+
+### Approach:
+
+> In Postorder traversal, we visit nodes in Left - Right - Node (LRN) order, which means each node is visited only after its left and right subtrees. Implementing this directly with Morris Traversal is tricky because we need to know when both subtrees are fully visited. To simplify, we use a mirrored Preorder approach: traverse the tree in Node - Right - Left (NRL) order, visiting each node when we first encounter it, then moving to the right subtree, and finally to the left subtree. During this traversal, we store the nodes in an array. Finally, by reversing the array, the NRL order becomes LRN, giving the correct Postorder sequence.
+
+Morris Postorder Traversal Steps
+
+Start with root Node(curr) and for each node:
+
+- If the node does not have a right child, visit(store) the node and move to the left child.
+- If the node has a right child, find the leftmost node in the right subtree.
+- If the leftmost node’s left is NULL. Make the current node as the left child of this leftmost node (temporary link).Visit (store) the current node and move to the right child.
+- If the leftmost node’s left points to the current node. Remove the temporary link (leftmost->left = NULL) and move to the left child.
+- Repeat until curr == NULL.
+
+After traversal, reverse the stored array. This converts Node-Right-Left (NRL) order into Left-Right-Node (LRN) postorder.
+
+C++
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+// Node Structure
+class Node {
+  public:
+    int data;
+    Node *left;
+    Node *right;
+
+    Node(int data) {
+        this->data = data;
+        left = NULL;
+        right = NULL;
+    }
+};
+
+vector<int> postOrder(Node *root) {
+    vector<int> res;
+    Node *current = root;
+
+    while (current != NULL) {
+
+        // If right child is null,
+        // put the current node data
+        // in res. Move to left child.
+        if (current->right == NULL) {
+            res.push_back(current->data);
+            current = current->left;
+        }
+        else {
+            Node *predecessor = current->right;
+            while (predecessor->left != NULL && predecessor->left != current) {
+                predecessor = predecessor->left;
+            }
+
+            // If left child doesn't point
+            // to this node, then put in res
+            // this node and make left
+            // child point to this node
+            if (predecessor->left == NULL) {
+                res.push_back(current->data);
+                predecessor->left = current;
+                current = current->right;
+            }
+
+            // If the left child of inorder predecessor
+            // already points to this node
+            else {
+                predecessor->left = NULL;
+                current = current->left;
+            }
+        }
+    }
+
+    // reverse the res
+    reverse(res.begin(), res.end());
+    return res;
+}
+
+int main() {
+
+    // Constructing binary tree.
+    //             1
+    //            / \
+    //           2   3
+    //          / \
+    //         4  5
+
+    Node *root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+
+    vector<int> ans = postOrder(root);
+
+    for (auto x : ans)
+    {
+        cout << x << " ";
+    }
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_SIZE 100000
+
+// Node Structure
+struct Node {
+    int data;
+    struct Node* left;
+    struct Node* right;
+};
+
+// Reverse a segment of array
+void reverseArray(int* arr, int start, int end) {
+    while (start < end) {
+        int temp = arr[start];
+        arr[start] = arr[end];
+        arr[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+// Morris Postorder Traversal
+int* postOrder(struct Node* root, int* size) {
+    struct Node* curr = root;
+    int capacity = MAX_SIZE;
+    int* res = (int*)malloc(capacity * sizeof(int));
+    int count = 0;
+
+    while (curr != NULL) {
+
+      // If right child is null,
+        // put the current node data
+        // in res. Move to left child.
+        if (curr->right == NULL) {
+            if (count >= capacity) {
+                capacity *= 2;
+                res = (int*)realloc(res, capacity * sizeof(int));
+            }
+            res[count++] = curr->data;
+            curr = curr->left;
+        }
+        else {
+            // Find the leftmost node in the right subtree
+            struct Node* prev = curr->right;
+            while (prev->left != NULL && prev->left != curr) {
+                prev = prev->left;
+            }
+
+            // If the left child of inorder predecessor
+            // already points to this node
+            if (prev->left == curr) {
+                prev->left = NULL;
+                curr = curr->left;
+            }
+            else {
+
+            // If left child doesn't point
+            // to this node, then put in res
+            // this node and make left
+            // child point to this node
+                if (count >= capacity) {
+                    capacity *= 2;
+                    res = (int*)realloc(res, capacity * sizeof(int));
+                }
+                res[count++] = curr->data;
+                prev->left = curr;
+                curr = curr->right;
+            }
+        }
+    }
+
+    // Reverse the array to get correct postorder (LRN)
+    reverseArray(res, 0, count - 1);
+
+    *size = count;
+    return res;
+}
+
+// Helper to create a new node
+struct Node* createNode(int data) {
+    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+    newNode->data = data;
+    newNode->left = NULL;
+    newNode->right = NULL;
+    return newNode;
+}
+
+int main() {
+
+    // Constructing binary tree:
+    //             1
+    //            / \
+    //           2   3
+    //          / \
+    //         4  5
+    struct Node* root = createNode(1);
+    root->left = createNode(2);
+    root->right = createNode(3);
+    root->left->left = createNode(4);
+    root->left->right = createNode(5);
+
+    int size;
+    int* res = postOrder(root, &size);
+
+    for (int i = 0; i < size; i++) {
+        printf("%d ", res[i]);
+    }
+
+    free(res);
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+// Node Structure
+class Node {
+    public int data;
+    Node left;
+    Node right;
+
+    Node(int data) {
+        this.data = data;
+        left = null;
+        right = null;
+    }
+}
+
+class GFG {
+
+    static ArrayList<Integer> postOrder(Node root) {
+        ArrayList<Integer> res = new ArrayList<>();
+        Node current = root;
+
+        while (current != null) {
+
+            // If right child is null,
+            // put the current node data
+            // in res. Move to left child.
+            if (current.right == null) {
+                res.add(current.data);
+                current = current.left;
+            } else {
+                Node predecessor = current.right;
+                while (predecessor.left != null
+                       && predecessor.left != current) {
+                    predecessor = predecessor.left;
+                }
+
+                // If left child doesn't point
+                // to this node, then put in res
+                // this node and make left
+                // child point to this node
+                if (predecessor.left == null) {
+                    res.add(current.data);
+                    predecessor.left = current;
+                    current = current.right;
+                }
+                // If the left child of inorder predecessor
+                // already points to this node
+                else {
+                    predecessor.left = null;
+                    current = current.left;
+                }
+            }
+        }
+
+        // reverse the res
+        Collections.reverse(res);
+        return res;
+    }
+
+    public static void main(String[] args) {
+
+      // Constructing binary tree.
+    //             1
+    //            / \
+    //           2   3
+    //          / \
+    //         4  5
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+
+        ArrayList<Integer> ans = postOrder(root);
+
+        for (int x : ans) {
+            System.out.print(x + " ");
+        }
+    }
+}
+
+Python
+
+# Node Structure
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.left = None
+        self.right = None
+
+def postOrder(root):
+    res = []
+    current = root
+
+    while current is not None:
+
+        # If right child is null,
+        # put the current node data
+        # in res. Move to left child.
+        if current.right is None:
+            res.append(current.data)
+            current = current.left
+        else:
+            predecessor = current.right
+            while predecessor.left is not None and predecessor.left != current:
+                predecessor = predecessor.left
+
+            # If left child doesn't point
+            # to this node, then put in res
+            # this node and make left
+            # child point to this node
+            if predecessor.left is None:
+                res.append(current.data)
+                predecessor.left = current
+                current = current.right
+            # If the left child of inorder predecessor
+            # already points to this node
+            else:
+                predecessor.left = None
+                current = current.left
+
+    # reverse the res
+    res.reverse()
+    return res
+
+if __name__ == "__main__":
+
+    # Binary tree represenation
+    #       1
+    #     /   \
+    #    2     3
+    #   / \
+    #  4   5
+
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+
+    ans = postOrder(root)
+
+    for x in ans:
+        print(x, end=" ")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+// Node Structure
+class Node {
+    public int data;
+    public Node left;
+    public Node right;
+
+    public Node(int data)
+    {
+        this.data = data;
+        left = null;
+        right = null;
+    }
+}
+
+class GFG {
+
+    static List<int> postOrder(Node root) {
+        List<int> res = new List<int>();
+        Node current = root;
+
+        while (current != null)
+        {
+            // If right child is null,
+            // put the current node data
+            // in res. Move to left child.
+            if (current.right == null)
+            {
+                res.Add(current.data);
+                current = current.left;
+            }
+            else
+            {
+                Node predecessor = current.right;
+                while (predecessor.left != null && predecessor.left != current)
+                {
+                    predecessor = predecessor.left;
+                }
+
+                // If left child doesn't point
+                // to this node, then put in res
+                // this node and make left
+                // child point to this node
+                if (predecessor.left == null)
+                {
+                    res.Add(current.data);
+                    predecessor.left = current;
+                    current = current.right;
+                }
+                // If the left child of inorder predecessor
+                // already points to this node
+                else
+                {
+                    predecessor.left = null;
+                    current = current.left;
+                }
+            }
+        }
+
+        // reverse the res
+        res.Reverse();
+        return res;
+    }
+
+    static void Main(string[] args)
+    {
+        // Binary tree represenation
+        //       1
+        //     /   \
+        //    2     3
+        //   / \
+        //  4   5
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+
+        List<int> ans = postOrder(root);
+
+        foreach (int x in ans)
+        {
+            Console.Write(x + " ");
+        }
+    }
+}
+
+JavaScript
+
+// Node Structure
+class Node {
+    constructor(data) {
+        this.data = data;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+function postOrder(root) {
+    let res = [];
+    let current = root;
+
+    while (current !== null) {
+
+        // If right child is null,
+        // put the current node data
+        // in res. Move to left child.
+        if (current.right === null) {
+            res.push(current.data);
+            current = current.left;
+        } else {
+            let predecessor = current.right;
+            while (predecessor.left !== null && predecessor.left !== current) {
+                predecessor = predecessor.left;
+            }
+
+            // If left child doesn't point
+            // to this node, then put in res
+            // this node and make left
+            // child point to this node
+            if (predecessor.left === null) {
+                res.push(current.data);
+                predecessor.left = current;
+                current = current.right;
+            }
+
+            // If the left child of inorder predecessor
+            // already points to this node
+            else {
+                predecessor.left = null;
+                current = current.left;
+            }
+        }
+    }
+
+    // reverse the res
+    res.reverse();
+    return res;
+}
+
+// Driver code
+
+    // Binary tree represenation
+    //       1
+    //     /   \
+    //    2     3
+    //   / \
+    //  4   5
+
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+
+let ans = postOrder(root);
+
+for (let x of ans) {
+    process.stdout.write(x + " ");
+}
+
+Output
+
+6 7 2 8 9 3 1
+
+Time Complexity: O(n) Auxiliary Space: O(1)

@@ -1,0 +1,579 @@
+Source: https://www.geeksforgeeks.org/dsa/in-place-merge-two-linked-list-without-changing-links-of-first-list/
+Title: In-place Merge two linked lists without changing links of first list
+Extractor: 2
+
+Given two sorted singly linked lists having n and m elements each, merge them using constant space. First n smallest elements in both the lists should become part of first list and rest elements should be part of second list. Sorted order should be maintained. We are not allowed to change pointers of first linked list.
+
+For example,
+
+Input:
+First List: 2->4->7->8->10
+Second List: 1->3->12
+
+Output:
+First List: 1->2->3->4->7
+Second List: 8->10->12
+
+We strongly recommend you to minimize your browser and try this yourself first.
+
+The problem becomes very simple if we’re allowed to change pointers of first linked list. If we are allowed to change links, we can simply do something like merge of merge-sort algorithm. We assign first n smallest elements to the first linked list where n is the number of elements in first linked list and the rest to second linked list. We can achieve this in O(m + n) time and O(1) space, but this solution violates the requirement that we can't change links of first list.
+
+The problem becomes a little tricky as we're not allowed to change pointers in first linked list. The idea is something similar to this post but as we are given singly linked list, we can't proceed backwards with the last element of LL2.
+
+The idea is for each element of LL1, we compare it with first element of LL2. If LL1 has a greater element than first element of LL2, then we swap the two elements involved. To keep LL2 sorted, we need to place first element of LL2 at its correct position. We can find mismatch by traversing LL2 once and correcting the pointers.
+
+Below is the implementation of this idea.
+
+C++
+
+// C++ Program to merge two sorted linked lists without
+// using any extra space and without changing links
+// of first list
+#include <bits/stdc++.h>
+using namespace std;
+
+ /* Structure for a linked list node */
+struct Node
+{
+    int data;
+    struct Node *next;
+};
+
+/* Given a reference (pointer to pointer) to the head
+  of a list and an int, push a new node on the front
+  of the list. */
+void push(struct Node** head_ref, int new_data)
+{
+    /* allocate node */
+    struct Node* new_node =
+        (struct Node*) malloc(sizeof(struct Node));
+
+    /* put in the data  */
+    new_node->data  = new_data;
+
+    /* link the old list off the new node */
+    new_node->next = (*head_ref);
+
+    /* move the head to point to the new node */
+    (*head_ref)    = new_node;
+}
+
+// Function to merge two sorted linked lists
+// LL1 and LL2 without using any extra space.
+void mergeLists(struct Node *a, struct Node * &b)
+{
+    // run till either one of a or b runs out
+    while (a && b)
+    {
+        // for each element of LL1,
+        // compare it with first element of LL2.
+        if (a->data > b->data)
+        {
+            // swap the two elements involved
+            // if LL1 has a greater element
+            swap(a->data, b->data);
+
+            struct Node *temp = b;
+
+            // To keep LL2 sorted, place first
+            // element of LL2 at its correct place
+            if (b->next && b->data > b->next->data)
+            {
+                b = b->next;
+                struct Node *ptr= b, *prev = NULL;
+
+                // find mismatch by traversing the
+                // second linked list once
+                while (ptr && ptr->data < temp->data)
+                {
+                    prev = ptr;
+                    ptr = ptr -> next;
+                }
+
+                // correct the pointers
+                prev->next = temp;
+                temp->next = ptr;
+            }
+        }
+
+        // move LL1 pointer to next element
+        a = a->next;
+    }
+}
+
+// Code to print the linked link
+void printList(struct Node *head)
+{
+    while (head)
+    {
+        cout << head->data << "->" ;
+        head = head->next;
+    }
+    cout << "NULL" << endl;
+}
+
+// Driver code
+int main()
+{
+    struct Node *a = NULL;
+    push(&a, 10);
+    push(&a, 8);
+    push(&a, 7);
+    push(&a, 4);
+    push(&a, 2);
+
+    struct Node *b = NULL;
+    push(&b, 12);
+    push(&b, 3);
+    push(&b, 1);
+
+    mergeLists(a, b);
+
+    cout << "First List: ";
+    printList(a);
+
+    cout << "Second List: ";
+    printList(b);
+
+    return 0;
+}
+
+Java
+
+// Java Program to merge two sorted linked lists
+// without using any extra space and without
+// changing links of first list
+class Node {
+    int data;
+    Node next;
+
+    Node(int d)
+    {
+        data = d;
+        next = null;
+    }
+}
+
+class LinkedList {
+    Node head;
+
+    // Given a reference (pointer to pointer) to the head
+    // of a list and an int, push a new node on the front
+    // of the list.
+    void push(int new_data)
+    {
+        /* allocate node */
+        Node new_node = new Node(new_data);
+
+        /* link the old list off the new node */
+        new_node.next = head;
+
+        /* move the head to point to the new node */
+        head = new_node;
+    }
+
+    // Function to merge two sorted linked lists
+    // LL1 and LL2 without using any extra space.
+    void mergeLists(Node a, Node b)
+    {
+        // run till either one of a or b runs out
+        while (a != null && b != null) {
+            // for each element of LL1,
+            // compare it with first element of LL2.
+            if (a.data > b.data) {
+                // swap the two elements involved
+                // if LL1 has a greater element
+                int temp = a.data;
+                a.data = b.data;
+                b.data = temp;
+
+                Node temp2 = b;
+
+                // To keep LL2 sorted, place first
+                // element of LL2 at its correct place
+                if (b.next != null
+                    && b.data > b.next.data) {
+                    b = b.next;
+                    Node ptr = b;
+                    Node prev = null;
+
+                    // find mismatch by traversing the
+                    // second linked list once
+                    while (ptr != null
+                           && ptr.data < temp2.data) {
+                        prev = ptr;
+                        ptr = ptr.next;
+                    }
+
+                    // correct the pointers
+                    prev.next = temp2;
+                    temp2.next = ptr;
+                }
+            }
+
+            // move LL1 pointer to next element
+            a = a.next;
+        }
+    }
+
+    // Code to print the linked link
+    void printList(Node head)
+    {
+        while (head != null) {
+            System.out.print(head.data + "->");
+            head = head.next;
+        }
+        System.out.println("NULL");
+    }
+
+    // Driver code
+    public static void main(String args[])
+    {
+        LinkedList list1 = new LinkedList();
+        list1.push(10);
+        list1.push(8);
+        list1.push(7);
+        list1.push(4);
+        list1.push(2);
+
+        LinkedList list2 = new LinkedList();
+        list2.push(12);
+        list2.push(3);
+        list2.push(1);
+
+        list1.mergeLists(list1.head, list2.head);
+
+        System.out.println("First List: ");
+        list1.printList(list1.head);
+
+        System.out.println("Second List: ");
+        list2.printList(list2.head);
+    }
+}
+
+Python3
+
+# Python3 program to merge two sorted linked
+# lists without using any extra space and
+# without changing links of first list
+
+# Structure for a linked list node
+class Node:
+
+    def __init__(self):
+
+        self.data = 0
+        self.next = None
+
+# Given a reference (pointer to pointer) to
+# the head of a list and an int, push a new
+# node on the front of the list.
+def push(head_ref, new_data):
+
+    # Allocate node
+    new_node = Node()
+
+    # Put in the data
+    new_node.data  = new_data
+
+    # Link the old list off the new node
+    new_node.next = (head_ref)
+
+    # Move the head to point to the new node
+    (head_ref) = new_node
+    return head_ref
+
+# Function to merge two sorted linked lists
+# LL1 and LL2 without using any extra space.
+def mergeLists(a, b):
+
+    # Run till either one of a
+    # or b runs out
+    while (a and b):
+
+        # For each element of LL1, compare
+        # it with first element of LL2.
+        if (a.data > b.data):
+
+            # Swap the two elements involved
+            # if LL1 has a greater element
+            a.data, b.data = b.data, a.data
+
+            temp = b
+
+            # To keep LL2 sorted, place first
+            # element of LL2 at its correct place
+            if (b.next and b.data > b.next.data):
+                b = b.next
+                ptr = b
+                prev = None
+
+                # Find mismatch by traversing the
+                # second linked list once
+                while (ptr and ptr.data < temp.data):
+                    prev = ptr
+                    ptr = ptr.next
+
+                # Correct the pointers
+                prev.next = temp
+                temp.next = ptr
+
+        # Move LL1 pointer to next element
+        a = a.next
+
+# Function to print the linked link
+def printList(head):
+
+    while (head):
+        print(head.data, end = '->')
+        head = head.next
+
+    print('NULL')
+
+# Driver code
+if __name__=='__main__':
+
+    a = None
+    a = push(a, 10)
+    a = push(a, 8)
+    a = push(a, 7)
+    a = push(a, 4)
+    a = push(a, 2)
+
+    b = None
+    b = push(b, 12)
+    b = push(b, 3)
+    b = push(b, 1)
+
+    mergeLists(a, b)
+
+    print("First List: ", end = '')
+    printList(a)
+
+    print("Second List: ", end = '')
+    printList(b)
+
+# This code is contributed by rutvik_56
+
+C#
+
+// C# Program to merge two sorted linked lists without
+// using any extra space and without changing links
+// of first list
+using System;
+
+public class Node{
+    public int data;
+    public Node next;
+    public Node(int item){
+        data = item;
+        next = null;
+    }
+}
+
+class GFG{
+    // Given a reference (pointer to pointer) to the head
+    // of a list and an int, push a new node on the front
+    // of the list.
+    public static Node push(Node head_ref, int new_data){
+        // allocate node and put in the data
+        Node new_node = new Node(new_data);
+
+        // link the old list off the new node
+        new_node.next = head_ref;
+
+        // move the head to point to the new node
+        head_ref = new_node;
+
+        return head_ref;
+    }
+
+    // Function to merge two sorted linked lists
+    // LL1 and LL2 without using any extra space.
+    public static void mergeLists(Node a, Node b){
+        // run till either one of a or b runs out
+        while(a != null && b != null){
+            // for each element of LL1,
+            // compare it with first element of LL2.
+            if(a.data > b.data){
+                // swap the two elements involved
+                // if LL1 has a greater element
+                int tp = a.data;
+                a.data = b.data;
+                b.data = tp;
+                Node temp = b;
+
+                // To keep LL2 sorted, place first
+                // element of LL2 at its correct place
+                if(b.next != null && b.data > b.next.data){
+                    b = b.next;
+                    Node ptr = b;
+                    Node prev = null;
+
+                    // find mismatch by traversing the
+                    // second linked list once
+                    while(ptr != null && ptr.data < temp.data){
+                        prev = ptr;
+                        ptr = ptr.next;
+                    }
+
+                    // corrent the pointers
+                    prev.next = temp;
+                    temp.next = ptr;
+                }
+            }
+            // move LL1 pointer to next element
+            a = a.next;
+        }
+    }
+    // Code to print the linked link
+    public static void printList(Node head)
+    {
+        while(head != null){
+            Console.Write(head.data + "->");
+            head = head.next;
+        }
+        Console.WriteLine("NULL");
+    }
+
+    public static void Main(string[] args){
+        Node a = null;
+        a = push(a, 10);
+        a = push(a, 8);
+        a = push(a, 7);
+        a = push(a, 4);
+        a = push(a, 2);
+
+        Node b = null;
+        b = push(b, 12);
+        b = push(b, 3);
+        b = push(b, 1);
+
+        mergeLists(a, b);
+
+        Console.WriteLine("First List: ");
+        printList(a);
+        Console.WriteLine("");
+        Console.WriteLine("Second List: ");
+        printList(b);
+    }
+}
+
+// THIS CODE IS CONTRIBUTED BY KIRTI AGARWAL(KIRTIAGARWAL23121999)
+
+JavaScript
+
+// JavaScript Program to merge two sorted linked lists without
+// using any extra space and without changing links
+// of first list
+
+// Structure for a linked list node
+class Node{
+    constructor(data){
+        this.data = data;
+        this.next = null;
+    }
+}
+
+// Given a reference (pointer to pointer) to the head
+// of a list and an int, push a new node on the front
+// of the list.
+function push(head_ref, new_data)
+{
+
+    // allocate node and put in the data
+    let new_node = new Node(new_data);
+
+    // link the old list off the new node
+    new_node.next = head_ref;
+
+    // move the head to point to the new node
+    head_ref = new_node;
+
+    return head_ref;
+}
+
+// Function to merge two sorted linked lists
+// LL1 and LL2 without using any extra space.
+function mergeLists(a, b)
+{
+
+    // run till either one of a or b runs out
+    while(a != null && b != null)
+    {
+
+        // for each element of LL1,
+        // compare it with first element of LL2.
+        if(a.data > b.data)
+        {
+
+            // swap the two elements involved
+            // if LL1 has a greater element
+            [a.data, b.data] = [b.data, a.data];
+
+            let temp = b;
+
+            // To keep LL2 sorted, place first
+            // element of LL2 at its correct place
+            if(b.next != null && b.data > b.next.data){
+                b = b.next;
+                let ptr = b;
+                let prev = null;
+
+                // find mismatch by traversing the
+                // second linked list once
+                while(ptr != null && ptr.data < temp.data){
+                    prev = ptr;
+                    ptr = ptr.next;
+                }
+
+                // corrent the pointers
+                prev.next = temp;
+                temp.next = ptr;
+            }
+        }
+        // move LL1 pointer to next element
+        a = a.next;
+    }
+}
+
+// Code to print the linked link
+function printList(head)
+{
+    while(head != null)
+    {
+        console.log(head.data + "->");
+        head = head.next;
+    }
+    console.log("NULL");
+}
+
+// Driver Code
+let a = null;
+a = push(a, 10);
+a = push(a, 8);
+a = push(a, 7);
+a = push(a, 4);
+a = push(a, 2);
+
+let b = null;
+b = push(b, 12)
+b = push(b, 3)
+b = push(b, 1)
+
+mergeLists(a, b);
+
+console.log("First List: ");
+printList(a);
+console.log("<br>");
+console.log("Second List: ");
+printList(b);
+
+// This code is contributed by Yash Agarwal(yashagarwal2852002)
+
+Output
+
+First List: 1->2->3->4->7->NULL
+Second List: 8->10->12->NULL
+
+Time Complexity : O(mn) Auxiliary Space: O(1)

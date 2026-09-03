@@ -1,0 +1,591 @@
+Source: https://www.geeksforgeeks.org/dsa/difference-array-range-update-query-o1/
+Title: 1D Difference Array
+Extractor: 2
+
+In many problems, we’re asked to perform multiple range updates like adding a value to all elements from index l to r. A direct approach updates each element in the range, leading to a time complexity of O(k × n) for k updates, which becomes inefficient for large inputs.
+
+The 1D Difference Array optimizes this by updating only the boundaries of each range in a helper array. After all updates, a prefix sum reconstructs the final array in O(n) time.
+
+This allows each range update to be applied in O(1) time, making it highly efficient for problems involving multiple subarray modifications.
+
+Table of Content
+
+- How 1D Difference Array Works
+- Why 1D Difference Array Technique Works
+- In-Place Implementation (Without Extra Space)
+
+### How 1D Difference Array Works
+
+To efficiently handle multiple range updates, we use a helper array called a difference array diff[], initialized with all zeros:
+
+C++
+
+// n is the size of original array
+vector<int> diff(n, 0);
+
+Instead of directly updating every index from l to r, we update only the boundaries: To add a value v to a range [l, r], we do:
+
+C++
+
+diff[l] += v;
+
+if (r + 1 < n)
+    diff[r + 1] -= v;
+
+This way, the effect of +v starts at index l and is canceled after index r. After all operations, we compute the prefix sum of diff[] to propagate the updates across the array:
+
+C++
+
+for (int i = 1; i < n; i++)
+    diff[i] += diff[i - 1];
+
+Finally, apply these changes to the original array:
+
+C++
+
+for (int i = 0; i < n; i++)
+    arr[i] += diff[i];
+
+This approach ensures that each update is applied in O(1) , and the final array is constructed in a single pass making it highly efficient for problems with multiple range updates.
+
+Example:
+
+Given an array arr[] and a 2D array opr[][] , where each row represents an operation in the form [l, r, v] . For each operation, add v to all elements from index l to r in arr. Return the updated array after applying all operations.
+
+Step By Step Implementations:
+
+- Create a diff[] array of size n + 1 initialized with zeros. This array will store increment/decrement markers to indicate where the effect of a value should start and end.
+- For each operation [l, r, v], perform the following two updates: -> Add v to diff[l] to start applying the increment from index l. -> Subtract v from diff[r + 1] to stop the effect after index r (only if r + 1 < n).
+- Compute the prefix sum of the diff[] array so that each position reflects the total value to be added: For each index i from 1 to n - 1 , do: diff[i] += diff[i - 1]
+- Apply the net updates from diff[] to the original array: For each index i from 0 to n - 1, do: arr[i] += diff[i]
+
+Illustrations:
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Apply a single range update on the difference array
+void update(vector<int>& diff, int l, int r, int x) {
+    diff[l] += x;
+    if (r + 1 < diff.size()) {
+        diff[r + 1] -= x;
+    }
+}
+
+// Apply range updates using difference array technique
+vector<int> diffArray(vector<int>& arr, vector<vector<int>>& opr) {
+    int n = arr.size();
+
+    // Create difference array
+    vector<int> diff(n, 0);
+
+    // Apply each operation [l, r, val] on the diff array
+    for (auto& q : opr) {
+        int l = q[0], r = q[1], val = q[2];
+        update(diff, l, r, val);
+    }
+
+    // Build the result by applying prefix sum over diff
+    vector<int> res = arr;
+    res[0] += diff[0];
+    for (int i = 1; i < n; i++) {
+        diff[i] += diff[i - 1];
+        res[i] += diff[i];
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> arr = {1, 2, 3, 4, 5};
+    vector<vector<int>> opr = {
+        {1, 3, 10}, {2, 4, -5}
+    };
+
+    vector<int> res = diffArray(arr, opr);
+
+    for (int num : res) {
+        cout << num << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+public class GfG {
+
+    // Apply a single range update on the difference array
+    static void update(int[] diff, int l, int r, int x) {
+        diff[l] += x;
+        if (r + 1 < diff.length) {
+            diff[r + 1] -= x;
+        }
+    }
+
+    // Apply range updates using difference array technique
+    static ArrayList<Integer> diffArray(int[] arr, int[][] opr) {
+        int n = arr.length;
+
+        // Create difference array
+        int[] diff = new int[n];
+
+        // Apply each operation [l, r, val] on the diff array
+        for (int[] q : opr) {
+            int l = q[0], r = q[1], val = q[2];
+            update(diff, l, r, val);
+        }
+
+        // Build the result by applying prefix sum over diff
+        ArrayList<Integer> res = new ArrayList<>();
+        diff[0] += 0;
+        res.add(arr[0] + diff[0]);
+        for (int i = 1; i < n; i++) {
+            diff[i] += diff[i - 1];
+            res.add(arr[i] + diff[i]);
+        }
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 2, 3, 4, 5};
+        int[][] opr = {
+            {1, 3, 10}, {2, 4, -5}
+        };
+
+        ArrayList<Integer> res = diffArray(arr, opr);
+        for (int num : res) {
+            System.out.print(num + " ");
+        }
+        System.out.println();
+    }
+}
+
+Python
+
+# Apply a single range update on the difference array
+def update(diff, l, r, x):
+    diff[l] += x
+    if r + 1 < len(diff):
+        diff[r + 1] -= x
+
+# Apply range updates using difference array technique
+def diffArray(arr, opr):
+    n = len(arr)
+
+    # Create difference array
+    diff = [0] * n
+
+    # Apply each operation [l, r, val] on the diff array
+    for l, r, val in opr:
+        update(diff, l, r, val)
+
+    # Build the result by applying prefix sum over diff
+    res = arr[:]
+    res[0] += diff[0]
+    for i in range(1, n):
+        diff[i] += diff[i - 1]
+        res[i] += diff[i]
+
+    return res
+
+if __name__ == "__main__":
+    arr = [1, 2, 3, 4, 5]
+    opr = [[1, 3, 10], [2, 4, -5]]
+
+    res = diffArray(arr, opr)
+
+    for num in res:
+        print(num, end=" ")
+    print()
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Apply a single range update on the difference array
+    static void update(int[] diff, int l, int r, int x) {
+        diff[l] += x;
+        if (r + 1 < diff.Length) {
+            diff[r + 1] -= x;
+        }
+    }
+
+    // Apply range updates using difference array technique
+    static List<int> diffArray(int[] arr, int[][] opr) {
+        int n = arr.Length;
+
+        // Create difference array
+        int[] diff = new int[n];
+
+        // Apply each operation [l, r, val] on the diff array
+        foreach (var q in opr) {
+            int l = q[0], r = q[1], val = q[2];
+            update(diff, l, r, val);
+        }
+
+        // Build the result by applying prefix sum over diff
+        List<int> res = new List<int>();
+        res.Add(arr[0] + diff[0]);
+        for (int i = 1; i < n; i++) {
+            diff[i] += diff[i - 1];
+            res.Add(arr[i] + diff[i]);
+        }
+
+        return res;
+    }
+
+    static void Main() {
+        int[] arr = { 1, 2, 3, 4, 5 };
+
+        int[][] opr = new int[][] {
+            new int[] { 1, 3, 10 },
+            new int[] { 2, 4, -5 }
+        };
+
+        List<int> res = diffArray(arr, opr);
+
+        foreach (int num in res) {
+            Console.Write(num + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+// Apply a single range update on the difference array
+function update(diff, l, r, x) {
+    diff[l] += x;
+    if (r + 1 < diff.length) {
+        diff[r + 1] -= x;
+    }
+}
+
+// Apply range updates using difference array technique
+function diffArray(arr, opr) {
+    const n = arr.length;
+
+    // Create difference array
+    const diff = new Array(n).fill(0);
+
+    // Apply each operation [l, r, val] on the diff array
+    for (const [l, r, val] of opr) {
+        update(diff, l, r, val);
+    }
+
+    // Build the result by applying prefix sum over diff
+    const res = arr.slice();
+    res[0] += diff[0];
+    for (let i = 1; i < n; i++) {
+        diff[i] += diff[i - 1];
+        res[i] += diff[i];
+    }
+
+    return res;
+}
+
+// Driver Code
+const arr = [1, 2, 3, 4, 5];
+const opr = [
+    [1, 3, 10],
+    [2, 4, -5]
+];
+
+const res = diffArray(arr, opr);
+console.log(res.join(" "));
+
+Output
+
+1 12 8 9 0
+
+Time Complexity:
+
+- Each update operation: O(1)
+- Total operations (m updates): O(m)
+- Final array construction using prefix sum: O(n)
+
+Auxiliary Space:
+
+- Difference array diff[]: O(n)
+- Result array res[]: O(n)
+
+### Why 1D Difference Array Technique Works
+
+Instead of directly updating every element between l and r for each operation (which takes O(r − l + 1) time), we use a smarter trick with a difference array diff[] .
+
+Think of it like placing flags :
+
+- Place a +val at index l → this means “start adding val from here”
+- Place  a -val at index r + 1 → this means “stop adding val after index r”
+
+You don’t update every element between l and r right away. You just mark where the effect starts and ends in the diff[] array.
+
+After applying all such operations, you build the final result using a prefix sum :
+
+- Traverse diff[] from left to right.
+- Maintain a running total and add it to each index of the original array arr.
+
+This way, each element of the array gets all the updates it should, without updating each one manually per operation.
+
+So instead of O(m × n) for m operations, the total time becomes just O(m + n).
+
+### In-Place Implementation (Without Extra Space)
+
+In the previous implementation, we used an extra array (diff[]) to track range updates and another result array to store the final output. But if memory is a concern, and you're allowed to modify the original array, you can implement the same logic in-place without using any extra space.
+
+How it Works
+
+To save extra space, we modify the input array arr itself to behave like a difference array . Here's the step-by-step idea:
+
+1. Convert the array to a difference array in-place We go from right to left , starting from index n - 1 down to 1, and subtract the previous element: arr[i] = arr[i] - arr[i - 1]; This effectively turns arr into a difference array without using extra space.
+2. Apply each range update [l, r, v] -> Add v at index l → arr[l] += v -> Subtract v at index r + 1 (if it's within bounds) → arr[r + 1] -= v This is the same flag mechanism as before: start adding at l, stop at r + 1.
+3. Reconstruct the final array with prefix sum Now that all updates are marked in arr, we traverse from left to right , converting it back to the final array: arr[i] = arr[i - 1] + arr[i]; Every element ends up with the correct net value from all updates.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+vector<int> diffArray(vector<int>& arr, vector<vector<int>>& opr) {
+    int n = arr.size();
+
+    // Convert arr to in-place difference array
+    for (int i = n - 1; i > 0; i--) {
+        arr[i] -= arr[i - 1];
+    }
+
+    // Apply each operation directly on the original array
+    // Each operation is of the form [l, r, v]
+    for (auto& q : opr) {
+        int l = q[0], r = q[1], v = q[2];
+
+        // Adding v at index l
+        arr[l] += v;
+
+        // Subtracting v at index r + 1 ensures the addition
+        // stops at index r when prefix sums are applied
+        if (r + 1 < n) arr[r + 1] -= v;
+    }
+
+    // Take prefix sum to get the final updated array
+    for (int i = 1; i < n; i++) {
+        arr[i] += arr[i - 1];
+    }
+
+    return arr;
+}
+
+int main() {
+    vector<int> arr = {1, 2, 3, 4, 5};
+    vector<vector<int>> opr = {
+        {1, 3, 10}, {2, 4, -5}
+    };
+
+    vector<int> res = diffArray(arr, opr);
+
+    for (int num : res) {
+        cout << num << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.List;
+
+class GfG {
+
+    public static ArrayList<Integer> diffArray(int[] arr, int[][] opr) {
+        int n = arr.length;
+
+        // Convert arr to in-place difference array
+        for (int i = n - 1; i > 0; i--) {
+            arr[i] -= arr[i - 1];
+        }
+
+        // Apply each operation [l, r, v]
+        for (int[] q : opr) {
+            int l = q[0], r = q[1], v = q[2];
+
+            arr[l] += v;
+            if (r + 1 < n) arr[r + 1] -= v;
+        }
+
+        // Take prefix sum to get final array
+        for (int i = 1; i < n; i++) {
+            arr[i] += arr[i - 1];
+        }
+
+        // Convert array to ArrayList
+        ArrayList<Integer> result = new ArrayList<>();
+        for (int num : arr) {
+            result.add(num);
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {1, 2, 3, 4, 5};
+        int[][] opr = {
+            {1, 3, 10}, {2, 4, -5}
+        };
+
+        ArrayList<Integer> res = diffArray(arr, opr);
+        for (int num : res) {
+            System.out.print(num + " ");
+        }
+        System.out.println();
+    }
+}
+
+Python
+
+def diffArray(arr, opr):
+    n = len(arr)
+
+    # Convert arr to in-place difference array
+    for i in range(n - 1, 0, -1):
+        arr[i] -= arr[i - 1]
+
+    # Apply each operation directly on the original array
+    # Each operation is of the form [l, r, v]
+    for l, r, v in opr:
+
+        # Adding v at index l
+        arr[l] += v
+
+        # Subtracting v at index r + 1 ensures the addition
+        # stops at index r when prefix sums are applied
+        if r + 1 < n:
+            arr[r + 1] -= v
+
+    # Take prefix sum to get the final updated array
+    for i in range(1, n):
+        arr[i] += arr[i - 1]
+
+    return arr
+
+if __name__ == "__main__":
+
+    arr = [1, 2, 3, 4, 5]
+    opr = [[1, 3, 10], [2, 4, -5]]
+
+    res = diffArray(arr, opr)
+    print(*res)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Apply range updates using in-place difference array
+    public static List<int> diffArray(int[] arr, int[][] opr) {
+        int n = arr.Length;
+
+        // Convert arr to in-place difference array
+        for (int i = n - 1; i > 0; i--) {
+            arr[i] -= arr[i - 1];
+        }
+
+        // Apply each operation [l, r, v]
+        foreach (var q in opr) {
+            int l = q[0], r = q[1], v = q[2];
+            arr[l] += v;
+            if (r + 1 < n) arr[r + 1] -= v;
+        }
+
+        // Take prefix sum to restore the final array
+        for (int i = 1; i < n; i++) {
+            arr[i] += arr[i - 1];
+        }
+
+        // Convert array to List<int>
+        List<int> result = new List<int>();
+        foreach (int num in arr) {
+            result.Add(num);
+        }
+
+        return result;
+    }
+
+    public static void Main() {
+        int[] arr = { 1, 2, 3, 4, 5 };
+
+        int[][] opr = new int[][] {
+            new int[] { 1, 3, 10 },
+            new int[] { 2, 4, -5 }
+        };
+
+        List<int> res = diffArray(arr, opr);
+        foreach (int num in res) {
+            Console.Write(num + " ");
+        }
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+function diffArray(arr, opr) {
+    let n = arr.length;
+
+    // Convert arr to in-place difference array
+    for (let i = n - 1; i > 0; i--) {
+        arr[i] -= arr[i - 1];
+    }
+
+    // Apply each operation directly on the original array
+    // Each operation is of the form [l, r, v]
+    for (let [l, r, v] of opr) {
+
+        // Adding v at index l
+        arr[l] += v;
+
+        // Subtracting v at index r + 1 ensures the addition
+        // stops at index r when prefix sums are applied
+        if (r + 1 < n) {
+            arr[r + 1] -= v;
+        }
+    }
+
+    // Take prefix sum to get the final updated array
+    for (let i = 1; i < n; i++) {
+        arr[i] += arr[i - 1];
+    }
+
+    return arr;
+}
+
+// Driver code
+const arr = [1, 2, 3, 4, 5];
+const opr = [
+    [1, 3, 10],
+    [2, 4, -5]
+];
+
+let res = diffArray(arr, opr);
+console.log(res.join(" "));
+
+Output
+
+1 12 8 9 0
+
+Why Right-to-Left? -> We subtract arr[i - 1] from arr[i] to build the difference array. Doing this from right to left ensures we don’t overwrite values (arr[i - 1]) before they're used preventing incorrect results.

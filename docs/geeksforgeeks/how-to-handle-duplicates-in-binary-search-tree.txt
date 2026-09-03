@@ -1,0 +1,1038 @@
+Source: https://www.geeksforgeeks.org/dsa/how-to-handle-duplicates-in-binary-search-tree/
+Title: How to handle duplicates in Binary Search Tree?
+Extractor: 2
+
+In a Binary Search Tree (BST), all keys in the left subtree of a key must be smaller and all keys in the right subtree must be greater . So a Binary Search Tree by definition has distinct keys. How can duplicates be allowed where every insertion inserts one more key with a value and every deletion deletes one occurrence?
+
+Table of Content
+
+- [Naive approach] Insert duplicate element on right subtree - O(h) Time and O(h) Space
+- [Expected approach] By storing count of occurrence - O(h) Time and O(h) Space
+
+### [Naive approach] Insert duplicate element on right subtree - O(h) Time and O(h) Space
+
+A Simple Solution is to allow the same keys on the right side (we could also choose the left side). For example consider the insertion of keys 12, 10, 20, 9, 11, 10, 12, 12 in an empty Binary Search Tree:
+
+### [Expected approach] By storing count of occurrence - O(h) Time and O(h) Space
+
+> A Better Solution is to augment every tree node to store count together with regular fields like key, and left and right pointers. Insertion of keys 12, 10, 20, 9, 11, 10, 12, 12 in an empty Binary Search Tree would create following: Count of a key is shown in bracket .
+
+This approach has following advantages over above simple approach.
+
+- Height of tree is small irrespective of number of duplicates . Note that most of the BST operations (search, insert and delete) have time complexity as O(h) where h is height of BST. So if we are able to keep the height small, we get advantage of less number of key comparisons.
+- Search, Insert and Delete become easier to do. We can use same insert, search and delete algorithms with small modifications (see below code).
+- This approach is suited for self-balancing BSTs ( AVL Tree , Red-Black Tree , etc) also. These trees involve rotations , and a rotation may violate BST property of simple solution as a same key can be in either left side or right side after rotation.
+
+Follow the steps below to solve the problem:
+
+Algorithm for Insert in BST:
+
+- If the tree is empty, create a new node with the given key.
+- Traverse the tree: If the key is smaller than the current node's key , move to the left child, otherwise, move to the right child. If the key matches the current node, increment the count. Repeat the process recursively until the correct position is found, then insert the new node.
+
+Algorithm for Delete in BST:
+
+- Traverse the tree to find the node with the given key. If found, and the node's count is greater than 1, decrement the count and return . If the node has no children or one child , replace it with the child. If the node has two children, find its inorder successor , copy its key and count , then delete the successor node.
+
+Below is implementation of normal Binary Search Tree with count with every key . This code basically is taken from code for insert and delete in BST . The changes made for handling duplicates are highlighted, rest of the code is same.
+
+C++
+
+// C++ program to implement basic operations
+// (search, insert, and delete) on a BST that
+// handles duplicates by storing count with
+// every node
+
+#include<bits/stdc++.h>
+using namespace std;
+
+class Node {
+
+  public:
+    int key;
+    int count;
+    Node *left;
+ 	Node *right;
+
+    Node(int x) {
+        key = x;
+        count = 1;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// A utility function to do inorder traversal of BST
+void inorder(Node *root) {
+    if (root != nullptr) {
+        inorder(root->left);
+        cout << root->key << "(" << root->count << ") ";
+        inorder(root->right);
+    }
+}
+
+// A utility function to insert a new
+// node with given key in BST
+Node* insert(Node* node, int key) {
+
+    // If the tree is empty, return a new node
+    if (node == nullptr)
+        return new Node(key);
+
+    // If key already exists in BST,
+    // increment count and return
+    if (key == node->key) {
+        node->count++;
+        return node;
+    }
+
+    // Otherwise, recur down the tree
+    if (key < node->key)
+        node->left = insert(node->left, key);
+    else
+        node->right = insert(node->right, key);
+
+    // return the (unchanged) node pointer
+    return node;
+}
+
+// Given a non-empty binary search tree, return
+// the node with minimum key value found in that
+// tree. Note that the entire tree does not need
+// to be searched.
+Node* minValueNode(Node* node) {
+    Node* current = node;
+
+    // loop down to find the leftmost leaf
+    while (current->left != nullptr)
+        current = current->left;
+
+    return current;
+}
+
+// Given a binary search tree and a key,
+// this function deletes a given key and
+// returns root of modified tree
+Node* deleteNode(Node* root, int key) {
+
+    // base case
+    if (root == nullptr) return root;
+
+    // If the key to be deleted is smaller than the
+    // root's key, then it lies in left subtree
+    if (key < root->key)
+        root->left = deleteNode(root->left, key);
+
+    // If the key to be deleted is greater than
+    // the root's key, then it lies in right subtree
+    else if (key > root->key)
+        root->right = deleteNode(root->right, key);
+
+    // if key is same as root's key
+    else {
+
+        // If key is present more than once,
+        // simply decrement count and return
+        if (root->count > 1) {
+            root->count--;
+            return root;
+        }
+
+        // else, delete the node
+        // node with only one child or no child
+        if (root->left == nullptr) {
+            Node *curr = root->right;
+            delete root;
+            return curr;
+        }
+        else if (root->right == nullptr) {
+            Node *curr = root->left;
+            delete root;
+            return curr;
+        }
+
+        // node with two children: Get the inorder
+        // successor (smallest in the right subtree)
+        Node* mn = minValueNode(root->right);
+
+        // Copy the inorder successor's
+        // content to this node
+        root->key = mn->key;
+        root->count = mn->count;
+
+        // To ensure successor gets deleted by
+        // deleteNode call, set count to 0.
+        mn->count = 0;
+
+        // Delete the inorder successor
+        root->right = deleteNode(root->right, mn->key);
+    }
+    return root;
+}
+
+int main() {
+
+    // Let us create following BST
+    //        12(3)
+    //       /     \
+    //    10(2)     20(1)
+    //   /   \
+    // 9(1) 11(1)
+    Node *root = nullptr;
+    root = insert(root, 12);
+    root = insert(root, 10);
+    root = insert(root, 20);
+    root = insert(root, 9);
+    root = insert(root, 11);
+    root = insert(root, 10);
+    root = insert(root, 12);
+    root = insert(root, 12);
+
+    cout << "Inorder traversal of the given tree " << endl;
+    inorder(root);
+
+    cout << "\nDelete 20\n";
+    root = deleteNode(root, 20);
+    cout << "Inorder traversal of the modified tree \n";
+    inorder(root);
+
+    cout << "\nDelete 12\n";
+    root = deleteNode(root, 12);
+    cout << "Inorder traversal of the modified tree \n";
+    inorder(root);
+
+    cout << "\nDelete 9\n";
+    root = deleteNode(root, 9);
+    cout << "Inorder traversal of the modified tree \n";
+    inorder(root);
+
+    return 0;
+}
+
+C
+
+// C program to implement basic operations
+// (search, insert, and delete) on a BST that
+// handles duplicates by storing count with
+// every node
+
+#include <stdio.h>
+#include <stdlib.h>
+
+struct Node {
+    int key;
+    int count;
+    struct Node *left, *right;
+};
+
+struct Node* createNode(int key);
+
+// A utility function to do inorder traversal of BST
+void inorder(struct Node* root) {
+    if (root != NULL) {
+        inorder(root->left);
+        printf("%d(%d) ", root->key, root->count);
+        inorder(root->right);
+    }
+}
+
+// A utility function to insert a new node with given
+// key in BST
+struct Node* insert(struct Node* node, int key) {
+
+    // If the tree is empty, return a new node
+    if (node == NULL)
+        return createNode(key);
+
+    // If key already exists in BST, increment
+  	// count and return
+    if (key == node->key) {
+        node->count++;
+        return node;
+    }
+
+    // Otherwise, recur down the tree
+    if (key < node->key)
+        node->left = insert(node->left, key);
+    else
+        node->right = insert(node->right, key);
+
+    // return the (unchanged) node pointer
+    return node;
+}
+
+// Given a non-empty binary search tree, return
+// the node with minimum key value found in that tree
+struct Node* minValueNode(struct Node* node) {
+    struct Node* current = node;
+
+    // loop down to find the leftmost leaf
+    while (current && current->left != NULL)
+        current = current->left;
+
+    return current;
+}
+
+// Given a binary search tree and a key, this
+// function deletes a given key and returns the
+// root of modified tree
+struct Node* deleteNode(struct Node* root, int key) {
+
+    // base case
+    if (root == NULL) return root;
+
+    // If the key to be deleted is smaller than
+  	// the root's key, it lies in left subtree
+    if (key < root->key)
+        root->left = deleteNode(root->left, key);
+
+    // If the key to be deleted is greater than the
+  	// root's key, it lies in right subtree
+    else if (key > root->key)
+        root->right = deleteNode(root->right, key);
+
+    // if key is same as root's key
+    else {
+
+        // If key is present more than once,
+      	// decrement count and return
+        if (root->count > 1) {
+            root->count--;
+            return root;
+        }
+
+        // node with only one child or no child
+        if (root->left == NULL) {
+            struct Node *temp = root->right;
+            free(root);
+            return temp;
+        }
+        else if (root->right == NULL) {
+            struct Node *temp = root->left;
+            free(root);
+            return temp;
+        }
+
+        // node with two children: Get the inorder
+      	// successor (smallest in the right subtree)
+        struct Node* temp = minValueNode(root->right);
+
+        // Copy the inorder successor's content to this node
+        root->key = temp->key;
+        root->count = temp->count;
+
+        // Set the count to 0 to ensure successor
+      	// gets deleted by deleteNode call
+        temp->count = 0;
+
+        // Delete the inorder successor
+        root->right = deleteNode(root->right, temp->key);
+    }
+    return root;
+}
+
+struct Node* createNode(int key) {
+    struct Node* node =
+      (struct Node*)malloc(sizeof(struct Node));
+    node->key = key;
+    node->count = 1;
+    node->left = node->right = NULL;
+    return node;
+}
+
+int main() {
+
+    // Let us create following BST
+    //        12(3)
+    //       /     \
+    //    10(2)     20(1)
+    //   /   \
+    // 9(1)  11(1)
+    struct Node *root = NULL;
+    root = insert(root, 12);
+    root = insert(root, 10);
+    root = insert(root, 20);
+    root = insert(root, 9);
+    root = insert(root, 11);
+    root = insert(root, 10);
+    root = insert(root, 12);
+    root = insert(root, 12);
+
+    printf("Inorder traversal of the given tree\n");
+    inorder(root);
+
+    printf("\nDelete 20\n");
+    root = deleteNode(root, 20);
+    printf("Inorder traversal of the modified tree\n");
+    inorder(root);
+
+    printf("\nDelete 12\n");
+    root = deleteNode(root, 12);
+    printf("Inorder traversal of the modified tree\n");
+    inorder(root);
+
+    printf("\nDelete 9\n");
+    root = deleteNode(root, 9);
+    printf("Inorder traversal of the modified tree\n");
+    inorder(root);
+
+    return 0;
+}
+
+Java
+
+// Java program to implement basic operations
+// (search, insert, and delete) on a BST that
+// handles duplicates by storing count with
+// every node
+
+class Node {
+    int key, count;
+    Node left, right;
+
+    Node(int x) {
+        key = x;
+        count = 1;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // A utility function to do inorder traversal of BST
+    static void inorder(Node root) {
+        if (root != null) {
+            inorder(root.left);
+            System.out.print(root.key + "(" + root.count + ") ");
+            inorder(root.right);
+        }
+    }
+
+    // A utility function to insert a new
+    // node with given key in BST
+    static Node insert(Node node, int key) {
+
+        // If the tree is empty, return a new node
+        if (node == null)
+            return new Node(key);
+
+        // If key already exists in BST,
+        // increment count and return
+        if (key == node.key) {
+            node.count++;
+            return node;
+        }
+
+        // Otherwise, recur down the tree
+        if (key < node.key)
+            node.left = insert(node.left, key);
+        else
+            node.right = insert(node.right, key);
+
+        // return the (unchanged) node pointer
+        return node;
+    }
+
+    // Given a non-empty binary search tree, return
+    // the node with minimum key value found in that
+    // tree. Note that the entire tree does not need
+    // to be searched.
+    static Node minValueNode(Node node) {
+        Node current = node;
+
+        // loop down to find the leftmost leaf
+        while (current.left != null)
+            current = current.left;
+
+        return current;
+    }
+
+    // Given a binary search tree and a key,
+    // this function deletes a given key and
+    // returns root of modified tree
+    static Node deleteNode(Node root, int key) {
+
+        // base case
+        if (root == null) return root;
+
+        // If the key to be deleted is smaller than the
+        // root's key, then it lies in left subtree
+        if (key < root.key)
+            root.left = deleteNode(root.left, key);
+
+        // If the key to be deleted is greater than
+        // the root's key, then it lies in right subtree
+        else if (key > root.key)
+            root.right = deleteNode(root.right, key);
+
+        // if key is same as root's key
+        else {
+
+            // If key is present more than once,
+            // simply decrement count and return
+            if (root.count > 1) {
+                root.count--;
+                return root;
+            }
+
+            // else, delete the node
+            // node with only one child or no child
+            if (root.left == null) {
+                Node temp = root.right;
+                root = null;
+                return temp;
+            } else if (root.right == null) {
+                Node temp = root.left;
+                root = null;
+                return temp;
+            }
+
+            // node with two children: Get the inorder
+            // successor (smallest in the right subtree)
+            Node temp = minValueNode(root.right);
+
+            // Copy the inorder successor's
+            // content to this node
+            root.key = temp.key;
+            root.count = temp.count;
+
+            // To ensure successor gets deleted by
+            // deleteNode call, set count to 0.
+            temp.count = 0;
+
+            // Delete the inorder successor
+            root.right = deleteNode(root.right, temp.key);
+        }
+        return root;
+    }
+
+    public static void main(String[] args) {
+
+        // Let us create following BST
+        //        12(3)
+        //       /     \
+        //    10(2)     20(1)
+        //   /   \
+        // 9(1) 11(1)
+        Node root = null;
+        root = insert(root, 12);
+        root = insert(root, 10);
+        root = insert(root, 20);
+        root = insert(root, 9);
+        root = insert(root, 11);
+        root = insert(root, 10);
+        root = insert(root, 12);
+        root = insert(root, 12);
+
+        System.out.println("Inorder traversal of the given tree ");
+        inorder(root);
+
+        System.out.println("\nDelete 20");
+        root = deleteNode(root, 20);
+        System.out.println("Inorder traversal of the modified tree ");
+        inorder(root);
+
+        System.out.println("\nDelete 12");
+        root = deleteNode(root, 12);
+        System.out.println("Inorder traversal of the modified tree ");
+        inorder(root);
+
+        System.out.println("\nDelete 9");
+        root = deleteNode(root, 9);
+        System.out.println("Inorder traversal of the modified tree ");
+        inorder(root);
+    }
+}
+
+Python
+
+# Python program to implement basic operations
+# (search, insert, and delete) on a BST that
+# handles duplicates by storing count with
+# every node
+
+class Node:
+    def __init__(self, key):
+        self.key = key
+        self.count = 1
+        self.left = None
+        self.right = None
+
+# A utility function to do inorder traversal of BST
+def inorder(root):
+    if root is not None:
+        inorder(root.left)
+        print(f"{root.key}({root.count})", end=" ")
+        inorder(root.right)
+
+# A utility function to insert a new
+# node with given key in BST
+def insert(node, key):
+
+    # If the tree is empty, return a new node
+    if node is None:
+        return Node(key)
+
+    # If key already exists in BST,
+    # increment count and return
+    if key == node.key:
+        node.count += 1
+        return node
+
+    # Otherwise, recur down the tree
+    if key < node.key:
+        node.left = insert(node.left, key)
+    else:
+        node.right = insert(node.right, key)
+
+    # return the (unchanged) node pointer
+    return node
+
+# Given a non-empty binary search tree, return
+# the node with minimum key value found in that
+# tree. Note that the entire tree does not need
+# to be searched.
+def minValueNode(node):
+    current = node
+
+    # loop down to find the leftmost leaf
+    while current.left is not None:
+        current = current.left
+
+    return current
+
+# Given a binary search tree and a key,
+# this function deletes a given key and
+# returns root of modified tree
+def deleteNode(root, key):
+
+    # base case
+    if root is None:
+        return root
+
+    # If the key to be deleted is smaller than the
+    # root's key, then it lies in left subtree
+    if key < root.key:
+        root.left = deleteNode(root.left, key)
+
+    # If the key to be deleted is greater than
+    # the root's key, then it lies in right subtree
+    elif key > root.key:
+        root.right = deleteNode(root.right, key)
+
+    # if key is same as root's key
+    else:
+
+        # If key is present more than once,
+        # simply decrement count and return
+        if root.count > 1:
+            root.count -= 1
+            return root
+
+        # ELSE, delete the node
+
+        # node with only one child or no child
+        if root.left is None:
+            temp = root.right
+            root = None
+            return temp
+        elif root.right is None:
+            temp = root.left
+            root = None
+            return temp
+
+        # node with two children: Get the inorder
+        # successor (smallest in the right subtree)
+        temp = minValueNode(root.right)
+
+        # Copy the inorder successor's
+        # content to this node
+        root.key = temp.key
+        root.count = temp.count
+
+        # To ensure successor gets deleted by
+        # deleteNode call, set count to 0.
+        temp.count = 0
+
+        # Delete the inorder successor
+        root.right = deleteNode(root.right, temp.key)
+
+    return root
+
+if __name__ == "__main__":
+
+    # Let us create following BST
+    #        12(3)
+    #       /     \
+    #    10(2)     20(1)
+    #   /   \
+    # 9(1) 11(1)
+    root = None
+    root = insert(root, 12)
+    root = insert(root, 10)
+    root = insert(root, 20)
+    root = insert(root, 9)
+    root = insert(root, 11)
+    root = insert(root, 10)
+    root = insert(root, 12)
+    root = insert(root, 12)
+
+    print("Inorder traversal of the given tree ")
+    inorder(root)
+    print()
+
+    print("\nDelete 20")
+    root = deleteNode(root, 20)
+    print("Inorder traversal of the modified tree ")
+    inorder(root)
+    print()
+
+    print("\nDelete 12")
+    root = deleteNode(root, 12)
+    print("Inorder traversal of the modified tree ")
+    inorder(root)
+    print()
+
+    print("\nDelete 9")
+    root = deleteNode(root, 9)
+    print("Inorder traversal of the modified tree ")
+    inorder(root)
+    print()
+
+C#
+
+// C# program to implement basic operations
+// (search, insert, and delete) on a BST that
+// handles duplicates by storing count with
+// every node
+
+using System;
+
+class Node {
+    public int key, count;
+    public Node left, right;
+
+    public Node(int x) {
+        key = x;
+        count = 1;
+        left = right = null;
+    }
+}
+
+class GfG {
+
+    // A utility function to do inorder traversal of BST
+     static void inorder(Node root) {
+        if (root != null) {
+            inorder(root.left);
+            Console.Write(root.key + "(" + root.count + ") ");
+            inorder(root.right);
+        }
+    }
+
+    // A utility function to insert a new
+    // node with given key in BST
+    static Node insert(Node node, int key) {
+
+        // If the tree is empty, return a new node
+        if (node == null)
+            return new Node(key);
+
+        // If key already exists in BST,
+        // increment count and return
+        if (key == node.key) {
+            node.count++;
+            return node;
+        }
+
+        // Otherwise, recur down the tree
+        if (key < node.key)
+            node.left = insert(node.left, key);
+        else
+            node.right = insert(node.right, key);
+
+        // return the (unchanged) node pointer
+        return node;
+    }
+
+    // Given a non-empty binary search tree, return
+    // the node with minimum key value found in that
+    // tree. Note that the entire tree does not need
+    // to be searched.
+     static Node minValueNode(Node node) {
+        Node current = node;
+
+        // loop down to find the leftmost leaf
+        while (current.left != null)
+            current = current.left;
+
+        return current;
+    }
+
+    // Given a binary search tree and a key,
+    // this function deletes a given key and
+    // returns root of modified tree
+     static Node deleteNode(Node root, int key) {
+
+        // base case
+        if (root == null) return root;
+
+        // If the key to be deleted is smaller than the
+        // root's key, then it lies in left subtree
+        if (key < root.key)
+            root.left = deleteNode(root.left, key);
+
+        // If the key to be deleted is greater than
+        // the root's key, then it lies in right subtree
+        else if (key > root.key)
+            root.right = deleteNode(root.right, key);
+
+        // if key is same as root's key
+        else {
+
+            // If key is present more than once,
+            // simply decrement count and return
+            if (root.count > 1) {
+                root.count--;
+                return root;
+            }
+
+            // else, delete the node
+            // node with only one child or no child
+            if (root.left == null) {
+                Node curr = root.right;
+                root = null;
+                return curr;
+            } else if (root.right == null) {
+                Node curr = root.left;
+                root = null;
+                return curr;
+            }
+
+            // node with two children: Get the inorder
+            // successor (smallest in the right subtree)
+            Node mn = minValueNode(root.right);
+
+            // Copy the inorder successor's
+            // content to this node
+            root.key = mn.key;
+            root.count = mn.count;
+
+            // To ensure successor gets deleted by
+            // deleteNode call, set count to 0.
+            mn.count = 0;
+
+            // Delete the inorder successor
+            root.right = deleteNode(root.right, mn.key);
+        }
+        return root;
+    }
+
+    static void Main(string[] args) {
+
+        // Let us create following BST
+        //        12(3)
+        //       /     \
+        //    10(2)     20(1)
+        //   /   \
+        // 9(1) 11(1)
+        Node root = null;
+        root = insert(root, 12);
+        root = insert(root, 10);
+        root = insert(root, 20);
+        root = insert(root, 9);
+        root = insert(root, 11);
+        root = insert(root, 10);
+        root = insert(root, 12);
+        root = insert(root, 12);
+
+        Console.WriteLine("Inorder traversal of the given tree ");
+        inorder(root);
+
+        Console.WriteLine("\nDelete 20");
+        root = deleteNode(root, 20);
+        Console.WriteLine("Inorder traversal of the modified tree ");
+        inorder(root);
+
+        Console.WriteLine("\nDelete 12");
+        root = deleteNode(root, 12);
+        Console.WriteLine("Inorder traversal of the modified tree ");
+        inorder(root);
+
+        Console.WriteLine("\nDelete 9");
+        root = deleteNode(root, 9);
+        Console.WriteLine("Inorder traversal of the modified tree ");
+        inorder(root);
+    }
+}
+
+JavaScript
+
+// JavaScript program to implement basic operations
+// (search, insert, and delete) on a BST that
+// handles duplicates by storing count with
+// every node
+
+class Node {
+    constructor(key) {
+        this.key = key;
+        this.count = 1;
+        this.left = this.right = null;
+    }
+}
+
+// A utility function to do inorder traversal of BST
+function inorder(root) {
+    if (root != null) {
+        inorder(root.left);
+        console.log(root.key + "(" + root.count + ") ");
+        inorder(root.right);
+    }
+}
+
+// A utility function to insert a new
+// node with given key in BST
+function insert(node, key) {
+
+    // If the tree is empty, return a new node
+    if (node == null)
+        return new Node(key);
+
+    // If key already exists in BST,
+    // increment count and return
+    if (key == node.key) {
+        node.count++;
+        return node;
+    }
+
+    // Otherwise, recur down the tree
+    if (key < node.key)
+        node.left = insert(node.left, key);
+    else
+        node.right = insert(node.right, key);
+
+    // return the (unchanged) node pointer
+    return node;
+}
+
+// Given a non-empty binary search tree, return
+// the node with minimum key value found in that
+// tree. Note that the entire tree does not need
+// to be searched.
+function minValueNode(node) {
+    let current = node;
+
+    // loop down to find the leftmost leaf
+    while (current.left != null)
+        current = current.left;
+
+    return current;
+}
+
+// Given a binary search tree and a key,
+// this function deletes a given key and
+// returns root of modified tree
+function deleteNode(root, key) {
+
+    // base case
+    if (root == null) return root;
+
+    // If the key to be deleted is smaller than the
+    // root's key, then it lies in left subtree
+    if (key < root.key)
+        root.left = deleteNode(root.left, key);
+
+    // If the key to be deleted is greater than
+    // the root's key, then it lies in right subtree
+    else if (key > root.key)
+        root.right = deleteNode(root.right, key);
+
+    // if key is same as root's key
+    else {
+
+        // If key is present more than once,
+        // simply decrement count and return
+        if (root.count > 1) {
+            root.count--;
+            return root;
+        }
+
+        // else, delete the node
+        // node with only one child or no child
+        if (root.left == null) {
+            let temp = root.right;
+            root = null;
+            return temp;
+        } else if (root.right == null) {
+            let temp = root.left;
+            root = null;
+            return temp;
+        }
+
+        // node with two children: Get the inorder
+        // successor (smallest in the right subtree)
+        let temp = minValueNode(root.right);
+
+        // Copy the inorder successor's
+        // content to this node
+        root.key = temp.key;
+        root.count = temp.count;
+
+        // To ensure successor gets deleted by
+        // deleteNode call, set count to 0.
+        temp.count = 0;
+
+        // Delete the inorder successor
+        root.right = deleteNode(root.right, temp.key);
+    }
+    return root;
+}
+
+// Let us create following BST
+//        12(3)
+//       /     \
+//    10(2)     20(1)
+//   /   \
+// 9(1) 11(1)
+let root = null;
+root = insert(root, 12);
+root = insert(root, 10);
+root = insert(root, 20);
+root = insert(root, 9);
+root = insert(root, 11);
+root = insert(root, 10);
+root = insert(root, 12);
+root = insert(root, 12);
+
+console.log("Inorder traversal of the given tree ");
+inorder(root);
+console.log("\nDelete 20");
+root = deleteNode(root, 20);
+console.log("Inorder traversal of the modified tree ");
+inorder(root);
+
+console.log("\nDelete 12");
+root = deleteNode(root, 12);
+console.log("Inorder traversal of the modified tree ");
+inorder(root);
+
+console.log("\nDelete 9");
+root = deleteNode(root, 9);
+console.log("Inorder traversal of the modified tree ");
+inorder(root);
+
+Output
+
+Inorder traversal of the given tree
+9(1) 10(2) 11(1) 12(3) 20(1)
+Delete 20
+Inorder traversal of the modified tree
+9(1) 10(2) 11(1) 12(3)
+Delete 12
+Inorder traversal of the modified tree
+9(1) 10(2) 11(1) 12(2)
+Delete 9
+Inorder traversal of the modified tree
+10(2) 11(1) 12(2)
+
+Time Complexity: O(h) for every operation, h is height of BST . Auxiliary Space: O(h) which is required for the recursive function calls.

@@ -1,0 +1,818 @@
+Source: https://www.geeksforgeeks.org/dsa/check-whether-four-points-make-parallelogram/
+Title: Check whether four points make a parallelogram
+Extractor: 2
+
+Given four points in a 2-dimensional space we need to find out whether they make a parallelogram or not.
+
+A parallelogram has four sides. Two opposite sides are parallel and are of same lengths.
+
+Examples:
+
+Points = [(0, 0),  (4, 0),  (1, 3),  (5, 3)]Above points make a parallelogram.Points = [(0, 0), (2, 0), (4, 0), (2, 2)]Above points does not make a parallelogram as first three points itself are linear.
+
+Problems for checking square and rectangle can be read from Square checking and Rectangle checking but in this problem, we need to check for the parallelogram. The main properties of the parallelogram are that opposite sides of parallelogram are parallel and of equal length and diagonals of parallelogram bisect each other. We use the second property to solve this problem. As there are four points, we can get total 6 midpoints by considering each pair. Now for four points to make a parallelogram, 2 of the midpoints should be equal and rest of them should be different. In below code, we have created a map, which stores pairs corresponding to each midpoint. After calculating all midpoints, we have iterated over the map and check the occurrence of each midpoint, If exactly one midpoint occurred twice and other have occurred once, then given four points make a parallelogram otherwise not.
+
+C++
+
+// C++ code to test whether four points make a
+// parallelogram or not
+#include <bits/stdc++.h>
+using namespace std;
+
+// structure to represent a point
+struct point {
+    double x, y;
+    point() { }
+    point(double x, double y)
+        : x(x), y(y) { }
+
+    // defining operator < to compare two points
+    bool operator<(const point& other) const
+    {
+        if (x < other.x) {
+            return true;
+        } else if (x == other.x) {
+            if (y < other.y) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+// Utility method to return mid point of two points
+point getMidPoint(point points[], int i, int j)
+{
+    return point((points[i].x + points[j].x) / 2.0,
+                (points[i].y + points[j].y) / 2.0);
+}
+
+// method returns true if point of points array form
+// a parallelogram
+bool isParallelogram(point points[])
+{
+    map<point, vector<point> > midPointMap;
+
+    // looping over all pairs of point to store their
+    // mid points
+    int P = 4;
+    for (int i = 0; i < P; i++) {
+        for (int j = i + 1; j < P; j++) {
+            point temp = getMidPoint(points, i, j);
+
+            // storing point pair, corresponding to
+            // the mid point
+            midPointMap[temp].push_back(point(i, j));
+        }
+    }
+
+    int two = 0, one = 0;
+
+    // looping over (midpoint, (corresponding pairs))
+    // map to check the occurrence of each midpoint
+    for (auto x : midPointMap) {
+
+        // updating midpoint count which occurs twice
+        if (x.second.size() == 2)
+            two++;
+
+        // updating midpoing count which occurs once
+        else if (x.second.size() == 1)
+            one++;
+
+        // if midpoint count is more than 2, then
+        // parallelogram is not possible
+        else
+            return false;
+    }
+
+    // for parallelogram, one mid point should come
+    // twice and other mid points should come once
+    if (two == 1 && one == 4)
+        return true;
+
+    return false;
+}
+
+// Driver code to test above methods
+int main()
+{
+    point points[4];
+
+    points[0] = point(0, 0);
+    points[1] = point(4, 0);
+    points[2] = point(1, 3);
+    points[3] = point(5, 3);
+
+    if (isParallelogram(points))
+        cout << "Given points form a parallelogram";
+    else
+        cout << "Given points does not form a "
+                "parallelogram";
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class Main {
+    // structure to represent a point
+    static class Point {
+        double x, y;
+        Point() { }
+        Point(double x, double y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        // defining equals and hashCode method to compare two points
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (!(obj instanceof Point)) return false;
+            Point other = (Point) obj;
+            return Double.compare(x, other.x) == 0
+                    && Double.compare(y, other.y) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(x, y);
+        }
+    }
+
+    // Utility method to return mid point of two points
+    static Point getMidPoint(Point[] points, int i, int j) {
+        return new Point((points[i].x + points[j].x) / 2.0,
+                         (points[i].y + points[j].y) / 2.0);
+    }
+
+    // method returns true if point of points array form
+    // a parallelogram
+    static boolean isParallelogram(Point[] points) {
+        Map<Point, List<Point>> midPointMap = new HashMap<>();
+
+        // looping over all pairs of point to store their
+        // mid points
+        int P = 4;
+        for (int i = 0; i < P; i++) {
+            for (int j = i + 1; j < P; j++) {
+                Point temp = getMidPoint(points, i, j);
+
+                // storing point pair, corresponding to
+                // the mid point
+                if (!midPointMap.containsKey(temp)) {
+                    midPointMap.put(temp, new ArrayList<>());
+                }
+                midPointMap.get(temp).add(new Point(i, j));
+            }
+        }
+
+        int two = 0, one = 0;
+
+        // looping over (midpoint, (corresponding pairs))
+        // map to check the occurrence of each midpoint
+        for (List<Point> pointsList : midPointMap.values()) {
+            int size = pointsList.size();
+            // updating midpoint count which occurs twice
+            if (size == 2) {
+                two++;
+            }
+            // updating midpoing count which occurs once
+            else if (size == 1) {
+                one++;
+            }
+            // if midpoint count is more than 2, then
+            // parallelogram is not possible
+            else {
+                return false;
+            }
+        }
+
+        // for parallelogram, one mid point should come
+        // twice and other mid points should come once
+        if (two == 1 && one == 4) {
+            return true;
+        }
+        return false;
+    }
+
+    // Driver code to test above methods
+    public static void main(String[] args) {
+        Point[] points = new Point[4];
+
+        points[0] = new Point(0, 0);
+        points[1] = new Point(4, 0);
+        points[2] = new Point(1, 3);
+        points[3] = new Point(5, 3);
+
+        if (isParallelogram(points)) {
+            System.out.println("Given points form a parallelogram");
+        } else {
+            System.out.println("Given points do not form a parallelogram");
+        }
+    }
+}
+
+// This code is contributed by Prince Kumar
+
+Python
+
+# Python program for the above approach
+
+from typing import List
+from collections import defaultdict
+import math
+
+# structure to represent a point
+class Point:
+    def __init__(self, x=0, y=0):
+        self.x = x
+        self.y = y
+
+    # defining equals and hashCode method to compare two points
+    def __eq__(self, other):
+        return (self.x == other.x) and (self.y == other.y)
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+# Utility method to return mid point of two points
+def get_mid_point(points: List[Point], i: int, j: int) -> Point:
+    return Point((points[i].x + points[j].x) / 2.0, (points[i].y + points[j].y) / 2.0)
+
+# method returns true if point of points array form a parallelogram
+def is_parallelogram(points: List[Point]) -> bool:
+    mid_point_map = defaultdict(list)
+
+    # looping over all pairs of point to store their mid points
+    P = 4
+    for i in range(P):
+        for j in range(i + 1, P):
+            temp = get_mid_point(points, i, j)
+
+            # storing point pair, corresponding to the mid point
+            mid_point_map[temp].append((i, j))
+
+    two = 0
+    one = 0
+
+    # looping over (midpoint, (corresponding pairs)) map to check the occurrence of each midpoint
+    for points_list in mid_point_map.values():
+        size = len(points_list)
+        # updating midpoint count which occurs twice
+        if size == 2:
+            two += 1
+        # updating midpoing count which occurs once
+        elif size == 1:
+            one += 1
+        # if midpoint count is more than 2, then parallelogram is not possible
+        else:
+            return False
+
+    # for parallelogram, one mid point should come twice and other mid points should come once
+    if two == 1 and one == 4:
+        return True
+    return False
+
+# Driver code to test above methods
+if __name__ == "__main__":
+    points = [Point(0, 0), Point(4, 0), Point(1, 3), Point(5, 3)]
+
+    if is_parallelogram(points):
+        print("Given points form a parallelogram")
+    else:
+        print("Given points do not form a parallelogram")
+
+# This code is contributed by rishabmaldfijo
+
+C#
+
+// C# code to test whether four points make a
+// parallelogram or not
+using System;
+using System.Collections.Generic;
+
+// structure to represent a point
+public struct Point
+{
+    public double x, y;
+    public Point(double x, double y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+
+    // defining operator < to compare two points
+    public static bool operator < (Point p1, Point p2)
+    {
+        if (p1.x < p2.x)
+            return true;
+        else if (p1.x == p2.x) {
+            if (p1.y < p2.y)
+                return true;
+        }
+        return false;
+    }
+
+    // defining operator > to compare two points
+    public static bool operator > (Point p1, Point p2)
+    {
+        if (p1.x > p2.x)
+            return true;
+        else if (p1.x == p2.x) {
+            if (p1.y > p2.y)
+                return true;
+        }
+        return false;
+    }
+}
+
+public class GFG {
+    // Utility method to return mid point of two points
+    static Point getMidPoint(Point[] points, int i, int j)
+    {
+        return new Point((points[i].x + points[j].x) / 2.0,
+                         (points[i].y + points[j].y) / 2.0);
+    }
+
+    // method returns true if point of points array form
+    // a parallelogram
+    static bool isParallelogram(Point[] points)
+    {
+        Dictionary<Point, List<Point> > midPointMap
+            = new Dictionary<Point, List<Point> >();
+
+        // looping over all pairs of point to store their
+        // mid points
+        int P = 4;
+        for (int i = 0; i < P; i++) {
+            for (int j = i + 1; j < P; j++) {
+                Point temp = getMidPoint(points, i, j);
+
+                // storing point pair, corresponding to
+                // the mid point
+                if (midPointMap.ContainsKey(temp)) {
+                    midPointMap[temp].Add(new Point(i, j));
+                }
+                else {
+                    midPointMap[temp] = new List<Point>();
+                    midPointMap[temp].Add(new Point(i, j));
+                }
+            }
+        }
+
+        int two = 0, one = 0;
+
+        // looping over (midpoint, (corresponding pairs))
+        // map to check the occurrence of each midpoint
+        foreach(var x in midPointMap)
+        {
+
+            // updating midpoint count which occurs twice
+            if (x.Value.Count == 2)
+                two++;
+
+            // updating midpoing count which occurs once
+            else if (x.Value.Count == 1)
+                one++;
+
+            // if midpoint count is more than 2, then
+            // parallelogram is not possible
+            else
+                return false;
+        }
+
+        // for parallelogram, one mid point should come
+        // twice and other mid points should come once
+        if (two == 1 && one == 4)
+            return true;
+
+        return false;
+    }
+
+    // Driver code to test above methods
+    static public void Main(string[] args)
+    {
+        Point[] points = new Point[4];
+
+        points[0] = new Point(0, 0);
+        points[1] = new Point(4, 0);
+        points[2] = new Point(1, 3);
+        points[3] = new Point(5, 3);
+
+        if (isParallelogram(points)) {
+            Console.WriteLine(
+                "Given points form a parallelogram");
+        }
+        else {
+            Console.WriteLine(
+                "Given points do not form a parallelogram");
+        }
+    }
+}
+// This code is contributed by prasad264
+
+JavaScript
+
+// JavaScript code to test whether four points make a
+// parallelogram or not
+
+// structure to represent a point
+class Point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+    // defining operator < to compare two points
+    static compare(a, b) {
+        if (a.x < b.x) {
+            return -1;
+        } else if (a.x == b.x) {
+            if (a.y < b.y) {
+                return -1;
+            }
+        }
+        return 1;
+    }
+}
+
+// Utility method to return mid point of two points
+function getMidPoint(points, i, j) {
+    return new Point(
+        (points[i].x + points[j].x) / 2.0,
+        (points[i].y + points[j].y) / 2.0
+    );
+}
+
+// method returns true if point of points array form
+// a parallelogram
+function isParallelogram(points) {
+    const midPointMap = new Map();
+
+    // looping over all pairs of point to store their
+    // mid points
+    const P = 4;
+    for (let i = 0; i < P; i++) {
+        for (let j = i + 1; j < P; j++) {
+            const temp = getMidPoint(points, i, j);
+
+            // storing point pair, corresponding to
+            // the mid point
+            const pair = [i, j];
+            if (!midPointMap.has(temp)) {
+                midPointMap.set(temp, []);
+            }
+            midPointMap.get(temp).push(pair);
+        }
+    }
+
+    let two = 0, one = 0;
+
+    // looping over (midpoint, (corresponding pairs))
+    // map to check the occurrence of each midpoint
+    for (const [midPoint, pairs] of midPointMap) {
+        // updating midpoint count which occurs twice
+        if (pairs.length == 2) {
+            two++;
+        }
+        // updating midpoing count which occurs once
+        else if (pairs.length == 1) {
+            one++;
+        }
+        // if midpoint count is more than 2, then
+        // parallelogram is not possible
+        else {
+            return false;
+        }
+    }
+
+    // for parallelogram, one mid point should come
+    // twice and other mid points should come once
+    if (two == 1 && one == 4) {
+        return false;
+    }
+    return true;
+}
+
+// Driver code to test above methods
+const points = [
+    new Point(0, 0),
+    new Point(4, 0),
+    new Point(1, 3),
+    new Point(5, 3),
+];
+
+if (isParallelogram(points)) {
+    console.log("Given points form a parallelogram");
+} else {
+    console.log("Given points do not form a parallelogram");
+}
+
+// Contributed by adityasha4x71
+
+Output:
+
+Given points form a parallelogram
+
+Time Complexity: O(p 2 logp) , where p is number of points Auxiliary Space: O(p 2 ), where p is number of points
+
+Approach 2 : Using Vectors:
+
+- Another approach to check if four points form a parallelogram is to use vector operations. We can calculate the vectors formed by the pairs of points and check if they satisfy the properties of a parallelogram.
+- Here is the algorithm for this approach:
+- Take four points A, B, C, and D as input.
+- Calculate vectors AB and CD using the formula (B - A) and (D - C).
+- Calculate vectors AC and BD using the formula (C - A) and (D - B).
+- Check if AB and CD are parallel by taking their cross product. If the cross product is zero, then they are parallel.
+- Check if AC and BD are parallel by taking their cross product. If the cross product is zero, then they are parallel.
+- If AB and CD are parallel and AC and BD are parallel, then the points form a parallelogram.
+
+Here is the C++ code implementation of this approach:
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// structure to represent a point
+struct point {
+    double x, y;
+    point() {}
+    point(double x, double y)
+        : x(x)
+        , y(y)
+    {
+    }
+};
+
+// method to calculate cross product of two vectors
+double crossProduct(point a, point b)
+{
+    return a.x * b.y - a.y * b.x;
+}
+
+// method to check if four points form a parallelogram
+bool isParallelogram(point A, point B, point C, point D)
+{
+    // calculate vectors AB, CD, AC, and BD
+    point AB = point(B.x - A.x, B.y - A.y);
+    point CD = point(D.x - C.x, D.y - C.y);
+    point AC = point(C.x - A.x, C.y - A.y);
+    point BD = point(D.x - B.x, D.y - B.y);
+
+    // check if AB and CD are parallel
+    if (crossProduct(AB, CD) == 0) {
+        // check if AC and BD are parallel
+        if (crossProduct(AC, BD) == 0) {
+            // points form a parallelogram
+            return true;
+        }
+    }
+
+    // points do not form a parallelogram
+    return false;
+}
+
+// Driver code to test above method
+int main()
+{
+    point A = point(0, 0);
+    point B = point(4, 0);
+    point C = point(1, 3);
+    point D = point(5, 3);
+
+    if (isParallelogram(A, B, C, D))
+        cout << "Given points form a parallelogram";
+    else
+        cout << "Given points do not form a parallelogram";
+    return 0;
+}
+
+Java
+
+// structure to represent a point
+class Point {
+    double x, y;
+
+    Point() {}
+
+    Point(double x, double y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+public class ParallelogramCheck {
+
+    // Calculates the cross product of two vectors.
+    static double crossProduct(Point a, Point b)
+    {
+        return a.x * b.y - a.y * b.x;
+    }
+
+    // Checks if the given points form a parallelogram.
+    static boolean isParallelogram(Point A, Point B,
+                                   Point C, Point D)
+    {
+        // Calculate vectors AB, CD, AC, and BD
+        Point AB = new Point(B.x - A.x, B.y - A.y);
+        Point CD = new Point(D.x - C.x, D.y - C.y);
+        Point AC = new Point(C.x - A.x, C.y - A.y);
+        Point BD = new Point(D.x - B.x, D.y - B.y);
+
+        // Check if AB and CD are parallel
+        if (crossProduct(AB, CD) == 0) {
+            // Check if AC and BD are parallel
+            if (crossProduct(AC, BD) == 0) {
+                // Both pairs of opposite sides are
+                // parallel,
+                // it is a parallelogram
+                return true;
+            }
+        }
+
+        return false; // Not a parallelogram
+    }
+
+    // Driver code to test above method
+
+    public static void main(String[] args)
+    {
+        // Define the points of the quadrilateral
+        Point A = new Point(0, 0);
+        Point B = new Point(4, 0);
+        Point C = new Point(1, 3);
+        Point D = new Point(5, 3);
+
+        // Check if the given points form a parallelogram
+        if (isParallelogram(A, B, C, D))
+            System.out.println(
+                "Given points form a parallelogram");
+        else
+            System.out.println(
+                "Given points do not form a parallelogram");
+    }
+}
+
+Python
+
+# Python program to check if four points form a parallelogram
+
+# Class to represent a point
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+# Function to calculate cross product of two vectors
+
+def cross_product(a, b):
+    return a.x * b.y - a.y * b.x
+
+# Function to check if four points form a parallelogram
+
+def is_parallelogram(A, B, C, D):
+    # Calculate vectors AB, CD, AC, and BD
+    AB = Point(B.x - A.x, B.y - A.y)
+    CD = Point(D.x - C.x, D.y - C.y)
+    AC = Point(C.x - A.x, C.y - A.y)
+    BD = Point(D.x - B.x, D.y - B.y)
+
+    # Check if AB and CD are parallel
+    if cross_product(AB, CD) == 0:
+        # Check if AC and BD are parallel
+        if cross_product(AC, BD) == 0:
+            # Points form a parallelogram
+            return True
+
+    # Points do not form a parallelogram
+    return False
+
+# Driver code to test above function
+if __name__ == "__main__":
+    A = Point(0, 0)
+    B = Point(4, 0)
+    C = Point(1, 3)
+    D = Point(5, 3)
+
+    if is_parallelogram(A, B, C, D):
+        print("Given points form a parallelogram")
+    else:
+        print("Given points do not form a parallelogram")
+
+C#
+
+using System;
+
+public struct Point
+{
+    public double x, y;
+    public Point(double x, double y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+public class Parallelogram {
+    // Method to calculate the cross product of two vectors
+    public static double CrossProduct(Point a, Point b)
+    {
+        return a.x * b.y - a.y * b.x;
+    }
+
+    // Method to check if four points form a parallelogram
+    public static bool IsParallelogram(Point A, Point B,
+                                       Point C, Point D)
+    {
+        // Calculate vectors AB, CD, AC, and BD
+        Point AB = new Point(B.x - A.x, B.y - A.y);
+        Point CD = new Point(D.x - C.x, D.y - C.y);
+        Point AC = new Point(C.x - A.x, C.y - A.y);
+        Point BD = new Point(D.x - B.x, D.y - B.y);
+
+        // Check if AB and CD are parallel
+        if (CrossProduct(AB, CD) == 0) {
+            // Check if AC and BD are parallel
+            if (CrossProduct(AC, BD) == 0) {
+                // Points form a parallelogram
+                return true;
+            }
+        }
+
+        // Points do not form a parallelogram
+        return false;
+    }
+
+    public static void Main(string[] args)
+    {
+        Point A = new Point(0, 0);
+        Point B = new Point(4, 0);
+        Point C = new Point(1, 3);
+        Point D = new Point(5, 3);
+
+        if (IsParallelogram(A, B, C, D))
+            Console.WriteLine(
+                "Given points form a parallelogram");
+        else
+            Console.WriteLine(
+                "Given points do not form a parallelogram");
+    }
+}
+
+JavaScript
+
+// structure to represent a point
+class point {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+// method to calculate cross product of two vectors
+function crossProduct(a, b) {
+    return a.x * b.y - a.y * b.x;
+}
+
+// method to check if four points form a parallelogram
+function isParallelogram(A, B, C, D) {
+    // calculate vectors AB, CD, AC, and BD
+    let AB = new point(B.x - A.x, B.y - A.y);
+    let CD = new point(D.x - C.x, D.y - C.y);
+    let AC = new point(C.x - A.x, C.y - A.y);
+    let BD = new point(D.x - B.x, D.y - B.y);
+
+    // check if AB and CD are parallel
+    if (crossProduct(AB, CD) == 0) {
+        // check if AC and BD are parallel
+        if (crossProduct(AC, BD) == 0) {
+            // points form a parallelogram
+            return true;
+        }
+    }
+
+    // points do not form a parallelogram
+    return false;
+}
+
+// Driver code to test above method
+let A = new point(0, 0);
+let B = new point(4, 0);
+let C = new point(1, 3);
+let D = new point(5, 3);
+
+if (isParallelogram(A, B, C, D))
+    console.log("Given points form a parallelogram");
+else
+    console.log("Given points do not form a parallelogram");
+
+Output:
+
+Given points form a parallelogram
+
+Time Complexity:  O(n^2logn) where n is the number of points Auxiliary Space:  O(n^2) since the map data structure is used to store the midpoints, and the worst-case number of midpoints that can be stored is n^2.

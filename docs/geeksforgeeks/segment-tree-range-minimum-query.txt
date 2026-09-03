@@ -1,0 +1,686 @@
+Source: https://www.geeksforgeeks.org/dsa/segment-tree-range-minimum-query/
+Title: Segment Tree | Range Minimum Query
+Extractor: 2
+
+We have introduced a segment tree with a simple example in the previous post. In this post, the Range Minimum Query problem is discussed as another example where a Segment Tree can be used. The following is the problem statement: We have an array arr[0 . . . n-1]. We should be able to efficiently find the minimum value from index q s (query start) to q e (query end) where 0 <= q s <= q e <= n-1 . A simple solution is to run a loop from q s to q e and find the minimum element in the given range. This solution takes O(n) time in the worst case. Another solution is to create a 2D array where an entry [i, j] stores the minimum value in range arr[i..j]. The minimum of a given range can now be calculated in O(1) time, but preprocessing takes O(n 2 ) time. Also, this approach needs O(n 2 ) extra space which may become huge for large input arrays. Segment tree can be used to do preprocessing and query in moderate time. With a segment tree, preprocessing time is O(n) and the time complexity for a range minimum query is O(log n). The extra space required is O(n) to store the segment tree.
+
+### Representation of Segment trees
+
+> 1. Leaf Nodes are the elements of the input array. 2. Each internal node represents minimum of all leaves under it. An array representation of tree is used to represent Segment Trees. For each node at index i, the left child is at index (2 * i + 1), right child at (2 * i + 2) and the parent is at (i - 1) / 2
+
+### Construction of Segment Tree from given array
+
+> We start with a segment arr[0 . . . n-1]. and every time we divide the current segment into two halves (if it has not yet become a segment of length 1), and then call the same procedure on both halves, and for each such segment, we store the minimum value in a segment tree node.
+
+All levels of the constructed segment tree will be completely filled except the last level. Also, the tree will be a Full Binary Tree because we always divide segments in two halves at every level. Since the constructed tree is always full binary tree with n leaves, there will be n - 1 internal nodes. So total number of nodes will be 2 * n - 1. Height of the segment tree will be ?log?n? . Since the tree is represented using array and relation between parent and child indexes must be maintained, size of memory allocated for segment tree will be 2 * 2 ?log 2 n? - 1 .
+
+### Query for minimum value of given range
+
+> Once the tree is constructed, how to do range minimum query using the constructed segment tree. Following is algorithm to get the minimum. // q s --> query start index, q e --> query end index int RMQ(node, q s , q e ) { if range of node is within q s and q e return value in node else if range of node is completely outside q s and q e return INFINITE else return min ( RMQ(node's left child, q s , q e ), RMQ (node's right child, q s , q e ) ) }
+
+C++
+
+// C++ program for range minimum
+// query using segment tree
+#include <bits/stdc++.h>
+using namespace std;
+
+// A utility function to get minimum of two numbers
+int minVal(int x, int y) {
+    return (x < y)? x: y;
+}
+
+// A utility function to get the
+// middle index from corner indexes.
+int getMid(int s, int e) {
+    return s + (e -s)/2;
+}
+
+// A recursive function to get the
+// minimum value in a given range of array
+// st --> Pointer to segment tree
+// index --> Index of current node in the tree
+// ss & se --> Starting and ending indexes
+// qs & qe --> Starting and ending indexes of query range
+int RMQUtil(vector<int> &st, int ss, int se, int qs,
+                                int qe, int index) {
+
+    // If segment of this node is a part of given range
+    // then return the min of the segment
+    if (qs <= ss && qe >= se)
+        return st[index];
+
+    // If segment of this node if outside the range
+    if (se < qs || ss > qe)
+        return INT_MAX;
+
+    // If a part of this segment
+    // overlaps with the given range
+    int mid = getMid(ss, se);
+    return minVal(RMQUtil(st, ss, mid, qs, qe, 2*index+1),
+                RMQUtil(st, mid+1, se, qs, qe, 2*index+2));
+}
+
+// Return minimum of elements in range
+// from index qs to qe
+int RMQ(vector<int> &st, int n, int qs, int qe) {
+
+    // Check for invalid input
+    if (qs < 0 || qe > n-1 || qs > qe) {
+        cout<<"Invalid Input";
+        return -1;
+    }
+    return RMQUtil(st, 0, n-1, qs, qe, 0);
+}
+
+// A recursive function that constructs
+// Segment Tree for array[ss..se].
+int constructSTUtil(vector<int> &arr, int ss, int se,
+                            vector<int> &st, int si) {
+
+    // If there is one element in array,
+    // store it in current node of
+    // segment tree and return
+    if (ss == se) {
+        st[si] = arr[ss];
+        return arr[ss];
+    }
+
+    // If there are more than one elements,
+    // then recur for left and right subtrees
+    // and store the minimum of two values in this node
+    int mid = getMid(ss, se);
+    st[si] = minVal(constructSTUtil(arr, ss, mid, st, si*2+1),
+                    constructSTUtil(arr, mid+1, se, st, si*2+2));
+    return st[si];
+}
+
+// Function to construct segment tree
+vector<int> constructST(vector<int> &arr, int n) {
+
+    //Height of segment tree
+    int x = (int)(ceil(log2(n)));
+
+    // Maximum size of segment tree
+    int max_size = 2*(int)pow(2, x) - 1;
+
+    vector<int> st(max_size);
+
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n-1, st, 0);
+
+    // Return the constructed segment tree
+    return st;
+}
+
+int main() {
+
+    vector<int> arr = {1, 3, 2, 7, 9, 11};
+    int n = arr.size();
+
+    // Build segment tree from given array
+    vector<int> st = constructST(arr, n);
+
+    // Starting index of query range
+    int qs = 1;
+
+    // Ending index of query range
+    int qe = 5;
+
+    // Print minimum value in arr[qs..qe]
+    cout<<"Minimum of values in range ["<<qs<<", "<<qe<<"] "<<
+    "is = "<<RMQ(st, n, qs, qe)<<endl;
+
+    return 0;
+}
+
+C
+
+// C program for range minimum query
+// using segment tree
+#include <stdio.h>
+#include <math.h>
+#include <limits.h>
+#include <stdlib.h>
+
+// A utility function to get minimum of two numbers
+int minVal(int x, int y) {
+    return (x < y)? x: y;
+}
+
+// A utility function to get the
+// middle index from corner indexes.
+int getMid(int s, int e) {
+    return s + (e -s)/2;
+}
+
+// A recursive function to get the
+// minimum value in a given range of array
+// st --> Pointer to segment tree
+// index --> Index of current node in the tree
+// ss & se --> Starting and ending indexes
+// qs & qe --> Starting and ending indexes of query range
+int RMQUtil(int *st, int ss, int se,
+            int qs, int qe, int index) {
+
+    // If segment of this node is a part of given range
+    // then return the min of the segment
+    if (qs <= ss && qe >= se)
+        return st[index];
+
+    // If segment of this node if outside the range
+    if (se < qs || ss > qe)
+        return INT_MAX;
+
+    // If a part of this segment
+    // overlaps with the given range
+    int mid = getMid(ss, se);
+    return minVal(RMQUtil(st, ss, mid, qs, qe, 2*index+1),
+                RMQUtil(st, mid+1, se, qs, qe, 2*index+2));
+}
+
+// Return minimum of elements in range
+// from index qs to qe
+int RMQ(int *st, int n, int qs, int qe) {
+
+    // Check for erroneous input values
+    if (qs < 0 || qe > n-1 || qs > qe) {
+        printf("Invalid Input");
+        return -1;
+    }
+
+    return RMQUtil(st, 0, n-1, qs, qe, 0);
+}
+
+// A recursive function that constructs
+// Segment Tree for array[ss..se].
+int constructSTUtil(int arr[], int ss, int se,
+                            int *st, int si) {
+
+    // If there is one element in array,
+    // store it in current node of
+    // segment tree and return
+    if (ss == se) {
+        st[si] = arr[ss];
+        return arr[ss];
+    }
+
+    // If there are more than one elements,
+    // then recur for left and right subtrees
+    // and store the minimum of two values in this node
+    int mid = getMid(ss, se);
+    st[si] = minVal(constructSTUtil(arr, ss, mid, st, si*2+1),
+                    constructSTUtil(arr, mid+1, se, st, si*2+2));
+    return st[si];
+}
+
+// Function to construct segment tree
+int *constructST(int arr[], int n) {
+
+    //Height of segment tree
+    int x = (int)(ceil(log2(n)));
+
+    // Maximum size of segment tree
+    int max_size = 2*(int)pow(2, x) - 1;
+
+    int *st = (int*)malloc(max_size * sizeof(int));
+
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n-1, st, 0);
+
+    // Return the constructed segment tree
+    return st;
+}
+
+int main() {
+    int arr[] = {1, 3, 2, 7, 9, 11};
+    int n = sizeof(arr)/sizeof(arr[0]);
+
+    // Build segment tree from given array
+    int *st = constructST(arr, n);
+
+    // Starting index of query range
+    int qs = 1;
+
+    // Ending index of query range
+    int qe = 5;
+
+    // Print minimum value in arr[qs..qe]
+    printf("Minimum of values in range [%d, %d] is = %d\n",
+                           qs, qe, RMQ(st, n, qs, qe));
+
+    return 0;
+}
+
+Java
+
+// Java program for range minimum
+// query using segment tree
+import java.util.*;
+
+class GFG {
+
+    // A utility function to get minimum of two numbers
+    static int minVal(int x, int y) {
+        return (x < y) ? x : y;
+    }
+
+    // A utility function to get the
+    // middle index from corner indexes.
+    static int getMid(int s, int e) {
+        return s + (e - s) / 2;
+    }
+
+    // A recursive function to get the
+    // minimum value in a given range of array
+    static int RMQUtil(int[] st, int ss, int se,
+                        int qs, int qe, int index) {
+
+        // If segment of this node is a part of given range
+        // then return the min of the segment
+        if (qs <= ss && qe >= se)
+            return st[index];
+
+        // If segment of this node is outside the range
+        if (se < qs || ss > qe)
+            return Integer.MAX_VALUE;
+
+        // If a part of this segment
+        // overlaps with the given range
+        int mid = getMid(ss, se);
+        return minVal(RMQUtil(st, ss, mid, qs, qe, 2 * index + 1),
+                      RMQUtil(st, mid + 1, se, qs, qe, 2 * index + 2));
+    }
+
+    // Return minimum of elements in range
+    // from index qs to qe
+    static int RMQ(int[] st, int n, int qs, int qe) {
+
+        // Check for invalid input
+        if (qs < 0 || qe > n - 1 || qs > qe) {
+            System.out.println("Invalid Input");
+            return -1;
+        }
+        return RMQUtil(st, 0, n - 1, qs, qe, 0);
+    }
+
+    // A recursive function that constructs
+    // Segment Tree for array[ss..se].
+    static int constructSTUtil(int[] arr, int ss,
+                        int se, int[] st, int si) {
+
+        // If there is one element in array,
+        // store it in current node of
+        // segment tree and return
+        if (ss == se) {
+            st[si] = arr[ss];
+            return arr[ss];
+        }
+
+        // If there are more than one elements,
+        // then recur for left and right subtrees
+        // and store the minimum of two values in this node
+        int mid = getMid(ss, se);
+        st[si] = minVal(constructSTUtil(arr, ss, mid, st, si * 2 + 1),
+                        constructSTUtil(arr, mid + 1, se, st, si * 2 + 2));
+        return st[si];
+    }
+
+    // Function to construct segment tree
+    static int[] constructST(int[] arr, int n) {
+
+        // Height of segment tree
+        int x = (int) (Math.ceil(Math.log(n) / Math.log(2)));
+
+        // Maximum size of segment tree
+        int max_size = 2 * (int) Math.pow(2, x) - 1;
+
+        int[] st = new int[max_size];
+
+        // Fill the allocated memory st
+        constructSTUtil(arr, 0, n - 1, st, 0);
+
+        // Return the constructed segment tree
+        return st;
+    }
+
+    public static void main(String[] args) {
+
+        int[] arr = {1, 3, 2, 7, 9, 11};
+        int n = arr.length;
+
+        // Build segment tree from given array
+        int[] st = constructST(arr, n);
+
+        // Starting index of query range
+        int qs = 1;
+
+        // Ending index of query range
+        int qe = 5;
+
+        // Print minimum value in arr[qs..qe]
+        System.out.println("Minimum of values in range [" + qs + ", " + qe + "] " +
+                           "is = " + RMQ(st, n, qs, qe));
+    }
+}
+
+Python
+
+# A utility function to get minimum of two numbers
+def minVal(x, y):
+    return x if x < y else y
+
+# A utility function to get the
+# middle index from corner indexes.
+def getMid(s, e):
+    return s + (e - s) // 2
+
+# A recursive function to get the
+# minimum value in a given range of array
+def RMQUtil(st, ss, se, qs, qe, index):
+
+    # If segment of this node is a part of given range
+    # then return the min of the segment
+    if qs <= ss and qe >= se:
+        return st[index]
+
+    # If segment of this node is outside the range
+    if se < qs or ss > qe:
+        return float('inf')
+
+    # If a part of this segment
+    # overlaps with the given range
+    mid = getMid(ss, se)
+    return minVal(RMQUtil(st, ss, mid, qs, qe, 2 * index + 1),
+                  RMQUtil(st, mid + 1, se, qs, qe, 2 * index + 2))
+
+# Return minimum of elements in range
+# from index qs to qe
+def RMQ(st, n, qs, qe):
+
+    # Check for invalid input
+    if qs < 0 or qe > n - 1 or qs > qe:
+        print("Invalid Input")
+        return -1
+    return RMQUtil(st, 0, n - 1, qs, qe, 0)
+
+# A recursive function that constructs
+# Segment Tree for array[ss..se].
+def constructSTUtil(arr, ss, se, st, si):
+
+    # If there is one element in array,
+    # store it in current node of
+    # segment tree and return
+    if ss == se:
+        st[si] = arr[ss]
+        return arr[ss]
+
+    # If there are more than one elements,
+    # then recur for left and right subtrees
+    # and store the minimum of two values in this node
+    mid = getMid(ss, se)
+    st[si] = minVal(constructSTUtil(arr, ss, mid, st, si * 2 + 1),
+                    constructSTUtil(arr, mid + 1, se, st, si * 2 + 2))
+    return st[si]
+
+# Function to construct segment tree
+def constructST(arr, n):
+
+    # Height of segment tree
+    x = (n - 1).bit_length()
+
+    # Maximum size of segment tree
+    max_size = 2 * (2**x) - 1
+
+    st = [0] * max_size
+
+    # Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, st, 0)
+
+    # Return the constructed segment tree
+    return st
+
+if __name__ == "__main__" :
+    arr = [1, 3, 2, 7, 9, 11]
+    n = len(arr)
+
+    # Build segment tree from given array
+    st = constructST(arr, n)
+
+    # Starting index of query range
+    qs = 1
+
+    # Ending index of query range
+    qe = 5
+
+    # Print minimum value in arr[qs..qe]
+    print(f"Minimum of values in range [{qs}, {qe}] is = {RMQ(st, n, qs, qe)}")
+
+C#
+
+// C# program for range minimum
+// query using segment tree
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // A utility function to get minimum of two numbers
+    static int minVal(int x, int y) {
+        return (x < y) ? x : y;
+    }
+
+    // A utility function to get the
+    // middle index from corner indexes.
+    static int getMid(int s, int e) {
+        return s + (e - s) / 2;
+    }
+
+    // A recursive function to get the
+    // minimum value in a given range of array
+    static int RMQUtil(int[] st, int ss, int se,
+                        int qs, int qe, int index) {
+
+        // If segment of this node is a part of given range
+        // then return the min of the segment
+        if (qs <= ss && qe >= se)
+            return st[index];
+
+        // If segment of this node is outside the range
+        if (se < qs || ss > qe)
+            return int.MaxValue;
+
+        // If a part of this segment
+        // overlaps with the given range
+        int mid = getMid(ss, se);
+        return minVal(RMQUtil(st, ss, mid, qs, qe, 2 * index + 1),
+                      RMQUtil(st, mid + 1, se, qs, qe, 2 * index + 2));
+    }
+
+    // Return minimum of elements in range
+    // from index qs to qe
+    static int RMQ(int[] st, int n, int qs, int qe) {
+
+        // Check for invalid input
+        if (qs < 0 || qe > n - 1 || qs > qe) {
+            Console.WriteLine("Invalid Input");
+            return -1;
+        }
+        return RMQUtil(st, 0, n - 1, qs, qe, 0);
+    }
+
+    // A recursive function that constructs
+    // Segment Tree for array[ss..se].
+    static int constructSTUtil(int[] arr, int ss,
+                        int se, int[] st, int si) {
+
+        // If there is one element in array,
+        // store it in current node of
+        // segment tree and return
+        if (ss == se) {
+            st[si] = arr[ss];
+            return arr[ss];
+        }
+
+        // If there are more than one elements,
+        // then recur for left and right subtrees
+        // and store the minimum of two values in this node
+        int mid = getMid(ss, se);
+        st[si] = minVal(constructSTUtil(arr, ss, mid, st, si * 2 + 1),
+                        constructSTUtil(arr, mid + 1, se, st, si * 2 + 2));
+        return st[si];
+    }
+
+    // Function to construct segment tree
+    static int[] constructST(int[] arr, int n) {
+
+        // Height of segment tree
+        int x = (int)Math.Ceiling(Math.Log(n) / Math.Log(2));
+
+        // Maximum size of segment tree
+        int max_size = 2 * (int)Math.Pow(2, x) - 1;
+
+        int[] st = new int[max_size];
+
+        // Fill the allocated memory st
+        constructSTUtil(arr, 0, n - 1, st, 0);
+
+        // Return the constructed segment tree
+        return st;
+    }
+
+    static void Main() {
+        int[] arr = {1, 3, 2, 7, 9, 11};
+        int n = arr.Length;
+
+        // Build segment tree from given array
+        int[] st = constructST(arr, n);
+
+        // Starting index of query range
+        int qs = 1;
+
+        // Ending index of query range
+        int qe = 5;
+
+        // Print minimum value in arr[qs..qe]
+        Console.WriteLine("Minimum of values in range [" + qs + ", " + qe + "] " +
+                          "is = " + RMQ(st, n, qs, qe));
+    }
+}
+
+JavaScript
+
+// A utility function to get minimum of two numbers
+function minVal(x, y) {
+    return (x < y) ? x : y;
+}
+
+// A utility function to get the
+// middle index from corner indexes.
+function getMid(s, e) {
+    return s + Math.floor((e - s) / 2);
+}
+
+// A recursive function to get the
+// minimum value in a given range of array
+function RMQUtil(st, ss, se, qs, qe, index) {
+
+    // If segment of this node is a part of given range
+    // then return the min of the segment
+    if (qs <= ss && qe >= se)
+        return st[index];
+
+    // If segment of this node is outside the range
+    if (se < qs || ss > qe)
+        return Number.MAX_SAFE_INTEGER;
+
+    // If a part of this segment
+    // overlaps with the given range
+    let mid = getMid(ss, se);
+    return minVal(RMQUtil(st, ss, mid, qs, qe, 2 * index + 1),
+                  RMQUtil(st, mid + 1, se, qs, qe, 2 * index + 2));
+}
+
+// Return minimum of elements in range
+// from index qs to qe
+function RMQ(st, n, qs, qe) {
+
+    // Check for invalid input
+    if (qs < 0 || qe > n - 1 || qs > qe) {
+        console.log("Invalid Input");
+        return -1;
+    }
+    return RMQUtil(st, 0, n - 1, qs, qe, 0);
+}
+
+// A recursive function that constructs
+// Segment Tree for array[ss..se].
+function constructSTUtil(arr, ss, se, st, si) {
+
+    // If there is one element in array,
+    // store it in current node of
+    // segment tree and return
+    if (ss === se) {
+        st[si] = arr[ss];
+        return arr[ss];
+    }
+
+    // If there are more than one elements,
+    // then recur for left and right subtrees
+    // and store the minimum of two values in this node
+    let mid = getMid(ss, se);
+    st[si] = minVal(constructSTUtil(arr, ss, mid, st, si * 2 + 1),
+                    constructSTUtil(arr, mid + 1, se, st, si * 2 + 2));
+    return st[si];
+}
+
+// Function to construct segment tree
+function constructST(arr, n) {
+
+    // Height of segment tree
+    let x = Math.ceil(Math.log2(n));
+
+    // Maximum size of segment tree
+    let max_size = 2 * Math.pow(2, x) - 1;
+
+    let st = new Array(max_size).fill(0);
+
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, st, 0);
+
+    // Return the constructed segment tree
+    return st;
+}
+
+// Main function
+function main() {
+    let arr = [1, 3, 2, 7, 9, 11];
+    let n = arr.length;
+
+    // Build segment tree from given array
+    let st = constructST(arr, n);
+
+    // Starting index of query range
+    let qs = 1;
+
+    // Ending index of query range
+    let qe = 5;
+
+    // Print minimum value in arr[qs..qe]
+    console.log(`Minimum of values in range [${qs}, ${qe}] is = ${RMQ(st, n, qs, qe)}`);
+}
+
+main();
+
+Output:
+
+Minimum of values in range [1, 5] is = 2
+
+Time Complexity:
+
+- Tree Construction: Time Complexity for tree construction is O(n). There are total 2n-1 nodes, and value of every node is calculated only once in tree construction.
+- Query: Time complexity for each query is O(log n). To query a range minimum, we process at most two nodes at every level and number of levels is O(log n).
+
+Auxiliary Space : O(n),  since n extra space has been taken.
+
+Further read https://www.geeksforgeeks.org/dsa/range-minimum-query-for-static-array/

@@ -1,0 +1,379 @@
+Source: https://www.geeksforgeeks.org/dsa/find-pairs-b-array-b-k/
+Title: All pairs (a, b) in an array such that a % b = k
+Extractor: 2
+
+Given an array arr[] of distinct integers and an integer k, find the number of pairs arr[i] and arr[j] (where i ≠ j) such that arr[i] % arr[j] = k
+
+Examples:
+
+> Input: arr[] = [2, 3, 5, 4, 7], k = 3 Output: 4 Explanation: The pairs that give remainder 3 are {7, 4}, {3, 4}, {3, 5}, {3, 7}. Input: arr[] = [1, 2], k = 3 Output: 0 Explanation: No pairs give remainder 3.
+
+Table of Content
+
+- [Naive Approach] Checking All Pairs - O(n^2) Time and O(1) Space
+- [Expected Approach] Using Divisor Enumeration - O(n sqrt(max(arr[i]))) Time and O(n) Space
+
+### [Naive Approach] Checking All Pairs - O(n^2) Time and O(1) Space
+
+> For every ordered pair of distinct elements (x, y) in the array, compute x % y and check if it equals k. Counting all such pairs directly gives the answer, without needing any extra structure.
+
+- For arr=[2,3,5,4,7], k=3: checking pair (3,4) gives 3 % 4 = 3, a match
+- Checking pair (3,5) gives 3 % 5 = 3, also a match
+- Checking pair (7,4) gives 7 % 4 = 3, a match
+- Continuing through all ordered pairs finds exactly 4 matches in total, matching the expected answer
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int countPairs(vector<int>& arr, int k) {
+    int n = arr.size();
+    int total = 0;
+
+    // Check every ordered pair of distinct elements
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (i == j) continue;
+            if (arr[i] % arr[j] == k) total++;
+        }
+    }
+    return total;
+}
+
+int main() {
+    vector<int> arr = {2, 3, 5, 4, 7};
+    int k = 3;
+    cout << countPairs(arr, k) << endl;
+    return 0;
+}
+
+Java
+
+class GfG {
+    static int countPairs(int[] arr, int k) {
+        int n = arr.length;
+        int total = 0;
+
+        // Check every ordered pair of distinct elements
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == j) continue;
+                if (arr[i] % arr[j] == k) total++;
+            }
+        }
+        return total;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {2, 3, 5, 4, 7};
+        int k = 3;
+        System.out.println(countPairs(arr, k));
+    }
+}
+
+Python
+
+def countPairs(arr, k):
+    n = len(arr)
+    total = 0
+
+    # Check every ordered pair of distinct elements
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            if arr[i] % arr[j] == k:
+                total += 1
+    return total
+
+if __name__ == "__main__":
+    arr = [2, 3, 5, 4, 7]
+    k = 3
+    print(countPairs(arr, k))
+
+C#
+
+using System;
+
+class GfG {
+    static int countPairs(int[] arr, int k) {
+        int n = arr.Length;
+        int total = 0;
+
+        // Check every ordered pair of distinct elements
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == j) continue;
+                if (arr[i] % arr[j] == k) total++;
+            }
+        }
+        return total;
+    }
+
+    static void Main() {
+        int[] arr = { 2, 3, 5, 4, 7 };
+        int k = 3;
+        Console.WriteLine(countPairs(arr, k));
+    }
+}
+
+JavaScript
+
+function countPairs(arr, k) {
+    let n = arr.length;
+    let total = 0;
+
+    // Check every ordered pair of distinct elements
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            if (i === j) continue;
+            if (arr[i] % arr[j] === k) total++;
+        }
+    }
+    return total;
+}
+
+// driver code
+let arr = [2, 3, 5, 4, 7];
+let k = 3;
+console.log(countPairs(arr, k));
+
+Output
+
+4
+
+### [Expected Approach] Using Divisor Enumeration - O(n sqrt(max(arr[i]))) Time and O(n) Space
+
+> The key insight: if x % y = k, then y must evenly divide (x - k), and since any remainder is always strictly less than its divisor, y must also be greater than k. So instead of checking every other element against x, only the actual divisors of (x - k) need to be checked - and those can be found in O(sqrt(r)) time by checking up to the square root.
+
+- Keep a hash set of all array values, for O(1) presence checks
+- For each x in the array (skipping x < k, since a negative remainder target is impossible), compute r = x - k
+- If r = 0, then x equals k itself - in this special case, every other array value greater than k automatically forms a valid pair, since k % y = k whenever y > k
+- Otherwise, find every divisor d of r; for each divisor greater than k that's actually present in the array (and isn't x itself), count one valid pair
+- For arr=[2,3,5,4,7], k=3: for x=7, r=4, whose divisors are 1,2,4 - only 4 exceeds k=3 and is present in the array, contributing the pair (7,4)
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int countPairs(vector<int>& arr, int k) {
+    unordered_set<int> present(arr.begin(), arr.end());
+    int total = 0;
+
+    // Count how many array values are strictly greater than k
+    int countGreaterThanK = 0;
+    for (int y : arr) {
+        if (y > k) countGreaterThanK++;
+    }
+
+    for (int x : arr) {
+        if (x < k) continue;
+
+        int r = x - k;
+        if (r == 0) {
+
+            // x equals k: every other value greater than k forms a valid pair
+            total += countGreaterThanK;
+            continue;
+        }
+
+        // Find all divisors of r in O(sqrt(r)) time
+        for (int d = 1; (long long)d * d <= r; d++) {
+            if (r % d == 0) {
+                int d1 = d, d2 = r / d;
+
+                // A divisor only qualifies as a valid divisor if it exceeds k
+                if (d1 > k && d1 != x && present.count(d1)) total++;
+                if (d2 != d1 && d2 > k && d2 != x && present.count(d2)) total++;
+            }
+        }
+    }
+    return total;
+}
+
+int main() {
+    vector<int> arr = {2, 3, 5, 4, 7};
+    int k = 3;
+    cout << countPairs(arr, k) << endl;
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GfG {
+    static int countPairs(int[] arr, int k) {
+        Set<Integer> present = new HashSet<>();
+        for (int x : arr) present.add(x);
+        int total = 0;
+
+        // Count how many array values are strictly greater than k
+        int countGreaterThanK = 0;
+        for (int y : arr) {
+            if (y > k) countGreaterThanK++;
+        }
+
+        for (int x : arr) {
+            if (x < k) continue;
+
+            int r = x - k;
+            if (r == 0) {
+
+                // x equals k: every other value greater than k forms a valid pair
+                total += countGreaterThanK;
+                continue;
+            }
+
+            // Find all divisors of r in O(sqrt(r)) time
+            for (int d = 1; (long) d * d <= r; d++) {
+                if (r % d == 0) {
+                    int d1 = d, d2 = r / d;
+
+                    // A divisor only qualifies as a valid divisor if it exceeds k
+                    if (d1 > k && d1 != x && present.contains(d1)) total++;
+                    if (d2 != d1 && d2 > k && d2 != x && present.contains(d2)) total++;
+                }
+            }
+        }
+        return total;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {2, 3, 5, 4, 7};
+        int k = 3;
+        System.out.println(countPairs(arr, k));
+    }
+}
+
+Python
+
+def countPairs(arr, k):
+    present = set(arr)
+    total = 0
+
+    # Count how many array values are strictly greater than k
+    countGreaterThanK = sum(1 for y in arr if y > k)
+
+    for x in arr:
+        if x < k:
+            continue
+
+        r = x - k
+        if r == 0:
+
+            # x equals k: every other value greater than k forms a valid pair
+            total += countGreaterThanK
+            continue
+
+        # Find all divisors of r in O(sqrt(r)) time
+        d = 1
+        while d * d <= r:
+            if r % d == 0:
+                d1, d2 = d, r // d
+
+                # A divisor only qualifies as a valid divisor if it exceeds k
+                if d1 > k and d1 != x and d1 in present:
+                    total += 1
+                if d2 != d1 and d2 > k and d2 != x and d2 in present:
+                    total += 1
+            d += 1
+    return total
+
+if __name__ == "__main__":
+    arr = [2, 3, 5, 4, 7]
+    k = 3
+    print(countPairs(arr, k))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GfG {
+    static int countPairs(int[] arr, int k) {
+        HashSet<int> present = new HashSet<int>(arr);
+        int total = 0;
+
+        // Count how many array values are strictly greater than k
+        int countGreaterThanK = 0;
+        foreach (int y in arr) {
+            if (y > k) countGreaterThanK++;
+        }
+
+        foreach (int x in arr) {
+            if (x < k) continue;
+
+            int r = x - k;
+            if (r == 0) {
+
+                // x equals k: every other value greater than k forms a valid pair
+                total += countGreaterThanK;
+                continue;
+            }
+
+            // Find all divisors of r in O(sqrt(r)) time
+            for (int d = 1; (long)d * d <= r; d++) {
+                if (r % d == 0) {
+                    int d1 = d, d2 = r / d;
+
+                    // A divisor only qualifies as a valid divisor if it exceeds k
+                    if (d1 > k && d1 != x && present.Contains(d1)) total++;
+                    if (d2 != d1 && d2 > k && d2 != x && present.Contains(d2)) total++;
+                }
+            }
+        }
+        return total;
+    }
+
+    static void Main() {
+        int[] arr = { 2, 3, 5, 4, 7 };
+        int k = 3;
+        Console.WriteLine(countPairs(arr, k));
+    }
+}
+
+JavaScript
+
+function countPairs(arr, k) {
+    let present = new Set(arr);
+    let total = 0;
+
+    // Count how many array values are strictly greater than k
+    let countGreaterThanK = arr.filter(y => y > k).length;
+
+    for (let x of arr) {
+        if (x < k) continue;
+
+        let r = x - k;
+        if (r === 0) {
+
+            // x equals k: every other value greater than k forms a valid pair
+            total += countGreaterThanK;
+            continue;
+        }
+
+        // Find all divisors of r in O(sqrt(r)) time
+        for (let d = 1; d * d <= r; d++) {
+            if (r % d === 0) {
+                let d1 = d, d2 = r / d;
+
+                // A divisor only qualifies as a valid divisor if it exceeds k
+                if (d1 > k && d1 !== x && present.has(d1)) total++;
+                if (d2 !== d1 && d2 > k && d2 !== x && present.has(d2)) total++;
+            }
+        }
+    }
+    return total;
+}
+
+// driver code
+let arr = [2, 3, 5, 4, 7];
+let k = 3;
+console.log(countPairs(arr, k));
+
+Output
+
+4

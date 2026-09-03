@@ -1,0 +1,1316 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-edges-reverse-make-path-source-destination/
+Title: Minimum edges to reverse to make path from a source to a destination
+Extractor: 2
+
+Given a directed graph with n vertices numbered from 1 to n and m directed edges. The graph is represented using a 2D array edges[][] of size m, where each entry edges[i] = [u, v] denotes a directed edge from vertex u to vertex v.
+
+- A source vertex src and a destination vertex dst are also given.
+- Find the minimum number of edges that need to be reversed so that there exists at least one path from src to dst.
+- If it is not possible to create a path from src to dst, return -1.
+
+Examples:
+
+> Input: n = 3, edges[][] = [[1, 2], [3, 2]], src = 1, dst = 3 Output: 1 Explanation: Reverse the edge 3 -> 2. Input: n = 4, edges[][] = [[1, 2], [2, 3], [3, 4]], src = 1, dst = 4 Output: 0 Explanation: One path already exists between 1 to 4 it is 1->2->3->4.
+
+Table of Content
+
+- [Naive Approach] DFS with Backtracking - Exponential Time and O(n + m) Space
+- [Better Approach] By Creating Reverse Edges - O((n + m)*log(n)) Time and O(n + m) Space
+- [Expected Approach] Using 0-1 BFS - O(n + m) Time and O(n + m) Space
+
+### [Naive Approach] DFS with Backtracking - Exponential Time and O(n + m) Space
+
+> The idea is to try all possible paths from src to dst and find the path that requires the minimum number of edge reversals.
+
+To do this, first convert the given directed graph into a weighted graph.
+
+For every directed edge u -> v, add two edges:
+
+- u -> v with cost 0, because we can use the edge in its original direction without reversing it.
+- v -> u with cost 1, because using the edge in the opposite direction requires reversing it.
+
+Then perform DFS from src. For every path that reaches dst, calculate its total cost and keep the minimum.
+
+A visited array is used to avoid cycles. After exploring a node, it is unmarked so that it can be used in other possible paths.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Recursive function to find the minimum edge reversals.
+int solve(vector<vector<pair<int, int>>>& adj, vector<bool>& vis,
+          int src, int dst) {
+
+    // Destination is reached.
+    if (src == dst)
+        return 0;
+
+    vis[src] = true;
+
+    int ans = INT_MAX;
+
+    // Explore all possible paths.
+    for (auto& edge : adj[src]) {
+        int node = edge.first;
+        int cost = edge.second;
+
+        if (!vis[node]) {
+            int res = solve(adj, vis, node, dst);
+
+            if (res != INT_MAX)
+                ans = min(ans, cost + res);
+        }
+    }
+
+    // Backtrack to explore other paths.
+    vis[src] = false;
+
+    return ans;
+}
+
+// Function to find the minimum number of edge reversals.
+int minimumEdgeReversal(vector<vector<int>>& edges, int n, int src, int dst) {
+
+    vector<vector<pair<int, int>>> adj(n + 1);
+
+    // Create adjacency list with both directions.
+    for (auto& edge : edges) {
+        int u = edge[0];
+        int v = edge[1];
+
+        // Original direction requires no reversal.
+        adj[u].push_back({v, 0});
+
+        // Reverse direction requires one reversal.
+        adj[v].push_back({u, 1});
+    }
+
+    vector<bool> vis(n + 1, false);
+
+    int ans = solve(adj, vis, src, dst);
+
+    // No path exists from src to dst.
+    if (ans == INT_MAX)
+        return -1;
+
+    return ans;
+}
+
+int main() {
+
+    int n = 3;
+
+    vector<vector<int>> edges = {
+        {1, 2},
+        {3, 2}
+    };
+
+    int src = 1;
+    int dst = 3;
+
+    cout << minimumEdgeReversal(edges, n, src, dst);
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+
+class GFG {
+
+    // Recursive function to find the minimum edge reversals.
+    static int solve(ArrayList<ArrayList<int[]>> adj, boolean[] vis,
+                     int src, int dst) {
+
+        // Destination is reached.
+        if (src == dst)
+            return 0;
+
+        vis[src] = true;
+
+        int ans = Integer.MAX_VALUE;
+
+        // Explore all possible paths.
+        for (int[] edge : adj.get(src)) {
+            int node = edge[0];
+            int cost = edge[1];
+
+            if (!vis[node]) {
+                int res = solve(adj, vis, node, dst);
+
+                if (res != Integer.MAX_VALUE)
+                    ans = Math.min(ans, cost + res);
+            }
+        }
+
+        // Backtrack to explore other paths.
+        vis[src] = false;
+
+        return ans;
+    }
+
+    // Function to find the minimum number of edge reversals.
+    static int minimumEdgeReversal(int[][] edges, int n, int src, int dst) {
+
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+
+        for (int i = 0; i <= n; i++)
+            adj.add(new ArrayList<>());
+
+        // Create adjacency list with both directions.
+        for (int[] edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
+
+            // Original direction requires no reversal.
+            adj.get(u).add(new int[]{v, 0});
+
+            // Reverse direction requires one reversal.
+            adj.get(v).add(new int[]{u, 1});
+        }
+
+        boolean[] vis = new boolean[n + 1];
+
+        int ans = solve(adj, vis, src, dst);
+
+        // No path exists from src to dst.
+        if (ans == Integer.MAX_VALUE)
+            return -1;
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+
+        int n = 3;
+
+        int[][] edges = {
+            {1, 2},
+            {3, 2}
+        };
+
+        int src = 1;
+        int dst = 3;
+
+        System.out.println(minimumEdgeReversal(edges, n, src, dst));
+    }
+}
+
+Python
+
+# Recursive function to find the minimum edge reversals.
+def solve(adj, vis, src, dst):
+
+    # Destination is reached.
+    if src == dst:
+        return 0
+
+    vis[src] = True
+
+    ans = float('inf')
+
+    # Explore all possible paths.
+    for edge in adj[src]:
+        node = edge[0]
+        cost = edge[1]
+
+        if not vis[node]:
+            res = solve(adj, vis, node, dst)
+
+            if res != float('inf'):
+                ans = min(ans, cost + res)
+
+    # Backtrack to explore other paths.
+    vis[src] = False
+
+    return ans
+
+# Function to find the minimum number of edge reversals.
+def minimumEdgeReversal(edges, n, src, dst):
+
+    adj = [[] for _ in range(n + 1)]
+
+    # Create adjacency list with both directions.
+    for edge in edges:
+        u = edge[0]
+        v = edge[1]
+
+        # Original direction requires no reversal.
+        adj[u].append([v, 0])
+
+        # Reverse direction requires one reversal.
+        adj[v].append([u, 1])
+
+    vis = [False] * (n + 1)
+
+    ans = solve(adj, vis, src, dst)
+
+    # No path exists from src to dst.
+    if ans == float('inf'):
+        return -1
+
+    return ans
+
+if __name__ == "__main__":
+    n = 3
+
+    edges = [
+        [1, 2],
+        [3, 2]
+    ]
+
+    src = 1
+    dst = 3
+
+    print(minimumEdgeReversal(edges, n, src, dst))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // Recursive function to find the minimum edge reversals.
+    static int solve(List<List<int[]>> adj, bool[] vis,
+                     int src, int dst) {
+
+        // Destination is reached.
+        if (src == dst)
+            return 0;
+
+        vis[src] = true;
+
+        int ans = int.MaxValue;
+
+        // Explore all possible paths.
+        foreach (int[] edge in adj[src]) {
+            int node = edge[0];
+            int cost = edge[1];
+
+            if (!vis[node]) {
+                int res = solve(adj, vis, node, dst);
+
+                if (res != int.MaxValue)
+                    ans = Math.Min(ans, cost + res);
+            }
+        }
+
+        // Backtrack to explore other paths.
+        vis[src] = false;
+
+        return ans;
+    }
+
+    // Function to find the minimum number of edge reversals.
+    static int minimumEdgeReversal(int[][] edges, int n, int src, int dst) {
+
+        List<List<int[]>> adj = new List<List<int[]>>();
+
+        for (int i = 0; i <= n; i++)
+            adj.Add(new List<int[]>());
+
+        // Create adjacency list with both directions.
+        foreach (int[] edge in edges) {
+            int u = edge[0];
+            int v = edge[1];
+
+            // Original direction requires no reversal.
+            adj[u].Add(new int[] { v, 0 });
+
+            // Reverse direction requires one reversal.
+            adj[v].Add(new int[] { u, 1 });
+        }
+
+        bool[] vis = new bool[n + 1];
+
+        int ans = solve(adj, vis, src, dst);
+
+        // No path exists from src to dst.
+        if (ans == int.MaxValue)
+            return -1;
+
+        return ans;
+    }
+
+    public static void Main() {
+
+        int n = 3;
+
+        int[][] edges = {
+            new int[] { 1, 2 },
+            new int[] { 3, 2 }
+        };
+
+        int src = 1;
+        int dst = 3;
+
+        Console.WriteLine(minimumEdgeReversal(edges, n, src, dst));
+    }
+}
+
+JavaScript
+
+// Recursive function to find the minimum edge reversals.
+function solve(adj, vis, src, dst)
+{
+
+    // Destination is reached.
+    if (src === dst)
+        return 0;
+
+    vis[src] = true;
+
+    let ans = Infinity;
+
+    // Explore all possible paths.
+    for (let edge of adj[src]) {
+        let node = edge[0];
+        let cost = edge[1];
+
+        if (!vis[node]) {
+            let res = solve(adj, vis, node, dst);
+
+            if (res !== Infinity)
+                ans = Math.min(ans, cost + res);
+        }
+    }
+
+    // Backtrack to explore other paths.
+    vis[src] = false;
+
+    return ans;
+}
+
+// Function to find the minimum number of edge reversals.
+function minimumEdgeReversal(edges, n, src, dst)
+{
+
+    let adj = Array.from({length : n + 1}, () => []);
+
+    // Create adjacency list with both directions.
+    for (let edge of edges) {
+        let u = edge[0];
+        let v = edge[1];
+
+        // Original direction requires no reversal.
+        adj[u].push([ v, 0 ]);
+
+        // Reverse direction requires one reversal.
+        adj[v].push([ u, 1 ]);
+    }
+
+    let vis = new Array(n + 1).fill(false);
+
+    let ans = solve(adj, vis, src, dst);
+
+    // No path exists from src to dst.
+    if (ans === Infinity)
+        return -1;
+
+    return ans;
+}
+
+// Driver code
+
+let n = 3;
+
+let edges = [ [ 1, 2 ], [ 3, 2 ] ];
+
+let src = 1;
+let dst = 3;
+
+console.log(minimumEdgeReversal(edges, n, src, dst));
+
+Output
+
+1
+
+### [Better Approach] By Creating Reverse Edges - O((n + m)*log(n)) Time and O(n + m) Space
+
+> The idea is to convert the given graph into a weighted graph and run Dijkstra's Algorithm
+
+For every directed edge u -> v, add:
+
+- u -> v with cost 0, since it is already in the required direction.
+- v -> u with cost 1, since using it in this direction requires a reversal.
+
+Thus, the cost of a path from src to dst equals the number of edge reversals required. So, we need to find the minimum-cost path.
+
+Once the graph is converted into a weighted graph, we can use Dijkstra's Algorithm to find the minimum-cost path.
+
+- Maintain a dist[] array where: dist[i] = minimum number of reversals required to reach vertex i from src.
+- Initially, set the distance of every vertex to infinity and set: dist[src] = 0
+- Then use a priority queue to always process the vertex with the smallest current distance.
+- For every edge (node, next, cost), calculate: newDist = dist[node] + cost
+- If newDist is smaller than dist[next], update dist[next] and add it to the priority queue.
+- Finally: If dist[dst] is infinity, return -1.
+- Otherwise, dist[dst] is the minimum number of edges that need to be reversed.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to find the minimum number of edge reversals.
+int minimumEdgeReversal(vector<vector<int>>& edges, int n, int src, int dst) {
+
+    vector<vector<pair<int, int>>> adj(n + 1);
+
+    // Create adjacency list with both directions.
+    for (auto& edge : edges) {
+        int u = edge[0];
+        int v = edge[1];
+
+        // Original direction requires no reversal.
+        adj[u].push_back({v, 0});
+
+        // Reverse direction requires one reversal.
+        adj[v].push_back({u, 1});
+    }
+
+    // Store the minimum reversals required to reach each node.
+    vector<int> dist(n + 1, INT_MAX);
+
+    // Priority queue stores {distance, node}.
+    priority_queue<pair<int, int>,
+                   vector<pair<int, int>>,
+                   greater<pair<int, int>>> pq;
+
+    // Distance of source is 0.
+    dist[src] = 0;
+    pq.push({0, src});
+
+    // Apply Dijkstra's algorithm.
+    while (!pq.empty()) {
+        auto [d, node] = pq.top();
+        pq.pop();
+
+        // Skip outdated entries.
+        if (d != dist[node])
+            continue;
+
+        // Explore all adjacent nodes.
+        for (auto& edge : adj[node]) {
+            int next = edge.first;
+            int cost = edge.second;
+
+            // Update the distance if a better path is found.
+            if (d + cost < dist[next]) {
+                dist[next] = d + cost;
+                pq.push({dist[next], next});
+            }
+        }
+    }
+
+    // No path exists from src to dst.
+    if (dist[dst] == INT_MAX)
+        return -1;
+
+    return dist[dst];
+}
+
+int main() {
+
+    int n = 3;
+
+    vector<vector<int>> edges = {
+        {1, 2},
+        {3, 2}
+    };
+
+    int src = 1;
+    int dst = 3;
+
+    cout << minimumEdgeReversal(edges, n, src, dst);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    // Function to find the minimum number of edge reversals.
+    public static int minimumEdgeReversal(int[][] edges, int n, int src, int dst) {
+
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+
+        for (int i = 0; i <= n; i++)
+            adj.add(new ArrayList<>());
+
+        // Create adjacency list with both directions.
+        for (int[] edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
+
+            // Original direction requires no reversal.
+            adj.get(u).add(new int[]{v, 0});
+
+            // Reverse direction requires one reversal.
+            adj.get(v).add(new int[]{u, 1});
+        }
+
+        // Store the minimum reversals required to reach each node.
+        int[] dist = new int[n + 1];
+        Arrays.fill(dist, Integer.MAX_VALUE);
+
+        // Priority queue stores {distance, node}.
+        PriorityQueue<int[]> pq = new PriorityQueue<>(
+            (a, b) -> Integer.compare(a[0], b[0])
+        );
+
+        // Distance of source is 0.
+        dist[src] = 0;
+        pq.offer(new int[]{0, src});
+
+        // Apply Dijkstra's algorithm.
+        while (!pq.isEmpty()) {
+            int[] cur = pq.poll();
+
+            int d = cur[0];
+            int node = cur[1];
+
+            // Skip outdated entries.
+            if (d != dist[node])
+                continue;
+
+            // Explore all adjacent nodes.
+            for (int[] edge : adj.get(node)) {
+                int next = edge[0];
+                int cost = edge[1];
+
+                // Update the distance if a better path is found.
+                if (d + cost < dist[next]) {
+                    dist[next] = d + cost;
+                    pq.offer(new int[]{dist[next], next});
+                }
+            }
+        }
+
+        // No path exists from src to dst.
+        if (dist[dst] == Integer.MAX_VALUE)
+            return -1;
+
+        return dist[dst];
+    }
+
+    public static void main(String[] args) {
+
+        int n = 3;
+
+        int[][] edges = {
+            {1, 2},
+            {3, 2}
+        };
+
+        int src = 1;
+        int dst = 3;
+
+        System.out.println(minimumEdgeReversal(edges, n, src, dst));
+    }
+}
+
+Python
+
+import heapq
+
+# Function to find the minimum number of edge reversals.
+def minimumEdgeReversal(edges, n, src, dst):
+
+    adj = [[] for _ in range(n + 1)]
+
+    # Create adjacency list with both directions.
+    for edge in edges:
+        u = edge[0]
+        v = edge[1]
+
+        # Original direction requires no reversal.
+        adj[u].append([v, 0])
+
+        # Reverse direction requires one reversal.
+        adj[v].append([u, 1])
+
+    # Store the minimum reversals required to reach each node.
+    dist = [float('inf')] * (n + 1)
+
+    # Priority queue stores {distance, node}.
+    pq = []
+
+    # Distance of source is 0.
+    dist[src] = 0
+    heapq.heappush(pq, (0, src))
+
+    # Apply Dijkstra's algorithm.
+    while pq:
+        d, node = heapq.heappop(pq)
+
+        # Skip outdated entries.
+        if d != dist[node]:
+            continue
+
+        # Explore all adjacent nodes.
+        for edge in adj[node]:
+            next = edge[0]
+            cost = edge[1]
+
+            # Update the distance if a better path is found.
+            if d + cost < dist[next]:
+                dist[next] = d + cost
+                heapq.heappush(pq, (dist[next], next))
+
+    # No path exists from src to dst.
+    if dist[dst] == float('inf'):
+        return -1
+
+    return dist[dst]
+
+if __name__ == "__main__":
+
+    n = 3
+
+    edges = [
+        [1, 2],
+        [3, 2]
+    ]
+
+    src = 1
+    dst = 3
+
+    print(minimumEdgeReversal(edges, n, src, dst))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // Function to find the minimum number of edge reversals.
+    public static int minimumEdgeReversal(int[][] edges, int n, int src, int dst) {
+
+        List<List<int[]>> adj = new List<List<int[]>>();
+
+        for (int i = 0; i <= n; i++)
+            adj.Add(new List<int[]>());
+
+        // Create adjacency list with both directions.
+        foreach (int[] edge in edges) {
+            int u = edge[0];
+            int v = edge[1];
+
+            // Original direction requires no reversal.
+            adj[u].Add(new int[] { v, 0 });
+
+            // Reverse direction requires one reversal.
+            adj[v].Add(new int[] { u, 1 });
+        }
+
+        // Store the minimum reversals required to reach each node.
+        int[] dist = new int[n + 1];
+        Array.Fill(dist, int.MaxValue);
+
+        // Priority queue stores {distance, node}.
+        PriorityQueue<int[], int> pq = new PriorityQueue<int[], int>();
+
+        // Distance of source is 0.
+        dist[src] = 0;
+        pq.Enqueue(new int[] { 0, src }, 0);
+
+        // Apply Dijkstra's algorithm.
+        while (pq.Count > 0) {
+            int[] cur = pq.Dequeue();
+
+            int d = cur[0];
+            int node = cur[1];
+
+            // Skip outdated entries.
+            if (d != dist[node])
+                continue;
+
+            // Explore all adjacent nodes.
+            foreach (int[] edge in adj[node]) {
+                int next = edge[0];
+                int cost = edge[1];
+
+                // Update the distance if a better path is found.
+                if (d + cost < dist[next]) {
+                    dist[next] = d + cost;
+                    pq.Enqueue(
+                        new int[] { dist[next], next },
+                        dist[next]
+                    );
+                }
+            }
+        }
+
+        // No path exists from src to dst.
+        if (dist[dst] == int.MaxValue)
+            return -1;
+
+        return dist[dst];
+    }
+
+    public static void Main() {
+
+        int n = 3;
+
+        int[][] edges = {
+            new int[] { 1, 2 },
+            new int[] { 3, 2 }
+        };
+
+        int src = 1;
+        int dst = 3;
+
+        Console.WriteLine(
+            minimumEdgeReversal(edges, n, src, dst)
+        );
+    }
+}
+
+JavaScript
+
+// Function to find the minimum number of edge reversals.
+function minimumEdgeReversal(edges, n, src, dst)
+{
+
+    let adj = Array.from({length : n + 1}, () => []);
+
+    // Create adjacency list with both directions.
+    for (let edge of edges) {
+        let u = edge[0];
+        let v = edge[1];
+
+        // Original direction requires no reversal.
+        adj[u].push([ v, 0 ]);
+
+        // Reverse direction requires one reversal.
+        adj[v].push([ u, 1 ]);
+    }
+
+    // Store the minimum reversals required to reach each
+    // node.
+    let dist = new Array(n + 1).fill(Infinity);
+
+    // Priority queue stores {distance, node}.
+    let pq = [];
+
+    function push(item)
+    {
+        pq.push(item);
+
+        let i = pq.length - 1;
+
+        while (i > 0) {
+            let parent = Math.floor((i - 1) / 2);
+
+            if (pq[parent][0] <= pq[i][0])
+                break;
+
+            [pq[parent], pq[i]] = [ pq[i], pq[parent] ];
+            i = parent;
+        }
+    }
+
+    function pop()
+    {
+        let top = pq[0];
+        let last = pq.pop();
+
+        if (pq.length > 0) {
+            pq[0] = last;
+
+            let i = 0;
+
+            while (true) {
+                let left = 2 * i + 1;
+                let right = 2 * i + 2;
+                let smallest = i;
+
+                if (left < pq.length
+                    && pq[left][0] < pq[smallest][0])
+                    smallest = left;
+
+                if (right < pq.length
+                    && pq[right][0] < pq[smallest][0])
+                    smallest = right;
+
+                if (smallest === i)
+                    break;
+
+                [pq[i], pq[smallest]] =
+                    [ pq[smallest], pq[i] ];
+                i = smallest;
+            }
+        }
+
+        return top;
+    }
+
+    // Distance of source is 0.
+    dist[src] = 0;
+    push([ 0, src ]);
+
+    // Apply Dijkstra's algorithm.
+    while (pq.length > 0) {
+        let cur = pop();
+
+        let d = cur[0];
+        let node = cur[1];
+
+        // Skip outdated entries.
+        if (d !== dist[node])
+            continue;
+
+        // Explore all adjacent nodes.
+        for (let edge of adj[node]) {
+            let next = edge[0];
+            let cost = edge[1];
+
+            // Update the distance if a better path is
+            // found.
+            if (d + cost < dist[next]) {
+                dist[next] = d + cost;
+                push([ dist[next], next ]);
+            }
+        }
+    }
+
+    // No path exists from src to dst.
+    if (dist[dst] === Infinity)
+        return -1;
+
+    return dist[dst];
+}
+
+// Driver code
+
+let n = 3;
+
+let edges = [ [ 1, 2 ], [ 3, 2 ] ];
+
+let src = 1;
+let dst = 3;
+
+console.log(minimumEdgeReversal(edges, n, src, dst));
+
+Output
+
+1
+
+### [Expected Approach] Using 0-1 BFS - O(n + m) Time and O(n + m) Space
+
+> Since every edge in the transformed graph has a weight of either 0 or 1, we can use 0-1 BFS instead of Dijkstra's Algorithm. 0-1 BFS uses a deque to process vertices. Suppose we are at vertex u and there is an edge from u to v. If the edge has weight 0, the distance does not increase. Add v to the front of the deque. If the edge has weight 1, the distance increases by 1. Add v to the back of the deque. This ensures that vertices with smaller distances are processed earlier.
+
+- Create a weighted graph by adding u -> v with cost 0 and v -> u with cost 1 for every edge.
+- Initialize dist[src] = 0 and all other distances to infinity.
+- Add src to a deque.
+- Remove vertices from the front and update their neighbors if a shorter distance is found.
+- Add a neighbor to the front for cost 0 and to the back for cost 1.
+- Return dist[dst] if reachable; otherwise, return -1.
+
+Consider : n = 3, edges = [[1, 2], [3, 2]], src = 1, dst = 3
+
+Create the weighted graph:
+
+Initially:
+
+- dist = [INF, 0, INF, INF]
+- deque = [1]
+
+Step 1: Process vertex 1
+
+- Edge 1 -> 2 has cost 0.
+- dist[2] = dist[1] + 0 = 0
+- Since the cost is 0, add 2 to the front.
+- deque = [2]
+
+Step 2: Process 2
+
+- 2 -> 1 has cost 1, but dist[1] = 0, so no update.
+- 2 -> 3 has cost 1 -> dist[3] = 1 -> add 3 to back.
+- deque = [3]
+
+Step 3: Reach 3
+
+- dist[3] = 1
+- The path becomes: 1 -> 2 -> 3
+- The original edge 3 -> 2 is reversed to 2 -> 3.
+
+Therefore, the minimum number of reversals is: 1
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to find the minimum number of edge reversals.
+int minimumEdgeReversal(vector<vector<int>>& edges, int n, int src, int dst) {
+
+    vector<vector<pair<int, int>>> adj(n + 1);
+
+    // Create adjacency list with both directions.
+    for (auto& edge : edges) {
+        int u = edge[0];
+        int v = edge[1];
+
+        // Original direction requires no reversal.
+        adj[u].push_back({v, 0});
+
+        // Reverse direction requires one reversal.
+        adj[v].push_back({u, 1});
+    }
+
+    // Store the minimum reversals required to reach each node.
+    vector<int> dist(n + 1, INT_MAX);
+
+    deque<int> dq;
+
+    // Distance of source is 0.
+    dist[src] = 0;
+    dq.push_front(src);
+
+    // Apply 0-1 BFS.
+    while (!dq.empty()) {
+        int node = dq.front();
+        dq.pop_front();
+
+        // Explore all adjacent nodes.
+        for (auto& edge : adj[node]) {
+            int next = edge.first;
+            int cost = edge.second;
+
+            // Update the distance if a better path is found.
+            if (dist[node] + cost < dist[next]) {
+                dist[next] = dist[node] + cost;
+
+                // Process zero-cost edges first.
+                if (cost == 0)
+                    dq.push_front(next);
+                else
+                    dq.push_back(next);
+            }
+        }
+    }
+
+    // No path exists from src to dst.
+    if (dist[dst] == INT_MAX)
+        return -1;
+
+    return dist[dst];
+}
+
+int main() {
+
+    int n = 3;
+
+    vector<vector<int>> edges = {
+        {1, 2},
+        {3, 2}
+    };
+
+    int src = 1;
+    int dst = 3;
+
+    cout << minimumEdgeReversal(edges, n, src, dst);
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.ArrayDeque;
+
+class GFG {
+
+    // Function to find the minimum number of edge reversals.
+    static int minimumEdgeReversal(int[][] edges, int n, int src, int dst) {
+
+        ArrayList<ArrayList<int[]>> adj = new ArrayList<>();
+
+        for (int i = 0; i <= n; i++)
+            adj.add(new ArrayList<>());
+
+        // Create adjacency list with both directions.
+        for (int[] edge : edges) {
+            int u = edge[0];
+            int v = edge[1];
+
+            // Original direction requires no reversal.
+            adj.get(u).add(new int[]{v, 0});
+
+            // Reverse direction requires one reversal.
+            adj.get(v).add(new int[]{u, 1});
+        }
+
+        // Store the minimum reversals required to reach each node.
+        int[] dist = new int[n + 1];
+        Arrays.fill(dist, Integer.MAX_VALUE);
+
+        Deque<Integer> dq = new ArrayDeque<>();
+
+        // Distance of source is 0.
+        dist[src] = 0;
+        dq.addFirst(src);
+
+        // Apply 0-1 BFS.
+        while (!dq.isEmpty()) {
+            int node = dq.removeFirst();
+
+            // Explore all adjacent nodes.
+            for (int[] edge : adj.get(node)) {
+                int next = edge[0];
+                int cost = edge[1];
+
+                // Update the distance if a better path is found.
+                if (dist[node] + cost < dist[next]) {
+                    dist[next] = dist[node] + cost;
+
+                    // Process zero-cost edges first.
+                    if (cost == 0)
+                        dq.addFirst(next);
+                    else
+                        dq.addLast(next);
+                }
+            }
+        }
+
+        // No path exists from src to dst.
+        if (dist[dst] == Integer.MAX_VALUE)
+            return -1;
+
+        return dist[dst];
+    }
+
+    public static void main(String[] args) {
+
+        int n = 3;
+
+        int[][] edges = {
+            {1, 2},
+            {3, 2}
+        };
+
+        int src = 1;
+        int dst = 3;
+
+        System.out.println(minimumEdgeReversal(edges, n, src, dst));
+    }
+}
+
+Python
+
+from collections import deque
+
+# Function to find the minimum number of edge reversals.
+def minimumEdgeReversal(edges, n, src, dst):
+
+    adj = [[] for _ in range(n + 1)]
+
+    # Create adjacency list with both directions.
+    for edge in edges:
+        u = edge[0]
+        v = edge[1]
+
+        # Original direction requires no reversal.
+        adj[u].append([v, 0])
+
+        # Reverse direction requires one reversal.
+        adj[v].append([u, 1])
+
+    # Store the minimum reversals required to reach each node.
+    dist = [float('inf')] * (n + 1)
+
+    dq = deque()
+
+    # Distance of source is 0.
+    dist[src] = 0
+    dq.appendleft(src)
+
+    # Apply 0-1 BFS.
+    while dq:
+        node = dq.popleft()
+
+        # Explore all adjacent nodes.
+        for edge in adj[node]:
+            next = edge[0]
+            cost = edge[1]
+
+            # Update the distance if a better path is found.
+            if dist[node] + cost < dist[next]:
+                dist[next] = dist[node] + cost
+
+                # Process zero-cost edges first.
+                if cost == 0:
+                    dq.appendleft(next)
+                else:
+                    dq.append(next)
+
+    # No path exists from src to dst.
+    if dist[dst] == float('inf'):
+        return -1
+
+    return dist[dst]
+
+if __name__ == "__main__":
+
+    n = 3
+
+    edges = [
+        [1, 2],
+        [3, 2]
+    ]
+
+    src = 1
+    dst = 3
+
+    print(minimumEdgeReversal(edges, n, src, dst))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+
+    // Function to find the minimum number of edge reversals.
+    static int minimumEdgeReversal(int[][] edges, int n, int src, int dst) {
+
+        List<List<int[]>> adj = new List<List<int[]>>();
+
+        for (int i = 0; i <= n; i++)
+            adj.Add(new List<int[]>());
+
+        // Create adjacency list with both directions.
+        foreach (int[] edge in edges) {
+            int u = edge[0];
+            int v = edge[1];
+
+            // Original direction requires no reversal.
+            adj[u].Add(new int[] {v, 0});
+
+            // Reverse direction requires one reversal.
+            adj[v].Add(new int[] {u, 1});
+        }
+
+        // Store the minimum reversals required to reach each node.
+        int[] dist = new int[n + 1];
+        Array.Fill(dist, int.MaxValue);
+
+        LinkedList<int> dq = new LinkedList<int>();
+
+        // Distance of source is 0.
+        dist[src] = 0;
+        dq.AddFirst(src);
+
+        // Apply 0-1 BFS.
+        while (dq.Count > 0) {
+            int node = dq.First.Value;
+            dq.RemoveFirst();
+
+            // Explore all adjacent nodes.
+            foreach (int[] edge in adj[node]) {
+                int next = edge[0];
+                int cost = edge[1];
+
+                // Update the distance if a better path is found.
+                if (dist[node] + cost < dist[next]) {
+                    dist[next] = dist[node] + cost;
+
+                    // Process zero-cost edges first.
+                    if (cost == 0)
+                        dq.AddFirst(next);
+                    else
+                        dq.AddLast(next);
+                }
+            }
+        }
+
+        // No path exists from src to dst.
+        if (dist[dst] == int.MaxValue)
+            return -1;
+
+        return dist[dst];
+    }
+
+    public static void Main() {
+
+        int n = 3;
+
+        int[][] edges = {
+            new int[] {1, 2},
+            new int[] {3, 2}
+        };
+
+        int src = 1;
+        int dst = 3;
+
+        Console.WriteLine(minimumEdgeReversal(edges, n, src, dst));
+    }
+}
+
+JavaScript
+
+function minimumEdgeReversal(edges, n, src, dst)
+{
+    const adj = Array.from({length : n + 1}, () => []);
+
+    for (const [u, v] of edges) {
+
+        // Original edge has zero reversal cost.
+        adj[u].push([ v, 0 ]);
+
+        // Reversed edge costs one reversal.
+        adj[v].push([ u, 1 ]);
+    }
+
+    const dist
+        = new Array(n + 1).fill(Number.MAX_SAFE_INTEGER);
+    const dq = [];
+
+    dist[src] = 0;
+    dq.unshift(src);
+
+    while (dq.length) {
+        const node = dq.shift();
+
+        for (const [next, wt] of adj[node]) {
+            if (dist[node] + wt < dist[next]) {
+                dist[next] = dist[node] + wt;
+
+                // Prioritize zero-cost edges in 0-1 BFS.
+                if (wt === 0)
+                    dq.unshift(next);
+                else
+                    dq.push(next);
+            }
+        }
+    }
+
+    return dist[dst] === Number.MAX_SAFE_INTEGER
+               ? -1
+               : dist[dst];
+}
+
+// Driver code
+
+let n = 3;
+
+let edges = [ [ 1, 2 ], [ 3, 2 ] ];
+
+let src = 1;
+let dst = 3;
+
+console.log(minimumEdgeReversal(edges, n, src, dst));
+
+Output
+
+1

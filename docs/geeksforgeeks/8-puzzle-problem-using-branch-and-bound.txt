@@ -1,0 +1,1871 @@
+Source: https://www.geeksforgeeks.org/dsa/8-puzzle-problem-using-branch-and-bound/
+Title: 8 puzzle Problem
+Extractor: 2
+
+Given a 3×3 board with 8 tiles (each numbered from 1 to 8) and one empty space, the objective is to place the numbers to match the final configuration using the empty space. We can slide four adjacent tiles (left, right, above, and below) into the empty space.
+
+Table of Content
+
+- [Naive Approach] Using DFS - O(n!) Time and O(n!) Space
+- [Naive Approach] Using BFS - O(n!) Time and O(n!) Space
+- [Expected Approach] Using Branch and Bound -  O(n^2 * n!) Time and O(n^2) Space
+
+### [Naive Approach] Using DFS - O(n!) Time and O(n!) Space
+
+> We can perform a depth-first search on state-space (Set of all configurations of a given problem i.e. all states that can be reached from the initial state) tree. Depth-first search on state-space tree. Successive moves may take us away from the goal. Inefficient as it explores all paths equally.
+
+Step by step approach:
+
+- Start from the root node.
+- Explore the leftmost child node recursively until you reach a leaf node or a goal state.
+- If a goal state is reached, return the solution.
+- If a leaf node is reached without finding a solution, backtrack to explore other branches.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <set>
+#include <stack>
+
+using namespace std;
+
+// Define the dimensions of the puzzle
+#define N 3
+
+// Structure to store a state of the puzzle
+struct PuzzleState {
+    vector<vector<int>> board;
+    int x, y;
+    int depth;
+
+    PuzzleState(vector<vector<int>> b, int i, int j, int d) : board(b), x(i), y(j), depth(d) {}
+};
+
+// Possible moves: Left, Right, Up, Down
+int row[] = {0, 0, -1, 1};
+int col[] = {-1, 1, 0, 0};
+
+// Function to check if a given state is the goal state
+bool isGoalState(vector<vector<int>>& board) {
+    vector<vector<int>> goal = {{1, 2, 3}, {4, 5, 6}, {7, 8, 0}};
+    return board == goal;
+}
+
+// Function to check if a move is valid
+bool isValid(int x, int y) {
+    return (x >= 0 && x < N && y >= 0 && y < N);
+}
+
+// Function to print the board
+void printBoard(vector<vector<int>>& board) {
+    for (auto& row : board) {
+        for (auto& num : row)
+            cout << num << " ";
+        cout << endl;
+    }
+    cout << "--------" << endl;
+}
+
+// Depth-First Search to solve the 8-puzzle problem
+void solvePuzzleDFS(vector<vector<int>>& start, int x, int y) {
+    stack<PuzzleState> st;
+    set<vector<vector<int>>> visited;
+
+    st.push(PuzzleState(start, x, y, 0));
+    visited.insert(start);
+
+    while (!st.empty()) {
+        PuzzleState curr = st.top();
+        st.pop();
+
+        // Print the current board
+        cout << "Depth: " << curr.depth << endl;
+        printBoard(curr.board);
+
+        // Check if goal state is reached
+        if (isGoalState(curr.board)) {
+            cout << "Goal state reached at depth " << curr.depth << endl;
+            return;
+        }
+
+        // Explore possible moves
+        for (int i = 0; i < 4; i++) {
+            int newX = curr.x + row[i];
+            int newY = curr.y + col[i];
+
+            if (isValid(newX, newY)) {
+                vector<vector<int>> newBoard = curr.board;
+                swap(newBoard[curr.x][curr.y], newBoard[newX][newY]);
+
+                // If this state has not been visited before, push to stack
+                if (visited.find(newBoard) == visited.end()) {
+                    visited.insert(newBoard);
+                    st.push(PuzzleState(newBoard, newX, newY, curr.depth + 1));
+                }
+            }
+        }
+    }
+
+    cout << "No solution found (DFS Brute Force reached depth limit)" << endl;
+}
+
+// Driver Code
+int main() {
+    vector<vector<int>> start = {{1, 2, 3}, {4, 0, 5}, {6, 7, 8}};
+    int x = 1, y = 1;
+
+    cout << "Initial State: " << endl;
+    printBoard(start);
+
+    solvePuzzleDFS(start, x, y);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class PuzzleSolver {
+    static final int N = 3;
+
+    static int[] row = {0, 0, -1, 1};
+    static int[] col = {-1, 1, 0, 0};
+
+    static class PuzzleState {
+        int[][] board;
+        int x, y;
+        int depth;
+        int hash;
+
+        PuzzleState(int[][] b, int i, int j, int d) {
+            board = new int[N][N];
+            for (int k = 0; k < N; k++)
+                board[k] = Arrays.copyOf(b[k], N);
+            x = i;
+            y = j;
+            depth = d;
+            hash = Arrays.deepHashCode(board);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            PuzzleState that = (PuzzleState) obj;
+            return hash == that.hash;
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+    }
+
+    static boolean isGoalState(int[][] board) {
+        int[][] goal = {{1, 2, 3}, {4, 5, 6}, {7, 8, 0}};
+        return Arrays.deepEquals(board, goal);
+    }
+
+    static boolean isValid(int x, int y) {
+        return (x >= 0 && x < N && y >= 0 && y < N);
+    }
+
+    static void printBoard(int[][] board) {
+        for (int[] row : board) {
+            for (int num : row)
+                System.out.print(num + " ");
+            System.out.println();
+        }
+        System.out.println("--------");
+    }
+
+    static void solvePuzzleBFS(int[][] start, int x, int y) {
+        Queue<PuzzleState> queue = new LinkedList<>();
+        Set<PuzzleState> visited = new HashSet<>();
+
+        queue.add(new PuzzleState(start, x, y, 0));
+        visited.add(new PuzzleState(start, x, y, 0));
+
+        while (!queue.isEmpty()) {
+            PuzzleState curr = queue.poll();
+
+            System.out.println("Depth: " + curr.depth);
+            printBoard(curr.board);
+
+            if (isGoalState(curr.board)) {
+                System.out.println("Goal state reached at depth " + curr.depth);
+                return;
+            }
+
+            for (int i = 0; i < 4; i++) {
+                int newX = curr.x + row[i];
+                int newY = curr.y + col[i];
+
+                if (isValid(newX, newY)) {
+                    int[][] newBoard = new int[N][N];
+                    for (int j = 0; j < N; j++)
+                        newBoard[j] = Arrays.copyOf(curr.board[j], N);
+
+                    int temp = newBoard[curr.x][curr.y];
+                    newBoard[curr.x][curr.y] = newBoard[newX][newY];
+                    newBoard[newX][newY] = temp;
+
+                    PuzzleState newState = new PuzzleState(newBoard, newX, newY, curr.depth + 1);
+
+                    if (!visited.contains(newState)) {
+                        visited.add(newState);
+                        queue.add(newState);
+                    }
+                }
+            }
+        }
+
+        System.out.println("No solution found (Unsolvable Puzzle)");
+    }
+
+    public static void main(String[] args) {
+        int[][] start = {{1, 2, 3}, {4, 0, 5}, {6, 7, 8}};
+        int x = 1, y = 1;
+
+        System.out.println("Initial State: ");
+        printBoard(start);
+
+        solvePuzzleBFS(start, x, y);
+    }
+}
+
+Python
+
+# Import necessary libraries
+from collections import deque
+
+# Define the dimensions of the puzzle
+N = 3
+
+# Structure to store a state of the puzzle
+class PuzzleState:
+    def __init__(self, board, x, y, depth):
+        self.board = board
+        self.x = x
+        self.y = y
+        self.depth = depth
+
+# Possible moves: Left, Right, Up, Down
+row = [0, 0, -1, 1]
+col = [-1, 1, 0, 0]
+
+# Function to check if a given state is the goal state
+def is_goal_state(board):
+    goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    return board == goal
+
+# Function to check if a move is valid
+def is_valid(x, y):
+    return 0 <= x < N and 0 <= y < N
+
+# Function to print the board
+def print_board(board):
+    for row in board:
+        print(' '.join(map(str, row)))
+    print("--------")
+
+# Depth-First Search to solve the 8-puzzle problem
+def solve_puzzle_dfs(start, x, y):
+    stack = []
+    visited = set()
+
+    stack.append(PuzzleState(start, x, y, 0))
+    visited.add(tuple(map(tuple, start)))
+
+    while stack:
+        curr = stack.pop()
+
+        # Print the current board
+        print(f'Depth: {curr.depth}')
+        print_board(curr.board)
+
+        # Check if goal state is reached
+        if is_goal_state(curr.board):
+            print(f'Goal state reached at depth {curr.depth}')
+            return
+
+        # Explore possible moves
+        for i in range(4):
+            new_x = curr.x + row[i]
+            new_y = curr.y + col[i]
+
+            if is_valid(new_x, new_y):
+                new_board = [row[:] for row in curr.board]
+                # Swap the tiles
+                new_board[curr.x][curr.y], new_board[new_x][new_y] = new_board[new_x][new_y], new_board[curr.x][curr.y]
+
+                # If this state has not been visited before, push to stack
+                board_tuple = tuple(map(tuple, new_board))
+                if board_tuple not in visited:
+                    visited.add(board_tuple)
+                    stack.append(PuzzleState(new_board, new_x, new_y, curr.depth + 1))
+
+    print('No solution found (DFS Brute Force reached depth limit)')
+
+# Driver Code
+if __name__ == '__main__':
+    start = [[1, 2, 3], [4, 0, 5], [6, 7, 8]]
+    x, y = 1, 1
+
+    print('Initial State:')
+    print_board(start)
+
+    solve_puzzle_dfs(start, x, y)
+
+JavaScript
+
+// Define the dimensions of the puzzle
+const N = 3;
+
+// Structure to store a state of the puzzle
+class PuzzleState {
+    constructor(board, x, y, depth) {
+        this.board = board;
+        this.x = x;
+        this.y = y;
+        this.depth = depth;
+    }
+}
+
+// Possible moves: Left, Right, Up, Down
+const row = [0, 0, -1, 1];
+const col = [-1, 1, 0, 0];
+
+// Function to check if a given state is the goal state
+function isGoalState(board) {
+    const goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]];
+    return JSON.stringify(board) === JSON.stringify(goal);
+}
+
+// Function to check if a move is valid
+function isValid(x, y) {
+    return x >= 0 && x < N && y >= 0 && y < N;
+}
+
+// Function to print the board
+function printBoard(board) {
+    board.forEach(row => console.log(row.join(' ')));
+    console.log('--------');
+}
+
+// Breadth-First Search to solve the 8-puzzle problem
+function solvePuzzleBFS(start, x, y) {
+    const queue = [];
+    const visited = new Set();
+
+    queue.push(new PuzzleState(start, x, y, 0));
+    visited.add(JSON.stringify(start));
+
+    while (queue.length > 0) {
+        const curr = queue.shift();
+
+        console.log(`Depth: ${curr.depth}`);
+        printBoard(curr.board);
+
+        if (isGoalState(curr.board)) {
+            console.log(`Goal state reached at depth ${curr.depth}`);
+            return;
+        }
+
+        for (let i = 0; i < 4; i++) {
+            const newX = curr.x + row[i];
+            const newY = curr.y + col[i];
+
+            if (isValid(newX, newY)) {
+                const newBoard = curr.board.map(r => r.slice());
+                // Swap the tiles
+                [newBoard[curr.x][curr.y], newBoard[newX][newY]] = [newBoard[newX][newY], newBoard[curr.x][curr.y]];
+
+                const boardString = JSON.stringify(newBoard);
+                if (!visited.has(boardString)) {
+                    visited.add(boardString);
+                    queue.push(new PuzzleState(newBoard, newX, newY, curr.depth + 1));
+                }
+            }
+        }
+    }
+
+    console.log('No solution found (Unsolvable Puzzle)');
+}
+
+// Driver Code
+const start = [[1, 2, 3], [4, 0, 5], [6, 7, 8]];
+const x = 1, y = 1;
+
+console.log('Initial State:');
+printBoard(start);
+
+solvePuzzleBFS(start, x, y);
+
+Output
+
+Initial State:
+1 2 3
+4 0 5
+6 7 8
+--------
+Depth: 0
+1 2 3
+4 0 5
+6 7 8
+--------
+Depth: 1
+1 2 3
+4 7 5
+6 0 8
+--------
+Depth: 2
+1 2 3
+4 7 5
+6 8 0
+--------
+Depth: 3
+1 2 3
+4 7 0
+6 8 5
+-------...
+
+### [Naive Approach] Using BFS - O(n!) Time and O(n!) Space
+
+> We can perform a Breadth-first search on the state space tree. This always finds a goal state nearest to the root. But no matter what the initial state is, the algorithm attempts the same sequence of moves like DFS. Breadth-first search on the state-space tree. Always finds the nearest goal state. Same sequence of moves irrespective of initial state.
+
+Step by step approach:
+
+- Start from the root node.
+- Explore all neighboring nodes at the present depth.
+- Move to the next depth level and repeat the process.
+- If a goal state is reached, return the solution.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <set>
+using namespace std;
+
+// Define the dimensions of the puzzle
+#define N 3
+
+// Structure to represent the state of the puzzle
+struct PuzzleState {
+    vector<vector<int>> board;
+    int x, y;
+    int depth;
+
+    // Constructor
+    PuzzleState(vector<vector<int>> b, int i, int j, int d) : board(b), x(i), y(j), depth(d) {}
+};
+
+// Possible moves: Left, Right, Up, Down
+int row[] = {0, 0, -1, 1};
+int col[] = {-1, 1, 0, 0};
+
+// Function to check if the current state is the goal state
+bool isGoalState(vector<vector<int>>& board) {
+    vector<vector<int>> goal = {{1, 2, 3}, {4, 5, 6}, {7, 8, 0}};
+    return board == goal;
+}
+
+// Function to check if a move is valid
+bool isValid(int x, int y) {
+    return (x >= 0 && x < N && y >= 0 && y < N);
+}
+
+// Function to print the puzzle board
+void printBoard(vector<vector<int>>& board) {
+    for (auto& row : board) {
+        for (auto& num : row)
+            cout << num << " ";
+        cout << endl;
+    }
+    cout << "--------" << endl;
+}
+
+// BFS function to solve the 8-puzzle problem
+void solvePuzzleBFS(vector<vector<int>>& start, int x, int y) {
+    queue<PuzzleState> q;
+    set<vector<vector<int>>> visited;
+
+    // Enqueue initial state
+    q.push(PuzzleState(start, x, y, 0));
+    visited.insert(start);
+
+    while (!q.empty()) {
+        PuzzleState curr = q.front();
+        q.pop();
+
+        // Print the current board state
+        cout << "Depth: " << curr.depth << endl;
+        printBoard(curr.board);
+
+        // Check if goal state is reached
+        if (isGoalState(curr.board)) {
+            cout << "Goal state reached at depth " << curr.depth << endl;
+            return;
+        }
+
+        // Explore all possible moves
+        for (int i = 0; i < 4; i++) {
+            int newX = curr.x + row[i];
+            int newY = curr.y + col[i];
+
+            if (isValid(newX, newY)) {
+                vector<vector<int>> newBoard = curr.board;
+                swap(newBoard[curr.x][curr.y], newBoard[newX][newY]);
+
+                // If this state has not been visited before, push to queue
+                if (visited.find(newBoard) == visited.end()) {
+                    visited.insert(newBoard);
+                    q.push(PuzzleState(newBoard, newX, newY, curr.depth + 1));
+                }
+            }
+        }
+    }
+
+    cout << "No solution found (BFS Brute Force reached depth limit)" << endl;
+}
+
+// Driver Code
+int main() {
+    vector<vector<int>> start = {{1, 2, 3}, {4, 0, 5}, {6, 7, 8}}; // Initial state
+    int x = 1, y = 1;
+
+    cout << "Initial State: " << endl;
+    printBoard(start);
+
+    solvePuzzleBFS(start, x, y);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class PuzzleState implements Comparable<PuzzleState> {
+    long board;
+    int x, y;
+    int depth;
+    int f;
+
+    PuzzleState(long b, int i, int j, int d, int h) {
+        this.board = b;
+        this.x = i;
+        this.y = j;
+        this.depth = d;
+        this.f = d + h;
+    }
+
+    @Override
+    public int compareTo(PuzzleState other) {
+        return Integer.compare(this.f, other.f);
+    }
+}
+
+public class EightPuzzleAStar {
+    static final int N = 3;
+    static int[] row = {0, 0, -1, 1};
+    static int[] col = {-1, 1, 0, 0};
+    static final long GOAL_STATE = 123456780L;
+
+    static long boardToLong(int[][] board) {
+        long result = 0;
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                result = result * 10 + board[i][j];
+            }
+        }
+        return result;
+    }
+
+    static String boardToString(long board) {
+        String s = String.valueOf(board);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 9 - s.length(); i++) {
+            sb.append('0');
+        }
+        sb.append(s);
+        return sb.toString();
+    }
+
+    static boolean isGoalState(long board) {
+        return board == GOAL_STATE;
+    }
+
+    static void printBoard(long board) {
+        String s = boardToString(board);
+        for (int i = 0; i < 9; i++) {
+            System.out.print(s.charAt(i) + " ");
+            if ((i + 1) % 3 == 0) {
+                System.out.println();
+            }
+        }
+        System.out.println("--------");
+    }
+
+    static int calculateHeuristic(long board) {
+        String s = boardToString(board);
+        int h = 0;
+        for (int i = 0; i < 9; i++) {
+            int num = s.charAt(i) - '0';
+            if (num != 0) {
+                int goalX = (num - 1) % 3;
+                int goalY = (num - 1) / 3;
+                int currentX = i % 3;
+                int currentY = i / 3;
+                h += Math.abs(goalX - currentX) + Math.abs(goalY - currentY);
+            }
+        }
+        return h;
+    }
+
+    static void solvePuzzleAStar(int[][] start, int x, int y) {
+        PriorityQueue<PuzzleState> queue = new PriorityQueue<>();
+        Set<Long> visited = new HashSet<>();
+
+        long startBoard = boardToLong(start);
+        int h = calculateHeuristic(startBoard); // Calculate initial heuristic
+        queue.add(new PuzzleState(startBoard, x, y, 0, h));
+        visited.add(startBoard);
+
+        while (!queue.isEmpty()) {
+            PuzzleState curr = queue.poll();
+
+            System.out.println("Depth: " + curr.depth);
+            printBoard(curr.board);
+
+            if (isGoalState(curr.board)) {
+                System.out.println("Goal state reached at depth " + curr.depth);
+                return;
+            }
+
+            String s = boardToString(curr.board);
+            char[] boardArray = s.toCharArray();
+
+            for (int i = 0; i < 4; i++) {
+                int newX = curr.x + row[i];
+                int newY = curr.y + col[i];
+
+                if (newX >= 0 && newX < N && newY >= 0 && newY < N) {
+                    int zeroPos = curr.x * N + curr.y;
+                    int swapPos = newX * N + newY;
+
+                    char temp = boardArray[zeroPos];
+                    boardArray[zeroPos] = boardArray[swapPos];
+                    boardArray[swapPos] = temp;
+
+                    long newBoardLong = Long.parseLong(new String(boardArray));
+
+                    if (!visited.contains(newBoardLong)) {
+                        int newH = calculateHeuristic(newBoardLong);
+                        visited.add(newBoardLong);
+                        queue.add(new PuzzleState(newBoardLong, newX, newY, curr.depth + 1, newH));
+                    }
+
+                    // Restore board for next iteration (important!)
+                    boardArray[swapPos] = boardArray[zeroPos];
+                    boardArray[zeroPos] = temp;
+
+                }
+            }
+        }
+
+        System.out.println("No solution found");
+    }
+
+    public static void main(String[] args) {
+        int[][] start = {{1, 2, 3}, {4, 0, 5}, {6, 7, 8}};
+        int x = 1, y = 1;
+
+        System.out.println("Initial State:");
+        printBoard(boardToLong(start));
+
+        solvePuzzleAStar(start, x, y);
+    }
+}
+
+Python
+
+# Import necessary libraries
+from collections import deque
+
+# Define the dimensions of the puzzle
+N = 3
+
+# Class to represent the state of the puzzle
+class PuzzleState:
+    def __init__(self, board, x, y, depth):
+        self.board = board
+        self.x = x
+        self.y = y
+        self.depth = depth
+
+# Possible moves: Left, Right, Up, Down
+row = [0, 0, -1, 1]
+col = [-1, 1, 0, 0]
+
+# Function to check if the current state is the goal state
+def is_goal_state(board):
+    goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    return board == goal
+
+# Function to check if a move is valid
+def is_valid(x, y):
+    return 0 <= x < N and 0 <= y < N
+
+# Function to print the puzzle board
+def print_board(board):
+    for row in board:
+        print(' '.join(map(str, row)))
+    print('--------')
+
+# BFS function to solve the 8-puzzle problem
+def solve_puzzle_bfs(start, x, y):
+    q = deque()
+    visited = set()
+
+    # Enqueue initial state
+    q.append(PuzzleState(start, x, y, 0))
+    visited.add(tuple(map(tuple, start)))
+
+    while q:
+        curr = q.popleft()
+
+        # Print the current board state
+        print(f'Depth: {curr.depth}')
+        print_board(curr.board)
+
+        # Check if goal state is reached
+        if is_goal_state(curr.board):
+            print(f'Goal state reached at depth {curr.depth}')
+            return
+
+        # Explore all possible moves
+        for i in range(4):
+            new_x = curr.x + row[i]
+            new_y = curr.y + col[i]
+
+            if is_valid(new_x, new_y):
+                new_board = [row[:] for row in curr.board]
+                new_board[curr.x][curr.y], new_board[new_x][new_y] = new_board[new_x][new_y], new_board[curr.x][curr.y]
+
+                # If this state has not been visited before, push to queue
+                if tuple(map(tuple, new_board)) not in visited:
+                    visited.add(tuple(map(tuple, new_board)))
+                    q.append(PuzzleState(new_board, new_x, new_y, curr.depth + 1))
+
+    print('No solution found (BFS Brute Force reached depth limit)')
+
+# Driver Code
+if __name__ == '__main__':
+    start = [[1, 2, 3], [4, 0, 5], [6, 7, 8]]  # Initial state
+    x, y = 1, 1
+
+    print('Initial State:')
+    print_board(start)
+
+    solve_puzzle_bfs(start, x, y)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class PuzzleState
+{
+    public string Board;  // Board stored as a string (e.g., "123456780")
+    public int X, Y;  // Position of '0'
+    public int Depth; // BFS depth level
+
+    public PuzzleState(string board, int x, int y, int depth)
+    {
+        Board = board;
+        X = x;
+        Y = y;
+        Depth = depth;
+    }
+}
+
+class EightPuzzleBFS
+{
+    const int N = 3;
+
+    // Possible moves: Left, Right, Up, Down
+    static int[] row = { 0, 0, -1, 1 };
+    static int[] col = { -1, 1, 0, 0 };
+
+    static readonly string GOAL_STATE = "123456780"; // Goal state stored as string
+
+    // Function to convert 2D board to a string representation
+    static string BoardToString(int[,] board)
+    {
+        char[] sb = new char[9];
+        int index = 0;
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                sb[index++] = (char)(board[i, j] + '0');
+        return new string(sb);
+    }
+
+    // Function to print board from string representation
+    static void PrintBoard(string board)
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            Console.Write(board[i] + " ");
+            if ((i + 1) % 3 == 0)
+                Console.WriteLine();
+        }
+        Console.WriteLine("--------");
+    }
+
+    // BFS function to solve the 8-puzzle problem
+    static void SolvePuzzleBFS(int[,] start, int x, int y)
+    {
+        Queue<PuzzleState> queue = new Queue<PuzzleState>();
+        HashSet<string> visited = new HashSet<string>();
+
+        string startBoard = BoardToString(start);
+        queue.Enqueue(new PuzzleState(startBoard, x, y, 0));
+        visited.Add(startBoard);
+
+        while (queue.Count > 0)
+        {
+            PuzzleState curr = queue.Dequeue();
+
+            // Print the current board state
+            Console.WriteLine("Depth: " + curr.Depth);
+            PrintBoard(curr.Board);
+
+            // Check if goal state is reached
+            if (curr.Board == GOAL_STATE)
+            {
+                Console.WriteLine("Goal state reached at depth " + curr.Depth);
+                return;
+            }
+
+            char[] boardArray = curr.Board.ToCharArray();
+            for (int i = 0; i < 4; i++)
+            {
+                int newX = curr.X + row[i];
+                int newY = curr.Y + col[i];
+
+                if (newX >= 0 && newX < N && newY >= 0 && newY < N)
+                {
+                    int zeroPos = curr.X * N + curr.Y;
+                    int swapPos = newX * N + newY;
+
+                    // Swap 0 with the new position
+                    char temp = boardArray[zeroPos];
+                    boardArray[zeroPos] = boardArray[swapPos];
+                    boardArray[swapPos] = temp;
+
+                    string newBoard = new string(boardArray);
+
+                    // If this state has not been visited before, add to queue
+                    if (!visited.Contains(newBoard))
+                    {
+                        visited.Add(newBoard);
+                        queue.Enqueue(new PuzzleState(newBoard, newX, newY, curr.Depth + 1));
+                    }
+
+                    // Swap back to restore original board for next iteration
+                    temp = boardArray[zeroPos];
+                    boardArray[zeroPos] = boardArray[swapPos];
+                    boardArray[swapPos] = temp;
+                }
+            }
+        }
+
+        Console.WriteLine("No solution found (BFS Brute Force reached depth limit)");
+    }
+
+    // Driver Code
+    static void Main()
+    {
+        int[,] start = {
+            { 1, 2, 3 },
+            { 4, 0, 5 },
+            { 6, 7, 8 }
+        }; // Initial state
+        int x = 1, y = 1; // Position of the empty tile (0)
+
+        Console.WriteLine("Initial State:");
+        PrintBoard(BoardToString(start));
+
+        SolvePuzzleBFS(start, x, y);
+    }
+}
+
+JavaScript
+
+// Define the dimensions of the puzzle
+const N = 3;
+
+// Class to represent the state of the puzzle
+class PuzzleState {
+    constructor(board, x, y, depth) {
+        this.board = board;
+        this.x = x;
+        this.y = y;
+        this.depth = depth;
+    }
+}
+
+// Possible moves: Left, Right, Up, Down
+const row = [0, 0, -1, 1];
+const col = [-1, 1, 0, 0];
+
+// Function to check if the current state is the goal state
+function isGoalState(board) {
+    const goal = [[1, 2, 3], [4, 5, 6], [7, 8, 0]];
+    return JSON.stringify(board) === JSON.stringify(goal);
+}
+
+// Function to check if a move is valid
+function isValid(x, y) {
+    return (x >= 0 && x < N && y >= 0 && y < N);
+}
+
+// Function to print the puzzle board
+function printBoard(board) {
+    for (let row of board) {
+        console.log(row.join(' '));
+    }
+    console.log("--------");
+}
+
+// BFS function to solve the 8-puzzle problem
+function solvePuzzleBFS(start, x, y) {
+    const queue = [];
+    const visited = new Set();
+
+    // Enqueue initial state
+    queue.push(new PuzzleState(start, x, y, 0));
+    visited.add(JSON.stringify(start));
+
+    while (queue.length > 0) {
+        const curr = queue.shift();
+
+        // Print the current board state
+        console.log(`Depth: ${curr.depth}`);
+        printBoard(curr.board);
+
+        // Check if goal state is reached
+        if (isGoalState(curr.board)) {
+            console.log(`Goal state reached at depth ${curr.depth}`);
+            return;
+        }
+
+        // Explore all possible moves
+        for (let i = 0; i < 4; i++) {
+            const newX = curr.x + row[i];
+            const newY = curr.y + col[i];
+
+            if (isValid(newX, newY)) {
+                const newBoard = curr.board.map(arr => arr.slice());
+                [newBoard[curr.x][curr.y], newBoard[newX][newY]] = [newBoard[newX][newY], newBoard[curr.x][curr.y]];
+
+                // If this state has not been visited before, push to queue
+                if (!visited.has(JSON.stringify(newBoard))) {
+                    visited.add(JSON.stringify(newBoard));
+                    queue.push(new PuzzleState(newBoard, newX, newY, curr.depth + 1));
+                }
+            }
+        }
+    }
+
+    console.log("No solution found (BFS Brute Force reached depth limit)");
+}
+
+// Driver Code
+const start = [[1, 2, 3], [4, 0, 5], [6, 7, 8]]; // Initial state
+const x = 1, y = 1;
+
+console.log("Initial State: ");
+printBoard(start);
+
+solvePuzzleBFS(start, x, y);
+
+Output
+
+Initial State:
+1 2 3
+4 0 5
+6 7 8
+--------
+Depth: 0
+1 2 3
+4 0 5
+6 7 8
+--------
+Depth: 1
+1 2 3
+0 4 5
+6 7 8
+--------
+Depth: 1
+1 2 3
+4 5 0
+6 7 8
+--------
+Depth: 1
+1 0 3
+4 2 5
+6 7 8
+-------...
+
+### [Expected Approach] Using Branch and Bound - O(n^2 * n!) Time and O(n^2) Space
+
+> Limitations of DFS and BFS in the 8-Puzzle Problem DFS : Can get stuck in deep, unproductive paths, leading to excessive memory usage and slow performance. BFS : Explores all nodes at the current depth level, making it inefficient as it does not prioritize promising paths. Optimizing with Branch and Bound (B&B) Branch and Bound enhances search efficiency by using a cost function to guide exploration. Intelligent Node Selection : Prioritizes nodes closer to the goal , unlike DFS (blind) or BFS (equal priority). Pruning : Eliminates unpromising paths to save time and memory.
+
+### Approach:
+
+- Use a priority queue to store live nodes.
+- Initialize the cost function for the root node.
+- Expand the least-cost node first.
+- Stop when a goal state is reached or when the queue is empty.
+
+### Types of Nodes in B&B:
+
+- Live Node : Generated but not yet explored.
+- E-node (Expanding Node) : Currently being expanded.
+- Dead Node : No longer considered (either solution found or cost too high).
+
+### Cost Function for 8-Puzzle
+
+> C(X) = g(X) + h(X)C(X) = g(X) + h(X) Where: g(X) = Moves taken to reach the current state. h(X) = Number of misplaced tiles. Only nodes with the lowest cost function value are expanded, ensuring an optimal path .
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+#define N 3
+
+// State space tree node
+struct Node {
+    Node* parent;
+    int mat[N][N];
+    int x, y;
+    int cost;
+    int level;
+};
+
+// Function to print N x N matrix
+void printMatrix(int mat[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++)
+            cout << mat[i][j] << " ";
+        cout << endl;
+    }
+}
+
+// Function to allocate a new node
+Node* newNode(int mat[N][N], int x, int y, int newX, int newY, int level, Node* parent) {
+    Node* node = new Node;
+    if (!node) {
+        cout << "Memory allocation failed" << endl;
+        exit(1);
+    }
+
+    node->parent = parent;
+    memcpy(node->mat, mat, sizeof node->mat);
+    swap(node->mat[x][y], node->mat[newX][newY]); // Swap blank tile
+    node->cost = INT_MAX;
+    node->level = level;
+    node->x = newX;
+    node->y = newY;
+    return node;
+}
+
+// Bottom, left, top, right movement
+int row[] = {1, 0, -1, 0};
+int col[] = {0, -1, 0, 1};
+
+// Function to calculate misplaced tiles
+int calculateCost(int initial[N][N], int final[N][N]) {
+    int count = 0;
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            if (initial[i][j] && initial[i][j] != final[i][j])
+                count++;
+    return count;
+}
+
+// Function to check if coordinates are valid
+bool isSafe(int x, int y) {
+    return (x >= 0 && x < N && y >= 0 && y < N);
+}
+
+// Print path from root node to destination node
+void printPath(Node* root) {
+    if (root == NULL)
+        return;
+    printPath(root->parent);
+    printMatrix(root->mat);
+    cout << endl;
+}
+
+// Custom comparison object for priority queue
+struct comp {
+    bool operator()(const Node* lhs, const Node* rhs) const {
+        return (lhs->cost + lhs->level) > (rhs->cost + rhs->level);
+    }
+};
+
+// Function to solve the 8-puzzle using Branch and Bound
+void solve(int initial[N][N], int x, int y, int final[N][N]) {
+    priority_queue<Node*, vector<Node*>, comp> pq;
+    Node* root = newNode(initial, x, y, x, y, 0, NULL);
+    root->cost = calculateCost(initial, final);
+    pq.push(root);
+
+    while (!pq.empty()) {
+        Node* min = pq.top();
+        pq.pop();
+
+        // If final state is reached, print the solution path
+        if (min->cost == 0) {
+            printPath(min);
+            return;
+        }
+
+        // Generate all possible child nodes
+        for (int i = 0; i < 4; i++) {
+            int newX = min->x + row[i], newY = min->y + col[i];
+            if (isSafe(newX, newY)) {
+                Node* child = newNode(min->mat, min->x, min->y, newX, newY, min->level + 1, min);
+                child->cost = calculateCost(child->mat, final);
+                pq.push(child);
+            }
+        }
+
+        // Free the memory of explored node
+        delete min;
+    }
+}
+
+// Driver Code
+int main() {
+    // Initial configuration
+    int initial[N][N] = {
+        {1, 0, 2},
+        {3, 4, 5},
+        {6, 7, 8}
+    };
+
+    // Solvable Final configuration
+    int final[N][N] = {
+        {0, 1, 2},
+        {3, 4, 5},
+        {6, 7, 8}
+    };
+
+    // Blank tile coordinates in initial configuration
+    int x = 0, y = 1;
+
+    solve(initial, x, y, final);
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+
+#define N 3
+
+// State space tree node
+struct Node {
+    struct Node* parent;
+    int mat[N][N];
+    int x, y;
+    int cost;
+    int level;
+};
+
+// Function to print N x N matrix
+void printMatrix(int mat[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++)
+            printf("%d ", mat[i][j]);
+        printf("\n");
+    }
+}
+
+// Function to allocate a new node
+struct Node* newNode(int mat[N][N], int x, int y, int newX, int newY, int level, struct Node* parent) {
+    struct Node* node = (struct Node*)malloc(sizeof(struct Node));
+    if (!node) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+
+    node->parent = parent;
+    memcpy(node->mat, mat, sizeof(node->mat));
+    int temp = node->mat[x][y];
+    node->mat[x][y] = node->mat[newX][newY];
+    node->mat[newX][newY] = temp; // Swap blank tile
+    node->cost = INT_MAX;
+    node->level = level;
+    node->x = newX;
+    node->y = newY;
+    return node;
+}
+
+// Bottom, left, top, right movement
+int row[] = {1, 0, -1, 0};
+int col[] = {0, -1, 0, 1};
+
+// Function to calculate misplaced tiles
+int calculateCost(int initial[N][N], int final[N][N]) {
+    int count = 0;
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            if (initial[i][j] && initial[i][j] != final[i][j])
+                count++;
+    return count;
+}
+
+// Function to check if coordinates are valid
+int isSafe(int x, int y) {
+    return (x >= 0 && x < N && y >= 0 && y < N);
+}
+
+// Print path from root node to destination node
+void printPath(struct Node* root) {
+    if (root == NULL)
+        return;
+    printPath(root->parent);
+    printMatrix(root->mat);
+    printf("\n");
+}
+
+// Custom comparison object for priority queue
+int compare(const void* a, const void* b) {
+    struct Node* lhs = *(struct Node**)a;
+    struct Node* rhs = *(struct Node**)b;
+    return (lhs->cost + lhs->level) - (rhs->cost + rhs->level);
+}
+
+// Function to solve the 8-puzzle using Branch and Bound
+void solve(int initial[N][N], int x, int y, int final[N][N]) {
+    struct Node* pq[100];
+    int pqSize = 0;
+    struct Node* root = newNode(initial, x, y, x, y, 0, NULL);
+    root->cost = calculateCost(initial, final);
+    pq[pqSize++] = root;
+
+    while (pqSize > 0) {
+        qsort(pq, pqSize, sizeof(struct Node*), compare);
+        struct Node* min = pq[0];
+        for (int i = 1; i < pqSize; i++) {
+            pq[i - 1] = pq[i];
+        }
+        pqSize--;
+
+        // If final state is reached, print the solution path
+        if (min->cost == 0) {
+            printPath(min);
+            return;
+        }
+
+        // Generate all possible child nodes
+        for (int i = 0; i < 4; i++) {
+            int newX = min->x + row[i], newY = min->y + col[i];
+            if (isSafe(newX, newY)) {
+                struct Node* child = newNode(min->mat, min->x, min->y, newX, newY, min->level + 1, min);
+                child->cost = calculateCost(child->mat, final);
+                pq[pqSize++] = child;
+            }
+        }
+
+        // Free the memory of explored node
+        free(min);
+    }
+}
+
+// Driver Code
+int main() {
+    // Initial configuration
+    int initial[N][N] = {
+        {1, 0, 2},
+        {3, 4, 5},
+        {6, 7, 8}
+    };
+
+    // Solvable Final configuration
+    int final[N][N] = {
+        {0, 1, 2},
+        {3, 4, 5},
+        {6, 7, 8}
+    };
+
+    // Blank tile coordinates in initial configuration
+    int x = 0, y = 1;
+
+    solve(initial, x, y, final);
+    return 0;
+}
+
+Java
+
+// Import necessary libraries
+import java.util.*;
+
+class EightPuzzleSolver {
+    // State space tree node
+    static class Node {
+        Node parent;
+        int[][] mat;
+        int x, y;
+        int cost;
+        int level;
+
+        Node(int[][] mat, int x, int y, int level, Node parent) {
+            this.mat = new int[3][3];
+            for (int i = 0; i < 3; i++)
+                System.arraycopy(mat[i], 0, this.mat[i], 0, 3);
+
+            this.x = x;
+            this.y = y;
+            this.level = level;
+            this.parent = parent;
+            this.cost = Integer.MAX_VALUE;
+        }
+    }
+
+    // Function to print N x N matrix
+    static void printMatrix(int[][] mat) {
+        for (int[] row : mat) {
+            for (int val : row) {
+                System.out.print(val + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    // Bottom, left, top, right movement
+    static int[] row = {1, 0, -1, 0};
+    static int[] col = {0, -1, 0, 1};
+
+    // Function to calculate misplaced tiles
+    static int calculateCost(int[][] initial, int[][] goal) {
+        int count = 0;
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                if (initial[i][j] != 0 && initial[i][j] != goal[i][j])
+                    count++;
+        return count;
+    }
+
+    // Function to check if coordinates are valid
+    static boolean isSafe(int x, int y) {
+        return (x >= 0 && x < 3 && y >= 0 && y < 3);
+    }
+
+    // Print path from root node to destination node
+    static void printPath(Node root) {
+        if (root == null)
+            return;
+        printPath(root.parent);
+        printMatrix(root.mat);
+        System.out.println();
+    }
+
+    // Custom comparator for priority queue
+    static class Comp implements Comparator<Node> {
+        public int compare(Node lhs, Node rhs) {
+            return (lhs.cost + lhs.level) - (rhs.cost + rhs.level);
+        }
+    }
+
+    // Function to solve the 8-puzzle using Branch and Bound
+    static void solve(int[][] initial, int x, int y, int[][] goal) {
+        PriorityQueue<Node> pq = new PriorityQueue<>(new Comp());
+        Node root = new Node(initial, x, y, 0, null);
+        root.cost = calculateCost(initial, goal);
+        pq.add(root);
+
+        while (!pq.isEmpty()) {
+            Node min = pq.poll();
+
+            // If final state is reached, print the solution path
+            if (min.cost == 0) {
+                printPath(min);
+                return;
+            }
+
+            // Generate all possible child nodes
+            for (int i = 0; i < 4; i++) {
+                int newX = min.x + row[i], newY = min.y + col[i];
+                if (isSafe(newX, newY)) {
+                    int[][] newMat = new int[3][3];
+                    for (int j = 0; j < 3; j++)
+                        System.arraycopy(min.mat[j], 0, newMat[j], 0, 3);
+
+                    // Swap blank tile
+                    newMat[min.x][min.y] = newMat[newX][newY];
+                    newMat[newX][newY] = 0;
+
+                    Node child = new Node(newMat, newX, newY, min.level + 1, min);
+                    child.cost = calculateCost(child.mat, goal);
+                    pq.add(child);
+                }
+            }
+        }
+    }
+
+    // Driver Code
+    public static void main(String[] args) {
+        // Initial configuration
+        int[][] initial = {
+            {1, 0, 2},
+            {3, 4, 5},
+            {6, 7, 8}
+        };
+
+        // Solvable Final configuration
+        int[][] goal = {
+            {0, 1, 2},
+            {3, 4, 5},
+            {6, 7, 8}
+        };
+
+        // Blank tile coordinates in initial configuration
+        int x = 0, y = 1;
+
+        solve(initial, x, y, goal);
+    }
+}
+
+Python
+
+# State space tree node
+class Node:
+    def __init__(self, mat, x, y, level, parent):
+        self.parent = parent
+        self.mat = mat
+        self.x = x
+        self.y = y
+        self.cost = float('inf')
+        self.level = level
+
+# Function to print N x N matrix
+def print_matrix(mat):
+    for row in mat:
+        print(' '.join(map(str, row)))
+
+# Bottom, left, top, right movement
+row = [1, 0, -1, 0]
+col = [0, -1, 0, 1]
+
+# Function to calculate misplaced tiles
+def calculate_cost(initial, final):
+    count = 0
+    for i in range(3):
+        for j in range(3):
+            if initial[i][j] != 0 and initial[i][j] != final[i][j]:
+                count += 1
+    return count
+
+# Function to check if coordinates are valid
+def is_safe(x, y):
+    return 0 <= x < 3 and 0 <= y < 3
+
+# Print path from root node to destination node
+def print_path(root):
+    if root is None:
+        return
+    print_path(root.parent)
+    print_matrix(root.mat)
+    print()
+
+# Function to solve the 8-puzzle using Branch and Bound
+def solve(initial, x, y, final):
+    pq = []
+    root = Node(initial, x, y, 0, None)
+    root.cost = calculate_cost(initial, final)
+    pq.append(root)
+
+    while pq:
+        min_node = min(pq, key=lambda n: n.cost + n.level)
+        pq.remove(min_node)
+
+        # If final state is reached, print the solution path
+        if min_node.cost == 0:
+            print_path(min_node)
+            return
+
+        # Generate all possible child nodes
+        for i in range(4):
+            new_x, new_y = min_node.x + row[i], min_node.y + col[i]
+            if is_safe(new_x, new_y):
+                new_mat = [row[:] for row in min_node.mat]
+                new_mat[min_node.x][min_node.y], new_mat[new_x][new_y] = new_mat[new_x][new_y], new_mat[min_node.x][min_node.y]
+                child = Node(new_mat, new_x, new_y, min_node.level + 1, min_node)
+                child.cost = calculate_cost(child.mat, final)
+                pq.append(child)
+
+# Driver Code
+if __name__ == '__main__':
+    # Initial configuration
+    initial = [
+        [1, 0, 2],
+        [3, 4, 5],
+        [6, 7, 8]
+    ]
+
+    # Solvable Final configuration
+    final = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8]
+    ]
+
+    # Blank tile coordinates in initial configuration
+    x, y = 0, 1
+
+    solve(initial, x, y, final)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class EightPuzzleSolver {
+    // State space tree node
+    class Node {
+        public Node parent;
+        public int[,] mat;
+        public int x, y;
+        public int cost;
+        public int level;
+
+        public Node(int[,] mat, int x, int y, int level, Node parent) {
+            this.mat = new int[3, 3];
+            Array.Copy(mat, this.mat, mat.Length);
+
+            this.x = x;
+            this.y = y;
+            this.level = level;
+            this.parent = parent;
+            this.cost = int.MaxValue;
+        }
+    }
+
+    // Function to print N x N matrix
+    static void PrintMatrix(int[,] mat) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                Console.Write(mat[i, j] + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+
+    // Bottom, left, top, right movement
+    static readonly int[] row = {1, 0, -1, 0};
+    static readonly int[] col = {0, -1, 0, 1};
+
+    // Function to calculate misplaced tiles
+    static int CalculateCost(int[,] initial, int[,] goal) {
+        int count = 0;
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                if (initial[i, j] != 0 && initial[i, j] != goal[i, j])
+                    count++;
+        return count;
+    }
+
+    // Function to check if coordinates are valid
+    static bool IsSafe(int x, int y) {
+        return (x >= 0 && x < 3 && y >= 0 && y < 3);
+    }
+
+    // Print path from root node to destination node
+    static void PrintPath(Node root) {
+        if (root == null)
+            return;
+        PrintPath(root.parent);
+        PrintMatrix(root.mat);
+        Console.WriteLine();
+    }
+
+    // Custom comparator for priority queue simulation using SortedSet
+    class Comp : IComparer<Node> {
+        public int Compare(Node lhs, Node rhs) {
+            int costCompare = (lhs.cost + lhs.level).CompareTo(rhs.cost + rhs.level);
+            return costCompare != 0 ? costCompare : lhs.GetHashCode().CompareTo(rhs.GetHashCode());
+        }
+    }
+
+    // Function to solve the 8-puzzle using Branch and Bound
+    static void Solve(int[,] initial, int x, int y, int[,] goal) {
+        SortedSet<Node> pq = new SortedSet<Node>(new Comp()); // Simulating a priority queue
+        Node root = new Node(initial, x, y, 0, null);
+        root.cost = CalculateCost(initial, goal);
+        pq.Add(root);
+
+        while (pq.Count > 0) {
+            Node min = null;
+            foreach (var node in pq) {
+                min = node; break; // Get the node with the smallest cost
+            }
+            pq.Remove(min);
+
+            // If final state is reached, print the solution path
+            if (min.cost == 0) {
+                PrintPath(min);
+                return;
+            }
+
+            // Generate all possible child nodes
+            for (int i = 0; i < 4; i++) {
+                int newX = min.x + row[i], newY = min.y + col[i];
+                if (IsSafe(newX, newY)) {
+                    int[,] newMat = new int[3, 3];
+                    Array.Copy(min.mat, newMat, min.mat.Length);
+
+                    // Swap blank tile
+                    newMat[min.x, min.y] = newMat[newX, newY];
+                    newMat[newX, newY] = 0;
+
+                    Node child = new Node(newMat, newX, newY, min.level + 1, min);
+                    child.cost = CalculateCost(child.mat, goal);
+                    pq.Add(child);
+                }
+            }
+        }
+    }
+
+    // Driver Code
+    public static void Main(string[] args) {
+        // Initial configuration
+        int[,] initial = {
+            {1, 0, 2},
+            {3, 4, 5},
+            {6, 7, 8}
+        };
+
+        // Solvable Final configuration
+        int[,] goal = {
+            {0, 1, 2},
+            {3, 4, 5},
+            {6, 7, 8}
+        };
+
+        // Blank tile coordinates in initial configuration
+        int x = 0, y = 1;
+
+        Solve(initial, x, y, goal);
+    }
+}
+
+JavaScript
+
+// State space tree node
+class Node {
+    constructor(parent, mat, x, y, cost, level) {
+        this.parent = parent;
+        this.mat = mat;
+        this.x = x;
+        this.y = y;
+        this.cost = cost;
+        this.level = level;
+    }
+}
+
+// Function to print N x N matrix
+function printMatrix(mat) {
+    for (let i = 0; i < mat.length; i++) {
+        console.log(mat[i].join(' '));
+    }
+}
+
+// Function to allocate a new node
+function newNode(mat, x, y, newX, newY, level, parent) {
+    let newMat = mat.map(row => [...row]); // Faster matrix copy
+    [newMat[x][y], newMat[newX][newY]] = [newMat[newX][newY], newMat[x][y]]; // Swap blank tile
+    return new Node(parent, newMat, newX, newY, Infinity, level);
+}
+
+// Bottom, left, top, right movement
+const row = [1, 0, -1, 0];
+const col = [0, -1, 0, 1];
+
+// Function to calculate misplaced tiles
+function calculateCost(initial, final) {
+    let count = 0;
+    for (let i = 0; i < initial.length; i++) {
+        for (let j = 0; j < initial[i].length; j++) {
+            if (initial[i][j] && initial[i][j] !== final[i][j])
+                count++;
+        }
+    }
+    return count;
+}
+
+// Function to check if coordinates are valid
+function isSafe(x, y, N) {
+    return (x >= 0 && x < N && y >= 0 && y < N);
+}
+
+// Print path from root node to destination node
+function printPath(root) {
+    if (!root) return;
+    printPath(root.parent);
+    printMatrix(root.mat);
+    console.log('');
+}
+
+// Generate a unique string representation of the state (to avoid duplicates)
+function stateToString(mat) {
+    return mat.map(row => row.join(',')).join(';');
+}
+
+// Optimized MinHeap (Priority Queue)
+class MinHeap {
+    constructor() {
+        this.nodes = [];
+    }
+    push(node) {
+        this.nodes.push(node);
+        this.bubbleUp();
+    }
+    pop() {
+        if (this.nodes.length === 0) return null;
+        const min = this.nodes[0];
+        const end = this.nodes.pop();
+        if (this.nodes.length > 0) {
+            this.nodes[0] = end;
+            this.sinkDown();
+        }
+        return min;
+    }
+    bubbleUp() {
+        let index = this.nodes.length - 1;
+        const element = this.nodes[index];
+        while (index > 0) {
+            let parentIndex = Math.floor((index - 1) / 2);
+            let parent = this.nodes[parentIndex];
+            if (element.cost + element.level >= parent.cost + parent.level) break;
+            this.nodes[index] = parent;
+            index = parentIndex;
+        }
+        this.nodes[index] = element;
+    }
+    sinkDown() {
+        let index = 0;
+        const length = this.nodes.length;
+        const element = this.nodes[0];
+        while (true) {
+            let leftChildIndex = 2 * index + 1;
+            let rightChildIndex = 2 * index + 2;
+            let leftChild, rightChild;
+            let swap = null;
+            if (leftChildIndex < length) {
+                leftChild = this.nodes[leftChildIndex];
+                if (leftChild.cost + leftChild.level < element.cost + element.level) {
+                    swap = leftChildIndex;
+                }
+            }
+            if (rightChildIndex < length) {
+                rightChild = this.nodes[rightChildIndex];
+                if ((swap === null && rightChild.cost + rightChild.level < element.cost + element.level) ||
+                    (swap !== null && rightChild.cost + rightChild.level < leftChild.cost + leftChild.level)) {
+                    swap = rightChildIndex;
+                }
+            }
+            if (swap === null) break;
+            this.nodes[index] = this.nodes[swap];
+            index = swap;
+        }
+        this.nodes[index] = element;
+    }
+}
+
+// Function to solve the 8-puzzle using Branch and Bound
+function solve(initial, x, y, final) {
+    const pq = new MinHeap();
+    const root = newNode(initial, x, y, x, y, 0, null);
+    root.cost = calculateCost(initial, final);
+    pq.push(root);
+
+    // HashSet to avoid visiting the same state twice
+    const visited = new Set();
+    visited.add(stateToString(initial));
+
+    while (pq.nodes.length) {
+        const min = pq.pop();
+
+        // If final state is reached, print the solution path
+        if (min.cost === 0) {
+            printPath(min);
+            return;
+        }
+
+        // Generate all possible child nodes
+        for (let i = 0; i < 4; i++) {
+            const newX = min.x + row[i], newY = min.y + col[i];
+            if (isSafe(newX, newY, initial.length)) {
+                const child = newNode(min.mat, min.x, min.y, newX, newY, min.level + 1, min);
+                child.cost = calculateCost(child.mat, final);
+
+                // Convert state to string and check if it's visited
+                const stateStr = stateToString(child.mat);
+                if (!visited.has(stateStr)) {
+                    visited.add(stateStr);
+                    pq.push(child);
+                }
+            }
+        }
+    }
+}
+
+// Driver Code
+const initial = [
+    [1, 0, 2],
+    [3, 4, 5],
+    [6, 7, 8]
+];
+
+// Solvable Final configuration
+const final = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8]
+];
+
+// Blank tile coordinates in initial configuration
+const x = 0, y = 1;
+
+solve(initial, x, y, final);
+
+Output
+
+1 2 3
+5 6 0
+7 8 4
+
+1 2 3
+5 0 6
+7 8 4
+
+1 2 3
+5 8 6
+7 0 4
+
+1 2 3
+5 8 6
+0 7 4

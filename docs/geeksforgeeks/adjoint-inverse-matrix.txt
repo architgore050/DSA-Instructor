@@ -1,0 +1,537 @@
+Source: https://www.geeksforgeeks.org/dsa/adjoint-inverse-matrix/
+Title: Adjoint and Inverse of a Matrix
+Extractor: 2
+
+Given a square matrix, find the adjoint and inverse of the matrix. We strongly recommend you to refer determinant of matrix as a prerequisite for this.
+
+Adjoint (or Adjugate) of a matrix is the matrix obtained by taking the transpose of the cofactor matrix of a given square matrix is called its Adjoint or Adjugate matrix. The Adjoint of any square matrix 'A' (say) is represented as Adj(A).
+
+Example:
+
+> Input: A[][]= [[5, -2, 2, 7], [1, 0, 0, 3], [-3, 1, 5, 0], [3, -1, -9, 4]] Output: Adj(A) = [[-12, 76, -60, -36], [-56, 208, -82, -58], [4, 4, -2, -10], [4, 4, 20, 12]], Inverse(A) = [[-0.136, 0.864, -0.682, -0.409], [-0.636, 2.364, -0.932, -0.659], [0.045, 0.045, -0.023, -0.114], [0.045, 0.045, 0.227, 0.136]]
+
+Important properties:
+
+Product of a square matrix A[][] with its adjoint yields a diagonal matrix, where each diagonal entry is equal to determinant of A. If 'I' represent the Identity matrix of same order as of A and det(A) represent the determinant value of A. Then,
+
+> A.adj(A) = det(A).I
+
+A non-zero square matrix 'A' of order n is said to be invertible if there exists a unique square matrix 'B' of order n such that,
+
+> A.B = B.A = I The matrix 'B' is said to be inverse of 'A'. i.e.,  B = A -1
+
+Here ,
+
+- adj(AB) = (adj B).(adj A)
+- adj( k A) = k n-1 adj(A)
+- A -1 = (adj A) / |A|
+- (A -1 ) -1 = A
+- (AB) -1 = B -1 A -1
+
+How to find Adjoint of A ?
+
+We follow the definition given above. Let A[N][N] be input matrix. 1) Create a matrix adj[N][N] store the adjoint matrix. 2) For every entry A[i][j] in input matrix where 0 <= i < N and 0 <= j < N. a) Find cofactor of A[i][j] b) Find sign of entry.  Sign is + if (i+j) is even else sign is odd. c) Place the cofactor at adj[j][i]
+
+How to find Inverse?
+
+Inverse of a matrix exists only if the matrix is non-singular i.e., determinant should not be 0. Using determinant and adjoint, we can easily find the inverse of a square matrix using the below formula,
+
+> If det(A) != 0 A -1 = adj(A)/det(A) Else "Inverse doesn't exist"
+
+Note: Inverse is used to find the solution to a system of linear equations.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Function to get cofactor of mat[p][q] in cof[][]. n is
+// current dimension of mat[][]
+void getCof(vector<vector<int>>& mat, vector<vector<int>>& cof,
+                                        int p, int q, int n) {
+    int i = 0, j = 0;
+    for (int row = 0; row < n; row++) {
+        for (int col = 0; col < n; col++) {
+            if (row != p && col != q) {
+                cof[i][j++] = mat[row][col];
+                if (j == n - 1) {
+                    j = 0;
+                    i++;
+                }
+            }
+        }
+    }
+}
+
+// Recursive function for finding determinant
+// of matrix mat of dimension n
+int getDet(vector<vector<int>>& mat, int n) {
+    if (n == 1) return mat[0][0];
+
+    int det = 0;
+
+    // To store cofactors
+    vector<vector<int>> cof(mat.size(), vector<int>(mat.size()));
+
+    int sign = 1;
+    for (int f = 0; f < n; f++) {
+        getCof(mat, cof, 0, f, n);
+        det += sign * mat[0][f] * getDet(cof, n - 1);
+        sign = -sign;
+    }
+    return det;
+}
+
+// Function to get adjoint of mat in adj
+void adjoint(vector<vector<int>>& mat, vector<vector<int>>& adj) {
+    int n = mat.size();
+    if (n == 1) {
+        adj[0][0] = 1;
+        return;
+    }
+
+    int sign = 1;
+    vector<vector<int>> cof(n, vector<int>(n));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            getCof(mat, cof, i, j, n);
+            sign = ((i + j) % 2 == 0) ? 1 : -1;
+            adj[j][i] = sign * getDet(cof, n - 1);
+        }
+    }
+}
+
+// Function to calculate and store inverse, returns
+// false if matrix is singular
+bool inverse(vector<vector<int>>& mat, vector<vector<float>>& inv) {
+    int n = mat.size();
+    int det = getDet(mat, n);
+    if (det == 0) {
+        cout << "Singular matrix, can't find its inverse";
+        return false;
+    }
+
+    vector<vector<int>> adj(n, vector<int>(n));
+    adjoint(mat, adj);
+
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            inv[i][j] = adj[i][j] / float(det);
+
+    return true;
+}
+
+int main() {
+    vector<vector<int>> mat = { { 5, -2, 2, 7 },
+                                { 1, 0, 0, 3 },
+                                { -3, 1, 5, 0 },
+                                { 3, -1, -9, 4 } };
+
+    int n = mat.size();
+
+    vector<vector<int>> adj(n, vector<int>(n));
+
+    vector<vector<float>> inv(n, vector<float>(n));
+
+    cout << "\nThe Adjoint is:\n";
+    adjoint(mat, adj);
+    for (auto& row : adj) {
+        for (int val : row) cout << val << " ";
+        cout << endl;
+    }
+
+    cout << "\nThe Inverse is:\n";
+    if (inverse(mat, inv)) {
+        for (auto& row : inv) {
+            for (float val : row){
+                cout << fixed << setprecision(3)<<val << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    return 0;
+}
+
+Java
+
+public class GfG {
+
+    // Function to get cofactor of mat[p][q] in cof[][]. n is
+    // current dimension of mat[][]
+    static void getCof(int[][] mat, int[][] cof, int p, int q, int n) {
+        int i = 0, j = 0;
+        for (int row = 0; row < n; row++) {
+            for (int col = 0; col < n; col++) {
+                if (row != p && col != q) {
+                    cof[i][j++] = mat[row][col];
+                    if (j == n - 1) {
+                        j = 0;
+                        i++;
+                    }
+                }
+            }
+        }
+    }
+
+    // Recursive function for finding determinant
+    // of matrix mat of dimension n
+    static int getDet(int[][] mat, int n) {
+        if (n == 1) return mat[0][0];
+
+        int det = 0;
+        int[][] cof = new int[n][n];
+        int sign = 1;
+
+        for (int f = 0; f < n; f++) {
+            getCof(mat, cof, 0, f, n);
+            det += sign * mat[0][f] * getDet(cof, n - 1);
+            sign = -sign;
+        }
+        return det;
+    }
+
+    // Function to get adjoint of mat in adj
+    static void adjoint(int[][] mat, int[][] adj) {
+        int n = mat.length;
+        if (n == 1) {
+            adj[0][0] = 1;
+            return;
+        }
+
+        int[][] cof = new int[n][n];
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                getCof(mat, cof, i, j, n);
+                int sign = ((i + j) % 2 == 0) ? 1 : -1;
+                adj[j][i] = sign * getDet(cof, n - 1);
+            }
+        }
+    }
+
+    // Function to calculate and store inverse, returns
+    // false if matrix is singular
+    static boolean inverse(int[][] mat, float[][] inv) {
+        int n = mat.length;
+        int det = getDet(mat, n);
+        if (det == 0) {
+            System.out.println("Singular matrix");
+            return false;
+        }
+
+        int[][] adj = new int[n][n];
+        adjoint(mat, adj);
+
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                inv[i][j] = adj[i][j] / (float) det;
+
+        return true;
+    }
+
+    public static void main(String[] args) {
+        int[][] mat = {
+            {5, -2, 2, 7},
+            {1, 0, 0, 3},
+            {-3, 1, 5, 0},
+            {3, -1, -9, 4}
+        };
+
+        int n = mat.length;
+
+        // Adjoint matrix
+        int[][] adj = new int[n][n];
+        adjoint(mat, adj);
+
+        System.out.println("The Adjoint is:");
+        for (int[] row : adj) {
+            for (int val : row)
+                System.out.printf("%.3f ", (float)val);
+            System.out.println();
+        }
+
+        // Inverse matrix
+        float[][] inv = new float[n][n];
+        System.out.println("\nThe Inverse is:");
+
+        if (inverse(mat, inv)) {
+            for (float[] row : inv) {
+                for (float val : row)
+                    System.out.printf("%.3f ", val);
+                System.out.println();
+            }
+        }
+    }
+}
+
+Python
+
+#  Function to get cofactor of mat[p][q] in cof[][]. n is
+#  current dimension of mat[][]
+def get_cof(mat, p, q, n):
+    cof = []
+    for i in range(n):
+        if i == p: continue
+        row = []
+        for j in range(n):
+            if j == q: continue
+            row.append(mat[i][j])
+        cof.append(row)
+    return cof
+
+#  Recursive function for finding determinant
+#  of matrix mat of dimension n
+def get_det(mat, n):
+    if n == 1:
+        return mat[0][0]
+
+    det = 0
+    sign = 1
+    for f in range(n):
+        cof = get_cof(mat, 0, f, n)
+        det += sign * mat[0][f] * get_det(cof, n-1)
+        sign = -sign
+    return det
+
+#  Function to get adjoint of mat in adj
+def adjoint(mat):
+    n = len(mat)
+    adj = [[0]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            cof = get_cof(mat, i, j, n)
+            sign = 1 if (i+j)%2==0 else -1
+            adj[j][i] = sign * get_det(cof, n-1)
+    return adj
+
+# Function to calculate and store inverse, returns
+# false if matrix is singular
+def inverse(mat):
+    n = len(mat)
+    det = get_det(mat, n)
+    if det == 0:
+        return None
+
+    adj = adjoint(mat)
+    inv = [[adj[i][j]/det for j in range(n)] for i in range(n)]
+    return adj, inv
+
+if __name__ == "__main__":
+    mat = [
+        [5, -2, 2, 7],
+        [1, 0, 0, 3],
+        [-3, 1, 5, 0],
+        [3, -1, -9, 4]
+    ]
+
+    result = inverse(mat)
+    if result:
+        adj, inv = result
+
+        print("Adjoint:")
+        for row in adj:
+            print(" ".join(f"{float(val):.3f}" for val in row))
+
+        print("\nInverse:")
+        for row in inv:
+            print(" ".join(f"{val:.3f}" for val in row))
+    else:
+        print("Singular matrix")
+
+C#
+
+using System;
+
+class GfG {
+
+    // Function to get cofactor of mat[p][q] in cof[][]. n is
+    // current dimension of mat[][]
+    static void GetCof(int[,] mat, int[,] cof, int p, int q, int n) {
+        int i = 0, j = 0;
+        for (int row = 0; row < n; row++)
+            for (int col = 0; col < n; col++)
+                if (row != p && col != q) {
+                    cof[i, j++] = mat[row, col];
+                    if (j == n - 1) { j = 0; i++; }
+                }
+    }
+
+    // Recursive function for finding determinant
+    // of matrix mat of dimension n
+    static int GetDet(int[,] mat, int n) {
+        if (n == 1) return mat[0,0];
+
+        int det = 0, sign = 1;
+        int[,] cof = new int[n,n];
+
+        for (int f = 0; f < n; f++) {
+            GetCof(mat, cof, 0, f, n);
+            det += sign * mat[0,f] * GetDet(cof, n-1);
+            sign = -sign;
+        }
+        return det;
+    }
+
+    // Function to get adjoint of mat in adj
+    static void Adjoint(int[,] mat, int[,] adj, int n) {
+        int[,] cof = new int[n,n];
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++) {
+                GetCof(mat, cof, i, j, n);
+                int sign = ((i+j)%2==0)?1:-1;
+                adj[j,i] = sign * GetDet(cof, n-1);
+            }
+    }
+
+    // Function to calculate and store inverse, returns
+    // false if matrix is singular
+    static bool Inverse(int[,] mat, float[,] inv, int n) {
+        int det = GetDet(mat, n);
+        if (det == 0) return false;
+
+        int[,] adj = new int[n,n];
+        Adjoint(mat, adj, n);
+
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                inv[i,j] = adj[i,j] / (float)det;
+
+        return true;
+    }
+
+    static void Main() {
+        int[,] mat = {
+            {5, -2, 2, 7},
+            {1, 0, 0, 3},
+            {-3, 1, 5, 0},
+            {3, -1, -9, 4}
+        };
+
+        int n = 4;
+        int[,] adj = new int[n,n];
+        Adjoint(mat, adj, n);
+
+        Console.WriteLine("Adjoint:");
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++)
+                Console.Write("{0:F3} ", (float)adj[i,j]);
+            Console.WriteLine();
+        }
+
+        float[,] inv = new float[n,n];
+        Console.WriteLine("\nInverse:");
+        if (Inverse(mat, inv, n)) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++)
+                    Console.Write("{0:F3} ", inv[i,j]);
+                Console.WriteLine();
+            }
+        }
+        else Console.WriteLine("Singular matrix");
+    }
+}
+
+JavaScript
+
+// Function to get cofactor of mat[p][q] in cof[][]. n is
+// current dimension of mat[][]
+function getCof(mat, p, q, n) {
+    let cof = [];
+    for (let i = 0; i < n; i++) {
+        if (i === p) continue;
+        let row = [];
+        for (let j = 0; j < n; j++) {
+            if (j === q) continue;
+            row.push(mat[i][j]);
+        }
+        cof.push(row);
+    }
+    return cof;
+}
+
+// Recursive function for finding determinant
+// of matrix mat of dimension n
+function getDet(mat, n) {
+    if (n === 1) return mat[0][0];
+
+    let det = 0, sign = 1;
+    for (let f = 0; f < n; f++) {
+        let cof = getCof(mat, 0, f, n);
+        det += sign * mat[0][f] * getDet(cof, n - 1);
+        sign = -sign;
+    }
+    return det;
+}
+
+// Function to get adjoint of mat in adj
+function adjoint(mat) {
+    let n = mat.length;
+    let adj = Array.from({length:n}, () => Array(n).fill(0));
+
+    for (let i = 0; i < n; i++)
+        for (let j = 0; j < n; j++) {
+            let cof = getCof(mat, i, j, n);
+            let sign = ((i+j)%2===0)?1:-1;
+            adj[j][i] = sign * getDet(cof, n-1);
+        }
+    return adj;
+}
+
+// Function to calculate and store inverse, returns
+// false if matrix is singular
+function inverse(mat) {
+    let n = mat.length;
+    let det = getDet(mat, n);
+    if (det === 0) return null;
+
+    let adj = adjoint(mat);
+    let inv = Array.from({length:n}, () => Array(n));
+
+    for (let i = 0; i < n; i++)
+        for (let j = 0; j < n; j++)
+            inv[i][j] = adj[i][j] / det;
+
+    return {adj, inv};
+}
+
+//Driver code
+let mat = [
+    [5, -2, 2, 7],
+    [1, 0, 0, 3],
+    [-3, 1, 5, 0],
+    [3, -1, -9, 4]
+];
+
+let result = inverse(mat);
+
+if (result) {
+    console.log("Adjoint:");
+    result.adj.forEach(row =>
+        console.log(row.map(v => v.toFixed(3)).join(" "))
+    );
+
+    console.log("\nInverse:");
+    result.inv.forEach(row =>
+        console.log(row.map(v => v.toFixed(3)).join(" "))
+    );
+} else {
+    console.log("Singular matrix");
+}
+
+Output
+
+The Adjoint is:
+-12 76 -60 -36
+-56 208 -82 -58
+4 4 -2 -10
+4 4 20 12
+
+The Inverse is:
+-0.136 0.864 -0.682 -0.409
+-0.636 2.364 -0.932 -0.659
+0.045 0.045 -0.023 -0.114
+0.045 0.045 0.227 0.136
+
+Note: Refer to the determinant of a matrix section for detailed information about the getCofactor() and determinant() functions.

@@ -1,0 +1,1532 @@
+Source: https://www.geeksforgeeks.org/dsa/convert-binary-tree-to-doubly-linked-list-using-inorder-traversal/
+Title: Convert Binary Tree to Doubly Linked List
+Extractor: 2
+
+Given the root of a binary tree, convert it to a Doubly Linked List (DLL) in place, using the same node structure.
+
+- The left and right pointers in the binary tree nodes should be used as prev and next pointers respectively in the resulting DLL.
+- The DLL should be formed by performing an inorder traversal of the binary tree (i.e., Left -> Root -> Right).
+- The first node in the inorder traversal (i.e., the leftmost node) should become the head of the DLL.
+
+Return the head of the resulting DLL.
+
+Note: h is the tree's height, and this space is used implicitly for the recursion stack.
+
+Examples:
+
+> Input: root = [1, 2, 3] Output: 2 1 3 3 1 2 Explanation: Inorder traversal visits 2, 1, 3. Node 2 becomes the head of the DLL, giving the list 2 <=> 1 <=> 3. Input: root = [10, 20, 30, 40, 60] Output: 40 20 60 10 30 30 10 60 20 40 Explanation: Inorder traversal visits 40, 20, 60, 10, 30. Node 40 becomes the head of the DLL, giving the list 40 <=> 20 <=> 60 <=> 10 <=> 30.
+
+Table of Content
+
+- [Naive Approach] Using Predecessor/Successor Search Recursion - O(n) Time and O(h) Space
+- [Better Approach] Single-Pass Inorder Traversal with Previous Pointer Tracking - O(n) Time and O(h) Space
+- [Expected Approach] Using Morris Traversal - O(n) Time and O(1) Space
+
+### [Naive Approach] Using Predecessor/Successor Search Recursion - O(n) Time and O(h) Space
+
+> The idea is to traverse the binary tree using inorder. At each node, if a left subtree exists, find its inorder predecessor by moving as far right as possible inside the left subtree, then process the left subtree and link the current node with that predecessor. If a right subtree exists, find its inorder successor by moving as far left as possible inside the right subtree, then process the right subtree and link the current node with that successor.
+
+Step by Step Implementation:
+
+- If root.left exists, walk right through the left subtree to locate the inorder predecessor of root.
+- Recursively convert the left subtree, then link the predecessor's right to root and root's left to the predecessor.
+- If root.right exists, walk left through the right subtree to locate the inorder successor of root.
+- Recursively convert the right subtree, then link root's right to the successor and the successor's left to root.
+- Separately, find the head of the DLL by walking all the way left from the original root, since the leftmost node of the tree becomes the head.
+
+C++
+
+#include <iostream>
+
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int x) {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Recursively links nodes of the tree in inorder fashion
+void inorder(Node* root) {
+
+    // if left subtree exists
+    if (root->left) {
+
+        // find the inorder predecessor of root node
+        Node* pred = root->left;
+        while (pred->right) {
+            pred = pred->right;
+        }
+
+        // process the left subtree
+        inorder(root->left);
+
+        // link the predecessor and root node
+        pred->right = root;
+        root->left = pred;
+    }
+
+    // if right subtree exists
+    if (root->right) {
+
+        // find the inorder successor of root node
+        Node* succ = root->right;
+        while (succ->left) {
+            succ = succ->left;
+        }
+
+        // process the right subtree
+        inorder(root->right);
+
+        // link the successor and root node
+        root->right = succ;
+        succ->left = root;
+    }
+}
+
+// function to convert binary tree to doubly linked list
+Node* treeToDLL(Node* root) {
+
+    // return if root is null
+    if (root == nullptr) return root;
+
+    // find the head of dll
+    Node* head = root;
+    while (head->left != nullptr)
+        head = head->left;
+
+    // recursively convert the tree into dll
+    inorder(root);
+
+    return head;
+}
+
+void printList(Node* head) {
+
+    // return if list is empty
+    if (head == nullptr) return;
+
+    Node* curr = head;
+
+    // print the list in forward direction
+    while (curr->right != nullptr) {
+        cout << curr->data << " ";
+        curr = curr->right;
+    }
+
+    // curr is now at the tail, print the last node
+    cout << curr->data << endl;
+
+    // print the list in backward direction
+    while (curr != nullptr) {
+        cout << curr->data << " ";
+        curr = curr->left;
+    }
+    cout << endl;
+}
+
+int main() {
+
+    Node* root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+
+    Node* head = treeToDLL(root);
+
+    printList(head);
+
+    return 0;
+}
+
+Java
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Recursively links nodes of the tree in inorder fashion
+    static void inorder(Node root) {
+
+        // if left subtree exists
+        if (root.left != null) {
+
+            // find the inorder predecessor of root node
+            Node pred = root.left;
+            while (pred.right != null) {
+                pred = pred.right;
+            }
+
+            // process the left subtree
+            inorder(root.left);
+
+            // link the predecessor and root node
+            pred.right = root;
+            root.left = pred;
+        }
+
+        // if right subtree exists
+        if (root.right != null) {
+
+            // find the inorder successor of root node
+            Node succ = root.right;
+            while (succ.left != null) {
+                succ = succ.left;
+            }
+
+            // process the right subtree
+            inorder(root.right);
+
+            // link the successor and root node
+            root.right = succ;
+            succ.left = root;
+        }
+    }
+
+    // function to convert binary tree to doubly linked list
+    static Node treeToDLL(Node root) {
+
+        // return if root is null
+        if (root == null) return root;
+
+        // find the head of dll
+        Node head = root;
+        while (head.left != null)
+            head = head.left;
+
+        // recursively convert the tree into dll
+        inorder(root);
+
+        return head;
+    }
+
+    static void printList(Node head) {
+
+        // return if list is empty
+        if (head == null) return;
+
+        Node curr = head;
+
+        // print the list in forward direction
+        while (curr.right != null) {
+            System.out.print(curr.data + " ");
+            curr = curr.right;
+        }
+
+        // curr is now at the tail, print the last node
+        System.out.println(curr.data);
+
+        // print the list in backward direction
+        while (curr != null) {
+            System.out.print(curr.data + " ");
+            curr = curr.left;
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        Node head = treeToDLL(root);
+
+        printList(head);
+    }
+}
+
+Python
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+# Recursively links nodes of the tree in inorder fashion
+def inorder(root):
+
+    # if left subtree exists
+    if root.left:
+
+        # find the inorder predecessor of root node
+        pred = root.left
+        while pred.right:
+            pred = pred.right
+
+        # process the left subtree
+        inorder(root.left)
+
+        # link the predecessor and root node
+        pred.right = root
+        root.left = pred
+
+    # if right subtree exists
+    if root.right:
+
+        # find the inorder successor of root node
+        succ = root.right
+        while succ.left:
+            succ = succ.left
+
+        # process the right subtree
+        inorder(root.right)
+
+        # link the successor and root node
+        root.right = succ
+        succ.left = root
+
+# function to convert binary tree to doubly linked list
+def treeToDLL(root):
+
+    # return if root is None
+    if root is None:
+        return root
+
+    # find the head of dll
+    head = root
+    while head.left:
+        head = head.left
+
+    # recursively convert the tree into dll
+    inorder(root)
+
+    return head
+
+def printList(head):
+
+    # return if list is empty
+    if head is None:
+        return
+
+    curr = head
+
+    # print the list in forward direction
+    while curr.right is not None:
+        print(curr.data, end=" ")
+        curr = curr.right
+
+    # curr is now at the tail, print the last node
+    print(curr.data)
+
+    # print the list in backward direction
+    while curr is not None:
+        print(curr.data, end=" ")
+        curr = curr.left
+    print()
+
+if __name__ == "__main__":
+
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+
+    head = treeToDLL(root)
+
+    printList(head)
+
+C#
+
+using System;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Recursively links nodes of the tree in inorder fashion
+    static void inorder(Node root) {
+
+        // if left subtree exists
+        if (root.left != null) {
+
+            // find the inorder predecessor of root node
+            Node pred = root.left;
+            while (pred.right != null) {
+                pred = pred.right;
+            }
+
+            // process the left subtree
+            inorder(root.left);
+
+            // link the predecessor and root node
+            pred.right = root;
+            root.left = pred;
+        }
+
+        // if right subtree exists
+        if (root.right != null) {
+
+            // find the inorder successor of root node
+            Node succ = root.right;
+            while (succ.left != null) {
+                succ = succ.left;
+            }
+
+            // process the right subtree
+            inorder(root.right);
+
+            // link the successor and root node
+            root.right = succ;
+            succ.left = root;
+        }
+    }
+
+    // function to convert binary tree to doubly linked list
+    static Node treeToDLL(Node root) {
+
+        // return if root is null
+        if (root == null) return root;
+
+        // find the head of dll
+        Node head = root;
+        while (head.left != null)
+            head = head.left;
+
+        // recursively convert the tree into dll
+        inorder(root);
+
+        return head;
+    }
+
+    static void printList(Node head) {
+
+        // return if list is empty
+        if (head == null) return;
+
+        Node curr = head;
+
+        // print the list in forward direction
+        while (curr.right != null) {
+            Console.Write(curr.data + " ");
+            curr = curr.right;
+        }
+
+        // curr is now at the tail, print the last node
+        Console.WriteLine(curr.data);
+
+        // print the list in backward direction
+        while (curr != null) {
+            Console.Write(curr.data + " ");
+            curr = curr.left;
+        }
+        Console.WriteLine();
+    }
+
+    static void Main(string[] args) {
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        Node head = treeToDLL(root);
+
+        printList(head);
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Recursively links nodes of the tree in inorder fashion
+function inorder(root) {
+
+    // if left subtree exists
+    if (root.left) {
+
+        // find the inorder predecessor of root node
+        let pred = root.left;
+        while (pred.right) {
+            pred = pred.right;
+        }
+
+        // process the left subtree
+        inorder(root.left);
+
+        // link the predecessor and root node
+        pred.right = root;
+        root.left = pred;
+    }
+
+    // if right subtree exists
+    if (root.right) {
+
+        // find the inorder successor of root node
+        let succ = root.right;
+        while (succ.left) {
+            succ = succ.left;
+        }
+
+        // process the right subtree
+        inorder(root.right);
+
+        // link the successor and root node
+        root.right = succ;
+        succ.left = root;
+    }
+}
+
+// function to convert binary tree to doubly linked list
+function treeToDLL(root) {
+
+    // return if root is null
+    if (root === null) return root;
+
+    // find the head of dll
+    let head = root;
+    while (head.left !== null)
+        head = head.left;
+
+    // recursively convert the tree into dll
+    inorder(root);
+
+    return head;
+}
+
+function printList(head) {
+
+    // return if list is empty
+    if (head === null) return;
+
+    let curr = head;
+
+    // print the list in forward direction
+    while (curr.right !== null) {
+        process.stdout.write(curr.data + " ");
+        curr = curr.right;
+    }
+
+    // curr is now at the tail, print the last node
+    console.log(curr.data);
+
+    // print the list in backward direction
+    while (curr !== null) {
+        process.stdout.write(curr.data + " ");
+        curr = curr.left;
+    }
+    console.log();
+}
+
+// Driver Code
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+
+let head = treeToDLL(root);
+
+printList(head);
+
+Output
+
+2 1 3
+3 1 2
+
+### [Better Approach] Single-Pass Inorder Traversal with Previous Pointer Tracking - O(n) Time and O(h) Space
+
+> The idea is to do a single inorder traversal of the binary tree while keeping track of the previously visited node in a variable, say prev. For every node visited, link it to prev by setting prev's right to the current node and the current node's left to prev, then update prev to the current node.
+
+Step by Step Implementation:
+
+- Maintain two pointers across the recursion: prev, pointing to the last visited node, and head, pointing to the head of the DLL. Pass both by reference so their updates persist across recursive calls.
+- Recursively process the left subtree first.
+- If prev is null, the current node is the leftmost node of the tree, so mark it as head. Otherwise, link prev.right to the current node and the current node's left to prev.
+- Update prev to the current node.
+- Recursively process the right subtree.
+- Return head once the whole tree has been traversed.
+
+C++
+
+#include <iostream>
+
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int x) {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Recursively links nodes in inorder fashion using a running prev pointer
+void inorder(Node* root, Node*& prev, Node*& head) {
+
+    // base case
+    if (root == nullptr) return;
+
+    // process the left subtree
+    inorder(root->left, prev, head);
+
+    // if prev is null, current node is the leftmost node
+    if (prev == nullptr) {
+        head = root;
+    } else {
+
+        // link prev and current node
+        prev->right = root;
+        root->left = prev;
+    }
+
+    // update prev to current node
+    prev = root;
+
+    // process the right subtree
+    inorder(root->right, prev, head);
+}
+
+// function to convert binary tree to doubly linked list
+Node* treeToDLL(Node* root) {
+
+    Node* prev = nullptr;
+    Node* head = nullptr;
+
+    // recursively convert the tree into dll
+    inorder(root, prev, head);
+
+    return head;
+}
+
+void printList(Node* head) {
+
+    // return if list is empty
+    if (head == nullptr) return;
+
+    Node* curr = head;
+
+    // print the list in forward direction
+    while (curr->right != nullptr) {
+        cout << curr->data << " ";
+        curr = curr->right;
+    }
+
+    // curr is now at the tail, print the last node
+    cout << curr->data << endl;
+
+    // print the list in backward direction
+    while (curr != nullptr) {
+        cout << curr->data << " ";
+        curr = curr->left;
+    }
+    cout << endl;
+}
+
+int main() {
+
+    Node* root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+
+    Node* head = treeToDLL(root);
+
+    printList(head);
+
+    return 0;
+}
+
+Java
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Recursively links nodes in inorder fashion using a running prev pointer
+    // prev[0] holds the last visited node, head[0] holds the head of the dll
+    static void inorder(Node root, Node[] prev, Node[] head) {
+
+        // base case
+        if (root == null) return;
+
+        // process the left subtree
+        inorder(root.left, prev, head);
+
+        // if prev is null, current node is the leftmost node
+        if (prev[0] == null) {
+            head[0] = root;
+        } else {
+
+            // link prev and current node
+            prev[0].right = root;
+            root.left = prev[0];
+        }
+
+        // update prev to current node
+        prev[0] = root;
+
+        // process the right subtree
+        inorder(root.right, prev, head);
+    }
+
+    // function to convert binary tree to doubly linked list
+    static Node treeToDLL(Node root) {
+
+        Node[] prev = new Node[1];
+        Node[] head = new Node[1];
+
+        // recursively convert the tree into dll
+        inorder(root, prev, head);
+
+        return head[0];
+    }
+
+    static void printList(Node head) {
+
+        // return if list is empty
+        if (head == null) return;
+
+        Node curr = head;
+
+        // print the list in forward direction
+        while (curr.right != null) {
+            System.out.print(curr.data + " ");
+            curr = curr.right;
+        }
+
+        // curr is now at the tail, print the last node
+        System.out.println(curr.data);
+
+        // print the list in backward direction
+        while (curr != null) {
+            System.out.print(curr.data + " ");
+            curr = curr.left;
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        Node head = treeToDLL(root);
+
+        printList(head);
+    }
+}
+
+Python
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+# Recursively links nodes in inorder fashion using a running prev pointer
+# prev[0] holds the last visited node, head[0] holds the head of the dll
+def inorder(root, prev, head):
+
+    # base case
+    if root is None:
+        return
+
+    # process the left subtree
+    inorder(root.left, prev, head)
+
+    # if prev is None, current node is the leftmost node
+    if prev[0] is None:
+        head[0] = root
+    else:
+
+        # link prev and current node
+        prev[0].right = root
+        root.left = prev[0]
+
+    # update prev to current node
+    prev[0] = root
+
+    # process the right subtree
+    inorder(root.right, prev, head)
+
+# function to convert binary tree to doubly linked list
+def treeToDLL(root):
+
+    prev = [None]
+    head = [None]
+
+    # recursively convert the tree into dll
+    inorder(root, prev, head)
+
+    return head[0]
+
+def printList(head):
+
+    # return if list is empty
+    if head is None:
+        return
+
+    curr = head
+
+    # print the list in forward direction
+    while curr.right is not None:
+        print(curr.data, end=" ")
+        curr = curr.right
+
+    # curr is now at the tail, print the last node
+    print(curr.data)
+
+    # print the list in backward direction
+    while curr is not None:
+        print(curr.data, end=" ")
+        curr = curr.left
+    print()
+
+if __name__ == "__main__":
+
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+
+    head = treeToDLL(root)
+
+    printList(head)
+
+C#
+
+using System;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Recursively links nodes in inorder fashion using a running prev pointer
+    static void inorder(Node root, ref Node prev, ref Node head) {
+
+        // base case
+        if (root == null) return;
+
+        // process the left subtree
+        inorder(root.left, ref prev, ref head);
+
+        // if prev is null, current node is the leftmost node
+        if (prev == null) {
+            head = root;
+        } else {
+
+            // link prev and current node
+            prev.right = root;
+            root.left = prev;
+        }
+
+        // update prev to current node
+        prev = root;
+
+        // process the right subtree
+        inorder(root.right, ref prev, ref head);
+    }
+
+    // function to convert binary tree to doubly linked list
+    static Node treeToDLL(Node root) {
+
+        Node prev = null;
+        Node head = null;
+
+        // recursively convert the tree into dll
+        inorder(root, ref prev, ref head);
+
+        return head;
+    }
+
+    static void printList(Node head) {
+
+        // return if list is empty
+        if (head == null) return;
+
+        Node curr = head;
+
+        // print the list in forward direction
+        while (curr.right != null) {
+            Console.Write(curr.data + " ");
+            curr = curr.right;
+        }
+
+        // curr is now at the tail, print the last node
+        Console.WriteLine(curr.data);
+
+        // print the list in backward direction
+        while (curr != null) {
+            Console.Write(curr.data + " ");
+            curr = curr.left;
+        }
+        Console.WriteLine();
+    }
+
+    static void Main(string[] args) {
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        Node head = treeToDLL(root);
+
+        printList(head);
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Recursively links nodes in inorder fashion using a running prev pointer
+// prev and head are wrapper objects so updates persist across recursive calls
+function inorder(root, prev, head) {
+
+    // base case
+    if (root === null) return;
+
+    // process the left subtree
+    inorder(root.left, prev, head);
+
+    // if prev is null, current node is the leftmost node
+    if (prev.node === null) {
+        head.node = root;
+    } else {
+
+        // link prev and current node
+        prev.node.right = root;
+        root.left = prev.node;
+    }
+
+    // update prev to current node
+    prev.node = root;
+
+    // process the right subtree
+    inorder(root.right, prev, head);
+}
+
+// function to convert binary tree to doubly linked list
+function treeToDLL(root) {
+
+    let prev = { node: null };
+    let head = { node: null };
+
+    // recursively convert the tree into dll
+    inorder(root, prev, head);
+
+    return head.node;
+}
+
+function printList(head) {
+
+    // return if list is empty
+    if (head === null) return;
+
+    let curr = head;
+
+    // print the list in forward direction
+    while (curr.right !== null) {
+        process.stdout.write(curr.data + " ");
+        curr = curr.right;
+    }
+
+    // curr is now at the tail, print the last node
+    console.log(curr.data);
+
+    // print the list in backward direction
+    while (curr !== null) {
+        process.stdout.write(curr.data + " ");
+        curr = curr.left;
+    }
+    console.log();
+}
+
+// Driver Code
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+
+let head = treeToDLL(root);
+
+printList(head);
+
+Output
+
+2 1 3
+3 1 2
+
+### [Expected Approach] Using Morris Traversal - O(n) Time and O(1) Space
+
+> The idea is to use Morris Traversal to traverse the binary tree in inorder fashion while maintaining proper linkages between the nodes, without using recursion or an explicit stack.
+
+Step by Step Implementation:
+
+- Initialize pointers head and tail. head will point to the head node of the resultant DLL and tail will point to the last node processed so far in the DLL.
+- Initialize another pointer curr, which starts at root. Continue traversing until curr is null.
+- If curr.left is null, link the current node into the DLL (set it as head if the list is still empty), then move curr to curr.right.
+- If curr.left is not null, find the inorder predecessor of curr, call it pred, by moving right from curr.left until reaching a node whose right pointer is null or already points back to curr.
+- If pred.right is null, thread it by setting pred.right = curr, then move curr to curr.left.
+- If pred.right is already curr, the left subtree has been fully processed, so remove the thread, link curr into the DLL, and move curr to curr.right.
+- Return head.
+
+C++
+
+#include <iostream>
+
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int x) {
+        data = x;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// function to convert binary tree to doubly linked list using morris traversal
+Node* treeToDLL(Node* root) {
+
+    // return if root is null
+    if (root == nullptr) return root;
+
+    // head and tail node for the dll
+    Node* head = nullptr;
+    Node* tail = nullptr;
+
+    Node* curr = root;
+
+    while (curr != nullptr) {
+
+        // if left subtree does not exist,
+        // link curr into the dll and move to curr.right
+        if (curr->left == nullptr) {
+            if (head == nullptr) {
+                head = tail = curr;
+            } else {
+                tail->right = curr;
+                curr->left = tail;
+                tail = curr;
+            }
+            curr = curr->right;
+        } else {
+            Node* pred = curr->left;
+
+            // find the inorder predecessor of curr
+            while (pred->right != nullptr && pred->right != curr) {
+                pred = pred->right;
+            }
+
+            // create a thread from pred to curr
+            if (pred->right == nullptr) {
+                pred->right = curr;
+                curr = curr->left;
+            } else {
+
+                // left subtree processed, remove the thread,
+                // link curr into the dll and move to curr.right
+                pred->right = nullptr;
+                tail->right = curr;
+                curr->left = tail;
+                tail = curr;
+
+                curr = curr->right;
+            }
+        }
+    }
+
+    return head;
+}
+
+void printList(Node* head) {
+
+    // return if list is empty
+    if (head == nullptr) return;
+
+    Node* curr = head;
+
+    // print the list in forward direction
+    while (curr->right != nullptr) {
+        cout << curr->data << " ";
+        curr = curr->right;
+    }
+
+    // curr is now at the tail, print the last node
+    cout << curr->data << endl;
+
+    // print the list in backward direction
+    while (curr != nullptr) {
+        cout << curr->data << " ";
+        curr = curr->left;
+    }
+    cout << endl;
+}
+
+int main() {
+
+    Node* root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+
+    Node* head = treeToDLL(root);
+
+    printList(head);
+
+    return 0;
+}
+
+Java
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // function to convert binary tree to doubly linked list using morris traversal
+    static Node treeToDLL(Node root) {
+
+        // return if root is null
+        if (root == null) return root;
+
+        // head and tail node for the dll
+        Node head = null;
+        Node tail = null;
+
+        Node curr = root;
+
+        while (curr != null) {
+
+            // if left subtree does not exist,
+            // link curr into the dll and move to curr.right
+            if (curr.left == null) {
+                if (head == null) {
+                    head = tail = curr;
+                } else {
+                    tail.right = curr;
+                    curr.left = tail;
+                    tail = curr;
+                }
+                curr = curr.right;
+            } else {
+                Node pred = curr.left;
+
+                // find the inorder predecessor of curr
+                while (pred.right != null && pred.right != curr) {
+                    pred = pred.right;
+                }
+
+                // create a thread from pred to curr
+                if (pred.right == null) {
+                    pred.right = curr;
+                    curr = curr.left;
+                } else {
+
+                    // left subtree processed, remove the thread,
+                    // link curr into the dll and move to curr.right
+                    pred.right = null;
+                    tail.right = curr;
+                    curr.left = tail;
+                    tail = curr;
+
+                    curr = curr.right;
+                }
+            }
+        }
+
+        return head;
+    }
+
+    static void printList(Node head) {
+
+        // return if list is empty
+        if (head == null) return;
+
+        Node curr = head;
+
+        // print the list in forward direction
+        while (curr.right != null) {
+            System.out.print(curr.data + " ");
+            curr = curr.right;
+        }
+
+        // curr is now at the tail, print the last node
+        System.out.println(curr.data);
+
+        // print the list in backward direction
+        while (curr != null) {
+            System.out.print(curr.data + " ");
+            curr = curr.left;
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        Node head = treeToDLL(root);
+
+        printList(head);
+    }
+}
+
+Python
+
+class Node:
+    def __init__(self, x):
+        self.data = x
+        self.left = None
+        self.right = None
+
+# function to convert binary tree to doubly linked list using morris traversal
+def treeToDLL(root):
+
+    # return if root is None
+    if root is None:
+        return root
+
+    # head and tail node for the dll
+    head = None
+    tail = None
+
+    curr = root
+
+    while curr is not None:
+
+        # if left subtree does not exist,
+        # link curr into the dll and move to curr.right
+        if curr.left is None:
+            if head is None:
+                head = tail = curr
+            else:
+                tail.right = curr
+                curr.left = tail
+                tail = curr
+            curr = curr.right
+        else:
+            pred = curr.left
+
+            # find the inorder predecessor of curr
+            while pred.right is not None and pred.right != curr:
+                pred = pred.right
+
+            # create a thread from pred to curr
+            if pred.right is None:
+                pred.right = curr
+                curr = curr.left
+            else:
+
+                # left subtree processed, remove the thread,
+                # link curr into the dll and move to curr.right
+                pred.right = None
+                tail.right = curr
+                curr.left = tail
+                tail = curr
+
+                curr = curr.right
+
+    return head
+
+def printList(head):
+
+    # return if list is empty
+    if head is None:
+        return
+
+    curr = head
+
+    # print the list in forward direction
+    while curr.right is not None:
+        print(curr.data, end=" ")
+        curr = curr.right
+
+    # curr is now at the tail, print the last node
+    print(curr.data)
+
+    # print the list in backward direction
+    while curr is not None:
+        print(curr.data, end=" ")
+        curr = curr.left
+    print()
+
+if __name__ == "__main__":
+
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+
+    head = treeToDLL(root)
+
+    printList(head)
+
+C#
+
+using System;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int x) {
+        data = x;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // function to convert binary tree to doubly linked list using morris traversal
+    static Node treeToDLL(Node root) {
+
+        // return if root is null
+        if (root == null) return root;
+
+        // head and tail node for the dll
+        Node head = null;
+        Node tail = null;
+
+        Node curr = root;
+
+        while (curr != null) {
+
+            // if left subtree does not exist,
+            // link curr into the dll and move to curr.right
+            if (curr.left == null) {
+                if (head == null) {
+                    head = tail = curr;
+                } else {
+                    tail.right = curr;
+                    curr.left = tail;
+                    tail = curr;
+                }
+                curr = curr.right;
+            } else {
+                Node pred = curr.left;
+
+                // find the inorder predecessor of curr
+                while (pred.right != null && pred.right != curr) {
+                    pred = pred.right;
+                }
+
+                // create a thread from pred to curr
+                if (pred.right == null) {
+                    pred.right = curr;
+                    curr = curr.left;
+                } else {
+
+                    // left subtree processed, remove the thread,
+                    // link curr into the dll and move to curr.right
+                    pred.right = null;
+                    tail.right = curr;
+                    curr.left = tail;
+                    tail = curr;
+
+                    curr = curr.right;
+                }
+            }
+        }
+
+        return head;
+    }
+
+    static void printList(Node head) {
+
+        // return if list is empty
+        if (head == null) return;
+
+        Node curr = head;
+
+        // print the list in forward direction
+        while (curr.right != null) {
+            Console.Write(curr.data + " ");
+            curr = curr.right;
+        }
+
+        // curr is now at the tail, print the last node
+        Console.WriteLine(curr.data);
+
+        // print the list in backward direction
+        while (curr != null) {
+            Console.Write(curr.data + " ");
+            curr = curr.left;
+        }
+        Console.WriteLine();
+    }
+
+    static void Main(string[] args) {
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+
+        Node head = treeToDLL(root);
+
+        printList(head);
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// function to convert binary tree to doubly linked list using morris traversal
+function treeToDLL(root) {
+
+    // return if root is null
+    if (root === null) return root;
+
+    // head and tail node for the dll
+    let head = null;
+    let tail = null;
+
+    let curr = root;
+
+    while (curr !== null) {
+
+        // if left subtree does not exist,
+        // link curr into the dll and move to curr.right
+        if (curr.left === null) {
+            if (head === null) {
+                head = tail = curr;
+            } else {
+                tail.right = curr;
+                curr.left = tail;
+                tail = curr;
+            }
+            curr = curr.right;
+        } else {
+            let pred = curr.left;
+
+            // find the inorder predecessor of curr
+            while (pred.right !== null && pred.right !== curr) {
+                pred = pred.right;
+            }
+
+            // create a thread from pred to curr
+            if (pred.right === null) {
+                pred.right = curr;
+                curr = curr.left;
+            } else {
+
+                // left subtree processed, remove the thread,
+                // link curr into the dll and move to curr.right
+                pred.right = null;
+                tail.right = curr;
+                curr.left = tail;
+                tail = curr;
+
+                curr = curr.right;
+            }
+        }
+    }
+
+    return head;
+}
+
+function printList(head) {
+
+    // return if list is empty
+    if (head === null) return;
+
+    let curr = head;
+
+    // print the list in forward direction
+    while (curr.right !== null) {
+        process.stdout.write(curr.data + " ");
+        curr = curr.right;
+    }
+
+    // curr is now at the tail, print the last node
+    console.log(curr.data);
+
+    // print the list in backward direction
+    while (curr !== null) {
+        process.stdout.write(curr.data + " ");
+        curr = curr.left;
+    }
+    console.log();
+}
+
+// Driver Code
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+
+let head = treeToDLL(root);
+
+printList(head);
+
+Output
+
+2 1 3
+3 1 2

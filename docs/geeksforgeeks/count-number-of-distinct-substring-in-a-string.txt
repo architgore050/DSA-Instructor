@@ -1,0 +1,461 @@
+Source: https://www.geeksforgeeks.org/dsa/count-number-of-distinct-substring-in-a-string/
+Title: Distinct Substrings in a String
+Extractor: 2
+
+Given a string s , we need to find the total number of non-empty distinct substrings that can be formed from the string. A substring is a contiguous sequence of characters within the string.
+
+Examples:
+
+> Input : s = "abcd" Output : 10 Explanation: All Distinct Substrings are ["abc", "ab", "a", "bcd", "bc", "b", "cd", "c", "d", "abcd"] Input : s = "aaa" Output : 3 Explanation: All Distinct Substrings are ["aaa", "aa", "a"]
+
+Table of Content
+
+- [Naive Approach] - Generate All Substrings
+- [Expected Approach] Using Trie Data Structure
+
+### [Naive Approach] - Generate All Substrings
+
+> The idea is simple, we generate all substrings of the given string and store them in a set, which automatically handles duplicates and ensures only unique substrings are kept. The size of the set at the end gives the number of distinct substrings.
+
+C++
+
+//Driver Code Starts
+#include <iostream>
+#include<vector>
+using namespace std;
+//Driver Code Ends
+
+int countSubs(string &s)
+{
+
+    // To store distinct substrings
+    unordered_set<string> st;
+
+    // Generate substrings
+    for (int i = 0; i < s.length(); i++) {
+        string temp = "";
+        for (int j = i; j < s.length(); j++) {
+            temp.push_back(s[j]);
+            st.insert(temp);
+        }
+    }
+    //return distinct substrings
+    return st.size();
+}
+
+//Driver Code Starts
+int main()
+{
+    string s = "abcd";
+    cout<<countSubs(s);
+    return 0;
+}
+
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
+
+public class GFG {
+//Driver Code Ends
+
+    static int countSubs(String s)
+    {
+        // To store distinct substrings
+        HashSet<String> st = new HashSet<>();
+
+        // Generate substrings
+        for (int i = 0; i < s.length(); i++) {
+            StringBuilder temp = new StringBuilder();
+            for (int j = i; j < s.length(); j++) {
+                temp.append(s.charAt(j));
+                st.add(temp.toString());
+            }
+        }
+        // return distinct substrings
+        return st.size();
+    }
+
+//Driver Code Starts
+
+    public static void main(String[] args) {
+        String s = "abcd";
+        System.out.println(countSubs(s));
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+def countSubs(s):
+
+    # To store distinct substrings
+    st = set()
+
+    # Generate substrings
+    for i in range(len(s)):
+        temp = []
+        for j in range(i, len(s)):
+            temp.append(s[j])
+            st.add("".join(temp))
+
+    # return distinct substrings
+    return len(st)
+
+#Driver Code Starts
+
+if __name__ == "__main__":
+    s = "abcd"
+    print(countSubs(s))
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+class GFG
+{
+//Driver Code Ends
+
+    static int countSubs(string s)
+    {
+        // To store distinct substrings
+        HashSet<string> st = new HashSet<string>();
+
+        // Generate substrings
+        for (int i = 0; i < s.Length; i++) {
+            StringBuilder temp = new StringBuilder();
+            for (int j = i; j < s.Length; j++) {
+                temp.Append(s[j]);
+                st.Add(temp.ToString());
+            }
+        }
+        // return distinct substrings
+        return st.Count;
+    }
+
+//Driver Code Starts
+
+    static void Main()
+    {
+        string s = "abcd";
+        Console.WriteLine(countSubs(s));
+    }
+}
+
+//Driver Code Ends
+
+JavaScript
+
+function countSubs(s) {
+
+    // To store distinct substrings
+    const st = new Set();
+
+    // Generate substrings
+    for (let i = 0; i < s.length; i++) {
+        let temp = [];
+        for (let j = i; j < s.length; j++) {
+            temp.push(s[j]);
+            st.add(temp.join(""));
+        }
+    }
+    // return distinct substrings
+    return st.size;
+}
+
+//Driver Code Starts
+
+//Driver Cpde
+const s = "abcd";
+console.log(countSubs(s));
+
+//Driver Code Ends
+
+Output
+
+10
+
+Time Complexity: O(n 3 ) - O(n²) for all substrings, and inserting each requires O(n) time on average (due to hashing/copying). Space Complexity: O(n 3 ) - In the worst case, we may store O(n²) distinct substrings, each of average length O(n).
+
+### [Expected Approach] Using Trie Data Structure
+
+In the previous approach, we handled duplicate substrings using hashing, but that becomes time-consuming. To overcome this, we use a Trie and insert each substring of the string into it, allowing us to store only unique substrings efficiently.
+
+> We iterate through the string, and for every starting index we insert all substrings into the Trie. We also maintain a counter variable that helps us track how many new substrings are inserted, to handles duplicates . While inserting, if the current character does not exist as a child of the current node, we create a new node and increment the counter - this means a new distinct substring is found. If the character already exists, we simply move to that child node without creating anything new.
+
+C++
+
+//Driver Code Starts
+#include<iostream>
+#include<vector>
+using namespace std;
+//Driver Code Ends
+
+class TrieNode {
+public:
+    bool isWord;
+    TrieNode* child[26];
+
+    TrieNode()
+    {
+        isWord = 0;
+        for (int i = 0; i < 26; i++) {
+            child[i] = 0;
+        }
+    }
+};
+
+int countSubs(string &s)
+{
+    TrieNode* head = new TrieNode();
+
+    // will hold the count of unique substrings
+    int count = 0;
+
+    for (int i = 0; i < s.length(); i++) {
+        TrieNode* temp = head;
+
+        for (int j = i; j < s.length(); j++) {
+
+            // when char not present add it to the trie
+            if (temp->child[s[j] - 'a'] == NULL) {
+                temp->child[s[j] - 'a'] = new TrieNode();
+                temp->isWord = 1;
+                count++;
+            }
+            // move on to the next char
+            temp = temp->child[s[j] - 'a'];
+        }
+    }
+
+    return count;
+
+//Driver Code Starts
+}
+
+int main()
+{
+    string s="abcd";
+    int count = countSubs(s);
+
+    cout << count<< endl;
+
+    return 0;
+}
+//Driver Code Ends
+
+Java
+
+//Driver Code Starts
+import java.util.Arrays;
+
+//Driver Code Ends
+
+class TrieNode {
+    boolean isWord;
+    TrieNode[] child;
+
+    TrieNode() {
+        isWord = false;
+        child = new TrieNode[26];
+        for (int i = 0; i < 26; i++)
+            child[i] = null;
+    }
+}
+
+public class GFG {
+
+    static int countSubs(String s) {
+        TrieNode head = new TrieNode();
+
+        // will hold the count of unique substrings
+        int count = 0;
+
+        for (int i = 0; i < s.length(); i++) {
+            TrieNode temp = head;
+            for (int j = i; j < s.length(); j++) {
+                int index = s.charAt(j) - 'a';
+
+                // when char not present add it to the trie
+                if (temp.child[index] == null) {
+                    temp.child[index] = new TrieNode();
+                    temp.isWord = true;
+                    count++;
+                }
+
+                // move on to the next char
+                temp = temp.child[index];
+            }
+        }
+
+          return count;
+    }
+
+//Driver Code Starts
+
+    public static void main(String[] args) {
+        String s = "abcd";
+        int count = countSubs(s);
+        System.out.println(count);
+    }
+}
+
+//Driver Code Ends
+
+Python
+
+class TrieNode:
+    def __init__(self):
+        self.isWord = False
+        self.child = [None] * 26
+
+def countSubs(s):
+    head = TrieNode()
+    # will hold the count of unique substrings
+    count = 0
+
+    for i in range(len(s)):
+        temp = head
+        for j in range(i, len(s)):
+
+            # when char not present add it to the trie
+            index = ord(s[j]) - ord('a')
+            if temp.child[index] is None:
+                temp.child[index] = TrieNode()
+                temp.isWord = True
+                count += 1
+
+            # move on to the next char
+            temp = temp.child[index]
+
+    return count
+
+#Driver Code Starts
+
+if __name__ == '__main__':
+    s = "abcd"
+    count = countSubs(s)
+    print(count)
+
+#Driver Code Ends
+
+C#
+
+//Driver Code Starts
+using System;
+
+//Driver Code Ends
+
+class TrieNode
+{
+    public bool isWord;
+    public TrieNode[] child;
+
+    public TrieNode()
+    {
+        isWord = false;
+        child = new TrieNode[26];
+        for (int i = 0; i < 26; i++)
+            child[i] = null;
+    }
+}
+
+class GFG
+{
+    static int countSubs(string s)
+    {
+        TrieNode head = new TrieNode();
+
+        // will hold the count of unique substrings
+        int count = 0;
+
+        for (int i = 0; i < s.Length; i++)
+        {
+            TrieNode temp = head;
+            for (int j = i; j < s.Length; j++)
+            {
+                int index = s[j] - 'a';
+                // when char not present add it to the trie
+                if (temp.child[index] == null)
+                {
+                    temp.child[index] = new TrieNode();
+                    temp.isWord = true;
+                    count++;
+                }
+                // move on to the next char
+                temp = temp.child[index];
+            }
+        }
+
+    return count;
+
+//Driver Code Starts
+    }
+
+    static void Main()
+    {
+        string s = "abcd";
+        int count = countSubs(s);
+        Console.WriteLine(count);
+    }
+}
+
+//Driver Code Ends
+
+JavaScript
+
+class TrieNode {
+    constructor() {
+        this.isWord = false;
+        this.child = new Array(26).fill(null);
+    }
+}
+
+function countSubs(s) {
+    let head = new TrieNode();
+    // will hold the count of unique substrings
+    let count = 0;
+
+    for (let i = 0; i < s.length; i++) {
+        let temp = head;
+
+        for (let j = i; j < s.length; j++) {
+            let index = s.charCodeAt(j) - 'a'.charCodeAt(0);
+
+            // when char not present add it to the trie
+            if (temp.child[index] === null) {
+                temp.child[index] = new TrieNode();
+                temp.isWord = true;
+                count++;
+            }
+            // move on to the next char
+            temp = temp.child[index];
+        }
+    }
+
+    return count;
+}
+
+//Driver Code Starts
+// Driver code
+let s = "abcd";
+let count = countSubs(s);
+console.log(count);
+
+//Driver Code Ends
+
+Output
+
+10
+
+Time Complexity: O(n 2 ) - Inserting all substrings takes O(n²) time. Space Complexity: O(n 2 ) - Trie uses O(n²) space in the worst case, storing each unique substring efficiently.

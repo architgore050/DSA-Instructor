@@ -1,0 +1,443 @@
+Source: https://www.geeksforgeeks.org/dsa/sort-the-queue-using-recursion/
+Title: Sort the Queue using Recursion
+Extractor: 2
+
+Given a queue, the task is to sort it using recursion without using any loop. We can only use the following functions of the queue:
+
+- empty(q): Tests whether the queue is empty or not.
+- push(q): Adds a new element to the queue.
+- pop(q): Removes front element from the queue.
+- size(q): Returns the number of elements in a queue.
+- front(q): Returns the value of the front element without removing it.
+
+Examples:
+
+> Input: queue = {10, 7, 16, 9, 20, 5} Output: 5 7 9 10 16 20 Explanation : After sorting the elements of the Queue the order becomes 5 7 9 10 16 20 Input: queue = {0, -2, -1, 2, 3, 1} Output: -2 -1 0 1 2 3 Explanation : After sorting the elements of the Queue the order becomes -2 -1 0 1 2 3.
+
+### Approach - O(n^2) Space and O(n) Time
+
+- Take out the front item.
+- Recursively sort the remaining queue (we mainly keep removing items recursively until the queue becomes empty)
+- Sorted insert the front item in the remaining sorted queue (this is like insert of insertion sort). We use recursion for this also as we are supposed to use only recursion.
+
+### How to insert in sorted order using recursion?
+
+- If queue is empty, we can simply insert and return.
+- If the item (to be inserted) is smaller, then first insert at the back and then move all of previously existing elements to back. For example, q = [10, 20, 30] and temp = 5, we first insert 5, q = [10, 20, 30, 5], then move previously existing elements, q becomes [5, 10, 20, 30[
+- If the item is more than the front, then we first move smaller elements to back and then we fall into the above case (element to be inserted is smaller). For example, q = [10, 20, 50] and temp = 40, we move all smaller elements back, q = [50, 10, 20], then we insert 40 using the above steps with smaller queue size which 1, we first get q = [50, 10, 20, 40], then q = [10, 20, 40, 50]
+
+### Illustration :
+
+Step 1: Call sortQueue(q)
+
+Queue at the start: [10, 7, 16, 9, 20, 5]
+
+- Remove 10 , recursively sort [7, 16, 9, 20, 5] .
+- Remove 7 , recursively sort [16, 9, 20, 5] .
+- Remove 16 , recursively sort [9, 20, 5] .
+- Remove 9 , recursively sort [20, 5] .
+- Remove 20 , recursively sort [5] .
+
+Remove 5 , recursively sort [] (Base case reached).
+
+Step 2: Insert elements back using sortedInsert(q, temp, qsize)
+
+Now we reinsert elements in sorted order .
+
+1. Insert 5 → [5]
+2. Insert 20 → [5, 20] (Since 20 > 5 , it goes to the back).
+3. Insert 9 : 9 > 5 , move 5 to back, q = [20, 5], and call sorted insert for [20, 5], 9 and qsize as 1. 9 < 20, so 9 is first inserted at the back, q = [20, 5, 9] and then move qsize elements are moved front to back So q now becomes [5, 9, 20]
+4. Insert 16 : 16 > 5, move 5 to back, q = [9, 20, 5] and qsize = 2 16 > 9, move 9 to back, q = [20, 5, 9] and qsize = 1 16 < 20, insert 16, q = [20, 5, 9, 16] and move qsize  elements back, So q = [5, 9, 16, 20]
+5. Insert 7 : 7 > 5 , insert 7, move 5 to back, q = [9, 16, 20, 5] and call sorted insert with qsize as 3 7 < 9 , insert 7, q = [9, 16, 20, 5, 7] and then move qsize elements to back So q now becomes [5, 7, 9, 16, 20]
+6. Insert 10 : 10 > 5, move 5 to back, [7, 9, 16, 20, 5], qsize = 4 10 > 7 , move 7 to back, [9, 16, 20, 5, 7] , qsize = 3 10 > 9, move 9 to back, [16, 20, 5, 7, 9], qsize = 2 10 < 16, insert 10, [16, 20, 5, 7, 9, 10], and move qsize elements to back So now q becomes [5, 7, 9, 10, 20]
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// One by one moves qsize elements from front
+// to rear of the queue.
+void frontToEndN(queue<int>& q, int qsize)
+{
+    if (qsize <= 0)
+        return;
+
+    // pop front element and push
+    // this last in a queue
+    q.push(q.front());
+    q.pop();
+
+    // Recursive call for pushing element
+    frontToEndN(q, qsize - 1);
+}
+
+// Function to push an element in the queue with qsize
+void sortedInsert(queue<int>& q, int temp, int qsize)
+{
+    // Base condition
+    if (q.empty() || qsize == 0) {
+        q.push(temp);
+        return;
+    }
+    else if (temp <= q.front()) {
+
+        // Call stack with front of queue
+        q.push(temp);
+
+        // One by one move n-1 (old q size
+        // elements front to back
+        frontToEndN(q, qsize);
+    }
+    else {
+
+        // Push front element into
+        // last in a queue
+        q.push(q.front());
+        q.pop();
+
+        // Recursively move all smaller
+        // items to back and then insert
+        sortedInsert(q, temp, qsize - 1);
+    }
+}
+
+// Function to sort the given
+// queue using recursion
+void sortQueue(queue<int>& q)
+{
+    if (q.empty())
+        return;
+
+    // Get the front element which will
+    // be stored in this variable
+    // throughout the recursion stack
+    int temp = q.front();
+
+    q.pop();
+
+    sortQueue(q);
+
+    // Push the current element into the queue
+    // according to the sorting order
+    sortedInsert(q, temp, q.size());
+}
+
+int main()
+{
+    queue<int> qu;
+    qu.push(10);
+    qu.push(7);
+    qu.push(16);
+    qu.push(9);
+    qu.push(20);
+    qu.push(5);
+
+    sortQueue(qu);
+
+    while (!qu.empty()) {
+        cout << qu.front() << " ";
+        qu.pop();
+    }
+}
+
+Java
+
+// One by one moves qsize elements from front
+// to rear of the queue.
+import java.util.LinkedList;
+import java.util.Queue;
+
+public class GfG {
+
+    // One by one moves qsize elements from front to rear of the queue.
+    static void frontToEndN(Queue<Integer> q, int qsize) {
+        if (qsize <= 0)
+            return;
+
+        // pop front element and push this last in a queue
+        q.add(q.poll());
+
+        // Recursive call for pushing element
+        frontToEndN(q, qsize - 1);
+    }
+
+    // Function to push an element in the queue with qsize
+    static void sortedInsert(Queue<Integer> q, int temp, int qsize) {
+
+        // Base condition
+        if (q.isEmpty() || qsize == 0) {
+            q.add(temp);
+            return;
+        } else if (temp <= q.peek()) {
+
+            // Call stack with front of queue
+            q.add(temp);
+
+            // One by one move n-1 (old q size elements front to back
+            frontToEndN(q, qsize);
+        } else {
+
+            // Push front element into last in a queue
+            q.add(q.poll());
+
+            // Recursively move all smaller items to back and then insert
+            sortedInsert(q, temp, qsize - 1);
+        }
+    }
+
+    // Function to sort the given queue using recursion
+    static void sortQueue(Queue<Integer> q) {
+        if (q.isEmpty())
+            return;
+
+        // Get the front element which will be stored in this variable
+        // throughout the recursion stack
+        int temp = q.poll();
+
+        sortQueue(q);
+
+        // Push the current element into the queue according to the sorting order
+        sortedInsert(q, temp, q.size());
+    }
+
+    public static void main(String[] args) {
+        Queue<Integer> qu = new LinkedList<>();
+        qu.add(10);
+        qu.add(7);
+        qu.add(16);
+        qu.add(9);
+        qu.add(20);
+        qu.add(5);
+
+        sortQueue(qu);
+
+        while (!qu.isEmpty()) {
+            System.out.print(qu.poll() + " ");
+        }
+    }
+}
+
+Python
+
+# One by one moves qsize elements from front
+# to rear of the queue.
+def front_to_end_n(q, qsize):
+    if qsize <= 0:
+        return
+
+    # pop front element and push
+    # this last in a queue
+    q.append(q.pop(0))
+
+    # Recursive call for pushing element
+    front_to_end_n(q, qsize - 1)
+
+# Function to push an element in the queue with qsize
+
+def sorted_insert(q, temp, qsize):
+
+    # Base condition
+    if not q or qsize == 0:
+        q.append(temp)
+        return
+    elif temp <= q[0]:
+
+        # Call stack with front of queue
+        q.append(temp)
+
+        # One by one move n-1 (old q size elements front to back
+        front_to_end_n(q, qsize)
+    else:
+
+        # Push front element into last in a queue
+        q.append(q.pop(0))
+
+        # Recursively move all smaller items to back and then insert
+        sorted_insert(q, temp, qsize - 1)
+
+# Function to sort the given queue using recursion
+def sort_queue(q):
+    if not q:
+        return
+
+    # Get the front element which will
+    # be stored in this variable
+    # throughout the recursion stack
+    temp = q.pop(0)
+    sort_queue(q)
+
+    # Push the current element into the queue
+    # according to the sorting order
+    sorted_insert(q, temp, len(q))
+
+if __name__ == '__main__':
+    qu = []
+    qu.append(10)
+    qu.append(7)
+    qu.append(16)
+    qu.append(9)
+    qu.append(20)
+    qu.append(5)
+
+    sort_queue(qu)
+
+    while qu:
+        print(qu.pop(0), end=' ')
+
+C#
+
+// One by one moves qsize elements from front
+// to rear of the queue.
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // One by one moves qsize elements from front to rear of the queue.
+    static void FrontToEndN(Queue<int> q, int qsize) {
+        if (qsize <= 0)
+            return;
+
+        // pop front element and push this last in a queue
+        q.Enqueue(q.Dequeue());
+
+        // Recursive call for pushing element
+        FrontToEndN(q, qsize - 1);
+    }
+
+    // Function to push an element in the queue with qsize
+    static void SortedInsert(Queue<int> q, int temp, int qsize) {
+
+        // Base condition
+        if (q.Count == 0 || qsize == 0) {
+            q.Enqueue(temp);
+            return;
+        } else if (temp <= q.Peek()) {
+
+            // Call stack with front of queue
+            q.Enqueue(temp);
+
+            // One by one move n-1 (old q size elements front to back
+            FrontToEndN(q, qsize);
+        } else {
+
+            // Push front element into last in a queue
+            q.Enqueue(q.Dequeue());
+
+            // Recursively move all smaller items to back and then insert
+            SortedInsert(q, temp, qsize - 1);
+        }
+    }
+
+    // Function to sort the given queue using recursion
+    static void SortQueue(Queue<int> q) {
+        if (q.Count == 0)
+            return;
+
+        // Get the front element which will be stored in this variable
+        // throughout the recursion stack
+        int temp = q.Dequeue();
+
+        SortQueue(q);
+
+        // Push the current element into the queue according to the sorting order
+        SortedInsert(q, temp, q.Count);
+    }
+
+    public static void Main(string[] args) {
+        Queue<int> qu = new Queue<int>();
+        qu.Enqueue(10);
+        qu.Enqueue(7);
+        qu.Enqueue(16);
+        qu.Enqueue(9);
+        qu.Enqueue(20);
+        qu.Enqueue(5);
+
+        SortQueue(qu);
+
+        while (qu.Count > 0) {
+            Console.Write(qu.Dequeue() + " ");
+        }
+    }
+}
+
+JavaScript
+
+// One by one moves qsize elements from front
+// to rear of the queue.
+function frontToEndN(q, qsize) {
+    if (qsize <= 0) {
+        return;
+    }
+
+    // pop front element and push
+    // this last in a queue
+    q.push(q.shift());
+
+    // Recursive call for pushing element
+    frontToEndN(q, qsize - 1);
+}
+
+// Function to push an element in the queue with qsize
+function sortedInsert(q, temp, qsize) {
+    // Base condition
+    if (q.length === 0 || qsize === 0) {
+        q.push(temp);
+        return;
+    } else if (temp <= q[0]) {
+
+        // Call stack with front of queue
+        q.push(temp);
+
+        // One by one move n-1 (old q size elements front to back
+        frontToEndN(q, qsize);
+    } else {
+
+        // Push front element into last in a queue
+        q.push(q.shift());
+
+        // Recursively move all smaller items to back and then insert
+        sortedInsert(q, temp, qsize - 1);
+    }
+}
+
+// Function to sort the given queue using recursion
+function sortQueue(q) {
+    if (q.length === 0) {
+        return;
+    }
+
+    // Get the front element which will
+    // be stored in this variable
+    // throughout the recursion stack
+    let temp = q.shift();
+    sortQueue(q);
+
+    // Push the current element into the queue
+    // according to the sorting order
+    sortedInsert(q, temp, q.length);
+}
+
+// Example usage
+let qu = [];
+qu.push(10);
+qu.push(7);
+qu.push(16);
+qu.push(9);
+qu.push(20);
+qu.push(5);
+
+sortQueue(qu);
+
+while (qu.length > 0) {
+    process.stdout.write(qu.shift() + ' ');
+}
+
+Output
+
+5 7 9 10 16 20
+
+Time Complexity: The time complexity of this code is O(n^2), as the time taken to sort the queue is O(n^2) due to the use of recursion. The function pushInQueue() is called n times, and each time it calls the function FrontToLast() which takes O(n) time, resulting in a time complexity of O(n^2).
+
+Auxiliary Space: The Auxiliary Space of this code is O(n), as the maximum size of the queue will be n, where n is the number of elements in the queue.

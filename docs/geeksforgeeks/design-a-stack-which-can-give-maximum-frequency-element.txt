@@ -1,0 +1,686 @@
+Source: https://www.geeksforgeeks.org/dsa/design-a-stack-which-can-give-maximum-frequency-element/
+Title: Design a stack with max frequency element operation
+Extractor: 2
+
+Given n elements and the task is to implement a stack which removes and returns the maximum frequency element on every pop operation. If there's a tie in the frequency then the topmost highest frequency element will be returned. Examples:
+
+> Input: push(4) 8 push(6) 6 push(7) 7 push(6) 6 push(8); 4 Output: pop() -> returns 6, as 6 is the most frequent (frequency of 6 = 2 ). pop() -> returns 8 (6 also has the highest frequency but it is not the topmost)
+
+### Naive Approach - Priority Queue and Hash Map
+
+The idea is to use priority queue to order elements by frequency and a hash map to store frequencies of items.
+
+push(x) : We increment frequency in map and insert new frequency in the priority queue. pop(): We pop the top item from priority queue (which is the max frequency item).
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+priority_queue<pair<int, pair<int, int> > > q;
+unordered_map<int, int> freq;
+int pos = 0;
+
+void push(int x)
+{
+    ++freq[x];
+    q.emplace(freq[x], make_pair(pos, x));
+    ++pos;
+}
+
+int pop()
+{
+    auto val = q.top();
+    q.pop();
+    int x = val.second.second;
+    freq[x]--;
+    return x;
+}
+
+int main()
+{
+    push(4);
+    push(6);
+    push(7);
+    push(6);
+    push(8);
+
+    cout << (pop()) << "\n";
+    cout << (pop());
+
+    return 0;
+}
+
+Java
+
+import java.util.PriorityQueue;
+import java.util.HashMap;
+
+public class Main {
+
+    // PriorityQueue to store elements in ascending order of their frequency
+    // Each element of PriorityQueue is a triple of (-frequency, -position, value)
+    static PriorityQueue<int[]> q = new PriorityQueue<>(
+            (a, b) -> {
+                if (a[0] != b[0]) {
+                    return Integer.compare(a[0], b[0]);
+                }
+                if (a[1] != b[1]) {
+                    return Integer.compare(a[1], b[1]);
+                }
+                return Integer.compare(a[2], b[2]);
+            }
+    );
+
+    // HashMap to store the frequency of each element
+    static HashMap<Integer, Integer> freq = new HashMap<>();
+    static int pos = 0;
+
+    // Function to push an element into PriorityQueue and update its frequency
+    static void push(int x) {
+
+        // Push a triple of (-frequency, -position, value) into PriorityQueue
+        q.offer(new int[]{-freq.getOrDefault(x, 0), -pos, x});
+
+        // Increment the frequency of element x in HashMap
+        freq.put(x, freq.getOrDefault(x, 0) + 1);
+
+        // Increment the position
+        pos++;
+    }
+
+    // Function to remove an element from PriorityQueue and update its frequency
+    static int pop() {
+
+        // Remove the top element from PriorityQueue
+        int[] val = q.poll();
+
+        // Get the value of the removed element
+        int x = val[2];
+
+        // Decrement the frequency of element x in HashMap
+        freq.put(x, freq.get(x) - 1);
+
+        return x;
+    }
+
+    public static void main(String[] args) {
+        push(4);
+        push(6);
+        push(7);
+        push(6);
+        push(8);
+        System.out.println(pop());
+        System.out.println(pop());
+    }
+}
+
+Python
+
+import heapq
+from collections import defaultdict
+
+q = []
+freq = defaultdict(int)
+pos = 0
+
+def push(x):
+    global pos
+    heapq.heappush(q, (-freq[x], -pos, x))
+    freq[x] += 1
+    pos += 1
+
+def pop():
+    x = heapq.heappop(q)[2]
+    freq[x] -= 1
+    return x
+
+push(4)
+push(6)
+push(7)
+push(6)
+push(8)
+
+# Pop elements
+print(pop())
+print(pop())
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class FrequencyStack
+{
+    private Dictionary<int, Stack<int>> freqStack = new Dictionary<int, Stack<int>>();
+    private Dictionary<int, int> freq = new Dictionary<int, int>();
+    private int maxFreq = 0;
+
+    public void Push(int x)
+    {
+        if (!freq.ContainsKey(x))
+            freq[x] = 0;
+
+        freq[x]++;
+        if (!freqStack.ContainsKey(freq[x]))
+            freqStack[freq[x]] = new Stack<int>();
+
+        freqStack[freq[x]].Push(x);
+        if (freq[x] > maxFreq)
+            maxFreq = freq[x];
+    }
+
+    public int Pop()
+    {
+        int x = freqStack[maxFreq].Pop();
+        if (freqStack[maxFreq].Count == 0)
+            maxFreq--;
+
+        freq[x]--;
+        if (freq[x] == 0)
+            freq.Remove(x);
+
+        return x;
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        FrequencyStack stack = new FrequencyStack();
+        stack.Push(4);
+        stack.Push(6);
+        stack.Push(7);
+        stack.Push(6);
+        stack.Push(8);
+
+        // Pop elements
+        Console.WriteLine(stack.Pop());
+        Console.WriteLine(stack.Pop());
+    }
+}
+
+JavaScript
+
+// Create an empty object to store frequencies
+let freq = {};
+
+// Create an empty array to store values along with their frequencies and positions
+let arr = [];
+
+// Create a variable to keep track of the position of the last added element
+let pos = 0;
+
+// Function to add an element to the array and update its frequency
+function push(x) {
+
+// If the frequency of the element is not already in the object, add it
+if (freq[x] === undefined) freq[x] = 0;
+
+// Increase the frequency of the element and store its frequency, position and value in the array
+freq[x]++;
+arr.push([freq[x], ++pos, x]);
+}
+
+// Function to remove the element with the highest frequency and position from the array
+function pop() {
+
+// Create variables to store the maximum frequency and position of elements in the array
+let maxIdx = -1;
+let maxVal = -1;
+
+// Loop through the array to find the element with the highest frequency and position
+for (let i = 0; i < arr.length; i++) {
+let [freq, idx, val] = arr[i];
+if (freq > maxVal || (freq == maxVal && idx > maxIdx)) {
+maxIdx = idx;
+maxVal = freq;
+}
+}
+
+// Loop through the array again to find the index of the element with the highest frequency and position
+let idx = -1;
+for (let i = 0; i < arr.length; i++) {
+if (arr[i][1] == maxIdx) {
+idx = i;
+break;
+}
+}
+
+// Store the frequency, position and value of the element to be removed
+let [freq, pos, x] = arr[idx];
+
+// Decrease the frequency of the element in the object
+freq--;
+
+// If the frequency of the element becomes zero, delete it from the object
+if (freq == 0) delete freq[x];
+else freq[x] = freq;
+
+// Remove the element from the array
+arr.splice(idx, 1);
+
+// Return the value of the removed element
+return x;
+}
+
+// Add some elements to the array
+push(4);
+push(6);
+push(7);
+push(6);
+push(8);
+
+// Remove and print the two elements with the highest frequency and position
+console.log(pop());
+console.log(pop());
+
+Output
+
+6
+8
+
+Time Complexity: O(Log (n)) on average' Auxiliary Space: O(n)
+
+### Expected Approach - Using Two Hash Maps or Dictionaries
+
+One is frequency Hash Map which maps elements to their frequencies and other is setMap which maps all the element with same frequency in one group (Stack). FrequencyStack has 2 functions:
+
+1. push(int x): map the element (x) with frequency HashMap and update the maxfreq variable ( i.e. holds the maximum frequency till now ). setMap maintains a stack which contains all the elements with same frequency.
+2. pop(): First get the maxfreq element from setMap and then decrement the frequency of the popped element. After popping, if the stack becomes empty then decrement the maxfreq.
+
+C++
+
+// C++ implementation of the approach
+#include<bits/stdc++.h>
+using namespace std;
+
+// freqMap is to map element to its frequency
+unordered_map<int, int> freqMap;
+
+// setMap is to map frequency to the
+// element list with this frequency
+unordered_map<int, stack<int> > setMap;
+
+// Variable which stores maximum frequency
+// of the stack element
+int maxfreq = 0;
+
+// Function to insert x in the stack
+void push(int x)
+{
+
+    // Frequency of x
+    int freq = freqMap[x] + 1;
+
+    // Mapping of x with its frequency
+    freqMap[x]= freq;
+
+    // Update maxfreq variable
+    if (freq > maxfreq)
+        maxfreq = freq;
+
+    // Map element to its frequency list
+    // If given frequency list doesn't exist
+    // make a new list of the required frequency
+    setMap[freq].push(x);
+}
+
+// Function to remove maximum frequency element
+int pop()
+{
+
+    // Remove element from setMap
+    // from maximum frequency list
+    int top = setMap[maxfreq].top();
+    setMap[maxfreq].pop();
+
+    // Decrement the frequency of the popped element
+    freqMap[top]--;
+
+    // If whole list is popped
+    // then decrement the maxfreq
+    if (setMap[maxfreq].size() == 0)
+        maxfreq--;
+    return top;
+}
+
+// Driver code
+int main()
+{
+    push(4);
+    push(6);
+    push(7);
+    push(6);
+    push(8);
+    cout << (pop()) << "\n" ;
+    cout << (pop());
+    return 0;
+}
+
+Java
+
+// Java implementation of the approach
+import java.util.*;
+
+public class freqStack {
+
+    // freqMap is to map element to its frequency
+    static Map<Integer, Integer> freqMap = new HashMap<>();
+
+    // setMap is to map frequency to the
+    // element list with this frequency
+    static Map<Integer, Stack<Integer> > setMap = new HashMap<>();
+
+    // Variable which stores maximum frequency
+    // of the stack element
+    static int maxfreq = 0;
+
+    // Function to insert x in the stack
+    public static void push(int x)
+    {
+
+        // Frequency of x
+        int freq = freqMap.getOrDefault(x, 0) + 1;
+
+        // Mapping of x with its frequency
+        freqMap.put(x, freq);
+
+        // Update maxfreq variable
+        if (freq > maxfreq)
+            maxfreq = freq;
+
+        // Map element to its frequency list
+        // If given frequency list doesn't exist
+        // make a new list of the required frequency
+        setMap.computeIfAbsent(freq, z -> new Stack()).push(x);
+    }
+
+    // Function to remove maximum frequency element
+    public static int pop()
+    {
+
+        // Remove element from setMap
+        // from maximum frequency list
+        int top = setMap.get(maxfreq).pop();
+
+        // Decrement the frequency of the popped element
+        freqMap.put(top, freqMap.get(top) - 1);
+
+        // If whole list is popped
+        // then decrement the maxfreq
+        if (setMap.get(maxfreq).size() == 0)
+            maxfreq--;
+        return top;
+    }
+
+    // Driver code
+    public static void main(String[] args)
+    {
+
+        // Push elements to the stack
+        push(4);
+        push(6);
+        push(7);
+        push(6);
+        push(8);
+
+        // Pop elements
+        System.out.println(pop());
+        System.out.println(pop());
+    }
+}
+
+Python
+
+# Python3 implementation of the approach
+
+# freqMap is to map element to its frequency
+freqMap = {};
+
+# setMap is to map frequency to the
+# element list with this frequency
+setMap = {};
+
+# Variable which stores maximum frequency
+# of the stack element
+maxfreq = 0;
+
+# Function to insert x in the stack
+def push(x) :
+    global maxfreq;
+    if x not in freqMap :
+        freqMap[x] = 0
+
+    # Frequency of x
+    freq = freqMap[x] + 1;
+
+    # Mapping of x with its Frequency
+    freqMap[x]= freq
+
+    # Update maxfreq Variable
+    if (freq > maxfreq) :
+        maxfreq = freq
+
+    # Map element to its frequency list
+    # If given frequency list doesn't exist
+    # make a new list of the required frequency
+    if freq not in setMap :
+        setMap[freq] = []
+
+    setMap[freq].append(x);
+
+# Function to remove maximum frequency element
+def pop() :
+
+    global maxfreq
+
+    # Remove element from setMap
+    # from maximum frequency list
+    top = setMap[maxfreq][-1];
+    setMap[maxfreq].pop();
+
+    # Decrement the frequency
+    # of the popped element
+    freqMap[top] -= 1;
+
+    # If whole list is popped
+    # then decrement the maxfreq
+    if (len(setMap[maxfreq]) == 0) :
+        maxfreq -= 1;
+
+    return top;
+
+# Driver code
+if __name__ == "__main__" :
+
+    # Push elements to the stack
+    push(4);
+    push(6);
+    push(7);
+    push(6);
+    push(8);
+
+    # Pop elements
+    print(pop()) ;
+    print(pop());
+
+# This code is contributed by AnkitRai01
+
+C#
+
+// C# implementation of the approach
+using System;
+using System.Collections.Generic;
+class GFG {
+
+    // freqMap is to map element to its frequency
+    static Dictionary<int, int> freqMap = new Dictionary<int, int>();
+
+    // setMap is to map frequency to the
+    // element list with this frequency
+    static Dictionary<int, Stack<int>> setMap = new Dictionary<int, Stack<int>>();
+
+    // Variable which stores maximum frequency
+    // of the stack element
+    static int maxfreq = 0;
+
+    // Function to insert x in the stack
+    static void push(int x)
+    {
+        int freq = 1;
+
+        // Frequency of x
+        if(freqMap.ContainsKey(x))
+        {
+            freq = freq + freqMap[x];
+        }
+
+        // Mapping of x with its frequency
+        freqMap[x] = freq;
+
+        // Update maxfreq variable
+        if (freq > maxfreq)
+            maxfreq = freq;
+
+        // Map element to its frequency list
+        // If given frequency list doesn't exist
+        // make a new list of the required frequency
+        if(!setMap.ContainsKey(freq))
+        {
+            setMap[freq] = new Stack<int>();
+        }
+
+        setMap[freq].Push(x);
+    }
+
+    // Function to remove maximum frequency element
+    static int pop()
+    {
+
+        // Remove element from setMap
+        // from maximum frequency list
+        int top = setMap[maxfreq].Peek();
+        setMap[maxfreq].Pop();
+
+        // Decrement the frequency of the popped element
+        freqMap[top] = freqMap[top] - 1;
+
+        // If whole list is popped
+        // then decrement the maxfreq
+        if (setMap[maxfreq].Count == 0)
+            maxfreq--;
+        return top;
+    }
+
+  static void Main() {
+    // Push elements to the stack
+    push(4);
+    push(6);
+    push(7);
+    push(6);
+    push(8);
+
+    // Pop elements
+    Console.WriteLine(pop()) ;
+    Console.WriteLine(pop());
+  }
+}
+
+// This code is contributed by rameshtravel07.
+
+JavaScript
+
+<script>
+
+// Javascript implementation of the approach
+
+// freqMap is to map element to its frequency
+var freqMap = new Map();
+
+// setMap is to map frequency to the
+// element list with this frequency
+var setMap = new Map();
+
+// Variable which stores maximum frequency
+// of the stack element
+var maxfreq = 0;
+
+// Function to insert x in the stack
+function push(x)
+{
+
+    // Frequency of x
+    if(!freqMap.has(x))
+        freqMap.set(x, 1)
+    else
+        freqMap.set(x, freqMap.get(x)+1)
+
+    var freq = freqMap.get(x)
+
+    // Mapping of x with its frequency
+    freqMap.set(x, freq);
+
+    // Update maxfreq variable
+    if (freq > maxfreq)
+        maxfreq = freq;
+
+    // Map element to its frequency list
+    // If given frequency list doesn't exist
+    // make a new list of the required frequency
+    if(!setMap.has(freq))
+    {
+        setMap.set(freq, [x])
+    }
+    else
+    {
+        var tmp = setMap.get(freq);
+        tmp.push(x);
+        setMap.set(freq, tmp);
+    }
+}
+
+// Function to remove maximum frequency element
+function pop()
+{
+
+    // Remove element from setMap
+    // from maximum frequency list
+    var tmp = setMap.get(maxfreq);
+    var top = tmp[tmp.length-1];
+    tmp.pop();
+    setMap.set(maxfreq, tmp);
+
+    // Decrement the frequency of the popped element
+    if(freqMap.has(top))
+        freqMap.set(top, freqMap.get(top)-1)
+
+    // If whole list is popped
+    // then decrement the maxfreq
+    if (setMap.get(maxfreq).length == 0)
+        maxfreq--;
+    return top;
+}
+
+// Driver code
+// Push elements to the stack
+push(4);
+push(6);
+push(7);
+push(6);
+push(8);
+
+// Pop elements
+document.write( (pop()) + "<br>");
+document.write( (pop()));
+
+// This code is contributed by itsok.
+</script>
+
+Output
+
+6
+8
+
+Time Complexity: O(1) on average for both push() and pop() Auxiliary Space : O(n)

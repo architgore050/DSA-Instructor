@@ -1,0 +1,637 @@
+Source: https://www.geeksforgeeks.org/dsa/tarjan-algorithm-find-strongly-connected-components/
+Title: Tarjan's Algorithm to find Strongly Connected Components
+Extractor: 2
+
+A directed graph is strongly connected if there is a path between all pairs of vertices. A strongly connected component ( SCC ) of a directed graph is a maximal strongly connected subgraph. For example, there are 3 SCCs in the following graph:
+
+Example:
+
+> Input: adj[][] = [[1], [2], [0, 3], [4], [3, 5], []] Output: [[0, 1, 2], [3, 4], [5]] Explanation: There are 3 different Strongly Connected Components. They are {0, 1, 2}, {3, 4}, {5}.
+
+We have discussed Kosaraju's algorithm for strongly connected components . The previously discussed algorithm requires two DFS traversals of a Graph. In this post, Tarjan's Algorithm is discussed that requires only one DFS traversal:
+
+Tarjan Algorithm is based on the following facts:
+
+- DFS search produces a DFS tree/forest
+- Strongly Connected Components form subtrees of the DFS tree.
+- If we can find the head of such subtrees, we can print/store all the nodes in that subtree (including the head) and that will be one SCC.
+- There is no back edge from one SCC to another (There can be cross edges, but cross edges will not be used while processing the graph).
+
+To find the head of an SCC, we calculate the disc and low array (as done for articulation point , bridge , and biconnected component ). As discussed in the previous posts, low[u] indicates the earliest visited vertex (the vertex with minimum discovery time) that can be reached from a subtree rooted with u. A node u is head if disc[u] = low[u]
+
+Below is an illustration of the above approach:
+
+To solve the problem follow the below idea:
+
+Strongly Connected Component relates to directed graph only, but Disc and Low values relate to both directed and undirected graph, so in the above pic we have taken an undirected graph.
+
+In the above Figure, we have shown a graph and one of the DFS trees (There could be different DFS trees on the same graph depending on the order in which edges are traversed). In a DFS tree, continuous arrows are tree edges, and dashed arrows are back edges ( DFS Tree Edges ). Disc and Low values are shown in the Figure for every node as (Disc/Low).
+
+> Disc: This is the time when a node is visited 1 st time while DFS traversal. For nodes A, B, C, .., and J in the DFS tree, Disc values are 1, 2, 3, .., 10. Low: In the DFS tree, Tree edges take us forward, from the ancestor node to one of its descendants. For example, from node C, tree edges can take us to node G, node I, etc. Back edges take us backward, from a descendant node to one of its ancestors.
+
+For example: From node G, the Back edges take us to E or C. If we look at both the Tree and Back edges together, then we can see that if we start traversal from one node, we may go down the tree via Tree edges and then go up via back edges.
+
+For example, from node E, we can go down to G and then go up to C. Similarly from E, we can go down to I or J and then go up to F. "Low" value of a node tells the topmost reachable ancestor (with minimum possible Disc value) via the subtree of that node. So for any node, a Low value is equal to its Disc value anyway (A node is the ancestor of itself). Then we look into its subtree and see if there is any node that can take us to any of its ancestors.
+
+If there are multiple back edges in the subtree that take us to different ancestors, then we take the one with the minimum Disc value (i.e. the topmost one). If we look at node F, it has two subtrees. Subtree with node G takes us to E and C. The other subtree takes us back to F only. Here topmost ancestor is C where F can reach and so the Low value of F is 3 (The Disc value of C).
+
+Based on the above discussion, it should be clear that the Low values of B, C, and D are 1 (As A is the topmost node where B, C, and D can reach). In the same way, the Low values of E, F, and G are 3, and the Low values of H, I, and J are 6. For any node u, when DFS starts, Low will be set to its Disc 1 st
+
+Then later on DFS will be performed on each of its children v one by one, Low value of u can change in two cases:
+
+> Case1 (Tree Edge): If node v is not visited already, then after the DFS of v is complete, a minimum of low[u] and low[v] will be updated to low[u]. low[u] = min(low[u], low[v]); Case 2 (Back Edge): When child v is already visited, then a minimum of low[u] and Disc[v] will be updated to low[u]. low[u] = min(low[u], disc[v]);
+
+In case two, can we take low[v] instead of the disc[v] ?? The answer is NO . If you can think why the answer is NO , you probably understood the Low and Disc concept.
+
+Same Low and Disc values help to solve other graph problems like articulation point , bridge, and biconnected component . To track the subtree rooted at the head, we can use a stack (keep pushing the node while visiting). When a head node is found, pop all nodes from the stack till you get the head out of the stack. To make sure, we don't consider cross edges, when we reach a node that is already visited, we should process the visited node only if it is present in the stack, or else ignore the node.
+
+Below is the implementation of Tarjan's algorithm to print all SCCs.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <algorithm>
+using namespace std;
+
+// A recursive DFS based function used by getSCCs()
+// u        -> The vertex to be visited next
+// disc[]   -> Stores discovery times of visited vertices
+// low[]    -> Earliest visited vertex that can be reached
+//             from subtree rooted with current vertex
+// st       -> Stack to store all active DFS vertices
+// inSt[]   -> Boolean array to check whether a node is in stack
+// timer    -> Global time counter for discovery times
+// allSCCs  -> Stores all strongly connected components
+void findSCC(int u, vector<vector<int>> &adj, vector<int> &disc, vector<int> &low,
+             vector<bool> &inSt, stack<int> &st, int &timer, vector<vector<int>> &allSCCs) {
+
+    // Initialize discovery time and low value
+    disc[u] = low[u] = ++timer;
+
+    // Push current vertex to stack and mark it as in stack
+    st.push(u);
+    inSt[u] = true;
+
+    // Go through all vertices adjacent to this
+    for (int v : adj[u]) {
+
+        // If v is not visited yet, then recur for it
+        // Case 1: Tree edge
+        if (disc[v] == -1) {
+
+            findSCC(v, adj, disc, low, inSt, st, timer, allSCCs);
+
+            // Check if the subtree rooted with v has a
+            // connection to one of the ancestors of u
+            low[u] = min(low[u], low[v]);
+        }
+
+        // Update low value of u only if v is still in stack
+        // Case 2: Back edge (not cross edge)
+        else if (inSt[v]) {
+            low[u] = min(low[u], disc[v]);
+        }
+    }
+
+    // If u is head node of SCC, pop the stack and store the SCC
+    if (low[u] == disc[u]) {
+
+        vector<int> scc;
+
+        // Pop all vertices from stack till u is found
+        while (true) {
+
+            int x = st.top();
+            st.pop();
+            inSt[x] = false;
+
+            scc.push_back(x);
+
+            if (x == u)
+                break;
+        }
+
+        // Store one strongly connected component
+        allSCCs.push_back(scc);
+    }
+}
+
+// The function to do DFS traversal.
+// It uses findSCC() to find all strongly connected components
+vector<vector<int>> getSCCs(vector<vector<int>> &adj) {
+
+    int n = adj.size();
+
+    vector<int> disc(n, -1);
+    vector<int> low(n, -1);
+    vector<bool> inSt(n, false);
+
+    stack<int> st;
+    int timer = 0;
+
+    vector<vector<int>> allSCCs;
+
+    // Call the recursive helper function to find SCCs
+    // in DFS tree with vertex i
+    for (int i = 0; i < n; i++) {
+
+        if (disc[i] == -1) {
+            findSCC(i, adj, disc, low, inSt, st, timer, allSCCs);
+        }
+    }
+
+    return allSCCs;
+}
+
+int main() {
+
+    int n = 6;
+    vector<vector<int>> adj(n);
+
+    // Graph construction
+    adj[0].push_back(1);
+    adj[1].push_back(2);
+    adj[2].push_back(0);
+    adj[2].push_back(3);
+    adj[3].push_back(4);
+    adj[4].push_back(3);
+    adj[4].push_back(5);
+
+    vector<vector<int>> sccs = getSCCs(adj);
+
+    cout << "Strongly Connected Components:\n";
+
+    for (auto &scc : sccs) {
+        for (int node : scc) {
+            cout << node << " ";
+        }
+        cout << "\n";
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.Stack;
+import java.util.Arrays;
+
+class GFG {
+
+    // A recursive DFS based function used by getSCCs()
+    // u        -> The vertex to be visited next
+    // disc[]   -> Stores discovery times of visited vertices
+    // low[]    -> Earliest visited vertex that can be reached
+    //             from subtree rooted with current vertex
+    // st       -> Stack to store all active DFS vertices
+    // inSt[]   -> Boolean array to check whether a node is in stack
+    // timer    -> Global time counter for discovery times
+    // allSCCs  -> Stores all strongly connected components
+    static void findSCC(int u, int[][] adj, int[] disc, int[] low, boolean[] inSt,
+                        Stack<Integer> st, int[] timer, ArrayList<ArrayList<Integer>> allSCCs) {
+
+        // Initialize discovery time and low value
+        disc[u] = low[u] = ++timer[0];
+
+        // Push current vertex to stack and mark it as in stack
+        st.push(u);
+        inSt[u] = true;
+
+        // Go through all vertices adjacent to this
+        for (int v : adj[u]) {
+
+            // If v is not visited yet, then recur for it
+            // Case 1: Tree edge
+            if (disc[v] == -1) {
+
+                findSCC(v, adj, disc, low, inSt, st, timer, allSCCs);
+
+                // Check if the subtree rooted with v has a
+                // connection to one of the ancestors of u
+                low[u] = Math.min(low[u], low[v]);
+            }
+
+            // Update low value of u only if v is still in stack
+            // Case 2: Back edge (not cross edge)
+            else if (inSt[v]) {
+                low[u] = Math.min(low[u], disc[v]);
+            }
+        }
+
+        // If u is head node of SCC, pop the stack and store the SCC
+        if (low[u] == disc[u]) {
+
+            ArrayList<Integer> scc = new ArrayList<>();
+
+            // Pop all vertices from stack till u is found
+            while (true) {
+
+                int x = st.pop();
+                inSt[x] = false;
+
+                scc.add(x);
+
+                if (x == u)
+                    break;
+            }
+
+            // Store one strongly connected component
+            allSCCs.add(scc);
+        }
+    }
+
+    // The function to do DFS traversal.
+    // It uses findSCC() to find all strongly connected components
+    static ArrayList<ArrayList<Integer>> getSCCs(int[][] adj) {
+
+        int n = adj.length;
+
+        int[] disc = new int[n];
+        int[] low = new int[n];
+        boolean[] inSt = new boolean[n];
+        Arrays.fill(disc, -1);
+
+        Stack<Integer> st = new Stack<>();
+        int[] timer = new int[1];
+
+        ArrayList<ArrayList<Integer>> allSCCs = new ArrayList<>();
+
+        // Call the recursive helper function to find SCCs
+        // in DFS tree with vertex i
+        for (int i = 0; i < n; i++) {
+
+            if (disc[i] == -1) {
+                findSCC(i, adj, disc, low, inSt, st, timer, allSCCs);
+            }
+        }
+
+        return allSCCs;
+    }
+
+    public static void main(String[] args) {
+
+        int[][] adj = new int[6][];
+        adj[0] = new int[]{1};
+        adj[1] = new int[]{2};
+        adj[2] = new int[]{0, 3};
+        adj[3] = new int[]{4};
+        adj[4] = new int[]{3, 5};
+        adj[5] = new int[]{};
+
+        ArrayList<ArrayList<Integer>> sccs = getSCCs(adj);
+
+        System.out.println("Strongly Connected Components:");
+
+        for (ArrayList<Integer> scc : sccs) {
+            for (int x : scc) {
+                System.out.print(x + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+
+Python
+
+# A recursive DFS based function used by getSCCs()
+# u        -> The vertex to be visited next
+# disc[]   -> Stores discovery times of visited vertices
+# low[]    -> Earliest visited vertex that can be reached
+#             from subtree rooted with current vertex
+# st       -> Stack to store all active DFS vertices
+# inSt[]   -> Boolean array to check whether a node is in stack
+# timer    -> Global time counter for discovery times
+# allSCCs  -> Stores all strongly connected components
+def findSCC(u, adj, disc, low, inSt, st, timer, allSCCs):
+
+    # Initialize discovery time and low value
+    timer[0] += 1
+    disc[u] = low[u] = timer[0]
+
+    # Push current vertex to stack and mark it as in stack
+    st.append(u)
+    inSt[u] = True
+
+    # Go through all vertices adjacent to this
+    for v in adj[u]:
+
+        # If v is not visited yet, then recur for it
+        # Case 1: Tree edge
+        if disc[v] == -1:
+
+            findSCC(v, adj, disc, low, inSt, st, timer, allSCCs)
+
+            # Check if the subtree rooted with v has a
+            # connection to one of the ancestors of u
+            low[u] = min(low[u], low[v])
+
+        # Update low value of u only if v is still in stack
+        # Case 2: Back edge (not cross edge)
+        elif inSt[v]:
+            low[u] = min(low[u], disc[v])
+
+    # If u is head node of SCC, pop the stack and store the SCC
+    if low[u] == disc[u]:
+
+        scc = []
+
+        # Pop all vertices from stack till u is found
+        while True:
+
+            x = st.pop()
+            inSt[x] = False
+            scc.append(x)
+
+            if x == u:
+                break
+
+        # Store one strongly connected component
+        allSCCs.append(scc)
+
+# The function to do DFS traversal.
+# It uses findSCC() to find all strongly connected components
+def getSCCs(adj):
+
+    n = len(adj)
+    disc = [-1] * n
+    low = [-1] * n
+    inSt = [False] * n
+
+    st = []
+    timer = [0]
+    allSCCs = []
+
+    # Call the recursive helper function to find SCCs
+    # in DFS tree with vertex i
+    for i in range(n):
+
+        if disc[i] == -1:
+            findSCC(i, adj, disc, low, inSt, st, timer, allSCCs)
+
+    return allSCCs
+
+if __name__ == "__main__":
+
+    adj = [[] for _ in range(6)]
+
+    # Graph construction
+    adj[0].append(1)
+    adj[1].append(2)
+    adj[2].append(0)
+    adj[2].append(3)
+    adj[3].append(4)
+    adj[4].append(3)
+    adj[4].append(5)
+
+    sccs = getSCCs(adj)
+
+    print("Strongly Connected Components:")
+    for scc in sccs:
+        print(*scc)
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    // A recursive DFS based function used by getSCCs()
+    // u        -> The vertex to be visited next
+    // disc[]   -> Stores discovery times of visited vertices
+    // low[]    -> Earliest visited vertex that can be reached
+    //             from subtree rooted with current vertex
+    // st       -> Stack to store all active DFS vertices
+    // inSt[]   -> Boolean array to check whether a node is in stack
+    // timer    -> Global time counter for discovery times
+    // allSCCs  -> Stores all strongly connected components
+    static void findSCC(int u, List<List<int>> adj, int[] disc, int[] low,
+                        bool[] inSt, Stack<int> st, ref int timer, List<List<int>> allSCCs) {
+
+        // Initialize discovery time and low value
+        disc[u] = low[u] = ++timer;
+
+        // Push current vertex to stack and mark it as in stack
+        st.Push(u);
+        inSt[u] = true;
+
+        // Go through all vertices adjacent to this
+        foreach (int v in adj[u]) {
+
+            // If v is not visited yet, then recur for it
+            // Case 1: Tree edge
+            if (disc[v] == -1) {
+
+                findSCC(v, adj, disc, low, inSt, st, ref timer, allSCCs);
+
+                // Check if the subtree rooted with v has a
+                // connection to one of the ancestors of u
+                low[u] = Math.Min(low[u], low[v]);
+            }
+
+            // Update low value of u only if v is still in stack
+            // Case 2: Back edge (not cross edge)
+            else if (inSt[v]) {
+                low[u] = Math.Min(low[u], disc[v]);
+            }
+        }
+
+        // If u is head node of SCC, pop the stack and store the SCC
+        if (low[u] == disc[u]) {
+
+            List<int> scc = new List<int>();
+
+            // Pop all vertices from stack till u is found
+            while (true) {
+
+                int x = st.Pop();
+                inSt[x] = false;
+                scc.Add(x);
+
+                if (x == u)
+                    break;
+            }
+
+            // Store one strongly connected component
+            allSCCs.Add(scc);
+        }
+    }
+
+    // The function to do DFS traversal.
+    // It uses findSCC() to find all strongly connected components
+    static List<List<int>> getSCCs(List<List<int>> adj) {
+
+        int n = adj.Count;
+
+        int[] disc = new int[n];
+        int[] low = new int[n];
+        bool[] inSt = new bool[n];
+
+        for (int i = 0; i < n; i++)
+            disc[i] = -1;
+
+        Stack<int> st = new Stack<int>();
+        int timer = 0;
+
+        List<List<int>> allSCCs = new List<List<int>>();
+
+        // Call the recursive helper function to find SCCs
+        // in DFS tree with vertex i
+        for (int i = 0; i < n; i++) {
+
+            if (disc[i] == -1) {
+                findSCC(i, adj, disc, low, inSt, st, ref timer, allSCCs);
+            }
+        }
+
+        return allSCCs;
+    }
+
+    static void Main() {
+
+        int n = 6;
+
+        // Adjacency list using arrays
+        int[][] adjArr = new int[n][];
+
+        adjArr[0] = new int[] { 1 };
+        adjArr[1] = new int[] { 2 };
+        adjArr[2] = new int[] { 0, 3 };
+        adjArr[3] = new int[] { 4 };
+        adjArr[4] = new int[] { 3, 5 };
+        adjArr[5] = new int[] { };
+
+        // Convert int[][] to List<List<int>>
+        var adj = new List<List<int>>();
+
+        for (int i = 0; i < n; i++) {
+            adj.Add(new List<int>(adjArr[i]));
+        }
+
+        var sccs = getSCCs(adj);
+
+        Console.WriteLine("Strongly Connected Components:");
+
+        foreach (var scc in sccs) {
+            foreach (int x in scc) {
+                Console.Write(x + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+// A recursive DFS based function used by getSCCs()
+// u        -> The vertex to be visited next
+// disc[]   -> Stores discovery times of visited vertices
+// low[]    -> Earliest visited vertex that can be reached
+//             from subtree rooted with current vertex
+// st       -> Stack to store all active DFS vertices
+// inSt[]   -> Boolean array to check whether a node is in stack
+// timer    -> Global time counter for discovery times
+// allSCCs  -> Stores all strongly connected components
+function findSCC(u, adj, disc, low, inSt, st, timer, allSCCs) {
+
+    // Initialize discovery time and low value
+    timer.val++;
+    disc[u] = low[u] = timer.val;
+
+    // Push current vertex to stack and mark it as in stack
+    st.push(u);
+    inSt[u] = true;
+
+    // Go through all vertices adjacent to this
+    for (let v of adj[u]) {
+
+        // If v is not visited yet, then recur for it
+        // Case 1: Tree edge
+        if (disc[v] === -1) {
+
+            findSCC(v, adj, disc, low, inSt, st, timer, allSCCs);
+
+            // Check if the subtree rooted with v has a
+            // connection to one of the ancestors of u
+            low[u] = Math.min(low[u], low[v]);
+        }
+
+        // Update low value of u only if v is still in stack
+        // Case 2: Back edge (not cross edge)
+        else if (inSt[v]) {
+            low[u] = Math.min(low[u], disc[v]);
+        }
+    }
+
+    // If u is head node of SCC, pop the stack and store the SCC
+    if (low[u] === disc[u]) {
+
+        let scc = [];
+
+        // Pop all vertices from stack till u is found
+        while (true) {
+
+            let x = st.pop();
+            inSt[x] = false;
+            scc.push(x);
+
+            if (x === u)
+                break;
+        }
+
+        // Store one strongly connected component
+        allSCCs.push(scc);
+    }
+}
+
+function getSCCs(adj) {
+
+    let n = adj.length;
+    let disc = Array(n).fill(-1);
+    let low = Array(n).fill(-1);
+    let inSt = Array(n).fill(false);
+
+    let st = [];
+    let timer = { val: 0 };
+    let allSCCs = [];
+
+    // Call the recursive helper function to find SCCs
+    // in DFS tree with vertex i
+    for (let i = 0; i < n; i++) {
+
+        if (disc[i] === -1) {
+            findSCC(i, adj, disc, low, inSt, st, timer, allSCCs);
+        }
+    }
+
+    return allSCCs;
+}
+
+// Driver Code
+let adj = Array.from({ length: 6 }, () => []);
+
+adj[0].push(1);
+adj[1].push(2);
+adj[2].push(0);
+adj[2].push(3);
+adj[3].push(4);
+adj[4].push(3);
+adj[4].push(5);
+
+let sccs = getSCCs(adj);
+
+console.log("Strongly Connected Components:");
+for (let scc of sccs) {
+    console.log(scc.join(" "));
+}
+
+Output
+
+Strongly Connected Components:
+5
+4 3
+2 1 0
+
+Time Complexity: The above algorithm mainly calls DFS, DFS takes O(V+E) for a graph represented using an adjacency list. Auxiliary Space: O(V)

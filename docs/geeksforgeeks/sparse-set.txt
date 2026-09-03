@@ -1,0 +1,1074 @@
+Source: https://www.geeksforgeeks.org/dsa/sparse-set/
+Title: Sparse Set
+Extractor: 2
+
+How to do the following operations efficiently if there are large number of queries for them.
+
+1. Insertion
+2. Deletion
+3. Searching
+4. Clearing/Removing all the elements.
+
+One solution is to use a Self-Balancing Binary Search Tree like Red-Black Tree, AVL Tree, etc. Time complexity of this solution for insertion, deletion and searching is O(Log n). We can also use Hashing. With hashing, time complexity of first three operations is O(1). But time complexity of the fourth operation is O(n). We can also use bit-vector (or direct access table), but bit-vector also requires O(n) time for clearing.
+
+Sparse Set outperforms all BST, Hashing and bit vector. We assume that we are given range of data (or maximum value an element can have) and maximum number of elements that can be stored in set. The idea is to maintain two arrays: sparse[] and dense[].
+
+dense[]   ==> Stores the actual elements
+sparse[]  ==> This is like bit-vector where
+              we use elements as index. Here
+              values are not binary, but
+              indexes of dense array.
+maxVal    ==> Maximum value this set can
+              store. Size of sparse[] is
+              equal to maxVal + 1.
+capacity  ==> Capacity of Set. Size of sparse
+              is equal to capacity.
+n         ==> Current number of elements in
+              Set.
+
+insert(x): Let x be the element to be inserted. If x is greater than maxVal or n (current number of elements) is greater than equal to capacity, we return. If none of the above conditions is true, we insert x in dense[] at index n (position after last element in a 0 based indexed array), increment n by one (Current number of elements) and store n (index of x in dense[]) at sparse[x]. search(x): To search an element x, we use x as index in sparse[]. The value sparse[x] is used as index in dense[]. And if value of dense[sparse[x]] is equal to x, we return dense[x]. Else we return -1. delete(x): To delete an element x, we replace it with last element in dense[] and update index of last element in sparse[]. Finally decrement n by 1. clear(): Set n = 0. print(): We can print all elements by simply traversing dense[].
+
+Illustration:
+
+Let there be a set with two elements {3, 5}, maximum
+value as 10 and capacity as 4. The set would be
+represented as below.
+
+Initially:
+maxVal   = 10  // Size of sparse
+capacity = 4  // Size of dense
+n = 2         // Current number of elements in set
+
+// dense[] Stores actual elements
+dense[]  = {3, 5, _, _}
+
+// Uses actual elements as index and stores
+// indexes of dense[]
+sparse[] = {_, _, _, 0, _, 1, _, _, _, _,}
+
+'_' means it can be any value and not used in
+sparse set
+
+Insert 7:
+n        = 3
+dense[]  = {3, 5, 7, _}
+sparse[] = {_, _, _, 0, _, 1, _, 2, _, _,}
+
+Insert 4:
+n        = 4
+dense[]  = {3, 5, 7, 4}
+sparse[] = {_, _, _, 0, 3, 1, _, 2, _, _,}
+
+Delete 3:
+n        = 3
+dense[]  = {4, 5, 7, _}
+sparse[] = {_, _, _, _, 0, 1, _, 2, _, _,}
+
+Clear (Remove All):
+n        = 0
+dense[]  = {_, _, _, _}
+sparse[] = {_, _, _, _, _, _, _, _, _, _,}
+
+Below is the implementation of above functions.
+
+C++
+
+/* A C++ program to implement Sparse Set and its operations */
+#include<bits/stdc++.h>
+using namespace std;
+
+// A structure to hold the three parameters required to
+// represent a sparse set.
+class SSet
+{
+    int *sparse;   // To store indexes of actual elements
+    int *dense;    // To store actual set elements
+    int n;         // Current number of elements
+    int capacity;  // Capacity of set or size of dense[]
+    int maxValue;  /* Maximum value in set or size of
+                     sparse[] */
+
+public:
+    // Constructor
+    SSet(int maxV, int cap)
+    {
+        sparse = new int[maxV+1];
+        dense  = new int[cap];
+        capacity = cap;
+        maxValue = maxV;
+        n = 0;  // No elements initially
+    }
+
+    // Destructor
+    ~SSet()
+    {
+        delete[] sparse;
+        delete[] dense;
+    }
+
+    // If element is present, returns index of
+    // element in dense[]. Else returns -1.
+    int search(int x);
+
+    // Inserts a new element into set
+    void insert(int x);
+
+    // Deletes an element
+    void deletion(int x);
+
+    // Prints contents of set
+    void print();
+
+    // Removes all elements from set
+    void clear() { n = 0; }
+
+    // Finds intersection of this set with s
+    // and returns pointer to result.
+    SSet* intersection(SSet &s);
+
+    // A function to find union of two sets
+    // Time Complexity-O(n1+n2)
+    SSet *setUnion(SSet &s);
+};
+
+// If x is present in set, then returns index
+// of it in dense[], else returns -1.
+int SSet::search(int x)
+{
+    // Searched element must be in range
+    if (x > maxValue)
+        return -1;
+
+    // The first condition verifies that 'x' is
+    // within 'n' in this set and the second
+    // condition tells us that it is present in
+    // the data structure.
+    if (sparse[x] < n && dense[sparse[x]] == x)
+        return (sparse[x]);
+
+    // Not found
+    return -1;
+}
+
+// Inserts a new element into set
+void SSet::insert(int x)
+{
+    //  Corner cases, x must not be out of
+    // range, dense[] should not be full and
+    // x should not already be present
+    if (x > maxValue)
+        return;
+    if (n >= capacity)
+        return;
+    if (search(x) != -1)
+        return;
+
+    // Inserting into array-dense[] at index 'n'.
+    dense[n] = x;
+
+    // Mapping it to sparse[] array.
+    sparse[x] = n;
+
+    // Increment count of elements in set
+    n++;
+}
+
+// A function that deletes 'x' if present in this data
+// structure, else it does nothing (just returns).
+// By deleting 'x', we unset 'x' from this set.
+void SSet::deletion(int x)
+{
+    // If x is not present
+    if (search(x) == -1)
+        return;
+
+    int temp = dense[n-1];  // Take an element from end
+    dense[sparse[x]] = temp;  // Overwrite.
+    sparse[temp] = sparse[x]; // Overwrite.
+
+    // Since one element has been deleted, we
+    // decrement 'n' by 1.
+    n--;
+}
+
+// prints contents of set which are also content
+// of dense[]
+void SSet::print()
+{
+    for (int i=0; i<n; i++)
+        printf("%d ", dense[i]);
+    printf("\n");
+}
+
+// A function to find intersection of two sets
+SSet* SSet::intersection(SSet &s)
+{
+    // Capacity and max value of result set
+    int iCap    = min(n, s.n);
+    int iMaxVal = max(s.maxValue, maxValue);
+
+    // Create result set
+    SSet *result = new SSet(iMaxVal, iCap);
+
+    // Find the smaller of two sets
+    // If this set is smaller
+    if (n < s.n)
+    {
+        // Search every element of this set in 's'.
+        // If found, add it to result
+        for (int i = 0; i < n; i++)
+            if (s.search(dense[i]) != -1)
+                result->insert(dense[i]);
+    }
+    else
+    {
+        // Search every element of 's' in this set.
+        // If found, add it to result
+        for (int i = 0; i < s.n; i++)
+            if (search(s.dense[i]) != -1)
+                result->insert(s.dense[i]);
+    }
+
+    return result;
+}
+
+// A function to find union of two sets
+// Time Complexity-O(n1+n2)
+SSet* SSet::setUnion(SSet &s)
+{
+    // Find capacity and maximum value for result
+    // set.
+    int uCap    = s.n + n;
+    int uMaxVal = max(s.maxValue, maxValue);
+
+    // Create result set
+    SSet *result =  new SSet(uMaxVal, uCap);
+
+    // Traverse the first set and insert all
+    // elements of it in result.
+    for (int i = 0; i < n; i++)
+        result->insert(dense[i]);
+
+    // Traverse the second set and insert all
+    // elements of it in result (Note that sparse
+    // set doesn't insert an entry if it is already
+    // present)
+    for (int i = 0; i < s.n; i++)
+        result->insert(s.dense[i]);
+
+    return result;
+}
+
+// Driver program
+int main()
+{
+    // Create a set set1 with capacity 5 and max
+    // value 100
+    SSet s1(100, 5);
+
+    // Insert elements into the set set1
+    s1.insert(5);
+    s1.insert(3);
+    s1.insert(9);
+    s1.insert(10);
+
+    // Printing the elements in the data structure.
+    printf("The elements in set1 are\n");
+    s1.print();
+
+    int index = s1.search(3);
+
+    //  'index' variable stores the index of the number to
+    //  be searched.
+    if (index != -1)  // 3 exists
+        printf("\n3 is found at index %d in set1\n",index);
+    else            // 3 doesn't exist
+        printf("\n3 doesn't exists in set1\n");
+
+    // Delete 9 and print set1
+    s1.deletion(9);
+    s1.print();
+
+    // Create a set with capacity 6 and max value
+    // 1000
+    SSet s2(1000, 6);
+
+    // Insert elements into the set
+    s2.insert(4);
+    s2.insert(3);
+    s2.insert(7);
+    s2.insert(200);
+
+    // Printing set 2.
+    printf("\nThe elements in set2 are\n");
+    s2.print();
+
+    // Printing the intersection of the two sets
+    SSet *intersect = s2.intersection(s1);
+    printf("\nIntersection of set1 and set2\n");
+    intersect->print();
+
+    // Printing the union of the two sets
+    SSet *unionset = s1.setUnion(s2);
+    printf("\nUnion of set1 and set2\n");
+    unionset->print();
+
+    return 0;
+}
+
+Java
+
+// SSet class represents the Sparse Set data structure
+class SSet {
+    private int[] sparse; // array to store the index of elements in dense array
+    private int[] dense; // array to store the actual elements
+    private int capacity; // maximum capacity of the set
+    private int maxValue; // maximum value that can be stored in the set
+    private int n; // number of elements in the set
+
+    // Constructor to create an SSet object with given max value and capacity
+    public SSet(int maxV, int cap) {
+
+        sparse = new int[maxV + 1]; // create a sparse array with max value + 1
+        dense = new int[cap]; // create a dense array with the given capacity
+        capacity = cap;
+        maxValue = maxV;
+        n = 0; // initially the set is empty
+    }
+
+    // Search for an element in the set and return its index
+    public int search(int x) {
+
+        // check if the given element is out of range
+        if (x > maxValue) {
+            return -1; // if yes, return -1
+        }
+
+        // check if the element exists in the set
+        if (sparse[x] < n && dense[sparse[x]] == x) {
+            return sparse[x]; // if yes, return its index
+        }
+        return -1; // if not, return -1
+    }
+
+    // Insert an element into the set
+    public void insert(int x) {
+
+        // check if the element is out of range or the set is full or
+        // the element already exists in the set
+        if (x > maxValue || n >= capacity || search(x) != -1) {
+            return; // if yes, do nothing and return
+        }
+
+        // add the element to the end of the dense array
+        dense[n] = x;
+
+        // update the index of the element in the sparse array
+        sparse[x] = n;
+
+        n++; // increment the size of the set
+    }
+
+    // Delete an element from the set
+    public void deletion(int x) {
+
+        int index = search(x); // find the index of the element
+
+        // check if the element exists in the set
+        if (index == -1) {
+            return; // if not, do nothing and return
+        }
+
+        // swap the element with the last element in the dense array
+        int temp = dense[n - 1];
+        dense[index] = temp;
+        sparse[temp] = index;
+        n--; // decrement the size of the set
+    }
+
+    // Print the elements in the set
+    public void printSet() {
+
+        // print the elements in the dense array
+        for (int i = 0; i < n; i++) {
+            System.out.print(dense[i] + " "); // print the elements in the dense array
+        }
+        System.out.println();
+    }
+
+    public SSet intersection(SSet s) {
+
+        // Calculate the maximum size and capacity of the intersection set
+        int iCap = Math.min(n, s.n);
+        int iMaxVal = Math.max(maxValue, s.maxValue);
+
+        // Create the intersection set with the calculated size and capacity
+        SSet result = new SSet(iMaxVal, iCap);
+
+        // Check if the current set has fewer elements than the other set
+        if (n < s.n) {
+
+            // Iterate over each element in the current set
+            for (int i = 0; i < n; i++) {
+
+                // Check if the current element is also in the other set
+                if (s.search(dense[i]) != -1) {
+                    result.insert(dense[i]);
+                }
+            }
+        } else {
+
+            // Iterate over each element in the other set
+            for (int i = 0; i < s.n; i++) {
+
+                // Check if the current element is also in the current set
+                if (search(s.dense[i]) != -1) {
+                    result.insert(s.dense[i]);
+                }
+            }
+        }
+        // Return the intersection set
+        return result;
+    }
+
+    public SSet setUnion(SSet set2) {
+
+        // Calculate the maximum size and capacity of the union set
+        int uCap = n + set2.n;
+        int uMaxVal = Math.max(maxValue, set2.maxValue);
+
+        // Create the union set with the calculated size and capacity
+        SSet unionSet = new SSet(uMaxVal, uCap);
+
+        // Insert all elements from the current set into the union set
+        for (int i = 0; i < n; i++) {
+            unionSet.insert(dense[i]);
+        }
+
+        // Insert all elements from the other set into the union set
+        for (int i = 0; i < set2.n; i++) {
+            unionSet.insert(set2.dense[i]);
+        }
+
+        // Return the union set
+        return unionSet;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+
+        // Create a set set1 with capacity 5 and max value 100
+        SSet s1 = new SSet(100, 5);
+
+        // Insert elements into the set set1
+        s1.insert(5);
+        s1.insert(3);
+        s1.insert(9);
+        s1.insert(10);
+
+        // Printing the elements in the data structure
+        System.out.println("The elements in set1 are:");
+        s1.printSet();
+
+        int index = s1.search(3);
+
+        // 'index' variable stores the index of the number to be searched.
+        if (index != -1) { // 3 exists
+            System.out.printf("\n3 is found at index %d in set1", index);
+        } else { // 3 doesn't exist
+            System.out.println("\n3 doesn't exist in set1");
+        }
+
+        // Delete 9 and print set1
+        s1.deletion(9);
+        s1.printSet();
+
+        // Create a set with capacity 6 and max value 1000
+        SSet s2 = new SSet(1000, 6);
+
+        // Insert elements into the set
+        s2.insert(4);
+        s2.insert(3);
+        s2.insert(7);
+        s2.insert(200);
+
+        // Printing set 2
+        System.out.println("\nThe elements in set2 are:");
+        s2.printSet();
+
+        // Printing the intersection of the two sets
+        SSet intersect = s2.intersection(s1);
+        System.out.println("\nIntersection of set1 and set2");
+        intersect.printSet();
+
+        // Printing the union of the two sets
+        SSet unionset = s1.setUnion(s2);
+        System.out.println("\nUnion of set1 and set2");
+        unionset.printSet();
+    }
+}
+
+// This code is contributed by amit_mangal_
+
+Python3
+
+# A python program to implement Sparse set and its operations.
+
+class SSet:
+    def __init__(self, maxV, cap):
+        self.sparse = [0] * (maxV + 1) # To store indexes of actual elements.
+        self.dense = [0] * cap           # To store actual sets elements.
+        self.capacity = cap               # capacity of set or size of dense
+        self.maxValue = maxV           # Maximum value in set or size of sparse
+        self.n = 0                     # Current no of elements, No elements initially
+
+    # If element is present, returns index of
+    # element in dense[]. Else returns -1.
+    def search(self, x):
+        # Searched element must be in range
+        if x > self.maxValue:
+            return -1
+
+        # The first condition verifies that 'x' is
+        # within 'n' in this set and the second
+        # condition tells us that it is present in
+        # the data structure.
+        if self.sparse[x] < self.n and self.dense[self.sparse[x]] == x:
+            return self.sparse[x]
+
+        # Not found
+        return -1
+
+    # Inserts a new element into set
+    def insert(self, x):
+        # Corner cases, x must not be out of
+        # range, dense[] should not be full and
+        # x should not already be present
+        if x > self.maxValue:
+            return
+        if self.n >= self.capacity:
+            return
+        if self.search(x) != -1:
+            return
+
+        # Inserting into array-dense[] at index 'n'.
+        self.dense[self.n] = x
+
+        # Mapping it to sparse[] array.
+        self.sparse[x] = self.n
+
+        # Increment count of elements in set
+        self.n += 1
+
+    # A function that deletes 'x' if present in this data
+    # structure, else it does nothing (just returns).
+    # By deleting 'x', we unset 'x' from this set.
+    def deletion(self, x):
+        # If x is not present
+        if self.search(x) == -1:
+            return
+
+        temp = self.dense[self.n - 1]  # Take an element from end
+        self.dense[self.sparse[x]] = temp  # Overwrite.
+        self.sparse[temp] = self.sparse[x]  # Overwrite.
+
+        # Since one element has been deleted, we
+        # decrement 'n' by 1.
+        self.n -= 1
+
+    # prints contents of set which are also content
+    # of dense[]
+    def print_set(self):
+        for i in range(self.n):
+            print(self.dense[i], end=' ')
+        print()
+
+    # A function to find intersection of two sets
+    def intersection(self, s):
+        # Capacity and max value of result set
+        iCap = min(self.n, s.n)
+        iMaxVal = max(s.maxValue, self.maxValue)
+
+        # Create result set
+        result = SSet(iMaxVal, iCap)
+
+        # Find the smaller of two sets
+        # If this set is smaller
+        if self.n < s.n:
+            # Search every element of this set in 's'.
+            # If found, add it to result
+            for i in range(self.n):
+                if s.search(self.dense[i]) != -1:
+                    result.insert(self.dense[i])
+        else:
+            # Search every element of 's' in this set.
+            # If found, add it to result
+            for i in range(s.n):
+                if self.search(s.dense[i]) != -1:
+                    result.insert(s.dense[i])
+
+        return result
+
+    # A function to find union of two sets
+    # Time Complexity-O(n1+n2)
+
+    def setUnion(self, set2):
+
+        uCap = self.n + set2.n
+        uMaxVal = max(self.maxValue, set2.maxValue)
+
+        # Initialize an empty set to store the union
+        union_set = SSet(uMaxVal, uCap)
+
+        # Insert all elements from the first set into the union set
+        for i in range(self.n):
+            union_set.insert(self.dense[i])
+
+        # Insert all elements from the second set into the union set
+        for i in range(set2.n):
+            union_set.insert(set2.dense[i])
+
+        return union_set
+
+# Driver program
+if __name__ == "__main__":
+
+  # Create a set set1 with capacity 5 and max value 100
+  s1 = SSet(100, 5)
+
+  # Insert elements into the set set1
+  s1.insert(5)
+  s1.insert(3)
+  s1.insert(9)
+  s1.insert(10)
+
+  # Printing the elements in the data structure
+  print("The elements in set1 are:")
+  s1.print_set()
+
+  index = s1.search(3)
+
+  # 'index' variable stores the index of the number to be searched.
+  if index != -1:  # 3 exists
+      print(f"\n3 is found at index {index} in set1")
+  else:  # 3 doesn't exist
+      print("\n3 doesn't exist in set1")
+
+  # Delete 9 and print set1
+  s1.deletion(9)
+  s1.print_set()
+
+  # Create a set with capacity 6 and max value 1000
+  s2 = SSet(1000, 6)
+
+  # Insert elements into the set
+  s2.insert(4)
+  s2.insert(3)
+  s2.insert(7)
+  s2.insert(200)
+
+  # Printing set 2
+  print("\nThe elements in set2 are:")
+  s2.print_set()
+
+  # Printing the intersection of the two sets
+  intersect = s2.intersection(s1)
+  print("\nIntersection of set1 and set2")
+  intersect.print_set()
+
+  # Printing the union of the two sets
+  unionset = s1.setUnion(s2)
+  print("\nUnion of set1 and set2")
+  unionset.print_set()
+
+# This code is contributed by amit_mangal_
+
+C#
+
+using System;
+
+public class SSet
+{
+    private int[] sparse;
+    private int[] dense;
+    private int n;
+    private int capacity;
+    private int maxValue;
+
+    public SSet(int maxV, int cap)
+    {
+        sparse = new int[maxV + 1];
+        dense = new int[cap];
+        capacity = cap;
+        maxValue = maxV;
+        n = 0;
+    }
+
+    public int Search(int x)
+    {
+        if (x > maxValue)
+            return -1;
+
+        if (sparse[x] < n && dense[sparse[x]] == x)
+            return (sparse[x]);
+
+        return -1;
+    }
+
+    public void Insert(int x)
+    {
+        if (n == capacity)
+            return;
+
+        if (x > maxValue)
+            return;
+
+        int i = sparse[x];
+        if (i >= n || dense[i] != x)
+        {
+            dense[n] = x;
+            sparse[x] = n;
+            n++;
+        }
+    }
+
+    public void Deletion(int x)
+    {
+        if (x > maxValue)
+            return;
+
+        int i = sparse[x];
+        if (i < n && dense[i] == x)
+        {
+            n--;
+            dense[i] = dense[n];
+            sparse[dense[n]] = i;
+        }
+    }
+
+    public void Print()
+    {
+        Console.Write("Sparse Set: ");
+        for (int i = 0; i < n; i++)
+            Console.Write(dense[i] + " ");
+        Console.WriteLine();
+    }
+
+    public void Clear()
+    {
+        n = 0;
+    }
+
+    public SSet Intersection(SSet s)
+    {
+        SSet result = new SSet(maxValue, capacity);
+        for (int i = 0; i < n; i++)
+        {
+            if (s.Search(dense[i]) != -1)
+                result.Insert(dense[i]);
+        }
+        return result;
+    }
+
+    public SSet SetUnion(SSet s)
+    {
+        SSet result = new SSet(maxValue, capacity);
+        for (int i = 0; i < n; i++)
+            result.Insert(dense[i]);
+        for (int i = 0; i < s.n; i++)
+            result.Insert(s.dense[i]);
+        return result;
+    }
+}
+
+public class Program
+{
+    public static void Main()
+    {
+        // Create a set set1 with capacity 5 and max
+        // value 100
+        SSet s1 = new SSet(100, 5);
+
+        // Insert elements into the set set1
+        s1.Insert(5);
+        s1.Insert(3);
+        s1.Insert(9);
+        s1.Insert(10);
+
+        // Printing the elements in the data structure.
+        Console.WriteLine("The elements in set1 are");
+        s1.Print();
+
+        int index = s1.Search(3);
+
+        //  'index' variable stores the index of the number to
+        //  be searched.
+        if (index != -1)  // 3 exists
+            Console.WriteLine("\n3 is found at index {0} in set1", index);
+        else            // 3 doesn't exist
+            Console.WriteLine("\n3 doesn't exists in set1");
+
+        // Delete 9 and print set1
+        s1.Deletion(9);
+        s1.Print();
+
+        // Create a set with capacity 6 and max value
+        // 1000
+        SSet s2 = new SSet(1000, 6);
+
+        // Insert elements into the set
+        s2.Insert(4);
+        s2.Insert(3);
+        s2.Insert(7);
+        s2.Insert(200);
+
+        // Printing set 2.
+        Console.WriteLine("\nThe elements in set2 are");
+        s2.Print();
+
+        // Printing the intersection of the two sets
+        SSet intersect = s2.Intersection(s1);
+        Console.WriteLine("\nIntersection of set1 and set2");
+        intersect.Print();
+
+        // Printing the union of the two sets
+        SSet unionset = s1.SetUnion(s2);
+        Console.WriteLine("\nUnion of set1 and set2");
+        unionset.Print();
+    }
+}
+
+JavaScript
+
+// A JavaScript program to implement Sparse Set and its operations
+
+// A structure to hold the three parameters required to
+// represent a sparse set.
+class SSet {
+
+    // Constructor
+    constructor(maxV, cap) {
+        this.sparse = new Array(maxV+1).fill(0);
+        this.dense = new Array(cap).fill(0);
+        this.capacity = cap;
+        this.maxValue = maxV;
+        this.n = 0; // No elements initially
+    }
+
+    // If element is present, returns index of
+    // element in dense[]. Else returns -1.
+    search(x) {
+
+        // Searched element must be in range
+        if (x > this.maxValue)
+            return -1;
+
+        // The first condition verifies that 'x' is
+        // within 'n' in this set and the second
+        // condition tells us that it is present in
+        // the data structure.
+        if (this.sparse[x] < this.n && this.dense[this.sparse[x]] === x)
+            return this.sparse[x];
+
+        // Not found
+        return -1;
+    }
+
+    // Inserts a new element into set
+    insert(x) {
+
+        //  Corner cases, x must not be out of
+        // range, dense[] should not be full and
+        // x should not already be present
+        if (x > this.maxValue)
+            return;
+        if (this.n >= this.capacity)
+            return;
+        if (this.search(x) !== -1)
+            return;
+
+        // Inserting into array-dense[] at index 'n'.
+        this.dense[this.n] = x;
+
+        // Mapping it to sparse[] array.
+        this.sparse[x] = this.n;
+
+        // Increment count of elements in set
+        this.n++;
+    }
+
+    // A function that deletes 'x' if present in this data
+    // structure, else it does nothing (just returns).
+    // By deleting 'x', we unset 'x' from this set.
+    deletion(x) {
+        const index = this.search(x);
+
+        // If x is not present
+        if (index === -1)
+            return;
+
+        const temp = this.dense[this.n-1]; // Take an element from end
+        this.dense[index] = temp; // Overwrite.
+        this.sparse[temp] = index; // Overwrite.
+
+        // Since one element has been deleted, we
+        // decrement 'n' by 1.
+        this.n--;
+    }
+
+    // prints contents of set which are also content
+    // of dense[]
+    print() {
+        console.log(this.dense.slice(0, this.n).join(' '));
+    }
+
+    clear() { this.n = 0; }
+
+    // A function to find intersection of two sets
+    intersection(s) {
+
+        // Capacity and max value of result set
+        const iCap = Math.min(this.n, s.n);
+        const iMaxVal = Math.max(s.maxValue, this.maxValue);
+
+        // Create result set
+        const result = new SSet(iMaxVal, iCap);
+
+        // Find the smaller of two sets
+        // If this set is smaller
+        if (this.n < s.n) {
+
+            // Search every element of this set in 's'.
+            // If found, add it to result
+            for (let i = 0; i < this.n; i++)
+                if (s.search(this.dense[i]) !== -1)
+                    result.insert(this.dense[i]);
+        }
+        else {
+
+            // Search every element of 's' in this set.
+            // If found, add it to result
+            for (let i = 0; i < s.n; i++)
+                if (this.search(s.dense[i]) !== -1)
+                    result.insert(s.dense[i]);
+        }
+
+        return result;
+    }
+
+    // A function to find union of two sets
+    // Time Complexity-O(n1+n2)
+    setUnion(s) {
+
+        // Find capacity and maximum value for result
+        // set.
+        const uCap = s.n + this.n;
+        const uMaxVal = Math.max(s.maxValue, this.maxValue);
+
+        // Create result set
+        const result = new SSet(uMaxVal, uCap);
+
+        // Traverse the first set and insert all
+        // elements of it in result.
+        for (let i = 0; i < this.n; i++)
+            result.insert(this.dense[i]);
+
+        // Traverse the second set and insert all
+        // elements of it in result (Note that sparse
+        // set doesn't insert an entry if it is already
+        // present)
+        for (let i = 0; i < s.n; i++)
+            result.insert(s.dense[i]);
+
+        return result;
+    }
+}
+
+// Driver program
+
+// Create a set set1 with capacity 5 and max
+// value 100
+const s1 = new SSet(100, 5);
+
+// Insert elements into the set set1
+s1.insert(5);
+s1.insert(3);
+s1.insert(9);
+s1.insert(10);
+
+// Printing the elements in the data structure.
+console.log('The elements in set1 are');
+s1.print();
+
+const index = s1.search(3);
+
+//  'index' variable stores the index of the number to
+//  be searched.
+if (index !== -1) // 3 exists
+    console.log(`\n3 is found at index ${index} in set1`);
+else         // 3 doesn't exist
+    console.log('\n3 doesn\'t exists in set1');
+
+// Delete 9 and print set1
+s1.deletion(9);
+s1.print();
+
+// Create a set with capacity 6 and max value
+// 1000
+const s2 = new SSet(1000, 6);
+
+// Insert elements into the set
+s2.insert(4);
+s2.insert(3);
+s2.insert(7);
+s2.insert(200);
+
+// Printing set 2.
+console.log('\nThe elements in set2 are');
+s2.print();
+
+// Printing the intersection of the two sets
+const intersect = s2.intersection(s1);
+console.log('\nIntersection of set1 and set2');
+intersect.print();
+
+// Printing the union of the two sets
+const unionset = s1.setUnion(s2);
+console.log("\nUnion of set1 and set2");
+unionset.print()
+
+Output :
+
+The elements in set1 are
+5 3 9 10
+
+3 is found at index 1 in set1
+5 3 10
+
+The elements in set2 are-
+4 3 7 200
+
+Intersection of set1 and set2
+3
+
+Union of set1 and set2
+5 3 10 4 7 200
+
+This is a C++ program that implements a sparse set and its operations. A sparse set is a data structure that is useful when the maximum value of the set is known, and the set contains only a small subset of the maximum value range. The sparse set uses two arrays, sparse and dense, to store the elements. The sparse array maps each element to its index in the dense array, and the dense array contains the actual elements of the set.
+
+The program defines a class SSet to represent the sparse set. The constructor takes the maximum value of the set and the capacity of the dense array as input parameters. The search, insert, deletion, print, clear, intersection, and setUnion functions are defined for the class.
+
+The search function takes an element as input and returns its index in the dense array if it is present, otherwise -1. The insert function takes an element as input and inserts it into the set if it is not already present and the set is not full. The deletion function takes an element as input and removes it from the set if it is present. The print function prints the elements of the set in the dense array. The clear function removes all elements from the set.
+
+The intersection function takes another SSet object as input and returns a new SSet object that contains the intersection of the two sets. The setUnion function takes another SSet object as input and returns a new SSet object that contains the union of the two sets. The intersection and setUnion functions use the search and insert functions to perform the set operations.
+
+Overall, this program provides a simple and efficient implementation of a sparse set and its operations.
+
+Additional Operations: The following operations are also efficiently implemented using sparse set. It outperforms all the solutions discussed here and bit vector based solution, under the assumptions that range and maximum number of elements are known.
+
+union(): 1) Create an empty sparse set, say result. 2) Traverse the first set and insert all elements of it in result. 3) Traverse the second set and insert all elements of it in result (Note that sparse set doesn't insert an entry if it is already present) 4) Return result.
+
+intersection(): 1) Create an empty sparse set, say result. 2) Let the smaller of two given sets be first set and larger be second. 3) Consider the smaller set and search every element of it in second. If element is found, add it to result. 4) Return result. A common use of this data structure is with register allocation algorithms in compilers, which have a fixed universe(the number of registers in the machine) and are updated and cleared frequently (just like- Q queries) during a single processing run.
+
+References: http://research.switch.com/sparse http://codingplayground.blogspot.com/2009/03/sparse-sets-with-o1-insert-delete.html

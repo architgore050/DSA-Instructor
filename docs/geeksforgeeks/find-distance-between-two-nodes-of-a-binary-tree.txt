@@ -1,0 +1,1304 @@
+Source: https://www.geeksforgeeks.org/dsa/find-distance-between-two-nodes-of-a-binary-tree/
+Title: Find distance between two nodes of a Binary Tree
+Extractor: 2
+
+Given a binary tree with n nodes and two node values a and b , find the minimum distance between them. The distance is defined as the minimum number of edges between the two nodes. It is guaranteed that both nodes exist in the binary tree and all node values are unique.
+
+Examples :
+
+> Input : a = 2, b = 3 Output : 2 Explanation : The path between node 2 and node 3 is: 2 -> 1 -> 3.The number of edges in this path is 2, so the minimum distance is 2. Input : a = 4, b = 7 Output : 4 Explanation : The path between node 4 and node 7 is: 4 -> 2 -> 1 -> 3 -> 7.The number of edges in this path is 4, so the minimum distance is 4.
+
+Table of Content
+
+- Using LCA and Path Length - O(n) Time and O(h) Space
+- Using LCA  (One Pass) - O(n) Time and O(h) Space
+
+### Using LCA and Path Length - O(n) Time and O(h) Space
+
+> The shortest path between two nodes always goes through their Lowest Common Ancestor (LCA) . The idea is to first find the Lowest Common Ancestor (LCA) of the two given nodes in the Binary Tree. Once the LCA is found, the distance between the two nodes can be calculated using their distances from the root. The distance between two nodes is given by: Dist(a, b) = Dist(root, a) + Dist(root, b) - 2 * Dist(root, LCA) Where: a, b are the given nodes and root is the root of the Binary Tree LCA is the lowest common ancestor of a and b Dist(x, y) represents the number of edges between nodes x and y This works because the path from root to LCA is counted twice while computing distances of a and b, so we subtract it two times to get the correct distance.
+
+Steps :
+
+- Start by traversing the tree using a recursive function to find both nodes and their levels (d1 and d2) from the root.
+- While traversing, if the current node matches either of the given nodes, store its level.
+- Recursively search in the left and right subtrees:
+- If both left and right calls return non-null, it means one node is found in each subtree, so the current node is the LCA.
+- At this point, calculate the distance using: dist = d1 + d2 - 2 * level_of_LCA
+- If both nodes are found during traversal, return the computed distance.
+- If only one node is found, then from the LCA, find the distance to the other node using the helper function findLevel().
+- If none of the nodes are found, return -1.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+  public:
+    int data;
+    Node *left, *right;
+    Node(int val) {
+        data = val;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Function to find the level of a node
+int findLevel(Node *root, int k, int level) {
+    if (root == nullptr)
+        return -1;
+    if (root->data == k)
+        return level;
+
+    // Recursively call function on left child
+    int leftLevel = findLevel(root->left, k, level + 1);
+
+    // If node is found on left, return level
+    // Else continue searching on the right child
+    if (leftLevel != -1) {
+        return leftLevel;
+    }
+    else {
+        return findLevel(root->right, k, level + 1);
+    }
+}
+
+// Function to find the lowest common ancestor
+// and calculate distance between two nodes
+Node *findLcaAndDistance(Node *root, int a, int b, int &d1,
+                         int &d2, int &dist, int lvl) {
+    if (root == nullptr)
+        return nullptr;
+
+    if (root->data == a) {
+
+        // If first node found, store level and
+        // return the node
+        d1 = lvl;
+        return root;
+    }
+    if (root->data == b) {
+
+        // If second node found, store level and
+        // return the node
+        d2 = lvl;
+        return root;
+    }
+
+    // Recursively call function on left child
+    Node *left = findLcaAndDistance
+      			(root->left, a, b, d1, d2, dist, lvl + 1);
+
+    // Recursively call function on right child
+    Node *right = findLcaAndDistance
+      			(root->right, a, b, d1, d2, dist, lvl + 1);
+
+    if (left != nullptr && right != nullptr) {
+
+        // If both nodes are found in different
+        // subtrees, calculate the distance
+        dist = d1 + d2 - 2 * lvl;
+    }
+
+    // Return node found or nullptr if not found
+    if (left != nullptr) {
+        return left;
+    }
+    else {
+        return right;
+    }
+}
+
+// Function to find distance between two nodes
+int findDist(Node *root, int a, int b) {
+    int d1 = -1, d2 = -1, dist;
+
+    // Find lowest common ancestor and calculate distance
+    Node *lca = findLcaAndDistance(root, a, b, d1, d2, dist, 1);
+
+    if (d1 != -1 && d2 != -1) {
+
+        // Return the distance if both
+      	// nodes are found
+        return dist;
+    }
+
+    if (d1 != -1) {
+
+        // If only first node is found, find
+        // distance to second node
+        dist = findLevel(lca, b, 0);
+        return dist;
+    }
+
+    if (d2 != -1) {
+
+        // If only second node is found, find
+        // distance to first node
+        dist = findLevel(lca, a, 0);
+        return dist;
+    }
+
+    // Return -1 if both nodes not found
+    return -1;
+}
+
+int main() {
+
+    // Hardcoded binary tree
+    //        1
+    //      /   \
+    //     2     3
+    //    / \   / \
+    //   4   5 6   7
+
+    Node *root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+    root->right->left = new Node(6);
+    root->right->right = new Node(7);
+
+    int a = 4, b = 7;
+    cout << findDist(root, a, b) << endl;
+
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+
+struct Node {
+    int data;
+    struct Node *left, *right;
+};
+
+// Function to find the level of a node
+int findLevel(struct Node *root, int k, int level) {
+    if (root == NULL)
+        return -1;
+    if (root->data == k)
+        return level;
+
+    // Recursively call function on left child
+    int leftLevel = findLevel(root->left, k, level + 1);
+
+    // If node is found on left, return level
+    // Else continue searching on the right child
+    if (leftLevel != -1) {
+        return leftLevel;
+    }
+    else {
+        return findLevel(root->right, k, level + 1);
+    }
+}
+
+// Function to find the lowest common ancestor
+// and calculate distance between two nodes
+struct Node *findLcaAndDistance(struct Node *root, int a, int b,
+                                int *d1, int *d2, int *dist, int lvl) {
+    if (root == NULL)
+        return NULL;
+
+    if (root->data == a) {
+
+        // If first node found, store level and
+        // return the node
+        *d1 = lvl;
+        return root;
+    }
+    if (root->data == b) {
+
+        // If second node found, store level and
+        // return the node
+        *d2 = lvl;
+        return root;
+    }
+
+    // Recursively call function on left child
+    struct Node *left = findLcaAndDistance
+      					(root->left, a, b, d1, d2, dist, lvl + 1);
+
+    // Recursively call function on right child
+    struct Node *right = findLcaAndDistance
+      					(root->right, a, b, d1, d2, dist, lvl + 1);
+
+    if (left != NULL && right != NULL) {
+
+        // If both nodes are found in different
+        // subtrees, calculate the distance
+        *dist = *d1 + *d2 - 2 * lvl;
+    }
+
+    // Return node found or NULL if not found
+    if (left != NULL) {
+        return left;
+    }
+    else {
+        return right;
+    }
+}
+
+// Function to find distance between two nodes
+int findDist(struct Node *root, int a, int b) {
+    int d1 = -1, d2 = -1, dist;
+
+    // Find lowest common ancestor and calculate distance
+    struct Node *lca = findLcaAndDistance(root, a, b, &d1, &d2, &dist, 1);
+
+    if (d1 != -1 && d2 != -1) {
+
+        // Return the distance if both nodes
+       // are found
+        return dist;
+    }
+
+    if (d1 != -1) {
+
+        // If only first node is found, find
+        // distance to second node
+        dist = findLevel(lca, b, 0);
+        return dist;
+    }
+
+    if (d2 != -1) {
+
+        // If only second node is found, find
+        // distance to first node
+        dist = findLevel(lca, a, 0);
+        return dist;
+    }
+
+    // Return -1 if both nodes not found
+    return -1;
+}
+
+struct Node* createNode(int value) {
+    struct Node* node =
+      (struct Node*)malloc(sizeof(struct Node));
+    node->data = value;
+    node->left = node->right = NULL;
+    return node;
+}
+
+int main() {
+
+    // Hardcoded binary tree
+    //        1
+    //      /   \
+    //     2     3
+    //    / \   / \
+    //   4   5 6   7
+
+    struct Node *root = createNode(1);
+    root->left = createNode(2);
+    root->right = createNode(3);
+    root->left->left = createNode(4);
+    root->left->right = createNode(5);
+    root->right->left = createNode(6);
+    root->right->right = createNode(7);
+
+    int a = 4, b = 7;
+    printf("%d\n", findDist(root, a, b));
+
+    return 0;
+}
+
+Java
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    Node(int val) {
+        data = val;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Function to find the level of a node
+    static int findLevel(Node root, int k, int level) {
+        if (root == null) return -1;
+        if (root.data == k) return level;
+
+        // Recursively call function on left child
+        int leftLevel = findLevel(root.left, k, level + 1);
+
+        // If node is found on left, return level
+        // Else continue searching on the right child
+        if (leftLevel != -1) {
+            return leftLevel;
+        } else {
+            return findLevel(root.right, k, level + 1);
+        }
+    }
+
+    // Function to find the lowest common ancestor
+    // and calculate distance between two nodes
+    static Node findLcaAndDistance(Node root, int a, int b,
+                                   int[] d1, int[] d2, int[] dist, int lvl) {
+        if (root == null) return null;
+
+        if (root.data == a) {
+
+            // If first node found, store level and
+            // return the node
+            d1[0] = lvl;
+            return root;
+        }
+        if (root.data == b) {
+
+            // If second node found, store level and
+            // return the node
+            d2[0] = lvl;
+            return root;
+        }
+
+        // Recursively call function on left child
+        Node left = findLcaAndDistance
+          			(root.left, a, b, d1, d2, dist, lvl + 1);
+
+        // Recursively call function on right child
+        Node right = findLcaAndDistance
+          			(root.right, a, b, d1, d2, dist, lvl + 1);
+
+        if (left != null && right != null) {
+
+            // If both nodes are found in different
+            // subtrees, calculate the distance
+            dist[0] = d1[0] + d2[0] - 2 * lvl;
+        }
+
+        // Return node found or null if not found
+        if (left != null) {
+            return left;
+        } else {
+            return right;
+        }
+    }
+
+    // Function to find distance between two nodes
+    static int findDist(Node root, int a, int b) {
+        int[] d1 = {-1}, d2 = {-1}, dist = {0};
+
+        // Find lowest common ancestor and calculate distance
+        Node lca = findLcaAndDistance(root, a, b, d1, d2, dist, 1);
+
+        if (d1[0] != -1 && d2[0] != -1) {
+
+            // Return the distance if both nodes are found
+            return dist[0];
+        }
+
+        if (d1[0] != -1) {
+
+            // If only first node is found, find
+            // distance to second node
+            dist[0] = findLevel(lca, b, 0);
+            return dist[0];
+        }
+
+        if (d2[0] != -1) {
+
+            // If only second node is found, find
+            // distance to first node
+            dist[0] = findLevel(lca, a, 0);
+            return dist[0];
+        }
+
+        // Return -1 if both nodes not found
+        return -1;
+    }
+
+    public static void main(String[] args) {
+
+        // Hardcoded binary tree
+        //        1
+        //      /   \
+        //     2     3
+        //    / \   / \
+        //   4   5 6   7
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+
+        int a = 4, b = 7;
+        System.out.println(findDist(root, a, b));
+    }
+}
+
+Python
+
+class Node:
+    def __init__(self, val):
+        self.data = val
+        self.left = None
+        self.right = None
+
+# Function to find the level of a node
+def findLevel(root, k, level):
+    if root is None:
+        return -1
+    if root.data == k:
+        return level
+
+    # Recursively call function on left child
+    leftLevel = findLevel(root.left, k, level + 1)
+
+    # If node is found on left, return level
+    # Else continue searching on the right child
+    if leftLevel != -1:
+        return leftLevel
+    else:
+        return findLevel(root.right, k, level + 1)
+
+# Function to find the lowest common ancestor
+# and calculate distance between two nodes
+def findLcaAndDistance(root, a, b, d1, d2, dist, lvl):
+    if root is None:
+        return None
+
+    if root.data == a:
+
+        # If first node found, store level and
+        # return the node
+        d1[0] = lvl
+        return root
+    if root.data == b:
+
+        # If second node found, store level and
+        # return the node
+        d2[0] = lvl
+        return root
+
+    # Recursively call function on left child
+    left = findLcaAndDistance(root.left, a, b, d1, d2, dist, lvl + 1)
+
+    # Recursively call function on right child
+    right = findLcaAndDistance(root.right, a, b, d1, d2, dist, lvl + 1)
+
+    if left is not None and right is not None:
+
+        # If both nodes are found in different
+        # subtrees, calculate the distance
+        dist[0] = d1[0] + d2[0] - 2 * lvl
+
+    # Return node found or None if not found
+    if left is not None:
+        return left
+    else:
+        return right
+
+# Function to find distance between two nodes
+def findDist(root, a, b):
+    d1 = [-1]
+    d2 = [-1]
+    dist = [0]
+
+    # Find lowest common ancestor and calculate distance
+    lca = findLcaAndDistance(root, a, b, d1, d2, dist, 1)
+
+    if d1[0] != -1 and d2[0] != -1:
+
+        # Return the distance if both nodes are found
+        return dist[0]
+
+    if d1[0] != -1:
+
+        # If only first node is found, find
+        # distance to second node
+        dist[0] = findLevel(lca, b, 0)
+        return dist[0]
+
+    if d2[0] != -1:
+
+        # If only second node is found, find
+        # distance to first node
+        dist[0] = findLevel(lca, a, 0)
+        return dist[0]
+
+    # Return -1 if both nodes not found
+    return -1
+
+if __name__ == "__main__":
+
+    # Hardcoded binary tree
+    #        1
+    #      /   \
+    #     2     3
+    #    / \   / \
+    #   4   5 6   7
+
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+    root.right.left = Node(6)
+    root.right.right = Node(7)
+
+    a = 4
+    b = 7
+
+    print(findDist(root, a, b))
+
+C#
+
+using System;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int val) {
+        data = val;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Function to find the level of a node
+    static int FindLevel(Node root, int k, int level) {
+        if (root == null) return -1;
+        if (root.data == k) return level;
+
+        // Recursively call function on left child
+        int leftLevel = FindLevel(root.left, k, level + 1);
+
+        // If node is found on left, return level
+        // Else continue searching on the right child
+        if (leftLevel != -1) {
+            return leftLevel;
+        } else {
+            return FindLevel(root.right, k, level + 1);
+        }
+    }
+
+    // Function to find the lowest common ancestor
+    // and calculate distance between two nodes
+    static Node FindLcaAndDistance
+    (Node root, int a, int b, ref int d1, ref int d2, ref int dist, int lvl) {
+        if (root == null) return null;
+
+        if (root.data == a) {
+
+            // If first node found, store level and
+            // return the node
+            d1 = lvl;
+            return root;
+        }
+        if (root.data == b) {
+
+            // If second node found, store level and
+            // return the node
+            d2 = lvl;
+            return root;
+        }
+
+        // Recursively call function on left child
+        Node left = FindLcaAndDistance
+        (root.left, a, b, ref d1, ref d2, ref dist, lvl + 1);
+
+        // Recursively call function on right child
+        Node right = FindLcaAndDistance
+        (root.right, a, b, ref d1, ref d2, ref dist, lvl + 1);
+
+        if (left != null && right != null) {
+
+            // If both nodes are found in different
+            // subtrees, calculate the distance
+            dist = d1 + d2 - 2 * lvl;
+        }
+
+        // Return node found or null if not found
+        if (left != null) {
+            return left;
+        } else {
+            return right;
+        }
+    }
+
+    // Function to find distance between two nodes
+    static int FindDist(Node root, int a, int b) {
+        int d1 = -1, d2 = -1, dist = 0;
+
+        // Find lowest common ancestor and calculate distance
+        Node lca = FindLcaAndDistance
+        (root, a, b, ref d1, ref d2, ref dist, 1);
+
+        if (d1 != -1 && d2 != -1) {
+
+            // Return the distance if both nodes
+          	// are found
+            return dist;
+        }
+
+        if (d1 != -1) {
+
+            // If only first node is found, find
+            // distance to second node
+            dist = FindLevel(lca, b, 0);
+            return dist;
+        }
+
+        if (d2 != -1) {
+
+            // If only second node is found, find
+            // distance to first node
+            dist = FindLevel(lca, a, 0);
+            return dist;
+        }
+
+        // Return -1 if both nodes not found
+        return -1;
+    }
+
+    static void Main(string[] args) {
+
+        // Hardcoded binary tree
+        //        1
+        //      /   \
+        //     2     3
+        //    / \   / \
+        //   4   5 6   7
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+
+        int a = 4, b = 7;
+        Console.WriteLine(FindDist(root, a, b));
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(val) {
+        this.data = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Function to find the level of a node
+function findLevel(root, k, level) {
+    if (root === null) return -1;
+    if (root.data === k) return level;
+
+    // Recursively call function on left child
+    const leftLevel = findLevel(root.left, k, level + 1);
+
+    // If node is found on left, return level
+    // Else continue searching on the right child
+    if (leftLevel !== -1) {
+        return leftLevel;
+    } else {
+        return findLevel(root.right, k, level + 1);
+    }
+}
+
+// Function to find the lowest common ancestor
+// and calculate distance between two nodes
+function findLcaAndDistance(root, a, b, d1, d2, dist, lvl) {
+    if (root === null) return null;
+
+    if (root.data === a) {
+
+        // If first node found, store level and
+        // return the node
+        d1[0] = lvl;
+        return root;
+    }
+    if (root.data === b) {
+
+        // If second node found, store level and
+        // return the node
+        d2[0] = lvl;
+        return root;
+    }
+
+    // Recursively call function on left child
+    const left = findLcaAndDistance
+    (root.left, a, b, d1, d2, dist, lvl + 1);
+
+    // Recursively call function on right child
+    const right = findLcaAndDistance
+    (root.right, a, b, d1, d2, dist, lvl + 1);
+
+    if (left !== null && right !== null) {
+
+        // If both nodes are found in different
+        // subtrees, calculate the distance
+        dist[0] = d1[0] + d2[0] - 2 * lvl;
+    }
+
+    // Return node found or null if not found
+    if (left !== null) {
+        return left;
+    } else {
+        return right;
+    }
+}
+
+// Function to find distance between two nodes
+function findDist(root, a, b) {
+    const d1 = [-1];
+    const d2 = [-1];
+    const dist = [0];
+
+    // Find lowest common ancestor and calculate distance
+    const lca = findLcaAndDistance(root, a, b, d1, d2, dist, 1);
+
+    if (d1[0] !== -1 && d2[0] !== -1) {
+
+        // Return the distance if both nodes are found
+        return dist[0];
+    }
+
+    if (d1[0] !== -1) {
+
+        // If only first node is found, find
+        // distance to second node
+        dist[0] = findLevel(lca, b, 0);
+        return dist[0];
+    }
+
+    if (d2[0] !== -1) {
+
+        // If only second node is found, find
+        // distance to first node
+        dist[0] = findLevel(lca, a, 0);
+        return dist[0];
+    }
+
+    // Return -1 if both nodes not found
+    return -1;
+}
+
+// Hardcoded binary tree
+//        1
+//      /   \
+//     2     3
+//    / \   / \
+//   4   5 6   7
+
+const root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+root.right.left = new Node(6);
+root.right.right = new Node(7);
+
+const a = 4;
+const b = 7;
+
+console.log(findDist(root, a, b));
+
+Output
+
+4
+
+### Using LCA (One Pass) - O(n) Time and O(h) Space
+
+> The idea is to find both target nodes in a single traversal of the tree while simultaneously calculating their distance. Instead of separately finding LCA and then distances, everything is handled in one DFS. The function returns two things: Whether the current subtree contains either of the target nodes and distance from the current node to the found node.
+
+Steps:
+
+- Start DFS traversal from the root.
+- Recursively check left and right subtrees.
+- At each node, check if it is equal to either target node.
+- If a node is found, start counting its distance upward.
+- If one target is found in the left subtree and the other in the right subtree, the current node is the LCA.
+- At LCA, the distance between both nodes is: left distance + right distance
+- While returning back, propagate whether a target node has been found and its distance.
+- Finally, the stored distance is returned as the answer.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node {
+public:
+    Node *left, *right;
+    int data;
+
+    Node(int val) {
+        data = val;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+// Function that calculates distance between two nodes.
+// It returns a pair where the first element indicates
+// whether n1 or n2 is found and the second element
+// is the distance from the current node.
+pair<bool, int> calculateDistance(Node* root, int n1,
+									int n2, int& distance) {
+    if (!root) return {false, 0};
+
+    // Recursively calculate the distance in
+    // the left and right subtrees
+    pair<bool, int> left =
+        calculateDistance(root->left, n1, n2, distance);
+    pair<bool, int> right =
+        calculateDistance(root->right, n1, n2, distance);
+
+    // Check if the current node is either n1 or n2
+    bool current = (root->data == n1 || root->data == n2);
+
+    // If current node is one of n1 or n2 and
+    // we found the other in a subtree, update distance
+    if (current && (left.first || right.first)) {
+        distance = max(left.second, right.second);
+        return {false, 0};
+    }
+
+    // If left and right both returned true,
+    // root is the LCA and we update the distance
+    if (left.first && right.first) {
+        distance = left.second + right.second;
+        return {false, 0};
+    }
+
+    // If either left or right subtree contains n1 or n2,
+    // return the updated distance
+    if (left.first || right.first || current) {
+        return {true, max(left.second, right.second) + 1};
+    }
+
+    // If neither n1 nor n2 exist in the subtree
+    return {false, 0};
+}
+
+// The function that returns distance between n1 and n2.
+int findDist(Node* root, int n1, int n2) {
+    int distance = 0;
+    calculateDistance(root, n1, n2, distance);
+    return distance;
+}
+
+int main() {
+
+    //        1
+    //      /   \
+    //     2     3
+    //    / \   / \
+    //   4   5 6   7
+
+    Node* root = new Node(1);
+    root->left = new Node(2);
+    root->right = new Node(3);
+    root->left->left = new Node(4);
+    root->left->right = new Node(5);
+    root->right->left = new Node(6);
+    root->right->right = new Node(7);
+
+    cout << findDist(root, 4, 7);
+    return 0;
+}
+
+C
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+struct Node {
+    int data;
+    struct Node* left;
+    struct Node* right;
+};
+
+// Function that calculates distance between two nodes.
+// It returns a pair where the first element indicates
+// whether n1 or n2 is found and the second element
+// is the distance from the current node.
+struct Pair {
+    bool found;
+    int distance;
+};
+
+struct Pair calculateDistance(struct Node* root, int n1,
+                                int n2, int* distance) {
+    if (!root) return (struct Pair){false, 0};
+
+    struct Pair left =
+        calculateDistance(root->left, n1, n2, distance);
+    struct Pair right =
+        calculateDistance(root->right, n1, n2, distance);
+
+    bool current = (root->data == n1 || root->data == n2);
+
+    if (current && (left.found || right.found)) {
+        *distance = (left.distance > right.distance)
+                    ? left.distance : right.distance;
+        return (struct Pair){false, 0};
+    }
+
+    if (left.found && right.found) {
+        *distance = left.distance + right.distance;
+        return (struct Pair){false, 0};
+    }
+
+    if (left.found || right.found || current) {
+        return (struct Pair){true,
+            (left.distance > right.distance ?
+            left.distance : right.distance) + 1};
+    }
+
+    return (struct Pair){false, 0};
+}
+
+// The function that returns distance between n1 and n2.
+int findDist(struct Node* root, int n1, int n2) {
+    int distance = 0;
+    calculateDistance(root, n1, n2, &distance);
+    return distance;
+}
+
+struct Node* createNode(int val) {
+    struct Node* newNode =
+        (struct Node*)malloc(sizeof(struct Node));
+    newNode->data = val;
+    newNode->left = NULL;
+    newNode->right = NULL;
+    return newNode;
+}
+
+int main() {
+
+    //         1
+    //       /   \
+    //      2     3
+    //     / \   / \
+    //    4   5 6   7
+
+    struct Node* root = createNode(1);
+    root->left = createNode(2);
+    root->right = createNode(3);
+    root->left->left = createNode(4);
+    root->left->right = createNode(5);
+    root->right->left = createNode(6);
+    root->right->right = createNode(7);
+
+    printf("%d", findDist(root, 4, 7));
+    return 0;
+}
+
+Java
+
+class Node {
+    int data;
+    Node left, right;
+
+    Node(int val) {
+        data = val;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Function that calculates distance between two nodes.
+    // It returns an array where the first element indicates
+    // whether n1 or n2 is found and the second element
+    // is the distance from the current node.
+    static int[] calculateDistance(Node root, int n1,
+                                    int n2, int[] distance) {
+        if (root == null) return new int[]{0, 0};
+
+        // Recursively calculate the distance in the
+        // left and right subtrees
+        int[] left =
+            calculateDistance(root.left, n1, n2, distance);
+        int[] right =
+            calculateDistance(root.right, n1, n2, distance);
+
+        // Check if the current node is either n1 or n2
+        boolean current = (root.data == n1 || root.data == n2);
+
+        // If current node is one of n1 or n2 and we
+        // found the other in a subtree, update distance
+        if (current && (left[0] == 1 || right[0] == 1)) {
+            distance[0] = Math.max(left[1], right[1]);
+            return new int[]{0, 0};
+        }
+
+        // If left and right both returned true,
+        // root is the LCA and we update the distance
+        if (left[0] == 1 && right[0] == 1) {
+            distance[0] = left[1] + right[1];
+            return new int[]{0, 0};
+        }
+
+        // If either left or right subtree contains
+        // n1 or n2, return the updated distance
+        if (left[0] == 1 || right[0] == 1 || current) {
+            return new int[]{1, Math.max(left[1], right[1]) + 1};
+        }
+
+        // If neither n1 nor n2 exist in the subtree
+        return new int[]{0, 0};
+    }
+
+    // The function that returns distance between n1 and n2.
+    static int findDist(Node root, int n1, int n2) {
+        int[] distance = {0};
+        calculateDistance(root, n1, n2, distance);
+        return distance[0];
+    }
+
+    public static void main(String[] args) {
+
+        //        1
+        //      /   \
+        //     2     3
+        //    / \   / \
+        //   4   5 6   7
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+
+        System.out.println(findDist(root, 4, 7));
+    }
+}
+
+Python
+
+class Node:
+    def __init__(self, val):
+        self.data = val
+        self.left = None
+        self.right = None
+
+# Function that calculates distance between two nodes.
+# It returns a tuple where the first element indicates
+# whether n1 or n2 is found and the second element
+# is the distance from the current node.
+def calculateDistance(root, n1, n2, distance):
+    if not root:
+        return (False, 0)
+
+    left = calculateDistance(root.left, n1, n2, distance)
+    right = calculateDistance(root.right, n1, n2, distance)
+
+    current = (root.data == n1 or root.data == n2)
+
+    if current and (left[0] or right[0]):
+        distance[0] = max(left[1], right[1])
+        return (False, 0)
+
+    if left[0] and right[0]:
+        distance[0] = left[1] + right[1]
+        return (False, 0)
+
+    if left[0] or right[0] or current:
+        return (True, max(left[1], right[1]) + 1)
+
+    return (False, 0)
+
+# The function that returns distance between n1 and n2.
+def findDist(root, n1, n2):
+    distance = [0]
+    calculateDistance(root, n1, n2, distance)
+    return distance[0]
+
+if __name__ == "__main__":
+
+    #         1
+    #       /   \
+    #      2     3
+    #     / \   / \
+    #    4   5 6   7
+
+    root = Node(1)
+    root.left = Node(2)
+    root.right = Node(3)
+    root.left.left = Node(4)
+    root.left.right = Node(5)
+    root.right.left = Node(6)
+    root.right.right = Node(7)
+
+    print(findDist(root, 4, 7))
+
+C#
+
+using System;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int val) {
+        data = val;
+        left = null;
+        right = null;
+    }
+}
+
+class GfG {
+
+    // Function that calculates distance between two nodes.
+    // It returns an array where the first element indicates
+    // whether n1 or n2 is found and the second element
+    // is the distance from the current node.
+    static int[] calculateDistance(Node root, int n1,
+                                    int n2, ref int distance) {
+        if (root == null) return new int[]{0, 0};
+
+        // Recursively calculate the distance in the left
+        // and right subtrees
+        int[] left =
+            calculateDistance(root.left, n1, n2, ref distance);
+        int[] right =
+            calculateDistance(root.right, n1, n2, ref distance);
+
+        // Check if the current node is either n1 or n2
+        bool current = (root.data == n1 || root.data == n2);
+
+        // If current node is one of n1 or n2 and we
+        // found the other in a subtree, update distance
+        if (current && (left[0] == 1 || right[0] == 1)) {
+            distance = Math.Max(left[1], right[1]);
+            return new int[]{0, 0};
+        }
+
+        // If left and right both returned true,
+        // root is the LCA and we update the distance
+        if (left[0] == 1 && right[0] == 1) {
+            distance = left[1] + right[1];
+            return new int[]{0, 0};
+        }
+
+        // If either left or right subtree contains n1 or n2,
+        // return the updated distance
+        if (left[0] == 1 || right[0] == 1 || current) {
+            return new int[]{1, Math.Max(left[1], right[1]) + 1};
+        }
+
+        // If neither n1 nor n2 exist in the subtree
+        return new int[]{0, 0};
+    }
+
+    // The function that returns distance between n1 and n2.
+    static int findDist(Node root, int n1, int n2) {
+        int distance = 0;
+        calculateDistance(root, n1, n2, ref distance);
+        return distance;
+    }
+
+    static void Main() {
+
+        //        1
+        //      /   \
+        //     2     3
+        //    / \   / \
+        //   4   5 6   7
+
+        Node root = new Node(1);
+        root.left = new Node(2);
+        root.right = new Node(3);
+        root.left.left = new Node(4);
+        root.left.right = new Node(5);
+        root.right.left = new Node(6);
+        root.right.right = new Node(7);
+
+        Console.WriteLine(findDist(root, 4, 7));
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(val) {
+        this.data = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Function that calculates distance between two nodes.
+// It returns an object where the first property indicates
+// whether n1 or n2 is found and the second property
+// is the distance from the current node.
+function calculateDistance(root, n1, n2, distance) {
+    if (!root) return { found: false, dist: 0 };
+
+    let left = calculateDistance(root.left, n1, n2, distance);
+    let right = calculateDistance(root.right, n1, n2, distance);
+
+    let current = (root.data === n1 || root.data === n2);
+
+    if (current && (left.found || right.found)) {
+        distance.value = Math.max(left.dist, right.dist);
+        return { found: false, dist: 0 };
+    }
+
+    if (left.found && right.found) {
+        distance.value = left.dist + right.dist;
+        return { found: false, dist: 0 };
+    }
+
+    if (left.found || right.found || current) {
+        return { found: true, dist:
+        Math.max(left.dist, right.dist) + 1 };
+    }
+
+    return { found: false, dist: 0 };
+}
+
+// The function that returns distance
+// between n1 and n2.
+function findDist(root, n1, n2) {
+    let distance = { value: 0 };
+    calculateDistance(root, n1, n2, distance);
+    return distance.value;
+}
+
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+root.right.left = new Node(6);
+root.right.right = new Node(7);
+
+//         1
+//       /   \
+//      2     3
+//     / \   / \
+//    4   5 6   7
+
+console.log(findDist(root, 4, 7));
+
+Output
+
+4

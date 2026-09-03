@@ -1,0 +1,537 @@
+Source: https://www.geeksforgeeks.org/dsa/divide-1-n-two-groups-minimum-sum-difference/
+Title: Divide 1 to n into two groups with minimum sum difference
+Extractor: 2
+
+Given a positive integer n, such that n > 2. Your task is to divide the numbers from 1 to n in two groups, such that the absolute difference between the sum of the elements of the these two groups is minimum possible.
+
+Examples:
+
+> Input: n = 5 Output: [ [ 2, 5 ], [ 1, 3, 4 ] ] Explanation: The sum of first and second group are 7 and 8 respectively, and the difference is 8 - 7 = 1, which is the minimum possible. [ [ 1, 2, 5 ], [ 3, 4 ] ] is also the possible solution. Input: n = 7 Output: [ [ 1, 6, 7 ], [ 2, 3, 4, 5 ] ] Explanation: The sum of first and second group are 14 and 14 respectively, and the difference is 14 - 14 = 0, which is the minimum possible.
+
+- It can be observed that numbers 1 to n, can always be divided in to two groups, such that the difference of sum of elements is either 0 or 1.
+- The idea is to firstly compute the sum of elements from 1 to n (which is equal to n * (n + 1) / 2), then find the half of it.
+
+### [Naive Solution] - Dynamic Programming - O(n^3) Time
+
+This problem can be reduced to the subset sum problem . We mainly need to find a subset of [1, 2, ... n] whose sum is closest to half of n*(n+1)/2.  The time complexity of this solution would be O(n^3).
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+vector<vector<int>> minSubsetDiff(int n) {
+    int S = n * (n + 1) / 2;
+    int target = S / 2;
+    vector<bool> dp(target + 1, false);
+    vector<vector<int>> subset(target + 1);
+    dp[0] = true;
+
+    // Find all possible subset sums and store
+    // subsets also.
+    for (int i = 1; i <= n; i++) {
+        for (int j = target; j >= i; j--) {
+            if (dp[j - i]) {
+                dp[j] = true;
+                subset[j] = subset[j - i];
+                subset[j].push_back(i);
+            }
+        }
+    }
+
+    // Find the subset closest (smaller or equal)
+    // to target
+    int s1 = 0;
+    for (int i = target; i >= 0; i--) {
+        if (dp[i]) {
+            s1 = i;
+            break;
+        }
+    }
+
+    vector<int> subset1 = subset[s1];
+    unordered_set<int> set1(subset1.begin(), subset1.end());
+    vector<int> subset2;
+
+    for (int i = 1; i <= n; i++) {
+        if (!set1.count(i)) subset2.push_back(i);
+    }
+
+    return {subset1, subset2};
+}
+
+int main() {
+    int n = 4;
+    vector<vector<int>> res = minSubsetDiff(n);
+
+    cout << "Subset 1: ";
+    for (int x : res[0]) cout << x << " ";
+    cout << "\nSubset 2: ";
+    for (int x : res[1]) cout << x << " ";
+    cout << endl;
+}
+
+Java
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class SubsetDifference {
+    public static int[][] minSubsetDiff(int n) {
+        int S = n * (n + 1) / 2;
+        int target = S / 2;
+        boolean[] dp = new boolean[target + 1];
+        int[][] subset = new int[target + 1][];
+        dp[0] = true;
+
+        // Find all possible subset sums and store
+        for (int i = 1; i <= n; i++) {
+            for (int j = target; j >= i; j--) {
+                if (dp[j - i]) {
+                    dp[j] = true;
+                    subset[j] = new int[subset[j - i].length + 1];
+                    System.arraycopy(subset[j - i], 0, subset[j], 0, subset[j - i].length);
+                    subset[j][subset[j - i].length] = i;
+                }
+            }
+        }
+
+        // Find the subset closest (smaller or equal)
+        // to target
+        int s1 = 0;
+        for (int i = target; i >= 0; i--) {
+            if (dp[i]) {
+                s1 = i;
+                break;
+            }
+        }
+
+        int[] subset1 = subset[s1];
+        Set<Integer> set1 = new HashSet<>();
+        for (int num : subset1) {
+            set1.add(num);
+        }
+        int[] subset2 = new int[n - subset1.length];
+        int index = 0;
+
+        for (int i = 1; i <= n; i++) {
+            if (!set1.contains(i)) subset2[index++] = i;
+        }
+
+        return new int[][]{subset1, subset2};
+    }
+
+    public static void main(String[] args) {
+        int n = 4;
+        int[][] res = minSubsetDiff(n);
+
+        System.out.print("Subset 1: ");
+        for (int x : res[0]) System.out.print(x + " ");
+        System.out.println();
+        System.out.print("Subset 2: ");
+        for (int x : res[1]) System.out.print(x + " ");
+        System.out.println();
+    }
+}
+
+Python
+
+def min_subset_diff(n):
+    S = n * (n + 1) // 2
+    target = S // 2
+    dp = [False] * (target + 1)
+    subset = [[] for _ in range(target + 1)]
+    dp[0] = True
+
+    # Find all possible subset sums and store
+    # subsets also.
+    for i in range(1, n + 1):
+        for j in range(target, i - 1, -1):
+            if dp[j - i]:
+                dp[j] = True
+                subset[j] = subset[j - i] + [i]
+
+    # Find the subset closest (smaller or equal)
+    # to target
+    s1 = 0
+    for i in range(target, -1, -1):
+        if dp[i]:
+            s1 = i
+            break
+
+    subset1 = subset[s1]
+    set1 = set(subset1)
+    subset2 = [i for i in range(1, n + 1) if i not in set1]
+
+    return [subset1, subset2]
+
+n = 4
+res = min_subset_diff(n)
+
+print("Subset 1:", res[0])
+print("Subset 2:", res[1])
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Program {
+    public static List<List<int>> MinSubsetDiff(int n) {
+        int S = n * (n + 1) / 2;
+        int target = S / 2;
+        bool[] dp = new bool[target + 1];
+        List<int>[] subset = new List<int>[target + 1];
+        for (int i = 0; i <= target; i++) {
+            subset[i] = new List<int>();
+        }
+        dp[0] = true;
+
+        // Find all possible subset sums and store
+        // subsets also.
+        for (int i = 1; i <= n; i++) {
+            for (int j = target; j >= i; j--) {
+                if (dp[j - i]) {
+                    dp[j] = true;
+                    subset[j] = new List<int>(subset[j - i]);
+                    subset[j].Add(i);
+                }
+            }
+        }
+
+        // Find the subset closest (smaller or equal)
+        // to target
+        int s1 = 0;
+        for (int i = target; i >= 0; i--) {
+            if (dp[i]) {
+                s1 = i;
+                break;
+            }
+        }
+
+        List<int> subset1 = subset[s1];
+        HashSet<int> set1 = new HashSet<int>(subset1);
+        List<int> subset2 = new List<int>();
+
+        for (int i = 1; i <= n; i++) {
+            if (!set1.Contains(i)) subset2.Add(i);
+        }
+
+        return new List<List<int>> { subset1, subset2 };
+    }
+
+    static void Main() {
+        int n = 4;
+        var res = MinSubsetDiff(n);
+
+        Console.WriteLine("Subset 1: " + string.Join(" ", res[0]));
+        Console.WriteLine("Subset 2: " + string.Join(" ", res[1]));
+    }
+}
+
+JavaScript
+
+function minSubsetDiff(n) {
+    let S = n * (n + 1) / 2;
+    let target = Math.floor(S / 2);
+    let dp = Array(target + 1).fill(false);
+    let subset = Array.from({ length: target + 1 }, () => []);
+    dp[0] = true;
+
+    // Find all possible subset sums and store
+    // subsets also.
+    for (let i = 1; i <= n; i++) {
+        for (let j = target; j >= i; j--) {
+            if (dp[j - i]) {
+                dp[j] = true;
+                subset[j] = [...subset[j - i], i];
+            }
+        }
+    }
+
+    // Find the subset closest (smaller or equal)
+    // to target
+    let s1 = 0;
+    for (let i = target; i >= 0; i--) {
+        if (dp[i]) {
+            s1 = i;
+            break;
+        }
+    }
+
+    let subset1 = subset[s1];
+    let set1 = new Set(subset1);
+    let subset2 = [];
+
+    for (let i = 1; i <= n; i++) {
+        if (!set1.has(i)) subset2.push(i);
+    }
+
+    return [subset1, subset2];
+}
+
+let n = 4;
+let res = minSubsetDiff(n);
+
+console.log("Subset 1:", res[0]);
+console.log("Subset 2:", res[1]);
+
+Output
+
+Subset 1: 1 4
+Subset 2: 2 3
+
+### [Expected Solution[ - Greedy Approach - O(n) Time
+
+We traverse numbers from n to 1. And we try adding every number to the first subset. If adding the number does not make the sum more than half, we add the number to first subset, else to the second.
+
+We create two auxiliary arrays to store the elements of two groups, and initiate two counters to store the sum of elements of both the groups. Now start iterating from 1 to n, and insert the element in the first group if it does not exceed the first group's sum more than the calculated half sum, else insert the element in second group.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to divide the elements from 1
+// to n in two groups with minimum difference
+vector<vector<int>> findGroup(int n) {
+
+    // to store the two groups
+    vector<vector<int>> res(2);
+
+    // to store the sum of both groups
+    int sum1 = 0, sum2 = 0;
+
+    // find half of sum of elements from 1 to n
+    int half = n * (n + 1) / 4;
+
+    for(int i = n; i >= 1; i--) {
+
+        // if adding the current element to first
+        // group doesn't exceed half, add it
+        if(sum1 + i <= half) {
+            res[0].push_back(i);
+            sum1 += i;
+        }
+
+        // else add it to the second group
+        else {
+            res[1].push_back(i);
+            sum2 += i;
+        }
+    }
+
+    return res;
+}
+
+int main() {
+    int n = 7;
+    vector<vector<int>> res = findGroup(n);
+    for(int i = 0; i < 2; i++) {
+        for(int j = 0; j < res[i].size(); j++) {
+            cout << res[i][j] << " ";
+        }
+        cout << endl;
+    }
+    return 0;
+}
+
+Java
+
+// Function to divide the elements from 1
+// to n in two groups with minimum difference
+import java.util.*;
+
+class GfG {
+
+    // Function to divide the elements from 1
+    // to n in two groups with minimum difference
+    static int[][] findGroup(int n) {
+        // to store the two groups
+        ArrayList<Integer> group1 = new ArrayList<>();
+        ArrayList<Integer> group2 = new ArrayList<>();
+
+        // to store the sum of both groups
+        int sum1 = 0, sum2 = 0;
+
+        // find half of sum of elements from 1 to n
+        int half = n * (n + 1) / 4;
+
+        for (int i = n; i >= 1; i--) {
+            // if adding the current element to first
+            // group doesn't exceed half, add it
+            if (sum1 + i <= half) {
+                group1.add(i);
+                sum1 += i;
+            }
+            // else add it to the second group
+            else {
+                group2.add(i);
+                sum2 += i;
+            }
+        }
+
+        // convert groups to int[] arrays
+        int[] arr1 = new int[group1.size()];
+        for (int i = 0; i < group1.size(); i++) {
+            arr1[i] = group1.get(i);
+        }
+        int[] arr2 = new int[group2.size()];
+        for (int i = 0; i < group2.size(); i++) {
+            arr2[i] = group2.get(i);
+        }
+
+        // create the result 2D array
+        int[][] res = new int[2][];
+        res[0] = arr1;
+        res[1] = arr2;
+
+        return res;
+    }
+
+    public static void main(String[] args) {
+        int n = 7;
+        int[][] res = findGroup(n);
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < res[i].length; j++) {
+                System.out.print(res[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+}
+
+Python
+
+# Function to divide the elements from 1
+# to n in two groups with minimum difference.
+def findGroup(n):
+    # to store the two groups
+    res = [[], []]
+
+    # to store the sum of both groups
+    sum1 = 0
+    sum2 = 0
+
+    # find half of sum of elements from 1 to n
+    half = n * (n + 1) // 4
+
+    for i in range(n, 0, -1):
+        # if adding the current element to first
+        # group doesn't exceed half, add it
+        if sum1 + i <= half:
+            res[0].append(i)
+            sum1 += i
+        # else add it to the second group
+        else:
+            res[1].append(i)
+            sum2 += i
+    return res
+
+if __name__ == "__main__":
+    n = 7
+    res = findGroup(n)
+    for group in res:
+        for x in group:
+            print(x, end=" ")
+        print()
+
+C#
+
+// Function to divide the elements from 1
+// to n in two groups with minimum difference
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Function to divide the elements from 1
+    // to n in two groups with minimum difference
+    static List<List<int>> findGroup(int n) {
+        // to store the two groups
+        List<int> group1 = new List<int>();
+        List<int> group2 = new List<int>();
+
+        // to store the sum of both groups
+        int sum1 = 0, sum2 = 0;
+
+        // find half of sum of elements from 1 to n
+        int half = n * (n + 1) / 4;
+
+        for (int i = n; i >= 1; i--) {
+            // if adding the current element to first
+            // group doesn't exceed half, add it
+            if (sum1 + i <= half) {
+                group1.Add(i);
+                sum1 += i;
+            }
+            // else add it to the second group
+            else {
+                group2.Add(i);
+                sum2 += i;
+            }
+        }
+
+        // to store the two groups
+        List<List<int>> res = new List<List<int>>();
+        res.Add(group1);
+        res.Add(group2);
+
+        return res;
+    }
+
+    static void Main() {
+        int n = 7;
+        List<List<int>> res = findGroup(n);
+        for (int i = 0; i < res.Count; i++) {
+            for (int j = 0; j < res[i].Count; j++) {
+                Console.Write(res[i][j] + " ");
+            }
+            Console.WriteLine();
+        }
+    }
+}
+
+JavaScript
+
+// Function to divide the elements from 1
+// to n in two groups with minimum difference.
+function findGroup(n) {
+    // to store the two groups
+    let res = [[], []];
+
+    // to store the sum of both groups
+    let sum1 = 0, sum2 = 0;
+
+    // find half of sum of elements from 1 to n
+    let half = n * (n + 1) / 4;
+
+    for (let i = n; i >= 1; i--) {
+        // if adding the current element to first
+        // group doesn't exceed half, add it
+        if (sum1 + i <= half) {
+            res[0].push(i);
+            sum1 += i;
+        }
+        // else add it to the second group
+        else {
+            res[1].push(i);
+            sum2 += i;
+        }
+    }
+
+    return res;
+}
+
+let n = 7;
+let res = findGroup(n);
+for (let i = 0; i < res.length; i++) {
+    console.log(res[i].join(" "));
+}
+
+Output
+
+7 6 1
+5 4 3 2
+
+Time Complexity: O(n), as we are iterating from n to 1 only once. Space Complexity: O(n), to store the elements from 1 to n in two groups.

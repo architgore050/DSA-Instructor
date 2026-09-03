@@ -1,0 +1,737 @@
+Source: https://www.geeksforgeeks.org/dsa/count-ways-increase-lcs-length-two-strings-one/
+Title: Count ways to increase LCS by one
+Extractor: 2
+
+Given two strings s1 and s2 consisting of lowercase English letters of length n1 and n2 respectively, find the number of ways to insert exactly one character into string s1 such that the length of the Longest Common Subsequence (LCS) of both strings increases by exactly 1.
+
+Examples:
+
+> Input : s1 = "abab", s2 = "abc" Output : 3 Explanation : The LCS length of the given two strings is 2. There are 3 valid insertions in s1 which increase the LCS length to 3: "abcab" -> LCS = 3 "abacb" -> LCS = 3 "ababc" -> LCS = 3 Input : s1 = "abcabc", s2 = "abcd" Output : 4 Explanation : The LCS length of the given two strings is 3. There are 4 valid insertions in s1 which increase the LCS length to 4: "abcdabc" -> LCS = 4 "abcadcb" -> LCS = 4 "abcabdc" -> LCS = 4 "abcabcd" -> LCS = 4
+
+Table of Content
+
+- [Naive Approach] Brute Force - O(n1 × 26 × (n1 × n2)) Time and O(n1 × n2) Space
+- [Expected Approach] Prefix and Suffix DP - O(n1 × n2) Time and O(n1 × n2) Space
+
+### [Naive Approach] Brute Force - O(n1 × 26 × (n1 × n2)) Time and O(n1 × n2) Space
+
+> The idea is to simulate the insertion of every possible lowercase character (a to z) at every possible position in s1 and compute the LCS of the modified s1 with s2. If the LCS length increases by one after the insertion, we count it as a valid way. This approach checks all possible combinations of insertions and directly verifies whether the LCS length increases.
+
+Note : The DP solution of the LCS problem has been directly used in the code below.
+
+C++
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Returns length of LCS for s1[0..m-1], s2[0..n-1]
+int lcs(string &s1, string &s2) {
+    int n1 = s1.size();
+    int n2 = s2.size();
+
+    vector<vector<int>> dp(n1 + 1, vector<int>(n2 + 1, 0));
+
+    // Building dp in bottom-up fashion
+    for (int i = 1; i <= n1; ++i) {
+        for (int j = 1; j <= n2; ++j) {
+            if (s1[i - 1] == s2[j - 1])
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            else
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1]);
+        }
+    }
+
+    return dp[n1][n2];
+}
+
+// Method returns total ways to increase LCS length by 1
+int waysToIncreaseLCSBy1(string &s1, string &s2) {
+    int n1 = s1.length();
+    int n2 = s2.length();
+
+    // Find original LCS
+    int lcs1 = lcs(s1, s2);
+
+    int ways = 0;
+
+    // Try all insertion positions in s1
+    for (int i = 0; i <= n1; i++) {
+
+        // Try all characters from 'a' to 'z'
+        for (char ch = 'a'; ch <= 'z'; ch++) {
+
+            // Form new string after insertion
+            string updatedStr = s1.substr(0, i) + ch + s1.substr(i);
+
+            // Compute LCS with updated string
+            int lcs2 = lcs(updatedStr, s2);
+
+            // Check if LCS increases by exactly 1
+            if (lcs2 == lcs1 + 1)
+                ways++;
+        }
+    }
+
+    return ways;
+}
+
+int main() {
+    string s1 = "abab";
+    string s2 = "abc";
+
+    cout << waysToIncreaseLCSBy1(s1, s2);
+    return 0;
+}
+
+Java
+
+class GFG {
+
+    // Returns length of LCS for s1 and s2
+    static int lcs(String s1, String s2) {
+        int n1 = s1.length();
+        int n2 = s2.length();
+
+        int[][] dp = new int[n1 + 1][n2 + 1];
+
+        // Building dp in bottom-up fashion
+        for (int i = 1; i <= n1; i++) {
+            for (int j = 1; j <= n2; j++) {
+                if (s1.charAt(i - 1) == s2.charAt(j - 1))
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                else
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
+
+        return dp[n1][n2];
+    }
+
+    // Method returns total ways to increase LCS length by 1
+    static int waysToIncreaseLCSBy1(String s1, String s2) {
+        int n1 = s1.length();
+        int n2 = s2.length();
+
+        int lcs1 = lcs(s1, s2);
+
+        int ways = 0;
+
+        // Try all insertion positions in s1
+        for (int i = 0; i <= n1; i++) {
+
+            // Try all characters from 'a' to 'z'
+            for (char ch = 'a'; ch <= 'z'; ch++) {
+
+                String updatedStr = s1.substring(0, i) + ch + s1.substring(i);
+
+                int lcs2 = lcs(updatedStr, s2);
+
+                if (lcs2 == lcs1 + 1)
+                    ways++;
+            }
+        }
+
+        return ways;
+    }
+
+    public static void main(String[] args) {
+        String s1 = "abab";
+        String s2 = "abc";
+
+        System.out.println(waysToIncreaseLCSBy1(s1, s2));
+    }
+}
+
+Python
+
+# Returns length of LCS for s1 and s2
+def lcs(s1, s2):
+    n1 = len(s1)
+    n2 = len(s2)
+
+    dp = [[0] * (n2 + 1) for _ in range(n1 + 1)]
+
+    # Building dp in bottom-up fashion
+    for i in range(1, n1 + 1):
+        for j in range(1, n2 + 1):
+            if s1[i - 1] == s2[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+
+    return dp[n1][n2]
+
+def waysToIncreaseLCSBy1(s1, s2):
+    n1 = len(s1)
+    n2 = len(s2)
+
+    lcs1 = lcs(s1, s2)
+
+    ways = 0
+
+    # Try all insertion positions in s1
+    for i in range(n1 + 1):
+
+        # Try all characters from 'a' to 'z'
+        for ch in range(ord('a'), ord('z') + 1):
+            c = chr(ch)
+
+            updatedStr = s1[:i] + c + s1[i:]
+
+            lcs2 = lcs(updatedStr, s2)
+
+            if lcs2 == lcs1 + 1:
+                ways += 1
+
+    return ways
+
+if __name__ == "__main__":
+    s1 = "abab"
+    s2 = "abc"
+
+    print(waysToIncreaseLCSBy1(s1, s2))
+
+C#
+
+using System;
+
+class GFG
+{
+    // Returns length of LCS for s1 and s2
+    static int lcs(string s1, string s2)
+    {
+        int n1 = s1.Length;
+        int n2 = s2.Length;
+
+        int[,] dp = new int[n1 + 1, n2 + 1];
+
+        // Building dp in bottom-up fashion
+        for (int i = 1; i <= n1; i++)
+        {
+            for (int j = 1; j <= n2; j++)
+            {
+                if (s1[i - 1] == s2[j - 1])
+                    dp[i, j] = dp[i - 1, j - 1] + 1;
+                else
+                    dp[i, j] = Math.Max(dp[i - 1, j], dp[i, j - 1]);
+            }
+        }
+
+        return dp[n1, n2];
+    }
+
+    // Method returns total ways to increase LCS length by 1
+    static int waysToIncreaseLCSBy1(string s1, string s2)
+    {
+        int n1 = s1.Length;
+        int n2 = s2.Length;
+
+        int lcs1 = lcs(s1, s2);
+
+        int ways = 0;
+
+        // Try all insertion positions in s1
+        for (int i = 0; i <= n1; i++)
+        {
+            for (char ch = 'a'; ch <= 'z'; ch++)
+            {
+                string updatedStr = s1.Substring(0, i) + ch + s1.Substring(i);
+
+                int lcs2 = lcs(updatedStr, s2);
+
+                if (lcs2 == lcs1 + 1)
+                    ways++;
+            }
+        }
+
+        return ways;
+    }
+
+    static void Main()
+    {
+        string s1 = "abab";
+        string s2 = "abc";
+
+        Console.WriteLine(waysToIncreaseLCSBy1(s1, s2));
+    }
+}
+
+JavaScript
+
+// Returns length of LCS for s1 and s2
+function lcs(s1, s2) {
+    let n1 = s1.length;
+    let n2 = s2.length;
+
+    let dp = Array.from({ length: n1 + 1 }, () =>
+        Array(n2 + 1).fill(0)
+    );
+
+    // Building dp in bottom-up fashion
+    for (let i = 1; i <= n1; i++) {
+        for (let j = 1; j <= n2; j++) {
+            if (s1[i - 1] === s2[j - 1])
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            else
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+    }
+
+    return dp[n1][n2];
+}
+
+// Method returns total ways to increase LCS length by 1
+function waysToIncreaseLCSBy1(s1, s2) {
+    let n1 = s1.length;
+    let n2 = s2.length;
+
+    let lcs1 = lcs(s1, s2);
+
+    let ways = 0;
+
+    // Try all insertion positions in s1
+    for (let i = 0; i <= n1; i++) {
+
+        // Try all characters from 'a' to 'z'
+        for (let ch = 97; ch <= 122; ch++) {
+            let c = String.fromCharCode(ch);
+
+            let updatedStr = s1.slice(0, i) + c + s1.slice(i);
+
+            let lcs2 = lcs(updatedStr, s2);
+
+            if (lcs2 === lcs1 + 1)
+                ways++;
+        }
+    }
+
+    return ways;
+}
+
+// drive code
+let s1 = "abab";
+let s2 = "abc";
+
+console.log(waysToIncreaseLCSBy1(s1, s2));
+
+Output
+
+3
+
+### [Expected Approach] Prefix and Suffix DP - O(n1 × n2) Time and O(n1 × n2) Space
+
+> The idea is to avoid recomputing LCS for every insertion by using precomputed results. When a character is inserted into s1, the effect on LCS can be split into three parts: prefix before the insertion, suffix after it, and the contribution of the inserted character. Instead of recalculating LCS each time, we precompute LCS of all prefixes and suffixes of both strings. After preprocessing, we try inserting each character from 'a' to 'z' at every position in s1. For each insertion, we check whether there exists a matching position in s2 such that the prefix LCS + suffix LCS equals the original LCS. If this condition is satisfied, the insertion increases LCS by exactly 1. Finally, we count all such valid insertions.
+
+- Compute the LCS prefix table (lcsl) for all prefixes of s1 and s2.
+- Compute the LCS suffix table (lcsr) for all suffixes of s1 and s2.
+- Store all positions of each character in s2 for fast lookup.
+- For each position in s1, try all characters from 'a' to 'z' and check their occurrences in s2.
+- For a match position p, check if : prefix LCS + suffix LCS equals original LCS.
+- If condition is satisfied, increment count. Use break to avoid counting duplicates for the same insertion.
+
+Consider the strings: s1 = " abab " and s2 = " abc "
+
+Step 1 : First, compute the LCS of both strings. LCS of "abab" and "abc" is "ab". So, baseLCS = 2
+
+Step 2 : Precompute required data:
+
+- lcsl : prefix LCS table
+- lcsr : suffix LCS table
+- Position list of characters in s2 : a -> [1], b -> [2], c -> [3]
+
+Step 3 : Now, try inserting a character into s1 at different positions. For example, insert 'c' at index 2: s1 becomes "abcab", and we match 'c' with position p = 3 in s2.
+
+Step 4 : We check the condition: lcsl[i][p−1] + lcsr[i+1][p+1] = baseLCS. Here, the left contribution is 2 and the right is 0, so: 2 + 0 = 2 = baseLCS
+
+Step 5 : Therefore, the existing LCS is preserved, and the inserted character contributes an additional match, increasing the LCS by exactly 1.
+
+Step 6 : Similarly, other valid insertions include "abacb" and "ababc". Therefore, the total number of valid ways = 3.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int waysToIncreaseLCSBy1(string &s1, string &s2) {
+    int n1 = s1.length();
+    int n2 = s2.length();
+
+    int M = 26;
+
+    // Fill positions of each character in vector
+    vector<vector<int>> position(M);
+
+    for (int i = 1; i <= n2; i++)
+        position[s2[i - 1] - 'a'].push_back(i);
+
+    // DP tables
+    vector<vector<int>> lcsl(n1 + 2, vector<int>(n2 + 2, 0));
+    vector<vector<int>> lcsr(n1 + 2, vector<int>(n2 + 2, 0));
+
+    // Filling LCS array for prefix substrings
+    for (int i = 1; i <= n1; i++) {
+        for (int j = 1; j <= n2; j++) {
+            if (s1[i - 1] == s2[j - 1])
+                lcsl[i][j] = 1 + lcsl[i - 1][j - 1];
+            else
+                lcsl[i][j] = max(lcsl[i - 1][j], lcsl[i][j - 1]);
+        }
+    }
+
+    // Filling LCS array for suffix substrings
+    for (int i = n1; i >= 1; i--) {
+        for (int j = n2; j >= 1; j--) {
+            if (s1[i - 1] == s2[j - 1])
+                lcsr[i][j] = 1 + lcsr[i + 1][j + 1];
+            else
+                lcsr[i][j] = max(lcsr[i + 1][j], lcsr[i][j + 1]);
+        }
+    }
+
+    int ways = 0;
+    int baseLCS = lcsl[n1][n2];
+
+    // Looping for all possible insertion positions in first string
+    for (int i = 0; i <= n1; i++) {
+
+        // Trying all possible lowercase characters
+        for (char c = 'a'; c <= 'z'; c++) {
+
+            vector<int> &posList = position[c - 'a'];
+
+            // Now for each character, loop over same character positions in second string
+            for (int j = 0; j < (int)posList.size(); j++) {
+                int p = posList[j];
+
+                // If both, left and right substrings make total LCS then increase result by 1
+                if (lcsl[i][p - 1] + lcsr[i + 1][p + 1] == baseLCS) {
+                    ways++;
+                    break;
+                }
+            }
+        }
+    }
+
+    return ways;
+}
+
+int main() {
+    string s1 = "abab";
+    string s2 = "abc";
+
+    cout << waysToIncreaseLCSBy1(s1, s2) << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.List;
+
+class GFG {
+
+    public static int waysToIncreaseLCSBy1(String s1, String s2) {
+        int n1 = s1.length();
+        int n2 = s2.length();
+
+        int M = 26;
+
+        // Fill positions of each character in vector
+        List<List<Integer>> position = new ArrayList<>();
+        for (int i = 0; i < M; i++) {
+            position.add(new ArrayList<>());
+        }
+
+        for (int i = 1; i <= n2; i++)
+            position.get(s2.charAt(i - 1) - 'a').add(i);
+
+        // DP tables
+        int[][] lcsl = new int[n1 + 2][n2 + 2];
+        int[][] lcsr = new int[n1 + 2][n2 + 2];
+
+        // Filling LCS array for prefix substrings
+        for (int i = 1; i <= n1; i++) {
+            for (int j = 1; j <= n2; j++) {
+                if (s1.charAt(i - 1) == s2.charAt(j - 1))
+                    lcsl[i][j] = 1 + lcsl[i - 1][j - 1];
+                else
+                    lcsl[i][j] = Math.max(lcsl[i - 1][j], lcsl[i][j - 1]);
+            }
+        }
+
+        // Filling LCS array for suffix substrings
+        for (int i = n1; i >= 1; i--) {
+            for (int j = n2; j >= 1; j--) {
+                if (s1.charAt(i - 1) == s2.charAt(j - 1))
+                    lcsr[i][j] = 1 + lcsr[i + 1][j + 1];
+                else
+                    lcsr[i][j] = Math.max(lcsr[i + 1][j], lcsr[i][j + 1]);
+            }
+        }
+
+        int ways = 0;
+        int baseLCS = lcsl[n1][n2];
+
+        // Looping for all possible insertion positions in first string
+        for (int i = 0; i <= n1; i++) {
+
+            // Trying all possible lowercase characters
+            for (int c = 0; c < 26; c++) {
+
+                List<Integer> posList = position.get(c);
+
+                // Now for each character, loop over same character positions in second string
+                for (int j = 0; j < posList.size(); j++) {
+                    int p = posList.get(j);
+
+                    // If both, left and right substrings make total LCS then increase result by 1
+                    if (lcsl[i][p - 1] + lcsr[i + 1][p + 1] == baseLCS) {
+                        ways++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return ways;
+    }
+
+    public static void main(String[] args) {
+        String s1 = "abab";
+        String s2 = "abc";
+
+        System.out.println(waysToIncreaseLCSBy1(s1, s2));
+    }
+}
+
+Python
+
+def waysToIncreaseLCSBy1(s1, s2):
+    n1 = len(s1)
+    n2 = len(s2)
+
+    M = 26
+
+    # Fill positions of each character in vector
+    position = [[] for _ in range(M)]
+
+    for i in range(1, n2 + 1):
+        position[ord(s2[i - 1]) - ord('a')].append(i)
+
+    # DP tables
+    lcsl = [[0] * (n2 + 2) for _ in range(n1 + 2)]
+    lcsr = [[0] * (n2 + 2) for _ in range(n1 + 2)]
+
+    # Filling LCS array for prefix substrings
+    for i in range(1, n1 + 1):
+        for j in range(1, n2 + 1):
+            if s1[i - 1] == s2[j - 1]:
+                lcsl[i][j] = 1 + lcsl[i - 1][j - 1]
+            else:
+                lcsl[i][j] = max(lcsl[i - 1][j], lcsl[i][j - 1])
+
+    # Filling LCS array for suffix substrings
+    for i in range(n1, 0, -1):
+        for j in range(n2, 0, -1):
+            if s1[i - 1] == s2[j - 1]:
+                lcsr[i][j] = 1 + lcsr[i + 1][j + 1]
+            else:
+                lcsr[i][j] = max(lcsr[i + 1][j], lcsr[i][j + 1])
+
+    ways = 0
+    baseLCS = lcsl[n1][n2]
+
+    # Looping for all possible insertion positions in first string
+    for i in range(n1 + 1):
+
+        # Trying all possible lowercase characters
+        for c in range(26):
+
+            posList = position[c]
+
+            # Now for each character, loop over same character positions in second string
+            for j in range(len(posList)):
+                p = posList[j]
+
+                # If both, left and right substrings make total LCS then increase result by 1
+                if lcsl[i][p - 1] + lcsr[i + 1][p + 1] == baseLCS:
+                    ways += 1
+                    break
+
+    return ways
+
+if __name__ == "__main__":
+    s1 = "abab"
+    s2 = "abc"
+
+    print(waysToIncreaseLCSBy1(s1, s2))
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG
+{
+    public static int waysToIncreaseLCSBy1(string s1, string s2)
+    {
+        int n1 = s1.Length;
+        int n2 = s2.Length;
+
+        int M = 26;
+
+        // Fill positions of each character in vector
+        List<List<int>> position = new List<List<int>>();
+        for (int i = 0; i < M; i++)
+            position.Add(new List<int>());
+
+        for (int i = 1; i <= n2; i++)
+            position[s2[i - 1] - 'a'].Add(i);
+
+        // DP tables
+        int[,] lcsl = new int[n1 + 2, n2 + 2];
+        int[,] lcsr = new int[n1 + 2, n2 + 2];
+
+        // Filling LCS array for prefix substrings
+        for (int i = 1; i <= n1; i++)
+        {
+            for (int j = 1; j <= n2; j++)
+            {
+                if (s1[i - 1] == s2[j - 1])
+                    lcsl[i, j] = 1 + lcsl[i - 1, j - 1];
+                else
+                    lcsl[i, j] = Math.Max(lcsl[i - 1, j], lcsl[i, j - 1]);
+            }
+        }
+
+        // Filling LCS array for suffix substrings
+        for (int i = n1; i >= 1; i--)
+        {
+            for (int j = n2; j >= 1; j--)
+            {
+                if (s1[i - 1] == s2[j - 1])
+                    lcsr[i, j] = 1 + lcsr[i + 1, j + 1];
+                else
+                    lcsr[i, j] = Math.Max(lcsr[i + 1, j], lcsr[i, j + 1]);
+            }
+        }
+
+        int ways = 0;
+        int baseLCS = lcsl[n1, n2];
+
+        // Looping for all possible insertion positions in first string
+        for (int i = 0; i <= n1; i++)
+        {
+            // Trying all possible lowercase characters
+            for (int c = 0; c < 26; c++)
+            {
+                List<int> posList = position[c];
+
+                // Now for each character, loop over same character positions in second string
+                for (int j = 0; j < posList.Count; j++)
+                {
+                    int p = posList[j];
+
+                    // If both, left and right substrings make total LCS then increase result by 1
+                    if (lcsl[i, p - 1] + lcsr[i + 1, p + 1] == baseLCS)
+                    {
+                        ways++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return ways;
+    }
+
+    static void Main()
+    {
+        string s1 = "abab";
+        string s2 = "abc";
+
+        Console.WriteLine(waysToIncreaseLCSBy1(s1, s2));
+    }
+}
+
+JavaScript
+
+function waysToIncreaseLCSBy1(s1, s2) {
+    let n1 = s1.length;
+    let n2 = s2.length;
+
+    let M = 26;
+
+    // Fill positions of each character in vector
+    let position = Array.from({ length: M }, () => []);
+
+    for (let i = 1; i <= n2; i++)
+        position[s2[i - 1].charCodeAt(0) - 97].push(i);
+
+    // DP tables
+    let lcsl = Array.from({ length: n1 + 2 }, () =>
+        Array(n2 + 2).fill(0)
+    );
+
+    let lcsr = Array.from({ length: n1 + 2 }, () =>
+        Array(n2 + 2).fill(0)
+    );
+
+    // Filling LCS array for prefix substrings
+    for (let i = 1; i <= n1; i++) {
+        for (let j = 1; j <= n2; j++) {
+            if (s1[i - 1] === s2[j - 1])
+                lcsl[i][j] = 1 + lcsl[i - 1][j - 1];
+            else
+                lcsl[i][j] = Math.max(lcsl[i - 1][j], lcsl[i][j - 1]);
+        }
+    }
+
+    // Filling LCS array for suffix substrings
+    for (let i = n1; i >= 1; i--) {
+        for (let j = n2; j >= 1; j--) {
+            if (s1[i - 1] === s2[j - 1])
+                lcsr[i][j] = 1 + lcsr[i + 1][j + 1];
+            else
+                lcsr[i][j] = Math.max(lcsr[i + 1][j], lcsr[i][j + 1]);
+        }
+    }
+
+    let ways = 0;
+    let baseLCS = lcsl[n1][n2];
+
+    // Looping for all possible insertion positions in first string
+    for (let i = 0; i <= n1; i++) {
+
+        // Trying all possible lowercase characters
+        for (let c = 0; c < 26; c++) {
+
+            let posList = position[c];
+
+            // Now for each character, loop over same character positions in second string
+            for (let j = 0; j < posList.length; j++) {
+                let p = posList[j];
+
+                // If both, left and right substrings make total LCS then increase result by 1
+                if (lcsl[i][p - 1] + lcsr[i + 1][p + 1] === baseLCS) {
+                    ways++;
+                    break;
+                }
+            }
+        }
+    }
+
+    return ways;
+}
+
+// drive code
+let s1 = "abab";
+let s2 = "abc";
+
+console.log(waysToIncreaseLCSBy1(s1, s2));
+
+Output
+
+3

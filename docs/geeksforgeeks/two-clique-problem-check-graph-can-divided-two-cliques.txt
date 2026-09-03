@@ -1,0 +1,532 @@
+Source: https://www.geeksforgeeks.org/dsa/two-clique-problem-check-graph-can-divided-two-cliques/
+Title: Two Clique Problem (Check if Graph can be divided in two Cliques)
+Extractor: 2
+
+A Clique is a subgraph of graph such that all vertices in subgraph are completely connected with each other. Given a Graph, find if it can be divided into two Cliques.
+
+Example:
+
+> Input : G[][] = [[0, 1, 1, 1, 0], [1, 0, 1, 0, 0], [1, 1, 0, 0, 0], [1, 0, 0, 0, 1], [0, 0, 0, 1, 0]] Output : Yes Explanation:
+
+This problem looks tricky at first, but has a simple and interesting solution. A graph can be divided in two cliques if its complement graph is Bipartitite . So below are two steps to find if graph can be divided in two Cliques or not.
+
+- Find the complement of Graph. Below is the complement graph is above shown graph. In complement, all original edges are removed. And the vertices which did not have an edge between them, now have an edge connecting them.
+
+- Return true if complement is Bipartite, else false. The above shown graph is Bipartite. Checking whether a Graph is Bipartite or no is discussed here .
+
+How does this work?
+
+> If complement is Bipartite, then graph can be divided into two sets U and V such that there is no edge connecting to vertices of same set. This means in original graph, these sets U and V are completely connected. Hence original graph could be divided in two Cliques.
+
+C++
+
+// C++ program to solve Two Clique Problem
+#include <bits/stdc++.h>
+using namespace std;
+
+// This function returns true if subgraph reachable from
+// src is Bipartite or not.
+bool isBipartiteUtil(const vector<vector<int>>& G,
+int src, vector<int>& colorArr) {
+    colorArr[src] = 1;
+    int V = G.size();
+
+    // Create a queue (FIFO) of vertex numbers and enqueue
+    // source vertex for BFS traversal
+    queue<int> q;
+    q.push(src);
+
+    // Run while there are vertices in queue (Similar to BFS)
+    while (!q.empty()) {
+
+        // Dequeue a vertex from queue
+        int u = q.front();
+        q.pop();
+
+        // Find all non-colored adjacent vertices
+        for (int v = 0; v < V; ++v) {
+
+            // An edge from u to v exists and destination
+            // v is not colored
+            if (G[u][v] && colorArr[v] == -1) {
+
+                // Assign alternate color to this adjacent
+                // v of u
+                colorArr[v] = 1 - colorArr[u];
+                q.push(v);
+            }
+
+            // An edge from u to v exists and destination
+            // v is colored with same color as u
+            else if (G[u][v] && colorArr[v] == colorArr[u])
+                return false;
+        }
+    }
+
+    // If we reach here, then all adjacent vertices can
+    // be colored with alternate color
+    return true;
+}
+
+// Returns true if a Graph G is Bipartite or not. Note
+// that G may not be connected.
+bool isBipartite(const vector<vector<int>>& G) {
+    int V = G.size();
+
+    // Create a color array to store colors assigned
+    // to all vertices. Vertex number is used as index in
+    // this array. The value '-1' of colorArr[i]
+    // is used to indicate that no color is assigned to
+    // vertex 'i'. The value 1 is used to indicate first
+    // color is assigned and value 0 indicates
+    // second color is assigned.
+    vector<int> colorArr(V, -1);
+
+    // One by one check all not yet colored vertices.
+    for (int i = 0; i < V; i++)
+        if (colorArr[i] == -1)
+            if (isBipartiteUtil(G, i, colorArr) == false)
+                return false;
+
+    return true;
+}
+
+// Returns true if G can be divided into
+// two Cliques, else false.
+bool canBeDividedinTwoCliques(const vector<vector<int>>& G) {
+    int V = G.size();
+
+    // Find complement of G
+    // All values are complemented except
+    // diagonal ones
+    vector<vector<int>> GC(V, vector<int>(V, 0));
+    for (int i = 0; i < V; i++)
+        for (int j = 0; j < V; j++)
+            GC[i][j] = (i != j) ? !G[i][j] : 0;
+
+    // Return true if complement is Bipartite
+    // else false.
+    return isBipartite(GC);
+}
+
+int main() {
+
+    vector<vector<int>> G = {
+        {0, 1, 1, 1, 0},
+        {1, 0, 1, 0, 0},
+        {1, 1, 0, 0, 0},
+        {1, 0, 0, 0, 1},
+        {0, 0, 0, 1, 0}
+    };
+
+    if (canBeDividedinTwoCliques(G))
+        cout << "Yes";
+    else
+        cout << "No";
+
+    return 0;
+}
+
+Java
+
+// Java program to solve Two Clique Problem
+import java.util.*;
+
+class GfG {
+
+    // This function returns true if subgraph reachable from
+    // src is Bipartite or not.
+    static boolean isBipartiteUtil(int[][] G, int src, int[] colorArr) {
+        colorArr[src] = 1;
+        int V = G.length;
+
+        // Create a queue (FIFO) of vertex numbers and enqueue
+        // source vertex for BFS traversal
+        Queue<Integer> q = new LinkedList<>();
+        q.add(src);
+
+        // Run while there are vertices in queue (Similar to BFS)
+        while (!q.isEmpty()) {
+
+            // Dequeue a vertex from queue
+            int u = q.poll();
+
+            // Find all non-colored adjacent vertices
+            for (int v = 0; v < V; ++v) {
+
+                // An edge from u to v exists and destination
+                // v is not colored
+                if (G[u][v] == 1 && colorArr[v] == -1) {
+
+                    // Assign alternate color to this adjacent
+                    // v of u
+                    colorArr[v] = 1 - colorArr[u];
+                    q.add(v);
+                }
+
+                // An edge from u to v exists and destination
+                // v is colored with same color as u
+                else if (G[u][v] == 1 && colorArr[v] == colorArr[u])
+                    return false;
+            }
+        }
+
+        // If we reach here, then all adjacent vertices can
+        // be colored with alternate color
+        return true;
+    }
+
+    // Returns true if a Graph G is Bipartite or not. Note
+    // that G may not be connected.
+    static boolean isBipartite(int[][] G) {
+        int V = G.length;
+
+        // Create a color array to store colors assigned
+        // to all vertices. Vertex number is used as index in
+        // this array. The value '-1' of colorArr[i]
+        // is used to indicate that no color is assigned to
+        // vertex 'i'. The value 1 is used to indicate first
+        // color is assigned and value 0 indicates
+        // second color is assigned.
+        int[] colorArr = new int[V];
+        Arrays.fill(colorArr, -1);
+
+        // One by one check all not yet colored vertices.
+        for (int i = 0; i < V; i++)
+            if (colorArr[i] == -1)
+                if (isBipartiteUtil(G, i, colorArr) == false)
+                    return false;
+
+        return true;
+    }
+
+    // Returns true if G can be divided into
+    // two Cliques, else false.
+    static boolean canBeDividedinTwoCliques(int[][] G) {
+        int V = G.length;
+
+        // Find complement of G
+        // All values are complemented except
+        // diagonal ones
+        int[][] GC = new int[V][V];
+        for (int i = 0; i < V; i++)
+            for (int j = 0; j < V; j++)
+                GC[i][j] = (i != j) ? (G[i][j] == 0 ? 1 : 0) : 0;
+
+        // Return true if complement is Bipartite
+        // else false.
+        return isBipartite(GC);
+    }
+
+    public static void main(String[] args) {
+        int[][] G = {
+            {0, 1, 1, 1, 0},
+            {1, 0, 1, 0, 0},
+            {1, 1, 0, 0, 0},
+            {1, 0, 0, 0, 1},
+            {0, 0, 0, 1, 0}
+        };
+
+        if (canBeDividedinTwoCliques(G))
+            System.out.println("Yes");
+        else
+            System.out.println("No");
+    }
+}
+
+Python
+
+# Python program to solve Two Clique Problem
+from collections import deque
+
+# This function returns true if subgraph reachable from
+# src is Bipartite or not.
+def isBipartiteUtil(G, src, colorArr):
+    colorArr[src] = 1
+    V = len(G)
+
+    # Create a queue (FIFO) of vertex numbers and enqueue
+    # source vertex for BFS traversal
+    q = deque()
+    q.append(src)
+
+    # Run while there are vertices in queue (Similar to BFS)
+    while q:
+
+        # Dequeue a vertex from queue
+        u = q.popleft()
+
+        # Find all non-colored adjacent vertices
+        for v in range(V):
+            # An edge from u to v exists and destination
+            # v is not colored
+            if G[u][v] and colorArr[v] == -1:
+                # Assign alternate color to this adjacent
+                # v of u
+                colorArr[v] = 1 - colorArr[u]
+                q.append(v)
+            # An edge from u to v exists and destination
+            # v is colored with same color as u
+            elif G[u][v] and colorArr[v] == colorArr[u]:
+                return False
+
+    # If we reach here, then all adjacent vertices can
+    # be colored with alternate color
+    return True
+
+# Returns true if a Graph G is Bipartite or not. Note
+# that G may not be connected.
+def isBipartite(G):
+    V = len(G)
+
+    # Create a color array to store colors assigned
+    # to all vertices. Vertex number is used as index in
+    # this array. The value '-1' of colorArr[i]
+    # is used to indicate that no color is assigned to
+    # vertex 'i'. The value 1 is used to indicate first
+    # color is assigned and value 0 indicates
+    # second color is assigned.
+    colorArr = [-1] * V
+
+    # One by one check all not yet colored vertices.
+    for i in range(V):
+        if colorArr[i] == -1:
+            if not isBipartiteUtil(G, i, colorArr):
+                return False
+
+    return True
+
+# Returns true if G can be divided into
+# two Cliques, else false.
+def canBeDividedinTwoCliques(G):
+    V = len(G)
+
+    # Find complement of G
+    # All values are complemented except
+    # diagonal ones
+    GC = [[0]*V for _ in range(V)]
+    for i in range(V):
+        for j in range(V):
+            GC[i][j] = 0 if i == j else int(not G[i][j])
+
+    # Return true if complement is Bipartite
+    # else false.
+    return isBipartite(GC)
+
+if __name__ == "__main__":
+    G = [
+        [0, 1, 1, 1, 0],
+        [1, 0, 1, 0, 0],
+        [1, 1, 0, 0, 0],
+        [1, 0, 0, 0, 1],
+        [0, 0, 0, 1, 0]
+    ]
+
+    if canBeDividedinTwoCliques(G):
+        print("Yes")
+    else:
+        print("No")
+
+C#
+
+// C# program to solve Two Clique Problem
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // This function returns true if subgraph reachable from
+    // src is Bipartite or not.
+    static bool isBipartiteUtil(int[][] G, int src, int[] colorArr) {
+        colorArr[src] = 1;
+        int V = G.Length;
+
+        // Create a queue (FIFO) of vertex numbers and enqueue
+        // source vertex for BFS traversal
+        Queue<int> q = new Queue<int>();
+        q.Enqueue(src);
+
+        // Run while there are vertices in queue (Similar to BFS)
+        while (q.Count > 0) {
+            // Dequeue a vertex from queue
+            int u = q.Dequeue();
+
+            // Find all non-colored adjacent vertices
+            for (int v = 0; v < V; ++v) {
+                // An edge from u to v exists and destination
+                // v is not colored
+                if (G[u][v] == 1 && colorArr[v] == -1) {
+                    // Assign alternate color to this adjacent
+                    // v of u
+                    colorArr[v] = 1 - colorArr[u];
+                    q.Enqueue(v);
+                }
+                // An edge from u to v exists and destination
+                // v is colored with same color as u
+                else if (G[u][v] == 1 && colorArr[v] == colorArr[u])
+                    return false;
+            }
+        }
+
+        // If we reach here, then all adjacent vertices can
+        // be colored with alternate color
+        return true;
+    }
+
+    // Returns true if a Graph G is Bipartite or not. Note
+    // that G may not be connected.
+    static bool isBipartite(int[][] G) {
+        int V = G.Length;
+
+        // Create a color array to store colors assigned
+        // to all vertices. Vertex number is used as index in
+        // this array. The value '-1' of colorArr[i]
+        // is used to indicate that no color is assigned to
+        // vertex 'i'. The value 1 is used to indicate first
+        // color is assigned and value 0 indicates
+        // second color is assigned.
+        int[] colorArr = new int[V];
+        for (int i = 0; i < V; i++)
+            colorArr[i] = -1;
+
+        // One by one check all not yet colored vertices.
+        for (int i = 0; i < V; i++)
+            if (colorArr[i] == -1)
+                if (!isBipartiteUtil(G, i, colorArr))
+                    return false;
+
+        return true;
+    }
+
+    // Returns true if G can be divided into
+    // two Cliques, else false.
+    static bool canBeDividedinTwoCliques(int[][] G) {
+        int V = G.Length;
+
+        // Find complement of G
+        // All values are complemented except
+        // diagonal ones
+        int[][] GC = new int[V][];
+        for (int i = 0; i < V; i++) {
+            GC[i] = new int[V];
+            for (int j = 0; j < V; j++) {
+                GC[i][j] = (i != j) ? (G[i][j] == 0 ? 1 : 0) : 0;
+            }
+        }
+
+        // Return true if complement is Bipartite
+        // else false.
+        return isBipartite(GC);
+    }
+
+    static void Main() {
+        int[][] G = {
+            new int[] {0, 1, 1, 1, 0},
+            new int[] {1, 0, 1, 0, 0},
+            new int[] {1, 1, 0, 0, 0},
+            new int[] {1, 0, 0, 0, 1},
+            new int[] {0, 0, 0, 1, 0}
+        };
+
+        if (canBeDividedinTwoCliques(G))
+            Console.WriteLine("Yes");
+        else
+            Console.WriteLine("No");
+    }
+}
+
+JavaScript
+
+// JavaScript program to solve Two Clique Problem
+
+// This function returns true if subgraph reachable from
+// src is Bipartite or not.
+function isBipartiteUtil(G, src, colorArr) {
+    colorArr[src] = 1;
+    let V = G.length;
+
+    // Create a queue (FIFO) of vertex numbers and enqueue
+    // source vertex for BFS traversal
+    let q = [];
+    q.push(src);
+
+    // Run while there are vertices in queue (Similar to BFS)
+    while (q.length > 0) {
+        // Dequeue a vertex from queue
+        let u = q.shift();
+
+        // Find all non-colored adjacent vertices
+        for (let v = 0; v < V; ++v) {
+            // An edge from u to v exists and destination
+            // v is not colored
+            if (G[u][v] && colorArr[v] === -1) {
+                // Assign alternate color to this adjacent
+                // v of u
+                colorArr[v] = 1 - colorArr[u];
+                q.push(v);
+            }
+            // An edge from u to v exists and destination
+            // v is colored with same color as u
+            else if (G[u][v] && colorArr[v] === colorArr[u]) {
+                return false;
+            }
+        }
+    }
+
+    // If we reach here, then all adjacent vertices can
+    // be colored with alternate color
+    return true;
+}
+
+// Returns true if a Graph G is Bipartite or not. Note
+// that G may not be connected.
+function isBipartite(G) {
+    let V = G.length;
+    let colorArr = new Array(V).fill(-1);
+
+    // One by one check all not yet colored vertices.
+    for (let i = 0; i < V; i++) {
+        if (colorArr[i] === -1)
+            if (!isBipartiteUtil(G, i, colorArr))
+                return false;
+    }
+
+    return true;
+}
+
+// Returns true if G can be divided into
+// two Cliques, else false.
+function canBeDividedinTwoCliques(G) {
+    let V = G.length;
+    let GC = Array.from({ length: V }, () => new Array(V).fill(0));
+
+    // Find complement of G
+    // All values are complemented except
+    // diagonal ones
+    for (let i = 0; i < V; i++)
+        for (let j = 0; j < V; j++)
+            GC[i][j] = i !== j ? (G[i][j] ? 0 : 1) : 0;
+
+    // Return true if complement is Bipartite
+    // else false.
+    return isBipartite(GC);
+}
+
+let G = [
+    [0, 1, 1, 1, 0],
+    [1, 0, 1, 0, 0],
+    [1, 1, 0, 0, 0],
+    [1, 0, 0, 0, 1],
+    [0, 0, 0, 1, 0]
+];
+
+if (canBeDividedinTwoCliques(G))
+    console.log("Yes");
+else
+    console.log("No");
+
+Output
+
+Yes
+
+Time complexity : O(V 2 ) Space complexity : O(V^2),

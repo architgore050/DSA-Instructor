@@ -1,0 +1,1155 @@
+Source: https://www.geeksforgeeks.org/dsa/given-array-strings-find-strings-can-chained-form-circle/
+Title: Find if an array of strings can be chained to form a circle
+Extractor: 2
+
+Given an array arr of lowercase strings, find if the strings can be chained together to form a circle.
+
+- A string x can be chained together with another string y if the last character of x is the same as the first character of y.
+- If every string of the array can be chained with exactly two strings of the array(one with the first character and the second with the last character of the string), it will form a circle.
+
+Examples:
+
+> Input: arr = ["for", "geek", "rig", "kaf"] Output: true Explanation: These strings can be chained as "for" -> "rig" -> "geek" -> "kaf" to form a circle. Input: arr = ["abc", "bcd", "cdf"] Output: false Explanation: These strings can't form a circle.
+
+Table of Content
+
+- [Approach-1] Using Eulerian Circuit (Two DFS) - O(n) Time and O(n) Space
+- [Approach-2] Using Single DFS - O(n) Time and O(n) Space
+
+### [Approach-1] Using Eulerian Circuit (Two DFS) - O(n) Time and O(n) Space
+
+> The idea is to model the problem as a directed graph where each character ( a-z ) is a vertex, and every string forms an edge from its first character to its last character. Since every string must be used exactly once while forming a circular chain, the problem becomes checking whether the graph contains an Eulerian circuit . A directed graph has an Eulerian circuit if every vertex has equal in-degree and out-degree, and all vertices with non-zero degree belong to a single strongly connected component.
+
+Algorithm:
+
+- Create a directed graph with 26 vertices (a-z) and maintain indegree and outdegree arrays.
+- For every string, add an edge from its first character to its last character and update the corresponding degrees.
+- Check if indegree == outdegree for every vertex; if not, return false.
+- Find a starting vertex having a non-zero degree. If none exists, return true.
+- Perform DFS on the original graph and verify that all vertices with non-zero degree are reachable.
+- Perform DFS on the reversed graph and again verify reachability; if all such vertices are visited, return true, otherwise return false.
+
+C++
+
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+void dfs(int node, vector<int> graph[], vector<int> &visited)
+{
+    visited[node] = 1;
+
+    for (int neighbor : graph[node])
+    {
+        if (!visited[neighbor])
+        {
+            dfs(neighbor, graph, visited);
+        }
+    }
+}
+
+bool isCircle(vector<string> &arr)
+{
+    // Graph contains 26 vertices corresponding to 'a' to 'z'
+    vector<int> graph[26];
+    vector<int> reverseGraph[26];
+
+    int indegree[26] = {0};
+    int outdegree[26] = {0};
+
+    // Build graph:
+    // first character -> last character
+    for (string &word : arr)
+    {
+        int from = word.front() - 'a';
+        int to = word.back() - 'a';
+
+        graph[from].push_back(to);
+        reverseGraph[to].push_back(from);
+
+        outdegree[from]++;
+        indegree[to]++;
+    }
+
+    // Euler Circuit Condition #1:
+    // indegree must equal outdegree
+    for (int vertex = 0; vertex < 26; vertex++)
+    {
+        if (indegree[vertex] != outdegree[vertex])
+        {
+            return false;
+        }
+    }
+
+    // Find any node with non-zero degree
+    int startNode = -1;
+
+    for (int vertex = 0; vertex < 26; vertex++)
+    {
+        if (outdegree[vertex] > 0)
+        {
+            startNode = vertex;
+            break;
+        }
+    }
+
+    // Empty input case
+    if (startNode == -1)
+    {
+        return true;
+    }
+
+    // Euler Circuit Condition #2:
+    // All used vertices should be strongly connected
+
+    vector<int> visited(26, 0);
+
+    dfs(startNode, graph, visited);
+
+    for (int vertex = 0; vertex < 26; vertex++)
+    {
+        if (outdegree[vertex] > 0 && !visited[vertex])
+        {
+            return false;
+        }
+    }
+
+    fill(visited.begin(), visited.end(), 0);
+    dfs(startNode, reverseGraph, visited);
+
+    for (int vertex = 0; vertex < 26; vertex++)
+    {
+        if (outdegree[vertex] > 0 && !visited[vertex])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int main()
+{
+    vector<string> arr = {"for", "geek", "rig", "kaf"};
+
+    if (isCircle(arr))
+    {
+        cout << "true" << endl;
+    }
+    else
+    {
+        cout << "false" << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    static void dfs(int node, ArrayList<Integer>[] graph,
+                    boolean[] visited)
+    {
+        visited[node] = true;
+
+        for (int neighbor : graph[node]) {
+            if (!visited[neighbor]) {
+                dfs(neighbor, graph, visited);
+            }
+        }
+    }
+
+    static boolean isCircle(String[] arr)
+    {
+        // Graph contains 26 vertices corresponding to 'a'
+        // to 'z'
+        ArrayList<Integer>[] graph = new ArrayList[26];
+        ArrayList<Integer>[] reverseGraph
+            = new ArrayList[26];
+
+        for (int i = 0; i < 26; i++) {
+            graph[i] = new ArrayList<>();
+            reverseGraph[i] = new ArrayList<>();
+        }
+
+        int[] indegree = new int[26];
+        int[] outdegree = new int[26];
+
+        // Build graph:
+        // first character -> last character
+        for (String word : arr) {
+
+            int from = word.charAt(0) - 'a';
+            int to = word.charAt(word.length() - 1) - 'a';
+
+            graph[from].add(to);
+            reverseGraph[to].add(from);
+
+            outdegree[from]++;
+            indegree[to]++;
+        }
+
+        // Euler Circuit Condition #1:
+        // indegree must equal outdegree
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (indegree[vertex] != outdegree[vertex]) {
+                return false;
+            }
+        }
+
+        // Find any node with non-zero degree
+        int startNode = -1;
+
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (outdegree[vertex] > 0) {
+                startNode = vertex;
+                break;
+            }
+        }
+
+        // Empty input case
+        if (startNode == -1) {
+            return true;
+        }
+
+        // Euler Circuit Condition #2:
+        // All used vertices should be strongly connected
+
+        boolean[] visited = new boolean[26];
+
+        dfs(startNode, graph, visited);
+
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (outdegree[vertex] > 0 && !visited[vertex]) {
+                return false;
+            }
+        }
+
+        Arrays.fill(visited, false);
+
+        dfs(startNode, reverseGraph, visited);
+
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (outdegree[vertex] > 0 && !visited[vertex]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static void main(String[] args)
+    {
+        String[] arr = { "for", "geek", "rig", "kaf" };
+        System.out.println(isCircle(arr));
+    }
+}
+
+Python
+
+def dfs(node, graph, visited):
+    visited[node] = True
+    for neighbor in graph[node]:
+        if not visited[neighbor]:
+            dfs(neighbor, graph, visited)
+
+def isCircle(arr):
+
+    # Graph contains 26 vertices corresponding to 'a' to 'z'
+    graph = [[] for _ in range(26)]
+    reverseGraph = [[] for _ in range(26)]
+
+    indegree = [0] * 26
+    outdegree = [0] * 26
+
+    # Build graph:
+    # first character -> last character
+    for word in arr:
+
+        from_node = ord(word[0]) - ord('a')
+        to = ord(word[-1]) - ord('a')
+
+        graph[from_node].append(to)
+        reverseGraph[to].append(from_node)
+
+        outdegree[from_node] += 1
+        indegree[to] += 1
+
+    # Euler Circuit Condition #1:
+    # indegree must equal outdegree
+    for vertex in range(26):
+
+        if indegree[vertex] != outdegree[vertex]:
+            return False
+
+    # Find any node with non-zero degree
+    startNode = -1
+
+    for vertex in range(26):
+
+        if outdegree[vertex] > 0:
+            startNode = vertex
+            break
+
+    # Empty input case
+    if startNode == -1:
+        return True
+
+    # Euler Circuit Condition #2:
+    # All used vertices should be strongly connected
+
+    visited = [False] * 26
+
+    dfs(startNode, graph, visited)
+
+    for vertex in range(26):
+
+        if outdegree[vertex] > 0 and not visited[vertex]:
+            return False
+
+    visited = [False] * 26
+
+    dfs(startNode, reverseGraph, visited)
+
+    for vertex in range(26):
+
+        if outdegree[vertex] > 0 and not visited[vertex]:
+            return False
+
+    return True
+
+# Driver Code
+if __name__ == "__main__":
+    arr = ["for", "geek", "rig", "kaf"]
+
+    if isCircle(arr) == True:
+        print("true")
+    else:
+        print("false")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static void DFS(int node, List<int>[] graph,
+                    bool[] visited)
+    {
+        visited[node] = true;
+
+        foreach(int neighbor in graph[node])
+        {
+            if (!visited[neighbor]) {
+                DFS(neighbor, graph, visited);
+            }
+        }
+    }
+
+    static bool isCircle(string[] arr)
+    {
+        // Graph contains 26 vertices corresponding to 'a'
+        // to 'z'
+        List<int>[] graph = new List<int>[ 26 ];
+        List<int>[] reverseGraph = new List<int>[ 26 ];
+
+        for (int i = 0; i < 26; i++) {
+            graph[i] = new List<int>();
+            reverseGraph[i] = new List<int>();
+        }
+
+        int[] indegree = new int[26];
+        int[] outdegree = new int[26];
+
+        // Build graph:
+        // first character -> last character
+        foreach(string word in arr)
+        {
+            int from = word[0] - 'a';
+            int to = word[word.Length - 1] - 'a';
+
+            graph[from].Add(to);
+            reverseGraph[to].Add(from);
+
+            outdegree[from]++;
+            indegree[to]++;
+        }
+
+        // Euler Circuit Condition #1:
+        // indegree must equal outdegree
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (indegree[vertex] != outdegree[vertex]) {
+                return false;
+            }
+        }
+
+        // Find any node with non-zero degree
+        int startNode = -1;
+
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (outdegree[vertex] > 0) {
+                startNode = vertex;
+                break;
+            }
+        }
+
+        // Empty input case
+        if (startNode == -1) {
+            return true;
+        }
+
+        // Euler Circuit Condition #2:
+        // All used vertices should be strongly connected
+
+        bool[] visited = new bool[26];
+
+        DFS(startNode, graph, visited);
+
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (outdegree[vertex] > 0 && !visited[vertex]) {
+                return false;
+            }
+        }
+
+        Array.Fill(visited, false);
+
+        DFS(startNode, reverseGraph, visited);
+
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (outdegree[vertex] > 0 && !visited[vertex]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static void Main()
+    {
+        string[] arr = { "for", "geek", "rig", "kaf" };
+
+        if (isCircle(arr) == true) {
+            Console.WriteLine("true");
+        }
+        else {
+            Console.WriteLine("false");
+        }
+    }
+}
+
+JavaScript
+
+function dfs(node, graph, visited)
+{
+    visited[node] = true;
+
+    for (let neighbor of graph[node]) {
+        if (!visited[neighbor]) {
+            dfs(neighbor, graph, visited);
+        }
+    }
+}
+
+function isCircle(arr)
+{
+    // Graph contains 26 vertices corresponding to 'a' to
+    // 'z'
+    let graph = Array.from({length : 26}, () => []);
+    let reverseGraph = Array.from({length : 26}, () => []);
+
+    let indegree = Array(26).fill(0);
+    let outdegree = Array(26).fill(0);
+
+    // Build graph:
+    // first character -> last character
+    for (let word of arr) {
+
+        let from = word.charCodeAt(0) - "a".charCodeAt(0);
+        let to = word.charCodeAt(word.length - 1)
+                 - "a".charCodeAt(0);
+
+        graph[from].push(to);
+        reverseGraph[to].push(from);
+
+        outdegree[from]++;
+        indegree[to]++;
+    }
+
+    // Euler Circuit Condition #1:
+    // indegree must equal outdegree
+    for (let vertex = 0; vertex < 26; vertex++) {
+
+        if (indegree[vertex] !== outdegree[vertex]) {
+            return false;
+        }
+    }
+
+    // Find any node with non-zero degree
+    let startNode = -1;
+
+    for (let vertex = 0; vertex < 26; vertex++) {
+
+        if (outdegree[vertex] > 0) {
+            startNode = vertex;
+            break;
+        }
+    }
+
+    // Empty input case
+    if (startNode === -1) {
+        return true;
+    }
+
+    // Euler Circuit Condition #2:
+    // All used vertices should be strongly connected
+
+    let visited = Array(26).fill(false);
+
+    dfs(startNode, graph, visited);
+
+    for (let vertex = 0; vertex < 26; vertex++) {
+
+        if (outdegree[vertex] > 0 && !visited[vertex]) {
+            return false;
+        }
+    }
+
+    visited.fill(false);
+
+    dfs(startNode, reverseGraph, visited);
+
+    for (let vertex = 0; vertex < 26; vertex++) {
+
+        if (outdegree[vertex] > 0 && !visited[vertex]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Driver Code
+const arr = [ "for", "geek", "rig", "kaf" ];
+
+if (isCircle(arr) == true) {
+    console.log("true");
+}
+else {
+    console.log("false");
+}
+
+Output
+
+true
+
+### [Approach-2] Using Single DFS - O(n) Time and O(n) Space
+
+> Instead of explicitly checking strong connectivity using both original and reverse graph traversals like in above approach, we use indegrees and outdegrees: if every vertex has equal indegree and outdegree, then performing a single DFS traversal is sufficient. If all participating vertices are reachable and every vertex has equal indegree and outdegree, then a loop among them is automatically guaranteed, making a circular ordering of strings possible.
+
+Algorithm:
+
+- Create a directed graph with 26 vertices (a-z) and maintain indegree, outdegree, and a usedCharacter array.
+- For each string, add an edge from its first character to its last character and update degree counts.
+- Check whether indegree == outdegree for every vertex; if not, return false.
+- Find any participating character (non-zero degree) and use it as the starting node.
+- Perform one DFS traversal and verify that all characters involved in the strings are visited.
+- If all participating vertices are visited, return true; otherwise return false.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Perform DFS and mark all reachable vertices
+void dfs(vector<int> graph[], int node, vector<bool> &visited)
+{
+    visited[node] = true;
+
+    for (int neighbor : graph[node])
+    {
+        if (!visited[neighbor])
+        {
+            dfs(graph, neighbor, visited);
+        }
+    }
+}
+
+// Check whether all participating vertices
+// are reachable from the starting node
+bool isConnected(vector<int> graph[], vector<bool> &usedCharacter, int startNode)
+{
+    // Mark all vertices as unvisited
+    vector<bool> visited(26, false);
+
+    // Start DFS traversal
+    dfs(graph, startNode, visited);
+
+    // Every character that appeared in the strings
+    // should be visited after DFS
+    for (int vertex = 0; vertex < 26; vertex++)
+    {
+        if (usedCharacter[vertex] && !visited[vertex])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Returns true if all strings can be arranged
+// in a circular chain
+bool isCircle(vector<string> &arr)
+{
+    int n = arr.size();
+
+    // Graph with 26 vertices (a-z)
+    vector<int> graph[26];
+
+    // Track whether a character participates
+    // in any string
+    vector<bool> usedCharacter(26, false);
+
+    // Store indegree and outdegree
+    vector<int> indegree(26, 0);
+    vector<int> outdegree(26, 0);
+
+    // Build graph using strings
+    for (int i = 0; i < n; i++)
+    {
+        // Get first and last character
+        int from = arr[i].front() - 'a';
+        int to = arr[i].back() - 'a';
+
+        // Mark both characters as used
+        usedCharacter[from] = true;
+        usedCharacter[to] = true;
+
+        // Add edge:
+        // first character -> last character
+        graph[from].push_back(to);
+
+        // Update degree counts
+        outdegree[from]++;
+        indegree[to]++;
+    }
+
+    // Euler Circuit Condition #1:
+    // Indegree must equal outdegree
+    for (int vertex = 0; vertex < 26; vertex++)
+    {
+        if (indegree[vertex] != outdegree[vertex])
+        {
+            return false;
+        }
+    }
+
+    // Find a starting vertex
+    int startNode = -1;
+
+    for (int vertex = 0; vertex < 26; vertex++)
+    {
+        if (usedCharacter[vertex])
+        {
+            startNode = vertex;
+            break;
+        }
+    }
+
+    // No strings present
+    if (startNode == -1)
+    {
+        return true;
+    }
+
+    // Euler Circuit Condition #2:
+    // All participating vertices should be connected
+    return isConnected(graph, usedCharacter, startNode);
+}
+
+int main()
+{
+    vector<string> arr = {"for", "geek", "rig", "kaf"};
+
+    if (isCircle(arr) == true)
+    {
+        cout << "true" << endl;
+    }
+    else
+    {
+        cout << "false" << endl;
+    }
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class Solution {
+
+    // Perform DFS and mark all reachable vertices
+    static void dfs(ArrayList<Integer>[] graph, int node,
+                    boolean[] visited)
+    {
+        visited[node] = true;
+
+        for (int neighbor : graph[node]) {
+            if (!visited[neighbor]) {
+                dfs(graph, neighbor, visited);
+            }
+        }
+    }
+
+    // Check whether all participating vertices
+    // are reachable from the starting node
+    static boolean isConnected(ArrayList<Integer>[] graph,
+                               boolean[] usedCharacter,
+                               int startNode)
+    {
+        // Mark all vertices as unvisited
+        boolean[] visited = new boolean[26];
+
+        // Start DFS traversal
+        dfs(graph, startNode, visited);
+
+        // Every character that appeared in the strings
+        // should be visited after DFS
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (usedCharacter[vertex] && !visited[vertex]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Returns true if all strings can be arranged
+    // in a circular chain
+    static boolean isCircle(String[] arr)
+    {
+        int n = arr.length;
+
+        // Graph with 26 vertices (a-z)
+        ArrayList<Integer>[] graph = new ArrayList[26];
+
+        for (int i = 0; i < 26; i++) {
+            graph[i] = new ArrayList<>();
+        }
+
+        // Track whether a character participates
+        // in any string
+        boolean[] usedCharacter = new boolean[26];
+
+        // Store indegree and outdegree
+        int[] indegree = new int[26];
+        int[] outdegree = new int[26];
+
+        // Build graph using strings
+        for (int i = 0; i < n; i++) {
+            // Get first and last character
+            int from = arr[i].charAt(0) - 'a';
+            int to
+                = arr[i].charAt(arr[i].length() - 1) - 'a';
+
+            // Mark both characters as used
+            usedCharacter[from] = true;
+            usedCharacter[to] = true;
+
+            // Add edge:
+            // first character -> last character
+            graph[from].add(to);
+
+            // Update degree counts
+            outdegree[from]++;
+            indegree[to]++;
+        }
+
+        // Euler Circuit Condition #1:
+        // Indegree must equal outdegree
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (indegree[vertex] != outdegree[vertex]) {
+                return false;
+            }
+        }
+
+        // Find a starting vertex
+        int startNode = -1;
+
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (usedCharacter[vertex]) {
+                startNode = vertex;
+                break;
+            }
+        }
+
+        // No strings present
+        if (startNode == -1) {
+            return true;
+        }
+
+        // Euler Circuit Condition #2:
+        // All participating vertices
+        // should be connected
+        return isConnected(graph, usedCharacter, startNode);
+    }
+
+    public static void main(String[] args)
+    {
+        String[] arr = { "for", "geek", "rig", "kaf" };
+        System.out.println(isCircle(arr));
+    }
+}
+
+Python
+
+# Perform DFS and mark all reachable vertices
+def dfs(graph, node, visited):
+
+    visited[node] = True
+
+    for neighbor in graph[node]:
+        if not visited[neighbor]:
+            dfs(graph, neighbor, visited)
+
+# Check whether all participating vertices
+# are reachable from the starting node
+def isConnected(graph,
+                usedCharacter,
+                startNode):
+
+    # Mark all vertices as unvisited
+    visited = [False] * 26
+
+    # Start DFS traversal
+    dfs(graph, startNode, visited)
+
+    # Every character that appeared in
+    # the strings should be visited
+    for vertex in range(26):
+
+        if usedCharacter[vertex] and \
+           not visited[vertex]:
+            return False
+
+    return True
+
+# Returns true if all strings can be arranged
+# in a circular chain
+def isCircle(arr):
+
+    n = len(arr)
+
+    # Graph with 26 vertices (a-z)
+    graph = [[] for _ in range(26)]
+
+    # Track whether a character participates
+    # in any string
+    usedCharacter = [False] * 26
+
+    # Store indegree and outdegree
+    indegree = [0] * 26
+    outdegree = [0] * 26
+
+    # Build graph using strings
+    for word in arr:
+
+        # Get first and last character
+        from_node = ord(word[0]) - ord('a')
+        to = ord(word[-1]) - ord('a')
+
+        # Mark both characters as used
+        usedCharacter[from_node] = True
+        usedCharacter[to] = True
+
+        # Add edge:
+        # first character -> last character
+        graph[from_node].append(to)
+
+        # Update degree counts
+        outdegree[from_node] += 1
+        indegree[to] += 1
+
+    # Euler Circuit Condition #1:
+    # Indegree must equal outdegree
+    for vertex in range(26):
+
+        if indegree[vertex] != outdegree[vertex]:
+            return False
+
+    # Find a starting vertex
+    startNode = -1
+
+    for vertex in range(26):
+
+        if usedCharacter[vertex]:
+            startNode = vertex
+            break
+
+    # No strings present
+    if startNode == -1:
+        return True
+
+    # Euler Circuit Condition #2:
+    # All participating vertices
+    # should be connected
+    return isConnected(graph,
+                       usedCharacter,
+                       startNode)
+
+# Driver Code
+if __name__ == "__main__":
+    arr = ["for", "geek", "rig", "kaf"]
+
+    if isCircle(arr) == True:
+        print("true")
+    else:
+        print("false")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Solution {
+    // Perform DFS and mark all reachable vertices
+    static void DFS(List<int>[] graph, int node,
+                    bool[] visited)
+    {
+        visited[node] = true;
+
+        foreach(int neighbor in graph[node])
+        {
+            if (!visited[neighbor]) {
+                DFS(graph, neighbor, visited);
+            }
+        }
+    }
+
+    // Check whether all participating vertices
+    // are reachable from the starting node
+    static bool IsConnected(List<int>[] graph,
+                            bool[] usedCharacter,
+                            int startNode)
+    {
+        // Mark all vertices as unvisited
+        bool[] visited = new bool[26];
+
+        // Start DFS traversal
+        DFS(graph, startNode, visited);
+
+        // Every character that appeared
+        // in the strings should be visited
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (usedCharacter[vertex] && !visited[vertex]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Returns true if all strings can be arranged
+    // in a circular chain
+    static bool isCircle(string[] arr)
+    {
+        int n = arr.Length;
+
+        // Graph with 26 vertices (a-z)
+        List<int>[] graph = new List<int>[ 26 ];
+
+        for (int i = 0; i < 26; i++) {
+            graph[i] = new List<int>();
+        }
+
+        // Track whether a character participates
+        // in any string
+        bool[] usedCharacter = new bool[26];
+
+        // Store indegree and outdegree
+        int[] indegree = new int[26];
+        int[] outdegree = new int[26];
+
+        // Build graph using strings
+        foreach(string word in arr)
+        {
+            // Get first and last character
+            int from = word[0] - 'a';
+            int to = word[word.Length - 1] - 'a';
+
+            // Mark both characters as used
+            usedCharacter[from] = true;
+            usedCharacter[to] = true;
+
+            // Add edge:
+            // first character -> last character
+            graph[from].Add(to);
+
+            // Update degree counts
+            outdegree[from]++;
+            indegree[to]++;
+        }
+
+        // Euler Circuit Condition #1:
+        // Indegree must equal outdegree
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (indegree[vertex] != outdegree[vertex]) {
+                return false;
+            }
+        }
+
+        // Find a starting vertex
+        int startNode = -1;
+
+        for (int vertex = 0; vertex < 26; vertex++) {
+            if (usedCharacter[vertex]) {
+                startNode = vertex;
+                break;
+            }
+        }
+
+        // No strings present
+        if (startNode == -1) {
+            return true;
+        }
+
+        // Euler Circuit Condition #2:
+        // All participating vertices
+        // should be connected
+        return IsConnected(graph, usedCharacter, startNode);
+    }
+
+    static void Main()
+    {
+        string[] arr = { "for", "geek", "rig", "kaf" };
+
+        if (isCircle(arr) == true) {
+            Console.WriteLine("true");
+        }
+        else {
+            Console.WriteLine("false");
+        }
+    }
+}
+
+JavaScript
+
+// Perform DFS and mark all reachable vertices
+function dfs(graph, node, visited)
+{
+    visited[node] = true;
+
+    for (let neighbor of graph[node]) {
+        if (!visited[neighbor]) {
+            dfs(graph, neighbor, visited);
+        }
+    }
+}
+
+// Check whether all participating vertices
+// are reachable from the starting node
+function isConnected(graph, usedCharacter, startNode)
+{
+    // Mark all vertices as unvisited
+    let visited = Array(26).fill(false);
+
+    // Start DFS traversal
+    dfs(graph, startNode, visited);
+
+    // Every character that appeared
+    // in the strings should be visited
+    for (let vertex = 0; vertex < 26; vertex++) {
+        if (usedCharacter[vertex] && !visited[vertex]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Returns true if all strings can be arranged
+// in a circular chain
+function isCircle(arr)
+{
+    let n = arr.length;
+
+    // Graph with 26 vertices (a-z)
+    let graph = Array.from({length : 26}, () => []);
+
+    // Track whether a character participates
+    // in any string
+    let usedCharacter = Array(26).fill(false);
+
+    // Store indegree and outdegree
+    let indegree = Array(26).fill(0);
+    let outdegree = Array(26).fill(0);
+
+    // Build graph using strings
+    for (let word of arr) {
+        // Get first and last character
+        let from = word.charCodeAt(0) - "a".charCodeAt(0);
+
+        let to = word.charCodeAt(word.length - 1)
+                 - "a".charCodeAt(0);
+
+        // Mark both characters as used
+        usedCharacter[from] = true;
+        usedCharacter[to] = true;
+
+        // Add edge:
+        // first character -> last character
+        graph[from].push(to);
+
+        // Update degree counts
+        outdegree[from]++;
+        indegree[to]++;
+    }
+
+    // Euler Circuit Condition #1:
+    // Indegree must equal outdegree
+    for (let vertex = 0; vertex < 26; vertex++) {
+        if (indegree[vertex] !== outdegree[vertex]) {
+            return false;
+        }
+    }
+
+    // Find a starting vertex
+    let startNode = -1;
+
+    for (let vertex = 0; vertex < 26; vertex++) {
+        if (usedCharacter[vertex]) {
+            startNode = vertex;
+            break;
+        }
+    }
+
+    // No strings present
+    if (startNode === -1) {
+        return true;
+    }
+
+    // Euler Circuit Condition #2:
+    // All participating vertices
+    // should be connected
+    return isConnected(graph, usedCharacter, startNode);
+}
+
+// Driver Code
+let arr = [ "for", "geek", "rig", "kaf" ];
+if (isCircle(arr) == true) {
+    console.log("true");
+}
+else {
+    console.log("false");
+}
+
+Output
+
+true

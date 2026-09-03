@@ -1,0 +1,401 @@
+Source: https://www.geeksforgeeks.org/dsa/binary-indexed-tree-or-fenwick-tree-2/
+Title: Binary Indexed Tree or Fenwick Tree
+Extractor: 2
+
+Binary Indexed Tree (BIT), also known as a Fenwick Tree, is used in scenarios where we need to efficiently perform multiple operations on a fixed-size array. These operations typically include:
+
+- Prefix operations such as sum, product, XOR and OR.
+- Range queries can also be handled using prefix operations. For example, the sum of a range [L, R] can be computed as: prefix(R) − prefix(L − 1).
+- Point updates, where the value of an element in the array is modified.
+- Although Segment Trees can also handle these cases, Binary Indexed Trees are favoured due to their simpler implementation, lower memory usage, and faster practical performance.
+- Time Complexity: Query and update operations take O(log n), and construction using the standard approach takes O(n log n) with O(n) space.
+- Using the optimized construction method, the Binary Indexed Tree can be built in O(n) time (covered in the Competitive Programming section below).
+
+### Sample Problem
+
+Let us consider the following problem to understand Binary Indexed Tree.
+
+We have an array, and we would like to:
+
+1. Compute the sum of the first i elements.
+2. Modify the value of a specified array element to x where 0 ≤ i ≤ n-1.
+
+A simple solution involves iterating through the array (O(n) time) to calculate the sum, with updating a value being O(1). Alternatively, an auxiliary array can store cumulative sums, enabling O(1) range sum calculation but O(n) updates. This is suitable for many queries and few updates.
+
+One efficient solution is Segment Trees , performing both operations in O(log n) time. Another alternative is Binary Indexed Trees, also achieving O(log n) time complexity. Compared to Segment Trees, Binary Indexed Trees require less space and are easier to implement.
+
+### Representation
+
+- A Binary Indexed Tree is implemented using an array BIT[], but it logically represents a tree structure.
+- Each index in the array corresponds to a node in this implicit tree and stores the sum of a specific range of elements from the input array.
+- The parent-child relationships in this tree are not stored explicitly; instead, they are determined using the rightmost set bit ( using i & (-i)).
+- The size of the BIT array is typically n + 1 (instead of n) to support 1-based indexing, which simplifies traversal and calculations.
+
+### Construction
+
+We build the Binary Indexed Tree by inserting each element of the array one by one using the update() function. For every index i, we add arr[i] to the BIT, and this value gets propagated to all the indices that are responsible for storing ranges including i. Since each update operation takes O(log N) time (due to movement using the rightmost set bit), performing it for all N elements results in an overall time complexity of O(N log N).
+
+> Note: The Binary Indexed Tree can also be constructed in O(N) time using an optimized approach, which is discussed in the Competitive Programming section below.
+
+### Operations
+
+#### i. Summing
+
+> getSum(x): Returns the sum of the sub-array [0,x]. Initialize the output sum as 0, the current index as x+1. While the current index is greater than 0, add BIT[index] to sum and go the parent of BIT[index]. The parent can be obtained by removing the last set bit from the current index i.e. index = index - (index & (-index)). Return sum.
+
+Here are some key observations:
+
+- BIT[0] is a dummy node.
+- BIT[y] is the parent of BIT[x] if and only if y = x - (x & (-x)).
+- The child node BIT[x] of node BIT[y] stores the sum of elements between y (inclusive) and x (exclusive) i.e. [ y , x ).
+
+#### ii. Updating
+
+> update( x , delta ): Updates the BIT by increasing the value at index i (and all its responsible ancestors) by delta. Initialize the current index as x+1. While the current index is smaller than or equal to n, add delta to BIT[index] and go to the next element of BIT[index]. The next element can be obtained by incrementing the last set bit of the current index i.e. index = index + (index & (-index)).
+
+The following is a representation of the update() and getSum() operation in a BIT, illustrating how the bitwise representation changes as we traverse up or down the structure.
+
+The update function ensures that all BIT nodes containing arr[i] within their ranges are updated. This is achieved by iterating through these nodes in the BIT, repeatedly adding the decimal value of the last set bit of the current index.
+
+### Conceptual Explanation
+
+> A Binary Indexed Tree works using the binary (base-2) form of numbers to store sums in a smart way. Each index in the BIT keeps the sum of a group of elements, and the size of this group is decided by the rightmost set bit of that index (found using i & (-i)).
+
+For example, to find the sum of the first 12 elements, we can split it based on its binary form 1100, which means 12 = 8 + 4. So instead of adding all elements one by one, we combine the sum of the first 8 elements and the next 4 elements. The Binary Indexed Tree stores these partial sums in advance, so we can quickly combine them when needed. This way of breaking numbers into powers of 2 is what makes the Binary Indexed Tree efficient and easy to traverse.
+
+C++
+
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+/**
+ * Updates the BIT by adding 'val' to the element at 'index'
+ * and propagating the change to all responsible ancestors.
+ */
+void updateBIT(int BITree[], int n, int index, int val) {
+    index = index + 1; // Convert 0-indexed to 1-indexed
+
+    while (index <= n) {
+        BITree[index] += val;
+        index += index & (-index); // Move to next ancestor
+    }
+}
+
+/**
+ * Returns the prefix sum of the original array from index 0 to 'index'.
+ */
+int getSum(int BITree[], int index) {
+    int sum = 0;
+    index = index + 1; // Convert 0-indexed to 1-indexed
+
+    while (index > 0) {
+        sum += BITree[index];
+        index -= index & (-index); // Move to parent node
+    }
+    return sum;
+}
+
+/**
+ * Initializes the BIT and populates it using the input array.
+ */
+int* constructBITree(int arr[], int n) {
+    int* BITree = new int[n + 1]{0};
+
+    for (int i = 0; i < n; i++) {
+        updateBIT(BITree, n, i, arr[i]);
+    }
+
+    return BITree;
+}
+
+int main() {
+    int freq[] = {2, 1, 1, 3, 2, 3, 4, 5, 6, 7, 8, 9};
+    int n = sizeof(freq) / sizeof(freq[0]);
+
+    // Build the BIT
+    int* BITree = constructBITree(freq, n);
+    cout << "Sum of elements in arr[0..5] is: " << getSum(BITree, 5) << endl;
+
+    // Update operation: add 6 to freq[3]
+    int delta = 6;
+    updateBIT(BITree, n, 3, delta);
+
+    cout << "Sum of elements in arr[0..5] after update is: " << getSum(BITree, 5) << endl;
+
+    delete[] BITree; // Clean up memory
+    return 0;
+}
+
+Java
+
+import java.util.Arrays;
+
+public class GFG {
+
+    public static void updateBIT(int BITree[], int n, int index, int val) {
+        index = index + 1; // Convert 0-indexed to 1-indexed
+
+        while (index <= n) {
+            BITree[index] += val;
+            index += index & (-index); // Move to next ancestor
+        }
+    }
+
+    public static int getSum(int BITree[], int index) {
+        int sum = 0;
+        index = index + 1; // Convert 0-indexed to 1-indexed
+
+        while (index > 0) {
+            sum += BITree[index];
+            index -= index & (-index); // Move to parent node
+        }
+        return sum;
+    }
+
+    public static int[] constructBITree(int arr[], int n) {
+        int[] BITree = new int[n + 1];
+        Arrays.fill(BITree, 0);
+
+        for (int i = 0; i < n; i++) {
+            updateBIT(BITree, n, i, arr[i]);
+        }
+
+        return BITree;
+    }
+
+    public static void main(String[] args) {
+        int freq[] = {2, 1, 1, 3, 2, 3, 4, 5, 6, 7, 8, 9};
+        int n = freq.length;
+
+        // Build the BIT
+        int[] BITree = constructBITree(freq, n);
+        System.out.println("Sum of elements in arr[0..5] is: " + getSum(BITree, 5));
+
+        // Update operation: add 6 to freq[3]
+        int delta = 6;
+        updateBIT(BITree, n, 3, delta);
+
+        System.out.println("Sum of elements in arr[0..5] after update is: " + getSum(BITree, 5));
+    }
+}
+
+Python
+
+import sys
+
+class GFG:
+
+    def updateBIT(BITree, n, index, val):
+        index += 1  # Convert 0-indexed to 1-indexed
+
+        while index <= n:
+            BITree[index] += val
+            index += index & (-index)  # Move to next ancestor
+
+    def getSum(BITree, index):
+        sum = 0
+        index += 1  # Convert 0-indexed to 1-indexed
+
+        while index > 0:
+            sum += BITree[index]
+            index -= index & (-index)  # Move to parent node
+        return sum
+
+    def constructBITree(arr, n):
+        BITree = [0] * (n + 1)
+
+        for i in range(n):
+            GFG.updateBIT(BITree, n, i, arr[i])
+
+        return BITree
+
+if __name__ == "__main__":
+    freq = [2, 1, 1, 3, 2, 3, 4, 5, 6, 7, 8, 9]
+    n = len(freq)
+
+    # Build the BIT
+    BITree = GFG.constructBITree(freq, n)
+    print("Sum of elements in arr[0..5] is:", GFG.getSum(BITree, 5))
+
+    # Update operation: add 6 to freq[3]
+    delta = 6
+    GFG.updateBIT(BITree, n, 3, delta)
+
+    print("Sum of elements in arr[0..5] after update is:", GFG.getSum(BITree, 5))
+
+C#
+
+using System;
+
+public class GFG
+{
+    public static void UpdateBIT(int[] BITree, int n, int index, int val)
+    {
+        index += 1;  // Convert 0-indexed to 1-indexed
+
+        while (index <= n)
+        {
+            BITree[index] += val;
+            index += index & (-index);  // Move to next ancestor
+        }
+    }
+
+    public static int GetSum(int[] BITree, int index)
+    {
+        int sum = 0;
+        index += 1;  // Convert 0-indexed to 1-indexed
+
+        while (index > 0)
+        {
+            sum += BITree[index];
+            index -= index & (-index);  // Move to parent node
+        }
+        return sum;
+    }
+
+    public static int[] ConstructBITree(int[] arr, int n)
+    {
+        int[] BITree = new int[n + 1];
+
+        for (int i = 0; i < n; i++)
+        {
+            GFG.UpdateBIT(BITree, n, i, arr[i]);
+        }
+
+        return BITree;
+    }
+
+    public static void Main()
+    {
+        int[] freq = { 2, 1, 1, 3, 2, 3, 4, 5, 6, 7, 8, 9 };
+        int n = freq.Length;
+
+        // Build the BIT
+        int[] BITree = GFG.ConstructBITree(freq, n);
+        Console.WriteLine("Sum of elements in arr[0..5] is:" + GFG.GetSum(BITree, 5));
+
+        // Update operation: add 6 to freq[3]
+        int delta = 6;
+        GFG.UpdateBIT(BITree, n, 3, delta);
+
+        Console.WriteLine("Sum of elements in arr[0..5] after update is:" + GFG.GetSum(BITree, 5));
+    }
+}
+
+JavaScript
+
+class GFG {
+    static UpdateBIT(BITree, n, index, val) {
+        index += 1;  // Convert 0-indexed to 1-indexed
+
+        while (index <= n) {
+            BITree[index] += val;
+            index += index & (-index);  // Move to next ancestor
+        }
+    }
+
+    static GetSum(BITree, index) {
+        let sum = 0;
+        index += 1;  // Convert 0-indexed to 1-indexed
+
+        while (index > 0) {
+            sum += BITree[index];
+            index -= index & (-index);  // Move to parent node
+        }
+        return sum;
+    }
+
+    static ConstructBITree(arr, n) {
+        const BITree = new Array(n + 1).fill(0);
+
+        for (let i = 0; i < n; i++) {
+            GFG.UpdateBIT(BITree, n, i, arr[i]);
+        }
+
+        return BITree;
+    }
+}
+
+function main() {
+    const freq = [2, 1, 1, 3, 2, 3, 4, 5, 6, 7, 8, 9];
+    const n = freq.length;
+
+    // Build the BIT
+    const BITree = GFG.ConstructBITree(freq, n);
+    console.log(`Sum of elements in arr[0..5] is: ${GFG.GetSum(BITree, 5)}`);
+
+    // Update operation: add 6 to freq[3]
+    const delta = 6;
+    GFG.UpdateBIT(BITree, n, 3, delta);
+
+    console.log(`Sum of elements in arr[0..5] after update is: ${GFG.GetSum(BITree, 5)}`);
+}
+main();
+
+Output
+
+Sum of elements in arr[0..5] is: 12
+Sum of elements in arr[0..5] after update is: 18
+
+Time Complexity: O(N x logN) because we call the update() function for each of the N elements, and each update takes O(log N) time as it moves through multiple indices using the rightmost set bit. Auxiliary Space: O(N) as we use an additional BIT[] array of size N + 1 to store the tree.
+
+> Note: If we use the optimized construction method (discussed in the Competitive Programming section), we can build the Binary Indexed Tree in O(N) time instead of O(N log N).
+
+### Competitive Programming Section:
+
+#### Building the Fenwick Tree in Linear Time Complexity:
+
+We build the Binary Indexed Tree in O(N) time by avoiding repeated updates. Instead of propagating each element multiple times, we directly transfer the accumulated contribution of each index to its parent. For every index i, we first store its value in F[i], and then add this value to its parent index i + (i & (-i)). Since F[i] already represents the sum of a specific range, pushing it once to its parent ensures all required contributions are handled efficiently without redundancy.
+
+C++
+
+void buildBIT(vector<int> &arr, vector<int> &BIT, int n) {
+    for(int i = 1; i <= n; i++) {
+        BIT[i] += arr[i];
+
+        int parent = i + (i & -i);
+        if(parent <= n)
+            BIT[parent] += BIT[i];
+    }
+}
+
+#### Binary Indexed Tree for Multi-Dimensional Arrays:
+
+The concept of a Binary Indexed Tree can be extended from a 1-D array to higher dimensions like 2-D or even 3-D arrays. Instead of storing prefix sums for a single range, we now store sums over a submatrix (or sub-region).
+
+In a 2-D Binary Indexed Tree, each cell stores the sum of a rectangular region of the matrix. The idea is similar to the 1-D case: we break the matrix into smaller blocks based on binary representation and store partial sums so that queries and updates can be done efficiently.
+
+For example, to find the sum of elements in a submatrix, we use a prefix-based approach:
+
+- Compute sum from (0,0) to (x2,y2)
+- Subtract extra regions
+- Add back the overlapping part (inclusion-exclusion)
+
+This follows the formula: sum(x1, y1, x2, y2) = sum(x2,y2) - sum(x1-1,y2) - sum(x2,y1-1) + sum(x1-1,y1-1)
+
+Similarly, this idea can be extended to 3-D arrays, where each index stores the sum of a 3D sub-region, and the same prefix-based logic is applied.
+
+#### Use Cases of Binary Indexed Tree:
+
+A Binary Indexed Tree is widely used in problems that involve frequent updates and prefix-based queries. Some common use cases include:
+
+- Range Sum Queries: Efficiently compute sum of elements in a range [L, R] using prefix sums.
+- Range Updates and Queries: Supports combinations like point update + range query, range update + point query, and range update + range query efficiently.
+- Frequency Counting: Maintain and update frequencies of elements while supporting quick prefix queries.
+- Inversion Count in an Array: Count pairs (i, j) such that i < j and arr[i] > arr[j] using cumulative frequencies.
+- Order Statistics: Find k-th smallest or largest element in a dynamic dataset using prefix sums.
+- Working with Grids (2D Arrays): Perform fast submatrix sum queries in 2D arrays or grids.
+
+### Example Problems:
+
+- Count Inversions
+- Range Minimum Query
+- Nitika and her queries
+- Maximum prefix-sum for a given range
+- Smallest Subarray with given GCD
+- Increasing Decreasing Update Queries (Akku and Arrays)
+- Kth smallest element in a subarray
+- Count-based Absolute difference for Array element
+- Sum and Update Queries on 3D Matrix in log(N) time

@@ -1,0 +1,377 @@
+Source: https://www.geeksforgeeks.org/dsa/channel-assignment-problem/
+Title: Channel Assignment Problem
+Extractor: 2
+
+There are M transmitter and N receiver stations. Given a matrix that keeps track of the number of packets to be transmitted from a given transmitter to a receiver. If the (i; j)-th entry of the matrix is k, it means at that time the station i has k packets for transmission to station j. During a time slot, a transmitter can send only one packet and a receiver can receive only one packet. Find the channel assignments so that maximum number of packets are transferred from transmitters to receivers during the next time slot.
+
+Example:
+
+> 0 2 0 3 0 1 2 4 0
+
+The above is the input format. We call the above matrix M. Each value M[i; j] represents the number of packets Transmitter 'i' has to send to Receiver 'j'. The output should be:
+
+> The number of maximum packets sent in the time slot is 3 T1 -> R2 T2 -> R3 T3 -> R1
+
+Note that the maximum number of packets that can be transferred in any slot is min(M, N).
+
+Algorithm:
+
+The channel assignment problem between sender and receiver can be easily transformed into Maximum Bipartite Matching(MBP) problem that can be solved by converting it into a flow network.
+
+Step 1: Build a Flow Network
+
+There must be a source and sink in a flow network. So we add a dummy source and add edges from source to all senders. Similarly, add edges from all receivers to dummy sink. The capacity of all added edges is marked as 1 unit.
+
+Step 2: Find the maximum flow.
+
+We use Ford-Fulkerson algorithm to find the maximum flow in the flow network built in step 1. The maximum flow is actually the maximum number of packets that can be transmitted without bandwidth interference in a time slot.
+
+Implementation:
+
+Let us first define input and output forms. Input is in the form of Edmonds matrix which is a 2D array ‘table[M][N]‘ with M rows (for M senders) and N columns (for N receivers). The value table[i][j] is the number of packets that has to be sent from transmitter ‘i’ to receiver ‘j’. Output is the maximum number of packets that can be transmitted without bandwidth interference in a time slot. A simple way to implement this is to create a matrix that represents adjacency matrix representation of a directed graph with M+N+2 vertices. Call the fordFulkerson() for the matrix. This implementation requires O((M+N)*(M+N)) extra space.
+
+Extra space can be reduced and code can be simplified using the fact that the graph is bipartite. The idea is to use DFS traversal to find a receiver for a transmitter (similar to augmenting path in Ford-Fulkerson). We call bpm() for every applicant, bpm() is the DFS based function that tries all possibilities to assign a receiver to the sender. In bpm(), we one by one try all receivers that a sender ‘u’ is interested in until we find a receiver or all receivers are tried without luck.
+
+For every receiver we try, we do following:
+
+If a receiver is not assigned to anybody, we simply assign it to the sender and return true. If a receiver is assigned to somebody else say x, then we recursively check whether x can be assigned some other receiver. To make sure that x doesn’t get the same receiver again, we mark the receiver ‘v’ as seen before we make recursive call for x. If x can get other receiver, we change the sender for receiver ‘v’ and return true. We use an array maxR[0..N-1] that stores the senders assigned to different receivers.
+
+If bmp() returns true, then it means that there is an augmenting path in flow network and 1 unit of flow is added to the result in maxBPM().
+
+C++
+
+// C++ program to implement Channel Assignment Problem
+#include <bits/stdc++.h>
+using namespace std;
+
+// A Depth First Search based recursive function that returns true
+// if a matching for vertex u is possible
+bool bpm(int u, vector<vector<int>> &table, vector<bool> &seen,
+vector<int> &match) {
+    int n = table[0].size();
+
+    // Try every receiver one by one
+    for (int v = 0; v < n; v++) {
+
+        // If sender u has packets to send to receiver v and
+        // receiver v is not already mapped to any other sender
+        // just check if the number of packets is greater than '0'
+        // because only one packet can be sent in a time frame anyways
+        if (table[u][v]>0 && !seen[v]) {
+
+            // Mark v as visited
+            seen[v] = true;
+
+            // If receiver 'v' is not assigned to any sender OR
+            // previously assigned sender for receiver v (which is
+            // match[v]) has an alternate receiver available. Since
+            // v is marked as visited in the above line, match[v] in
+            // the following recursive call will not get receiver 'v' again
+            if (match[v] < 0 || bpm(match[v], table, seen, match)) {
+                match[v] = u;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Returns maximum number of packets that can be sent parallelly in 1
+// time slot from sender to receiver
+int maxBPM(vector<vector<int>> &table) {
+    int m = table.size(), n = table[0].size();
+
+    // An array to keep track of the receivers assigned to the senders.
+    // The value of match[i] is the sender ID assigned to receiver i.
+    // the value -1 indicates nobody is assigned.
+    vector<int> match(n, -1);
+
+    // Count of receivers assigned to senders
+    int result = 0;
+    for (int u = 0; u < m; u++) {
+
+        // Mark all receivers as not seen for next sender
+        vector<bool> seen(n, false);
+
+        // Find if the sender 'u' can be assigned to the receiver
+        if (bpm(u, table, seen, match))
+            result++;
+    }
+
+    return result;
+}
+
+int main() {
+    vector<vector<int>> table = {{0, 2, 0}, {3, 0, 1}, {2, 4, 0}};
+    cout << maxBPM(table);
+    return 0;
+}
+
+Java
+
+// Java program to implement Channel Assignment Problem
+
+class GfG {
+
+    // A Depth First Search based recursive function that returns true
+    // if a matching for vertex u is possible
+    static boolean bpm(int u, int[][] table, boolean[] seen, int[] match) {
+        int n = table[0].length;
+
+        // Try every receiver one by one
+        for (int v = 0; v < n; v++) {
+
+            // If sender u has packets to send to receiver v and
+            // receiver v is not already mapped to any other sender
+            // just check if the number of packets is greater than '0'
+            // because only one packet can be sent in a time frame anyways
+            if (table[u][v] > 0 && !seen[v]) {
+
+                // Mark v as visited
+                seen[v] = true;
+
+                // If receiver 'v' is not assigned to any sender OR
+                // previously assigned sender for receiver v (which is
+                // match[v]) has an alternate receiver available. Since
+                // v is marked as visited in the above line, match[v] in
+                // the following recursive call will not get receiver 'v' again
+                if (match[v] < 0 || bpm(match[v], table, seen, match)) {
+                    match[v] = u;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Returns maximum number of packets that can be sent parallelly in 1
+    // time slot from sender to receiver
+    static int maxBPM(int[][] table) {
+        int m = table.length, n = table[0].length;
+
+        // An array to keep track of the receivers assigned to the senders.
+        // The value of match[i] is the sender ID assigned to receiver i.
+        // the value -1 indicates nobody is assigned.
+        int[] match = new int[n];
+        for (int i = 0; i < n; i++) match[i] = -1;
+
+        // Count of receivers assigned to senders
+        int result = 0;
+        for (int u = 0; u < m; u++) {
+
+            // Mark all receivers as not seen for next sender
+            boolean[] seen = new boolean[n];
+
+            // Find if the sender 'u' can be assigned to the receiver
+            if (bpm(u, table, seen, match))
+                result++;
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        int[][] table = {{0, 2, 0}, {3, 0, 1}, {2, 4, 0}};
+        System.out.println(maxBPM(table));
+    }
+}
+
+Python
+
+# Python program to implement Channel Assignment Problem
+
+# A Depth First Search based recursive function that returns true
+# if a matching for vertex u is possible
+def bpm(u, table, seen, match):
+    n = len(table[0])
+
+    # Try every receiver one by one
+    for v in range(n):
+
+        # If sender u has packets to send to receiver v and
+        # receiver v is not already mapped to any other sender
+        # just check if the number of packets is greater than '0'
+        # because only one packet can be sent in a time frame anyways
+        if table[u][v] > 0 and not seen[v]:
+
+            # Mark v as visited
+            seen[v] = True
+
+            # If receiver 'v' is not assigned to any sender OR
+            # previously assigned sender for receiver v (which is
+            # match[v]) has an alternate receiver available. Since
+            # v is marked as visited in the above line, match[v] in
+            # the following recursive call will not get receiver 'v' again
+            if match[v] < 0 or bpm(match[v], table, seen, match):
+                match[v] = u
+                return True
+    return False
+
+# Returns maximum number of packets that can be sent parallelly in 1
+# time slot from sender to receiver
+def maxBPM(table):
+    m = len(table)
+    n = len(table[0])
+
+    # An array to keep track of the receivers assigned to the senders.
+    # The value of match[i] is the sender ID assigned to receiver i.
+    # the value -1 indicates nobody is assigned.
+    match = [-1] * n
+
+    # Count of receivers assigned to senders
+    result = 0
+    for u in range(m):
+
+        # Mark all receivers as not seen for next sender
+        seen = [False] * n
+
+        # Find if the sender 'u' can be assigned to the receiver
+        if bpm(u, table, seen, match):
+            result += 1
+
+    return result
+
+if __name__ == "__main__":
+    table = [[0, 2, 0], [3, 0, 1], [2, 4, 0]]
+    print(maxBPM(table))
+
+C#
+
+// C# program to implement Channel Assignment Problem
+using System;
+
+class GfG {
+
+    // A Depth First Search based recursive function that returns true
+    // if a matching for vertex u is possible
+    static bool Bpm(int u, int[,] table, bool[] seen, int[] match) {
+        int n = table.GetLength(1);
+
+        // Try every receiver one by one
+        for (int v = 0; v < n; v++) {
+
+            // If sender u has packets to send to receiver v and
+            // receiver v is not already mapped to any other sender
+            // just check if the number of packets is greater than '0'
+            // because only one packet can be sent in a time frame anyways
+            if (table[u,v] > 0 && !seen[v]) {
+
+                // Mark v as visited
+                seen[v] = true;
+
+                // If receiver 'v' is not assigned to any sender OR
+                // previously assigned sender for receiver v (which is
+                // match[v]) has an alternate receiver available. Since
+                // v is marked as visited in the above line, match[v] in
+                // the following recursive call will not get receiver 'v' again
+                if (match[v] < 0 || Bpm(match[v], table, seen, match)) {
+                    match[v] = u;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Returns maximum number of packets that can be sent parallelly in 1
+    // time slot from sender to receiver
+    static int MaxBPM(int[,] table) {
+        int m = table.GetLength(0), n = table.GetLength(1);
+
+        // An array to keep track of the receivers assigned to the senders.
+        // The value of match[i] is the sender ID assigned to receiver i.
+        // the value -1 indicates nobody is assigned.
+        int[] match = new int[n];
+        for (int i = 0; i < n; i++) match[i] = -1;
+
+        // Count of receivers assigned to senders
+        int result = 0;
+        for (int u = 0; u < m; u++) {
+
+            // Mark all receivers as not seen for next sender
+            bool[] seen = new bool[n];
+
+            // Find if the sender 'u' can be assigned to the receiver
+            if (Bpm(u, table, seen, match))
+                result++;
+        }
+
+        return result;
+    }
+
+    static void Main() {
+        int[,] table = {{0, 2, 0}, {3, 0, 1}, {2, 4, 0}};
+        Console.WriteLine(MaxBPM(table));
+    }
+}
+
+JavaScript
+
+// JavaScript program to implement Channel Assignment Problem
+
+// A Depth First Search based recursive function that returns true
+// if a matching for vertex u is possible
+function bpm(u, table, seen, match) {
+    let n = table[0].length;
+
+    // Try every receiver one by one
+    for (let v = 0; v < n; v++) {
+
+        // If sender u has packets to send to receiver v and
+        // receiver v is not already mapped to any other sender
+        // just check if the number of packets is greater than '0'
+        // because only one packet can be sent in a time frame anyways
+        if (table[u][v] > 0 && !seen[v]) {
+
+            // Mark v as visited
+            seen[v] = true;
+
+            // If receiver 'v' is not assigned to any sender OR
+            // previously assigned sender for receiver v (which is
+            // match[v]) has an alternate receiver available. Since
+            // v is marked as visited in the above line, match[v] in
+            // the following recursive call will not get receiver 'v' again
+            if (match[v] < 0 || bpm(match[v], table, seen, match)) {
+                match[v] = u;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Returns maximum number of packets that can be sent parallelly in 1
+// time slot from sender to receiver
+function maxBPM(table) {
+    let m = table.length, n = table[0].length;
+
+    // An array to keep track of the receivers assigned to the senders.
+    // The value of match[i] is the sender ID assigned to receiver i.
+    // the value -1 indicates nobody is assigned.
+    let match = new Array(n).fill(-1);
+
+    // Count of receivers assigned to senders
+    let result = 0;
+    for (let u = 0; u < m; u++) {
+
+        // Mark all receivers as not seen for next sender
+        let seen = new Array(n).fill(false);
+
+        // Find if the sender 'u' can be assigned to the receiver
+        if (bpm(u, table, seen, match))
+            result++;
+    }
+
+    return result;
+}
+
+let table = [[0, 2, 0], [3, 0, 1], [2, 4, 0]];
+console.log(maxBPM(table));
+
+Output
+
+3
+
+Time Complexity: O((M + N) * N), Where M and N is the number of senders and number of receivers respectively.
+
+Space Complexity: O(M) , here M is the number of senders.

@@ -1,0 +1,594 @@
+Source: https://www.geeksforgeeks.org/dsa/all-topological-sorts-of-a-directed-acyclic-graph/
+Title: All Topological Sorts of a Directed Acyclic Graph
+Extractor: 2
+
+Topological sorting for D irected A cyclic G raph (DAG) is a linear ordering of vertices such that for every directed edge uv, vertex u comes before v in the ordering. Topological Sorting for a graph is not possible if the graph is not a DAG.
+
+Given a DAG, print all topological sorts of the graph.
+
+For example, consider the below graph.
+
+All topological sorts of the given graph are:
+4 5 0 2 3 1
+4 5 2 0 3 1
+4 5 2 3 0 1
+4 5 2 3 1 0
+5 2 3 4 0 1
+5 2 3 4 1 0
+5 2 4 0 3 1
+5 2 4 3 0 1
+5 2 4 3 1 0
+5 4 0 2 3 1
+5 4 2 0 3 1
+5 4 2 3 0 1
+5 4 2 3 1 0
+
+In a Directed acyclic graph many a times we can have vertices which are unrelated to each other because of which we can order them in many ways. These various topological sorting is important in many cases, for example if some relative weight is also available between the vertices, which is to minimize then we need to take care of relative ordering as well as their relative weight, which creates the need of checking through all possible topological ordering.
+
+> We can go through all possible ordering via backtracking , the algorithm step are as follows : Initialize all vertices as unvisited. Now choose vertex which is unvisited and has zero indegree and decrease indegree of all those vertices by 1 (corresponding to removing edges) now add this vertex to result and call the recursive function again and backtrack. After returning from function reset values of visited, result and indegree for enumeration of other possibilities.
+
+Below is the implementation of the above steps.
+
+C++
+
+// C++ program to print all topological sorts of a graph
+#include <bits/stdc++.h>
+using namespace std;
+
+class Graph
+{
+    int V;    // No. of vertices
+
+    // Pointer to an array containing adjacency list
+    list<int> *adj;
+
+    // Vector to store indegree of vertices
+    vector<int> indegree;
+
+    // A function used by alltopologicalSort
+    void alltopologicalSortUtil(vector<int>& res,
+                                bool visited[]);
+
+public:
+    Graph(int V);   // Constructor
+
+    // function to add an edge to graph
+    void addEdge(int v, int w);
+
+    // Prints all Topological Sorts
+    void alltopologicalSort();
+};
+
+//  Constructor of graph
+Graph::Graph(int V)
+{
+    this->V = V;
+    adj = new list<int>[V];
+
+    // Initialising all indegree with 0
+    for (int i = 0; i < V; i++)
+        indegree.push_back(0);
+}
+
+//  Utility function to add edge
+void Graph::addEdge(int v, int w)
+{
+    adj[v].push_back(w); // Add w to v's list.
+
+    // increasing inner degree of w by 1
+    indegree[w]++;
+}
+
+//  Main recursive function to print all possible
+//  topological sorts
+void Graph::alltopologicalSortUtil(vector<int>& res,
+                                   bool visited[])
+{
+    // To indicate whether all topological are found
+    // or not
+    bool flag = false;
+
+    for (int i = 0; i < V; i++)
+    {
+        //  If indegree is 0 and not yet visited then
+        //  only choose that vertex
+        if (indegree[i] == 0 && !visited[i])
+        {
+            //  reducing indegree of adjacent vertices
+            list<int>:: iterator j;
+            for (j = adj[i].begin(); j != adj[i].end(); j++)
+                indegree[*j]--;
+
+            //  including in result
+            res.push_back(i);
+            visited[i] = true;
+            alltopologicalSortUtil(res, visited);
+
+            // resetting visited, res and indegree for
+            // backtracking
+            visited[i] = false;
+            res.erase(res.end() - 1);
+            for (j = adj[i].begin(); j != adj[i].end(); j++)
+                indegree[*j]++;
+
+            flag = true;
+        }
+    }
+
+    //  We reach here if all vertices are visited.
+    //  So we print the solution here
+    if (!flag)
+    {
+        for (int i = 0; i < res.size(); i++)
+            cout << res[i] << " ";
+        cout << endl;
+    }
+}
+
+//  The function does all Topological Sort.
+//  It uses recursive alltopologicalSortUtil()
+void Graph::alltopologicalSort()
+{
+    // Mark all the vertices as not visited
+    bool *visited = new bool[V];
+    for (int i = 0; i < V; i++)
+        visited[i] = false;
+
+    vector<int> res;
+    alltopologicalSortUtil(res, visited);
+}
+
+// Driver program to test above functions
+int main()
+{
+    // Create a graph given in the above diagram
+    Graph g(6);
+    g.addEdge(5, 2);
+    g.addEdge(5, 0);
+    g.addEdge(4, 0);
+    g.addEdge(4, 1);
+    g.addEdge(2, 3);
+    g.addEdge(3, 1);
+
+    cout << "All Topological sorts\n";
+
+    g.alltopologicalSort();
+
+    return 0;
+}
+
+Java
+
+//Java program to print all topological sorts of a graph
+import java.util.*;
+
+class Graph {
+    int V; // No. of vertices
+
+    List<Integer> adjListArray[];
+
+    public Graph(int V) {
+
+        this.V = V;
+
+        @SuppressWarnings("unchecked")
+        List<Integer> adjListArray[] = new LinkedList[V];
+
+        this.adjListArray = adjListArray;
+
+        for (int i = 0; i < V; i++) {
+            adjListArray[i] = new LinkedList<>();
+        }
+    }
+    // Utility function to add edge
+    public void addEdge(int src, int dest) {
+
+        this.adjListArray[src].add(dest);
+
+    }
+
+    // Main recursive function to print all possible
+    // topological sorts
+    private void allTopologicalSortsUtil(boolean[] visited,
+                        int[] indegree, ArrayList<Integer> stack) {
+        // To indicate whether all topological are found
+        // or not
+        boolean flag = false;
+
+        for (int i = 0; i < this.V; i++) {
+            // If indegree is 0 and not yet visited then
+            // only choose that vertex
+            if (!visited[i] && indegree[i] == 0) {
+
+                // including in result
+                visited[i] = true;
+                stack.add(i);
+                for (int adjacent : this.adjListArray[i]) {
+                    indegree[adjacent]--;
+                }
+                allTopologicalSortsUtil(visited, indegree, stack);
+
+                // resetting visited, res and indegree for
+                // backtracking
+                visited[i] = false;
+                stack.remove(stack.size() - 1);
+                for (int adjacent : this.adjListArray[i]) {
+                    indegree[adjacent]++;
+                }
+
+                flag = true;
+            }
+        }
+        // We reach here if all vertices are visited.
+        // So we print the solution here
+        if (!flag) {
+            stack.forEach(i -> System.out.print(i + " "));
+            System.out.println();
+        }
+
+    }
+
+    // The function does all Topological Sort.
+    // It uses recursive alltopologicalSortUtil()
+    public void allTopologicalSorts() {
+        // Mark all the vertices as not visited
+        boolean[] visited = new boolean[this.V];
+
+        int[] indegree = new int[this.V];
+
+        for (int i = 0; i < this.V; i++) {
+
+            for (int var : this.adjListArray[i]) {
+                indegree[var]++;
+            }
+        }
+
+        ArrayList<Integer> stack = new ArrayList<>();
+
+        allTopologicalSortsUtil(visited, indegree, stack);
+    }
+
+    // Driver code
+    public static void main(String[] args) {
+
+        // Create a graph given in the above diagram
+        Graph graph = new Graph(6);
+        graph.addEdge(5, 2);
+        graph.addEdge(5, 0);
+        graph.addEdge(4, 0);
+        graph.addEdge(4, 1);
+        graph.addEdge(2, 3);
+        graph.addEdge(3, 1);
+
+        System.out.println("All Topological sorts");
+        graph.allTopologicalSorts();
+    }
+}
+
+Python3
+
+# class to represent a graph object
+class Graph:
+
+    # Constructor
+    def __init__(self, edges, N):
+
+        # A List of Lists to represent an adjacency list
+        self.adjList = [[] for _ in range(N)]
+
+        # stores in-degree of a vertex
+        # initialize in-degree of each vertex by 0
+        self.indegree = [0] * N
+
+        # add edges to the undirected graph
+        for (src, dest) in edges:
+
+            # add an edge from source to destination
+            self.adjList[src].append(dest)
+
+            # increment in-degree of destination vertex by 1
+            self.indegree[dest] = self.indegree[dest] + 1
+
+# Recursive function to find
+# all topological orderings of a given DAG
+def findAllTopologicalOrders(graph, path, discovered, N):
+
+    # do for every vertex
+    for v in range(N):
+
+        # proceed only if in-degree of current node is 0 and
+        # current node is not processed yet
+        if graph.indegree[v] == 0 and not discovered[v]:
+
+            # for every adjacent vertex u of v,
+            # reduce in-degree of u by 1
+            for u in graph.adjList[v]:
+                graph.indegree[u] = graph.indegree[u] - 1
+
+            # include current node in the path
+            # and mark it as discovered
+            path.append(v)
+            discovered[v] = True
+
+            # recur
+            findAllTopologicalOrders(graph, path, discovered, N)
+
+            # backtrack: reset in-degree
+            # information for the current node
+            for u in graph.adjList[v]:
+                graph.indegree[u] = graph.indegree[u] + 1
+
+            # backtrack: remove current node from the path and
+            # mark it as undiscovered
+            path.pop()
+            discovered[v] = False
+
+    # print the topological order if
+    # all vertices are included in the path
+    if len(path) == N:
+        print(path)
+
+# Print all topological orderings of a given DAG
+def printAllTopologicalOrders(graph):
+
+    # get number of nodes in the graph
+    N = len(graph.adjList)
+
+    # create an auxiliary space to keep track of whether vertex is discovered
+    discovered = [False] * N
+
+    # list to store the topological order
+    path = []
+
+    # find all topological ordering and print them
+    findAllTopologicalOrders(graph, path, discovered, N)
+
+# Driver code
+if __name__ == '__main__':
+
+    # List of graph edges as per above diagram
+    edges = [(5, 2), (5, 0), (4, 0), (4, 1), (2, 3), (3, 1)]
+
+    print("All Topological sorts")
+
+    # Number of nodes in the graph
+    N = 6
+
+    # create a graph from edges
+    graph = Graph(edges, N)
+
+    # print all topological ordering of the graph
+    printAllTopologicalOrders(graph)
+
+# This code is contributed by Priyadarshini Kumari
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Graph
+{
+    int V;
+    List<int>[] adjListArray;
+
+    public Graph(int V)
+    {
+        this.V = V;
+        adjListArray = new List<int>[V];
+
+        for (int i = 0; i < V; i++)
+        {
+            adjListArray[i] = new List<int>();
+        }
+    }
+
+    public void addEdge(int src, int dest)
+    {
+        this.adjListArray[src].Add(dest);
+    }
+
+    private void allTopologicalSortsUtil(bool[] visited, int[] indegree, List<int> stack)
+    {
+        bool flag = false;
+
+        for (int i = 0; i < this.V; i++)
+        {
+            if (!visited[i] && indegree[i] == 0)
+            {
+                visited[i] = true;
+                stack.Add(i);
+                foreach (int adjacent in this.adjListArray[i])
+                {
+                    indegree[adjacent]--;
+                }
+                allTopologicalSortsUtil(visited, indegree, stack);
+
+                visited[i] = false;
+                stack.RemoveAt(stack.Count - 1);
+                foreach (int adjacent in this.adjListArray[i])
+                {
+                    indegree[adjacent]++;
+                }
+
+                flag = true;
+            }
+        }
+        if (!flag)
+        {
+            stack.ForEach(i => Console.Write(i + " "));
+            Console.WriteLine();
+        }
+    }
+
+    public void allTopologicalSorts()
+    {
+        bool[] visited = new bool[this.V];
+        int[] indegree = new int[this.V];
+
+        for (int i = 0; i < this.V; i++)
+        {
+            foreach (int var in this.adjListArray[i])
+            {
+                indegree[var]++;
+            }
+        }
+
+        List<int> stack = new List<int>();
+
+        allTopologicalSortsUtil(visited, indegree, stack);
+    }
+
+    static void Main(string[] args)
+    {
+        Graph graph = new Graph(6);
+        graph.addEdge(5, 2);
+        graph.addEdge(5, 0);
+        graph.addEdge(4, 0);
+        graph.addEdge(4, 1);
+        graph.addEdge(2, 3);
+        graph.addEdge(3, 1);
+
+        Console.WriteLine("All Topological sorts");
+        graph.allTopologicalSorts();
+    }
+}
+
+JavaScript
+
+<script>
+
+// class to represent a graph object
+class Graph{
+    // Constructor
+    constructor(edges, N){
+
+        // A List of Lists to represent an adjacency list
+        this.adjList = new Array(N);
+        for(let i = 0; i < N; i++){
+            this.adjList[i] = new Array();
+        }
+
+        // stores in-degree of a vertex
+        // initialize in-degree of each vertex by 0
+        this.indegree = new Array(N).fill(0);
+
+        // add edges to the undirected graph
+        for(let i = 0; i < edges.length; i++){
+            let src = edges[i][0];
+            let dest = edges[i][1];
+
+            //add an edge from source to destination
+            this.adjList[src].push(dest);
+
+            // increment in-degree of destination vertex by 1
+            this.indegree[dest] = this.indegree[dest] + 1;
+        }
+
+    }
+}
+
+// Recursive function to find
+// all topological orderings of a given DAG
+function findAllTopologicalOrders(graph, path, discovered, N){
+
+    // do for every vertex
+    for(let v = 0; v < N; v++){
+
+        // proceed only if in-degree of current node is 0 and
+        // current node is not processed yet
+        if(graph.indegree[v] == 0 &&  !discovered[v]){
+
+            // for every adjacent vertex u of v,
+            // reduce in-degree of u by 1
+            for(let indx = 0; indx < graph.adjList[v].length; indx++){
+                let u = graph.adjList[v][indx];
+                graph.indegree[u] = graph.indegree[u] - 1;
+            }
+        }
+
+        // include current node in the path
+        // and mark it as discovered
+        path.push(v);
+        discovered[v] = true;
+
+        // recur
+        findAllTopologicalOrders(graph, path, discovered, N)
+
+        // backtrack: reset in-degree
+        // information for the current node
+        for(let indx = 0; indx < graph.adjList[v].length; indx++){
+            let u = graph.adjList[v][indx];
+            graph.indegree[u] = graph.indegree[u] + 1;
+        }
+
+        // backtrack: remove current node from the path and
+        // mark it as undiscovered
+        path.pop();
+        discovered[v] = false;
+
+    }
+
+    // print the topological order if
+    // all vertices are included in the path
+    if(path.length == N){
+        console.log(path);
+    }
+}
+
+// Print all topological orderings of a given DAG
+function printAllTopologicalOrders(graph){
+
+    // get number of nodes in the graph
+    let N = graph.adjList.length;
+
+    // create an auxiliary space to keep track of whether vertex is discovered
+    let discovered = new Array(N).fill(false);
+
+    // list to store the topological order
+    let path = [];
+
+    // find all topological ordering and print them
+    findAllTopologicalOrders(graph, path, discovered, N)
+}
+
+// Driver code
+
+// List of graph edges as per above diagram
+let edges = [[5, 2], [5, 0], [4, 0], [4, 1], [2, 3], [3, 1]];
+
+console.log("All Topological sorts");
+
+// Number of nodes in the graph
+let N = 6;
+
+// create a graph from edges
+let graph = new Graph(edges, N);
+
+// print all topological ordering of the graph
+printAllTopologicalOrders(graph);
+
+// This code is contributed by gautam goel.
+
+</script>
+
+Output
+
+All Topological sorts
+4 5 0 2 3 1
+4 5 2 0 3 1
+4 5 2 3 0 1
+4 5 2 3 1 0
+5 2 3 4 0 1
+5 2 3 4 1 0
+5 2 4 0 3 1
+5 2 4 3 0 1
+5 2 4 3 1 0
+5 4 0 2 3 1
+5 4 2 0 3 1
+5 4 2 3 0 1
+5 4 2 3 1 0
+
+Time Complexity: O(V!), Here V is the number of vertices, V! is absolute worst case. (worst case example - any graph with no edges at all) Auxiliary Space: O(V), for creating an additional array and recursive stack space.
+
+This articles is contributed by Utkarsh Trivedi.

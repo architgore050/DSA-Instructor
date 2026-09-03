@@ -1,0 +1,350 @@
+Source: https://www.geeksforgeeks.org/dsa/construct-full-k-ary-tree-preorder-traversal/
+Title: Construct the full k-ary tree from its preorder traversal
+Extractor: 2
+
+Given an array that contains the preorder traversal of the full and complete k-ary tree, the task is to construct the full k-ary tree and return its postorder traversal. A full k-ary tree is a tree where each node has either 0 or k children and it is also complete means the nodes are filled from left to right at every level and every level is full except possibly the last level and nodes of the last level must be filled from left to right.
+
+Examples:
+
+> Input: pre[] = {1, 2, 5, 6, 7, 3, 8, 9, 10, 4}, k = 3 Output: Postorder traversal of constructed full k-ary tree is: 5 6 7 2 8 9 10 3 4 1 Explanation:
+
+### Approach:
+
+The idea is to first compute height of the given tree and then build the tree using the height and an index variable that keeps track of the next node to be considered.  Whey do we need height?  If we do not know height, then we cannot decide whether the next node is a child or a sibling of the current node.
+
+There are mainly two methods
+
+Height Calculation
+
+- Computes the height of a full k-ary tree given number of nodes n and branching factor k .
+- Keeps adding nodes level by level ( pow(k, h) ) until total ≥ n .
+- Returns the minimum height h needed
+
+Tree Construction
+
+We maintain an index variable ind into preorder array. This variable is passed by reference so that it is shared among all
+
+- Base Case : If no nodes left or height exhausted, return nullptr .
+- Create a new node with pre[ind] .
+- For each of the k children : If there’s a next value and height left, Increment ind and recursively build the subtree.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Structure of a node of an n-ary tree
+struct Node {
+    int key;
+    vector<Node*> child;
+    Node(int value, int k) {
+        key = value;
+        child.clear();
+        for (int i = 0; i < k; i++)
+            child.push_back(nullptr);
+    }
+};
+
+// Build full k-ary tree from preorder
+Node* BuildKaryTree(const int pre[], int n, int k, int h, int &ind) {
+    if (ind >= n || h <= 0)
+        return nullptr;
+
+    Node* root = new Node(pre[ind], k);
+
+    for (int i = 0; i < k; i++) {
+        if (ind + 1 < n && h > 1) {
+            ind++;
+            root->child[i] = BuildKaryTree(pre, n, k, h - 1, ind);
+        }
+    }
+    return root;
+}
+
+// Compute height for a full k-ary tree from n
+int ComputeHeight(int n, int k) {
+    int h = 0, total = 0;
+    while (total < n) {
+        total += pow(k, h);
+        h++;
+    }
+    return h;
+}
+
+// Postorder traversal
+void postord(Node* root, int k) {
+    if (!root) return;
+    for (int i = 0; i < k; i++)
+        postord(root->child[i], k);
+    cout << root->key << " ";
+}
+
+int main() {
+    int pre[] = {1, 2, 5, 6, 7, 3, 8, 9, 10, 4};
+    int n = sizeof(pre) / sizeof(pre[0]);
+    int k = 3;
+
+    int ind = 0;
+    int height = ComputeHeight(n, k);
+
+    Node* root = BuildKaryTree(pre, n, k, height, ind);
+
+    cout << "Postorder traversal of constructed full k-ary tree is: ";
+    postord(root, k);
+    cout << endl;
+
+    return 0;
+}
+
+Java
+
+import java.util.ArrayList;
+import java.util.List;
+
+// Structure of a node of an n-ary tree
+class Node {
+    int key;
+    List<Node> child = new ArrayList<>();
+
+    // Normal constructor (no initializer list)
+    Node(int value, int k) {
+        key = value;
+        for (int i = 0; i < k; i++)
+            child.add(null);
+    }
+}
+
+public class Main {
+
+    // Build full k-ary tree from preorder
+    static Node BuildKaryTree(int[] pre, int n, int k, int h, int[] ind) {
+        if (ind[0] >= n || h <= 0)
+            return null;
+
+        Node root = new Node(pre[ind[0]], k);
+
+        for (int i = 0; i < k; i++) {
+            if (ind[0] + 1 < n && h > 1) {
+                ind[0]++;
+                root.child.set(i, BuildKaryTree(pre, n, k, h - 1, ind));
+            }
+        }
+        return root;
+    }
+
+    // Compute height for a full k-ary tree from n
+    static int ComputeHeight(int n, int k) {
+        int h = 0, total = 0;
+        while (total < n) {
+            total += (int) Math.pow(k, h);
+            h++;
+        }
+        return h;
+    }
+
+    // Postorder traversal
+    static void postord(Node root, int k) {
+        if (root == null) return;
+        for (int i = 0; i < k; i++)
+            postord(root.child.get(i), k);
+        System.out.print(root.key + " ");
+    }
+
+    public static void main(String[] args) {
+        int[] pre = {1, 2, 5, 6, 7, 3, 8, 9, 10, 4};
+        int n = pre.length;
+        int k = 3;
+
+        int[] ind = {0};
+        int height = ComputeHeight(n, k);
+
+        Node root = BuildKaryTree(pre, n, k, height, ind);
+
+        System.out.print("Postorder traversal of constructed full k-ary tree is: ");
+        postord(root, k);
+        System.out.println();
+    }
+}
+
+Python
+
+import math
+
+# Structure of a node of an n-ary tree
+class Node:
+    def __init__(self, value, k):
+        self.key = value
+        self.child = [None] * k
+
+# Build full k-ary tree from preorder
+def BuildKaryTree(pre, n, k, h, ind):
+    if ind[0] >= n or h <= 0:
+        return None
+
+    root = Node(pre[ind[0]], k)
+
+    for i in range(k):
+        if ind[0] + 1 < n and h > 1:
+            ind[0] += 1
+            root.child[i] = BuildKaryTree(pre, n, k, h - 1, ind)
+
+    return root
+
+# Compute height for a full k-ary tree from n
+def ComputeHeight(n, k):
+    h = 0
+    total = 0
+    while total < n:
+        total += int(math.pow(k, h))
+        h += 1
+    return h
+
+# Postorder traversal
+def postord(root, k):
+    if root is None:
+        return
+    for i in range(k):
+        postord(root.child[i], k)
+    print(root.key, end=' ')
+
+if __name__ == '__main__':
+    pre = [1, 2, 5, 6, 7, 3, 8, 9, 10, 4]
+    n = len(pre)
+    k = 3
+
+    ind = [0]
+    height = ComputeHeight(n, k)
+
+    root = BuildKaryTree(pre, n, k, height, ind)
+
+    print('Postorder traversal of constructed full k-ary tree is:', end=' ')
+    postord(root, k)
+    print()
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+// Structure of a node of an n-ary tree
+public class Node {
+    public int key;
+    public List<Node> child = new List<Node>();
+
+    // Normal constructor (no initializer list)
+    public Node(int value, int k) {
+        key = value;
+        for (int i = 0; i < k; i++)
+            child.Add(null);
+    }
+}
+
+public class Program {
+    // Build full k-ary tree from preorder
+    static Node BuildKaryTree(int[] pre, int n, int k, int h, ref int ind) {
+        if (ind >= n || h <= 0)
+            return null;
+
+        Node root = new Node(pre[ind], k);
+
+        for (int i = 0; i < k; i++) {
+            if (ind + 1 < n && h > 1) {
+                ind++;
+                root.child[i] = BuildKaryTree(pre, n, k, h - 1, ref ind);
+            }
+        }
+        return root;
+    }
+
+    // Compute height for a full k-ary tree from n
+    static int ComputeHeight(int n, int k) {
+        int h = 0, total = 0;
+        while (total < n) {
+            total += (int)Math.Pow(k, h);
+            h++;
+        }
+        return h;
+    }
+
+    // Postorder traversal
+    static void postord(Node root, int k) {
+        if (root == null) return;
+        for (int i = 0; i < k; i++)
+            postord(root.child[i], k);
+        Console.Write(root.key + " ");
+    }
+
+    static void Main(string[] args) {
+        int[] pre = {1, 2, 5, 6, 7, 3, 8, 9, 10, 4};
+        int n = pre.Length;
+        int k = 3;
+
+        int ind = 0;
+        int height = ComputeHeight(n, k);
+
+        Node root = BuildKaryTree(pre, n, k, height, ref ind);
+
+        Console.Write("Postorder traversal of constructed full k-ary tree is: ");
+        postord(root, k);
+        Console.WriteLine();
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(value, k) {
+        this.key = value;
+        this.child = Array(k).fill(null);
+    }
+}
+
+function BuildKaryTree(pre, n, k, h, ind) {
+    if (ind >= n || h <= 0)
+        return null;
+
+    let root = new Node(pre[ind], k);
+
+    for (let i = 0; i < k; i++) {
+        if (ind + 1 < n && h > 1) {
+            ind++;
+            root.child[i] = BuildKaryTree(pre, n, k, h - 1, ind);
+        }
+    }
+    return root;
+}
+
+function ComputeHeight(n, k) {
+    let h = 0, total = 0;
+    while (total < n) {
+        total += Math.pow(k, h);
+        h++;
+    }
+    return h;
+}
+
+function postord(root, k) {
+    if (root === null) return;
+    for (let i = 0; i < k; i++)
+        postord(root.child[i], k);
+    process.stdout.write(root.key +'');
+}
+
+let pre = [1, 2, 5, 6, 7, 3, 8, 9, 10, 4];
+let n = pre.length;
+let k = 3;
+
+let ind = 0;
+let height = ComputeHeight(n, k);
+
+let root = BuildKaryTree(pre, n, k, height, ind);
+
+process.stdout.write('Postorder traversal of constructed full k-ary tree is: ');
+postord(root, k);
+console.log();
+
+Output
+
+Postorder traversal of constructed full k-ary tree is: 5 6 7 2 8 9 10 3 4 1
+
+Time Complexity: O(n) Auxiliary Space: O(n)

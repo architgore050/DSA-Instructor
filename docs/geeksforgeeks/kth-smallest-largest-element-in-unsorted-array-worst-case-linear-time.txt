@@ -1,0 +1,535 @@
+Source: https://www.geeksforgeeks.org/dsa/kth-smallest-largest-element-in-unsorted-array-worst-case-linear-time/
+Title: K’th Smallest/Largest Element in Unsorted Array | Worst case Linear Time
+Extractor: 2
+
+Given an array of distinct integers arr[] and an integer k. The task is to find the k-th smallest element in the array. For better understanding, k refers to the element that would appear in the k-th position if the array were sorted in ascending order. Note: k will always be less than the size of the array.
+
+Examples:
+
+> Input: arr[] = [7, 10, 4, 3, 20, 15], k = 3 Output: 7 Explanation: The sorted array is [3, 4, 7, 10, 15, 20]. The 3rd smallest element is 7. Input: arr[] = [12, 3, 5, 7, 19], k = 2 Output: 5 Explanation: The sorted array is [3, 5, 7, 12, 19]. The 2nd smallest element is 5. Input: arr[] = [1, 5, 2, 8, 3], k = 4 Output: 5
+
+In the previous post , we explored an algorithm with expected linear time complexity. In this post, a worst-case linear time we method is discussed.
+
+### Approach:
+
+> The intuition of this code starts with the same base idea as QuickSelect(), to find the k-th smallest element by partitioning the array around a pivot. But unlike QuickSelect, which may choose a bad pivot and degrade to O(n²) in the worst case, this algorithm ensures worst-case linear time by carefully choosing a pivot using the Median of Medians technique. We want a pivot that guarantees a reasonably balanced partition, not perfectly balanced, but not extremely skewed either. That means the pivot should ensure that a significant portion of the array lies on both sides of it. This is where the Median of Medians strategy comes in
+
+Steps to implement the above idea:
+
+- To find a good pivot, we divide the array into groups of 5 elements . This size (5) is a key observation, it is small enough to allow fast sorting and large enough to ensure a mathematically provable balance during partitioning.
+- Each group is sorted independently and its median is collected into a new list called medians .
+- Once we gather all medians, we recursively find the median of this median list . This value becomes our pivot . The purpose is to avoid bad pivots by using a value that is likely close to the true median of the entire array.
+- After determining the pivot, we partition the array using the standard logic (elements <= pivot on the left, > pivot on the right). The function partitionAroundPivot() moves the pivot to its correct position and returns that position.
+- Now, we compare the position of this pivot with the desired k-th index. If it matches, we return that value directly as our answer.
+- If not, we decide whether to recurse on the left or right side of the pivot: If the pivot lies after the k-th position, the answer lies in the left subarray. If the pivot lies before the k-th position, we adjust k accordingly and recurse on the right subarray.
+
+C++
+
+// C++ implementation of the Worst Case Linear Time algorithm
+// to find the k-th smallest element using Median of Medians
+#include <bits/stdc++.h>
+using namespace std;
+
+// Returns median of a small group (size <= 5)
+int getMedian(vector<int> &group) {
+    sort(group.begin(), group.end());
+    return group[group.size() / 2];
+}
+
+// Function to Partition array from index
+// l to r around  the pivot value x
+int partitionAroundPivot(vector<int> &arr,
+                         int l, int r, int x) {
+
+    // Move pivot x to end
+    int i;
+    for (i = l; i < r; i++) {
+        if (arr[i] == x) break;
+    }
+    swap(arr[i], arr[r]);
+
+    // Standard partition logic
+    i = l;
+    for (int j = l; j < r; j++) {
+        if (arr[j] <= x) {
+            swap(arr[i], arr[j]);
+            i++;
+        }
+    }
+
+    swap(arr[i], arr[r]);
+
+    // Final position of pivot
+    return i;
+}
+
+// Recursively finds the k-th smallest element in arr[l..r]
+int selectKthSmallest(vector<int> &arr, int l, int r, int k) {
+    if (k > 0 && k <= r - l + 1) {
+        int n = r - l + 1;
+        vector<int> medians;
+        int i;
+
+        // Divide array into groups of 5 and store their medians
+        for (i = 0; i < n / 5; i++) {
+            vector<int> group(arr.begin() + l + i * 5,
+                              arr.begin() + l + i * 5 + 5);
+            medians.push_back(getMedian(group));
+        }
+
+        // Handle the last group with less than 5 elements
+        if (i * 5 < n) {
+            vector<int> lastGroup(arr.begin() + l + i * 5,
+                                  arr.begin() + l + i * 5 + (n % 5));
+            medians.push_back(getMedian(lastGroup));
+        }
+
+        // Find median of medians
+        int pivot;
+        if (medians.size() == 1) {
+            pivot = medians[0];
+        } else {
+            pivot = selectKthSmallest(medians, 0, medians.size() - 1,
+                                      medians.size() / 2);
+        }
+
+        // Partition array and get position of pivot
+        int pos = partitionAroundPivot(arr, l, r, pivot);
+
+        // If position matches k, return result
+        if (pos - l == k - 1) return arr[pos];
+
+        // Recur on left or right part accordingly
+        if (pos - l > k - 1)
+            return selectKthSmallest(arr, l, pos - 1, k);
+
+        return selectKthSmallest(arr, pos + 1, r, k - pos + l - 1);
+    }
+
+    return INT_MAX;
+}
+
+// Function to find kth Smallest in Array
+int kthSmallest(vector<int> &arr, int k) {
+    return selectKthSmallest(arr, 0, arr.size() - 1, k);
+}
+
+// Driver code
+int main() {
+    vector<int> arr = {7, 10, 4, 3, 20, 15};
+    int k = 3;
+
+    cout << kthSmallest(arr, k);
+
+    return 0;
+}
+
+Java
+
+// Java implementation of the Worst Case Linear Time algorithm
+// to find the k-th smallest element using Median of Medians
+import java.util.*;
+
+class GfG {
+
+    // Returns median of a small group (size <= 5)
+    static int getMedian(int[] group) {
+        Arrays.sort(group);
+        return group[group.length / 2];
+    }
+
+    // Function to Partition array from index
+    // l to r around  the pivot value x
+    static int partitionAroundPivot(int[] arr, int l, int r, int x) {
+
+        // Move pivot x to end
+        int i;
+        for (i = l; i < r; i++) {
+            if (arr[i] == x) break;
+        }
+        int temp = arr[i];
+        arr[i] = arr[r];
+        arr[r] = temp;
+
+        // Standard partition logic
+        i = l;
+        for (int j = l; j < r; j++) {
+            if (arr[j] <= x) {
+                int t = arr[i];
+                arr[i] = arr[j];
+                arr[j] = t;
+                i++;
+            }
+        }
+
+        int t = arr[i];
+        arr[i] = arr[r];
+        arr[r] = t;
+
+        // Final position of pivot
+        return i;
+    }
+
+    // Recursively finds the k-th smallest element in arr[l..r]
+    static int selectKthSmallest(int[] arr, int l, int r, int k) {
+        if (k > 0 && k <= r - l + 1) {
+            int n = r - l + 1;
+            ArrayList<Integer> medians = new ArrayList<>();
+            int i;
+
+            // Divide array into groups of 5 and store their medians
+            for (i = 0; i < n / 5; i++) {
+                int[] group = Arrays.copyOfRange(arr, l + i * 5, l + i * 5 + 5);
+                medians.add(getMedian(group));
+            }
+
+            // Handle the last group with less than 5 elements
+            if (i * 5 < n) {
+                int[] lastGroup = Arrays.copyOfRange(arr, l + i * 5, l + i * 5 + (n % 5));
+                medians.add(getMedian(lastGroup));
+            }
+
+            // Find median of medians
+            int pivot;
+            if (medians.size() == 1) {
+                pivot = medians.get(0);
+            } else {
+                int[] medArr = new int[medians.size()];
+                for (int j = 0; j < medians.size(); j++) medArr[j] = medians.get(j);
+                pivot = selectKthSmallest(medArr, 0, medArr.length - 1, medArr.length / 2);
+            }
+
+            // Partition array and get position of pivot
+            int pos = partitionAroundPivot(arr, l, r, pivot);
+
+            // If position matches k, return result
+            if (pos - l == k - 1) return arr[pos];
+
+            // Recur on left or right part accordingly
+            if (pos - l > k - 1)
+                return selectKthSmallest(arr, l, pos - 1, k);
+
+            return selectKthSmallest(arr, pos + 1, r, k - pos + l - 1);
+        }
+
+        return Integer.MAX_VALUE;
+    }
+
+    // Function to find kth Smallest in Array
+    static int kthSmallest(int[] arr, int k) {
+        return selectKthSmallest(arr, 0, arr.length - 1, k);
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {7, 10, 4, 3, 20, 15};
+        int k = 3;
+
+        System.out.println(kthSmallest(arr, k));
+    }
+}
+
+Python
+
+# Python implementation of the Worst Case Linear Time algorithm
+# to find the k-th smallest element using Median of Medians
+
+# Returns median of a small group (size <= 5)
+def getMedian(group):
+    group.sort()
+    return group[len(group) // 2]
+
+# Function to Partition array from index
+# l to r around  the pivot value x
+def partitionAroundPivot(arr, l, r, x):
+
+    # Move pivot x to end
+    for i in range(l, r):
+        if arr[i] == x:
+            break
+    arr[i], arr[r] = arr[r], arr[i]
+
+    # Standard partition logic
+    i = l
+    for j in range(l, r):
+        if arr[j] <= x:
+            arr[i], arr[j] = arr[j], arr[i]
+            i += 1
+
+    arr[i], arr[r] = arr[r], arr[i]
+
+    # Final position of pivot
+    return i
+
+# Recursively finds the k-th smallest element in arr[l..r]
+def selectKthSmallest(arr, l, r, k):
+    if k > 0 and k <= r - l + 1:
+        n = r - l + 1
+        medians = []
+
+        # Divide array into groups of 5 and store their medians
+        i = 0
+        while i < n // 5:
+            group = arr[l + i * 5: l + i * 5 + 5]
+            medians.append(getMedian(group))
+            i += 1
+
+        # Handle the last group with less than 5 elements
+        if i * 5 < n:
+            lastGroup = arr[l + i * 5: l + i * 5 + (n % 5)]
+            medians.append(getMedian(lastGroup))
+
+        # Find median of medians
+        if len(medians) == 1:
+            pivot = medians[0]
+        else:
+            pivot = selectKthSmallest(medians, 0, len(medians) - 1,
+                                      len(medians) // 2 + 1)
+
+        # Partition array and get position of pivot
+        pos = partitionAroundPivot(arr, l, r, pivot)
+
+        # If position matches k, return result
+        if pos - l == k - 1:
+            return arr[pos]
+
+        # Recur on left or right part accordingly
+        if pos - l > k - 1:
+            return selectKthSmallest(arr, l, pos - 1, k)
+
+        return selectKthSmallest(arr, pos + 1, r,
+                                 k - pos + l - 1)
+
+    return float('inf')
+
+# Function to find kth Smallest in Array
+def kthSmallest(arr, k):
+    return selectKthSmallest(arr, 0, len(arr) - 1, k)
+
+# Driver code
+if __name__ == "__main__":
+    arr = [7, 10, 4, 3, 20, 15]
+    k = 3
+
+    print(kthSmallest(arr, k))
+
+C#
+
+// C# implementation of the Worst Case Linear Time algorithm
+// to find the k-th smallest element using Median of Medians
+using System;
+using System.Collections.Generic;
+
+class GfG {
+
+    // Returns median of a small group (size <= 5)
+    static int getMedian(int[] group) {
+        Array.Sort(group);
+        return group[group.Length / 2];
+    }
+
+    // Function to Partition array from index
+    // l to r around  the pivot value x
+    static int partitionAroundPivot(int[] arr, int l, int r, int x) {
+
+        // Move pivot x to end
+        int i;
+        for (i = l; i < r; i++) {
+            if (arr[i] == x) break;
+        }
+        int temp = arr[i];
+        arr[i] = arr[r];
+        arr[r] = temp;
+
+        // Standard partition logic
+        i = l;
+        for (int j = l; j < r; j++) {
+            if (arr[j] <= x) {
+                int t = arr[i];
+                arr[i] = arr[j];
+                arr[j] = t;
+                i++;
+            }
+        }
+
+        int t2 = arr[i];
+        arr[i] = arr[r];
+        arr[r] = t2;
+
+        // Final position of pivot
+        return i;
+    }
+
+    // Recursively finds the k-th smallest element in arr[l..r]
+    static int selectKthSmallest(int[] arr, int l, int r, int k) {
+        if (k > 0 && k <= r - l + 1) {
+            int n = r - l + 1;
+            List<int> medians = new List<int>();
+            int i;
+
+            // Divide array into groups of 5 and store their medians
+            for (i = 0; i < n / 5; i++) {
+                int[] group = new int[5];
+                Array.Copy(arr, l + i * 5, group, 0, 5);
+                medians.Add(getMedian(group));
+            }
+
+            // Handle the last group with less than 5 elements
+            if (i * 5 < n) {
+                int len = n % 5;
+                int[] lastGroup = new int[len];
+                Array.Copy(arr, l + i * 5, lastGroup, 0, len);
+                medians.Add(getMedian(lastGroup));
+            }
+
+            // Find median of medians
+            int pivot;
+            if (medians.Count == 1) {
+                pivot = medians[0];
+            } else {
+                int[] medArr = medians.ToArray();
+                pivot = selectKthSmallest(medArr, 0, medArr.Length - 1, medArr.Length / 2);
+            }
+
+            // Partition array and get position of pivot
+            int pos = partitionAroundPivot(arr, l, r, pivot);
+
+            // If position matches k, return result
+            if (pos - l == k - 1) return arr[pos];
+
+            // Recur on left or right part accordingly
+            if (pos - l > k - 1)
+                return selectKthSmallest(arr, l, pos - 1, k);
+
+            return selectKthSmallest(arr, pos + 1, r, k - pos + l - 1);
+        }
+
+        return int.MaxValue;
+    }
+
+    // Function to find kth Smallest in Array
+    static int kthSmallest(int[] arr, int k) {
+        return selectKthSmallest(arr, 0, arr.Length - 1, k);
+    }
+
+    static void Main() {
+        int[] arr = {7, 10, 4, 3, 20, 15};
+        int k = 3;
+
+        Console.WriteLine(kthSmallest(arr, k));
+    }
+}
+
+JavaScript
+
+// JavaScript implementation of the Worst Case Linear Time algorithm
+// to find the k-th smallest element using Median of Medians
+
+// Returns median of a small group (size <= 5)
+function getMedian(group) {
+    group.sort((a, b) => a - b);
+    return group[Math.floor(group.length / 2)];
+}
+
+// Function to Partition array from index
+// l to r around  the pivot value x
+function partitionAroundPivot(arr, l, r, x) {
+
+    // Move pivot x to end
+    let i;
+    for (i = l; i < r; i++) {
+        if (arr[i] === x) break;
+    }
+    [arr[i], arr[r]] = [arr[r], arr[i]];
+
+    // Standard partition logic
+    i = l;
+    for (let j = l; j < r; j++) {
+        if (arr[j] <= x) {
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+            i++;
+        }
+    }
+
+    [arr[i], arr[r]] = [arr[r], arr[i]];
+
+    // Final position of pivot
+    return i;
+}
+
+// Recursively finds the k-th smallest element in arr[l..r]
+function selectKthSmallest(arr, l, r, k) {
+    if (k > 0 && k <= r - l + 1) {
+        let n = r - l + 1;
+        let medians = [];
+
+        // Divide array into groups of 5 and store their medians
+        let i;
+        for (i = 0; i < Math.floor(n / 5); i++) {
+            let group = arr.slice(l + i * 5, l + i * 5 + 5);
+            medians.push(getMedian(group));
+        }
+
+        // Handle the last group with less than 5 elements
+        if (i * 5 < n) {
+            let lastGroup = arr.slice(l + i * 5, l + i * 5 + (n % 5));
+            medians.push(getMedian(lastGroup));
+        }
+
+        // Find median of medians
+        let pivot;
+        if (medians.length === 1) {
+            pivot = medians[0];
+        } else {
+            pivot = selectKthSmallest(medians, 0, medians.length - 1,
+                                      Math.floor(medians.length / 2));
+        }
+
+        // Partition array and get position of pivot
+        let pos = partitionAroundPivot(arr, l, r, pivot);
+
+        // If position matches k, return result
+        if (pos - l === k - 1) return arr[pos];
+
+        // Recur on left or right part accordingly
+        if (pos - l > k - 1)
+            return selectKthSmallest(arr, l, pos - 1, k);
+
+        return selectKthSmallest(arr, pos + 1, r, k - pos + l - 1);
+    }
+
+    return Infinity;
+}
+
+// Function to find kth Smallest in Array
+function kthSmallest(arr, k) {
+    return selectKthSmallest(arr, 0, arr.length - 1, k);
+}
+
+// Driver code
+let arr = [7, 10, 4, 3, 20, 15];
+let k = 3;
+
+console.log(kthSmallest(arr, k));
+
+Output
+
+7
+
+Time Complexity: O(n), Worst-case linear time for selection Space Complexity: O(n), Extra space for storing medians recursively in each level of selection calls.
+
+### Detailed Time Complexity Analysis
+
+We analyze the worst-case time complexity of the Median of Medians algorithm step by step:
+
+- Dividing the array into groups of 5. There are n/5 such groups. Finding the median of each group takes O(1) time since the size is constant. So, the total time for this step is O(n) .
+- Finding the median of medians. Recursively finding the median of the n/5 medians takes T(n/5) time.
+- Partitioning the array around the pivot (median of medians) using a standard partition operation takes O(n) time.
+- After partitioning, the recursive call proceeds into one side (either left or right) depending on where the k-th smallest element lies.
+
+To understand the size of the recursive call, we analyze how many elements are guaranteed to be greater or smaller than the pivot. At least half of the n/5 medians are greater than or equal to the median of medians. Each of those groups contributes at least 3 elements greater than the median of medians. Therefore, the number of elements greater than or equal to the pivot is at least (3 * ceil(1/2 * ceil(n/5)) - 6) , which is at least (3n/10 - 6). Similarly, the number of elements smaller than the pivot is at least 3n/10 - 6.
+
+> So, in the worst case, the recursive call goes to at most n - (3n/10 - 6) = 7n/10 + 6 elements. The recurrence relation becomes: T(n) <= Θ(1), if n <= 80 T(n) <= T(ceil(n/5)) + T(7n/10 + 6) + O(n), if n > 80 We prove T(n) = O(n) by substitution. Assume T(n) <= cn for some constant c and for all n > 80. Substituting into the recurrence: T(n) <= c(n/5) + c(7n/10 + 6) + O(n) = cn/5 + 7cn/10 + 6c + O(n) = 9cn/10 + 6c + O(n) We can choose c large enough such that cn/10 >= 6c + O(n), so T(n) <= cn. Hence, the worst-case running time is linear, O(n) .
+
+### Conclusion
+
+Although this algorithm is linear in the worst case, the constants involved are large due to recursive overhead and multiple passes. In practice, a randomized QuickSelect is much faster and is generally preferred despite its average-case nature.

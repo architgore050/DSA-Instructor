@@ -1,0 +1,1721 @@
+Source: https://www.geeksforgeeks.org/dsa/check-if-given-preorder-inorder-and-postorder-traversals-are-of-same-tree/
+Title: Check if given Preorder, Inorder and Postorder traversals are of same binary tree
+Extractor: 2
+
+Given the Preorder , Inorder , and Postorder traversal sequences of a binary tree. Determine whether these three traversal sequences can belong to the same binary tree .
+
+Return true if all three traversals represent the same tree; otherwise, return false .
+
+Examples:
+
+> Input :  pre[] = [1, 2, 4, 5, 3], in[] =  [4, 2, 5, 1, 3], post[] = [4, 5, 2, 3, 1] Output : true Explanation : All of the above three traversal sequences are of  the same binary tree. Input :  pre[] = [1, 5, 4, 2, 3], in[] = [4, 2, 5, 1, 3], post[] = [4, 1, 2, 3, 5] Output : false Explanation: First element in preorder and the last element in postorder must be same, but here they are different ( 1 and 5 ). Hence, answer is false.
+
+Table of Content
+
+- [Naive Approach] Tree Construction Using Inorder and Preorder - O(n ^ 2) Time and O(n) Space
+- [Better Approach] Tree Construction With Hash Map - O(n) Time and O(n) Space
+- [Expected Approach] Without Constructing Tree - O(n) Time and O(n) Space
+
+### [Naive Approach] Tree Construction Using Inorder and Preorder - O(n ^ 2) Time and O(n) Space
+
+> The idea is to use the inorder and preorder (inorder and postorder can also be used) traversals(refer to this post) to build the tree. After constructing the tree, generate its postorder traversal and compare it with the given postorder traversal. If both traversals match, all three traversals belong to the same tree; otherwise, they do not.
+
+- Check whether the sizes of the preorder, inorder, and postorder traversals are equal. If not, return false.
+- Construct a binary tree using the given inorder and preorder traversals.
+- Pick the current node from preorder and locate its position in the inorder traversal.
+- Recursively construct the left and right subtrees using the inorder boundaries.
+- Generate the postorder traversal of the constructed tree and compare it with the given postorder traversal.
+- If the generated and given postorder traversals match completely, return true; otherwise, return false.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node
+{
+  public:
+    int data;
+    Node *left, *right;
+
+    Node(int val)
+    {
+        data = val;
+        left = right = nullptr;
+    }
+};
+
+/* Search value in inorder vector */
+int search(vector<int> &in, int start, int end, int value)
+{
+    for (int i = start; i <= end; i++)
+    {
+        if (in[i] == value)
+            return i;
+    }
+
+    return -1;
+}
+
+/* Build tree using inorder and preorder */
+Node *buildTree(vector<int> &in, vector<int> &pre, int inStart, int inEnd, int &preIndex)
+{
+    if (inStart > inEnd)
+        return nullptr;
+
+    // Traversal exhausted
+    if (preIndex >= pre.size())
+        return nullptr;
+
+    // Find current root in inorder
+    // before creating node
+    int inIndex = search(in, inStart, inEnd, pre[preIndex]);
+
+    // Invalid traversal
+    if (inIndex == -1)
+        return nullptr;
+
+    // Create current node
+    Node *root = new Node(pre[preIndex++]);
+
+    // Leaf node
+    if (inStart == inEnd)
+        return root;
+
+    // Construct left subtree
+    root->left = buildTree(in, pre, inStart, inIndex - 1, preIndex);
+
+    // Construct right subtree
+    root->right = buildTree(in, pre, inIndex + 1, inEnd, preIndex);
+
+    return root;
+}
+
+/* Compare generated postorder with given postorder */
+int checkPostorder(Node *root, vector<int> &post, int index)
+{
+    if (root == nullptr)
+        return index;
+
+    index = checkPostorder(root->left, post, index);
+
+    if (index == -1)
+        return -1;
+
+    index = checkPostorder(root->right, post, index);
+
+    if (index == -1)
+        return -1;
+
+    // Compare current node
+    if (root->data == post[index])
+        return index + 1;
+
+    return -1;
+}
+
+bool checktree(vector<int> &pre, vector<int> &in, vector<int> &post)
+{
+    int n = in.size();
+
+    // Traversals must have same size
+    if (pre.size() != n || post.size() != n)
+        return false;
+
+    int preIndex = 0;
+
+    // Build tree from inorder
+    // and preorder
+    Node *root = buildTree(in, pre, 0, n - 1, preIndex);
+
+    // Invalid tree construction
+    if (root == nullptr && n > 0)
+        return false;
+
+    // Compare generated postorder
+    // with given postorder
+    int index = checkPostorder(root, post, 0);
+
+    return (index == n);
+}
+
+int main()
+{
+    vector<int> in = {4, 2, 5, 1, 3};
+    vector<int> pre = {1, 2, 4, 5, 3};
+    vector<int> post = {4, 5, 2, 3, 1};
+
+    cout << (checktree(pre, in, post) ? "true" : "false");
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    Node(int val)
+    {
+        data = val;
+        left = right = null;
+    }
+}
+
+public class GFG {
+    /* Search value in inorder vector */
+    static int search(int[] in, int start, int end,
+                      int value)
+    {
+        for (int i = start; i <= end; i++) {
+            if (in[i] == value)
+                return i;
+        }
+
+        return -1;
+    }
+
+    /* Build tree using inorder and preorder */
+    static Node buildTree(int[] in, int[] pre, int inStart,
+                          int inEnd, int[] preIndex)
+    {
+        if (inStart > inEnd)
+            return null;
+
+        // Traversal exhausted
+        if (preIndex[0] >= pre.length)
+            return null;
+
+        // Find current root in inorder
+        // before creating node
+        int inIndex
+            = search(in, inStart, inEnd, pre[preIndex[0]]);
+
+        // Invalid traversal
+        if (inIndex == -1)
+            return null;
+
+        // Create current node
+        Node root = new Node(pre[preIndex[0]++]);
+
+        // Leaf node
+        if (inStart == inEnd)
+            return root;
+
+        // Construct left subtree
+        root.left = buildTree(in, pre, inStart, inIndex - 1,
+                              preIndex);
+
+        // Construct right subtree
+        root.right = buildTree(in, pre, inIndex + 1, inEnd,
+                               preIndex);
+
+        return root;
+    }
+
+    /* Compare generated postorder with given postorder */
+    static int checkPostorder(Node root, int[] post,
+                              int index)
+    {
+        if (root == null)
+            return index;
+
+        index = checkPostorder(root.left, post, index);
+
+        if (index == -1)
+            return -1;
+
+        index = checkPostorder(root.right, post, index);
+
+        if (index == -1)
+            return -1;
+
+        // Compare current node
+        if (root.data == post[index])
+            return index + 1;
+
+        return -1;
+    }
+
+    static boolean checktree(int[] pre, int[] in,
+                             int[] post)
+    {
+        int n = in.length;
+
+        // Traversals must have same size
+        if (pre.length != n || post.length != n)
+            return false;
+
+        int[] preIndex = { 0 };
+
+        // Build tree from inorder
+        // and preorder
+        Node root = buildTree(in, pre, 0, n - 1, preIndex);
+
+        // Invalid tree construction
+        if (root == null && n > 0)
+            return false;
+
+        // Compare generated postorder
+        // with given postorder
+        int index = checkPostorder(root, post, 0);
+
+        return (index == n);
+    }
+
+    public static void main(String[] args)
+    {
+        int[] in = { 4, 2, 5, 1, 3 };
+        int[] pre = { 1, 2, 4, 5, 3 };
+        int[] post = { 4, 5, 2, 3, 1 };
+
+        System.out.println(
+            checktree(pre, in, post) ? "true" : "false");
+    }
+}
+
+Python
+
+class Node:
+
+    def __init__(self, val):
+        self.data = val
+        self.left = None
+        self.right = None
+
+""" Search value in inorder vector """
+def search(inorder, start, end, value):
+
+    for i in range(start, end + 1):
+        if inorder[i] == value:
+            return i
+
+    return -1
+
+""" Build tree using inorder and preorder """
+def buildTree(inorder, pre, inStart, inEnd, preIndex):
+
+    if inStart > inEnd:
+        return None
+
+    # Traversal exhausted
+    if preIndex[0] >= len(pre):
+        return None
+
+    # Find current root in inorder
+    # before creating node
+    inIndex = search(inorder, inStart, inEnd, pre[preIndex[0]])
+
+    # Invalid traversal
+    if inIndex == -1:
+        return None
+
+    # Create current node
+    root = Node(pre[preIndex[0]])
+    preIndex[0] += 1
+
+    # Leaf node
+    if inStart == inEnd:
+        return root
+
+    # Construct left subtree
+    root.left = buildTree(inorder, pre, inStart, inIndex - 1, preIndex)
+
+    # Construct right subtree
+    root.right = buildTree(inorder, pre, inIndex + 1, inEnd, preIndex)
+
+    return root
+
+""" Compare generated postorder with given postorder """
+def checkPostorder(root, post, index):
+
+    if root is None:
+        return index
+
+    index = checkPostorder(root.left, post, index)
+
+    if index == -1:
+        return -1
+
+    index = checkPostorder(root.right, post, index)
+
+    if index == -1:
+        return -1
+
+    # Compare current node
+    if root.data == post[index]:
+        return index + 1
+
+    return -1
+
+def checktree(pre, inorder, post):
+
+    n = len(inorder)
+
+    # Traversals must have same size
+    if len(pre) != n or len(post) != n:
+        return False
+
+    preIndex = [0]
+
+    # Build tree from inorder
+    # and preorder
+    root = buildTree(inorder, pre, 0, n - 1, preIndex)
+
+    # Invalid tree construction
+    if root is None and n > 0:
+        return False
+
+    # Compare generated postorder
+    # with given postorder
+    index = checkPostorder(root, post, 0)
+
+    return index == n
+
+# Driver Code
+
+if __name__ == "__main__":
+    inorder = [4, 2, 5, 1, 3]
+    pre = [1, 2, 4, 5, 3]
+    post = [4, 5, 2, 3, 1]
+
+    print(str(checktree(pre, inorder, post)).lower())
+
+C#
+
+using System;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int val)
+    {
+        data = val;
+        left = right = null;
+    }
+}
+
+class GFG {
+    /* Search value in inorder vector */
+    static int search(int[] inOrder, int start, int end,
+                      int value)
+    {
+        for (int i = start; i <= end; i++) {
+            if (inOrder[i] == value)
+                return i;
+        }
+
+        return -1;
+    }
+
+    /* Build tree using inorder and preorder */
+    static Node buildTree(int[] inOrder, int[] pre,
+                          int inStart, int inEnd,
+                          ref int preIndex)
+    {
+        if (inStart > inEnd)
+            return null;
+
+        // Traversal exhausted
+        if (preIndex >= pre.Length)
+            return null;
+
+        // Find current root in inorder
+        // before creating node
+        int inIndex
+            = search(inOrder, inStart, inEnd, pre[preIndex]);
+
+        // Invalid traversal
+        if (inIndex == -1)
+            return null;
+
+        // Create current node
+        Node root = new Node(pre[preIndex++]);
+
+        // Leaf node
+        if (inStart == inEnd)
+            return root;
+
+        // Construct left subtree
+        root.left = buildTree(inOrder, pre, inStart,
+                              inIndex - 1, ref preIndex);
+
+        // Construct right subtree
+        root.right = buildTree(inOrder, pre, inIndex + 1,
+                               inEnd, ref preIndex);
+
+        return root;
+    }
+
+    /* Compare generated postorder with given postorder */
+    static int checkPostorder(Node root, int[] post,
+                              int index)
+    {
+        if (root == null)
+            return index;
+
+        index = checkPostorder(root.left, post, index);
+
+        if (index == -1)
+            return -1;
+
+        index = checkPostorder(root.right, post, index);
+
+        if (index == -1)
+            return -1;
+
+        // Compare current node
+        if (root.data == post[index])
+            return index + 1;
+
+        return -1;
+    }
+
+    static bool checktree(int[] pre, int[] inOrder,
+                          int[] post)
+    {
+        int n = inOrder.Length;
+
+        // Traversals must have same size
+        if (pre.Length != n || post.Length != n)
+            return false;
+
+        int preIndex = 0;
+
+        // Build tree from inorder
+        // and preorder
+        Node root
+            = buildTree(inOrder, pre, 0, n - 1, ref preIndex);
+
+        // Invalid tree construction
+        if (root == null && n > 0)
+            return false;
+
+        // Compare generated postorder
+        // with given postorder
+        int index = checkPostorder(root, post, 0);
+
+        return (index == n);
+    }
+
+    static void Main()
+    {
+        int[] inOrder = { 4, 2, 5, 1, 3 };
+        int[] pre = { 1, 2, 4, 5, 3 };
+        int[] post = { 4, 5, 2, 3, 1 };
+
+        Console.WriteLine(
+            checktree(pre, inOrder, post) ? "true" : "false");
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(val)
+    {
+        this.data = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+/* Search value in inorder vector */
+function search(inOrder, start, end, value)
+{
+    for (let i = start; i <= end; i++) {
+        if (inOrder[i] === value)
+            return i;
+    }
+
+    return -1;
+}
+
+/* Build tree using inorder and preorder */
+function buildTree(inOrder, pre, inStart, inEnd, preIndex)
+{
+    if (inStart > inEnd)
+        return null;
+
+    // Traversal exhausted
+    if (preIndex.value >= pre.length)
+        return null;
+
+    // Find current root in inorder
+    // before creating node
+    let inIndex = search(inOrder, inStart, inEnd,
+                         pre[preIndex.value]);
+
+    // Invalid traversal
+    if (inIndex === -1)
+        return null;
+
+    // Create current node
+    let root = new Node(pre[preIndex.value++]);
+
+    // Leaf node
+    if (inStart === inEnd)
+        return root;
+
+    // Construct left subtree
+    root.left = buildTree(inOrder, pre, inStart, inIndex - 1,
+                          preIndex);
+
+    // Construct right subtree
+    root.right = buildTree(inOrder, pre, inIndex + 1, inEnd,
+                           preIndex);
+
+    return root;
+}
+
+/* Compare generated postorder with given postorder */
+function checkPostorder(root, post, index)
+{
+    if (root === null)
+        return index;
+
+    index = checkPostorder(root.left, post, index);
+
+    if (index === -1)
+        return -1;
+
+    index = checkPostorder(root.right, post, index);
+
+    if (index === -1)
+        return -1;
+
+    // Compare current node
+    if (root.data === post[index])
+        return index + 1;
+
+    return -1;
+}
+
+function checktree(pre, inOrder, post)
+{
+    let n = inOrder.length;
+
+    // Traversals must have same size
+    if (pre.length !== n || post.length !== n)
+        return false;
+
+    let preIndex = {value : 0};
+
+    // Build tree from inorder
+    // and preorder
+    let root = buildTree(inOrder, pre, 0, n - 1, preIndex);
+
+    // Invalid tree construction
+    if (root === null && n > 0)
+        return false;
+
+    // Compare generated postorder
+    // with given postorder
+    let index = checkPostorder(root, post, 0);
+
+    return index === n;
+}
+
+// Driver Code
+let inOrder = [ 4, 2, 5, 1, 3 ];
+let pre = [ 1, 2, 4, 5, 3 ];
+let post = [ 4, 5, 2, 3, 1 ];
+
+console.log(checktree(pre, inOrder, post) ? "true" : "false");
+
+Output
+
+true
+
+### [Better Approach] Tree Construction With Hash Map - O(n) Time and O(n) Space
+
+> The idea is to construct the binary tree using the given inorder and preorder traversals (inorder and postorder can also be used) similar to the first approach. To avoid repeatedly searching for the root in the inorder traversal, store the indices of inorder elements in a hash map for constant-time lookup. This will reduce complexity from quadratic to linear.
+
+- Check whether the sizes of preorder, inorder, and postorder traversals are equal.
+- Store the index of each element of the inorder traversal in a hash map.
+- Construct the binary tree using preorder traversal and use the hash map to directly locate the root index in inorder.
+- Recursively build the left and right subtrees.
+- Generate and compare the postorder traversal of the constructed tree with the given postorder traversal.
+- Return true if both match; otherwise return false.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+class Node
+{
+  public:
+    int data;
+    Node *left, *right;
+
+    Node(int val)
+    {
+        data = val;
+        left = right = nullptr;
+    }
+};
+
+/* Build tree using inorder and preorder */
+Node *buildTree(vector<int> &in, vector<int> &pre, unordered_map<int, int> &mp, int inStart, int inEnd,
+                int &preIndex)
+{
+    if (inStart > inEnd)
+        return nullptr;
+
+    // Traversal exhausted
+    if (preIndex >= pre.size())
+        return nullptr;
+
+    int rootVal = pre[preIndex];
+
+    // Root not present
+    if (mp.find(rootVal) == mp.end())
+        return nullptr;
+
+    int inIndex = mp[rootVal];
+
+    // Root index does not belong
+    // to current subtree
+    if (inIndex < inStart || inIndex > inEnd)
+        return nullptr;
+
+    // Create current node
+    Node *root = new Node(pre[preIndex++]);
+
+    // Leaf node
+    if (inStart == inEnd)
+        return root;
+
+    // Construct left subtree
+    root->left = buildTree(in, pre, mp, inStart, inIndex - 1, preIndex);
+
+    // Construct right subtree
+    root->right = buildTree(in, pre, mp, inIndex + 1, inEnd, preIndex);
+
+    return root;
+}
+
+/* Compare generated postorder with given postorder */
+int checkPostorder(Node *root, vector<int> &post, int index)
+{
+    if (root == nullptr)
+        return index;
+
+    index = checkPostorder(root->left, post, index);
+
+    if (index == -1)
+        return -1;
+
+    index = checkPostorder(root->right, post, index);
+
+    if (index == -1)
+        return -1;
+
+    // Compare current node
+    if (index < post.size() && root->data == post[index])
+        return index + 1;
+
+    return -1;
+}
+
+bool checktree(vector<int> &pre, vector<int> &in, vector<int> &post)
+{
+    int n = in.size();
+
+    // Traversals must have same size
+    if (pre.size() != n || post.size() != n)
+        return false;
+
+    /* Build hash map to store
+       indices of inorder elements */
+    unordered_map<int, int> mp;
+
+    for (int i = 0; i < n; i++)
+    {
+        mp[in[i]] = i;
+    }
+
+    int preIndex = 0;
+
+    // Build tree from inorder
+    // and preorder
+    Node *root = buildTree(in, pre, mp, 0, n - 1, preIndex);
+
+    // Invalid tree construction
+    if (root == nullptr && n > 0)
+        return false;
+
+    // Compare generated postorder
+    // with given postorder
+    int index = checkPostorder(root, post, 0);
+
+    return (index == n);
+}
+
+int main()
+{
+    vector<int> in = {4, 2, 5, 1, 3};
+    vector<int> pre = {1, 2, 4, 5, 3};
+    vector<int> post = {4, 5, 2, 3, 1};
+
+    cout << (checktree(pre, in, post) ? "true" : "false");
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    Node(int val)
+    {
+        data = val;
+        left = right = null;
+    }
+}
+
+public class GFG {
+    /* Build tree using inorder and preorder */
+    static Node buildTree(int[] in, int[] pre,
+                          HashMap<Integer, Integer> mp,
+                          int inStart, int inEnd,
+                          int[] preIndex)
+    {
+        if (inStart > inEnd)
+            return null;
+
+        // Traversal exhausted
+        if (preIndex[0] >= pre.length)
+            return null;
+
+        int rootVal = pre[preIndex[0]];
+
+        // Root not present
+        if (!mp.containsKey(rootVal))
+            return null;
+
+        int inIndex = mp.get(rootVal);
+
+        // Root index does not belong
+        // to current subtree
+        if (inIndex < inStart || inIndex > inEnd)
+            return null;
+
+        // Create current node
+        Node root = new Node(pre[preIndex[0]++]);
+
+        // Leaf node
+        if (inStart == inEnd)
+            return root;
+
+        // Construct left subtree
+        root.left = buildTree(in, pre, mp, inStart,
+                              inIndex - 1, preIndex);
+
+        // Construct right subtree
+        root.right = buildTree(in, pre, mp, inIndex + 1,
+                               inEnd, preIndex);
+
+        return root;
+    }
+
+    /* Compare generated postorder with given postorder */
+    static int checkPostorder(Node root, int[] post,
+                              int index)
+    {
+        if (root == null)
+            return index;
+
+        index = checkPostorder(root.left, post, index);
+
+        if (index == -1)
+            return -1;
+
+        index = checkPostorder(root.right, post, index);
+
+        if (index == -1)
+            return -1;
+
+        // Compare current node
+        if (index < post.length && root.data == post[index])
+            return index + 1;
+
+        return -1;
+    }
+
+    static boolean checktree(int[] pre, int[] in,
+                             int[] post)
+    {
+        int n = in.length;
+
+        // Traversals must have same size
+        if (pre.length != n || post.length != n)
+            return false;
+
+        /* Build hash map to store
+           indices of inorder elements */
+        HashMap<Integer, Integer> mp = new HashMap<>();
+
+        for (int i = 0; i < n; i++) {
+            mp.put(in[i], i);
+        }
+
+        int[] preIndex = { 0 };
+
+        // Build tree from inorder
+        // and preorder
+        Node root
+            = buildTree(in, pre, mp, 0, n - 1, preIndex);
+
+        // Invalid tree construction
+        if (root == null && n > 0)
+            return false;
+
+        // Compare generated postorder
+        // with given postorder
+        int index = checkPostorder(root, post, 0);
+
+        return (index == n);
+    }
+
+    public static void main(String[] args)
+    {
+        int[] in = { 4, 2, 5, 1, 3 };
+        int[] pre = { 1, 2, 4, 5, 3 };
+        int[] post = { 4, 5, 2, 3, 1 };
+
+        System.out.println(
+            checktree(pre, in, post) ? "true" : "false");
+    }
+}
+
+Python
+
+class Node:
+
+    def __init__(self, val):
+        self.data = val
+        self.left = None
+        self.right = None
+
+""" Build tree using inorder and preorder """
+def buildTree(inorder, pre, mp, inStart, inEnd, preIndex):
+
+    if inStart > inEnd:
+        return None
+
+    # Traversal exhausted
+    if preIndex[0] >= len(pre):
+        return None
+
+    rootVal = pre[preIndex[0]]
+
+    # Root not present
+    if rootVal not in mp:
+        return None
+
+    inIndex = mp[rootVal]
+
+    # Root index does not belong
+    # to current subtree
+    if inIndex < inStart or inIndex > inEnd:
+        return None
+
+    # Create current node
+    root = Node(pre[preIndex[0]])
+    preIndex[0] += 1
+
+    # Leaf node
+    if inStart == inEnd:
+        return root
+
+    # Construct left subtree
+    root.left = buildTree(inorder, pre, mp, inStart, inIndex - 1, preIndex)
+
+    # Construct right subtree
+    root.right = buildTree(inorder, pre, mp, inIndex + 1, inEnd, preIndex)
+
+    return root
+
+""" Compare generated postorder with given postorder """
+def checkPostorder(root, post, index):
+
+    if root is None:
+        return index
+
+    index = checkPostorder(root.left, post, index)
+
+    if index == -1:
+        return -1
+
+    index = checkPostorder(root.right, post, index)
+
+    if index == -1:
+        return -1
+
+    # Compare current node
+    if index < len(post) and root.data == post[index]:
+        return index + 1
+
+    return -1
+
+def checktree(pre, inorder, post):
+
+    n = len(inorder)
+
+    # Traversals must have same size
+    if len(pre) != n or len(post) != n:
+        return False
+
+    """ Build hash map to store indices of inorder elements """
+    mp = {}
+
+    for i in range(n):
+        mp[inorder[i]] = i
+
+    preIndex = [0]
+
+    # Build tree from inorder
+    # and preorder
+    root = buildTree(inorder, pre, mp, 0, n - 1, preIndex)
+
+    # Invalid tree construction
+    if root is None and n > 0:
+        return False
+
+    # Compare generated postorder
+    # with given postorder
+    index = checkPostorder(root, post, 0)
+
+    return index == n
+
+# Driver Code
+if __name__ == "__main__":
+    inorder = [4, 2, 5, 1, 3]
+    pre = [1, 2, 4, 5, 3]
+    post = [4, 5, 2, 3, 1]
+
+    print(str(checktree(pre, inorder, post)).lower())
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class Node {
+    public int data;
+    public Node left, right;
+
+    public Node(int val)
+    {
+        data = val;
+        left = right = null;
+    }
+}
+
+class GFG {
+    /* Build tree using inorder and preorder */
+    static Node buildTree(int[] inOrder, int[] pre,
+                          Dictionary<int, int> mp,
+                          int inStart, int inEnd,
+                          ref int preIndex)
+    {
+        if (inStart > inEnd)
+            return null;
+
+        // Traversal exhausted
+        if (preIndex >= pre.Length)
+            return null;
+
+        int rootVal = pre[preIndex];
+
+        // Root not present
+        if (!mp.ContainsKey(rootVal))
+            return null;
+
+        int inIndex = mp[rootVal];
+
+        // Root index does not belong
+        // to current subtree
+        if (inIndex < inStart || inIndex > inEnd)
+            return null;
+
+        // Create current node
+        Node root = new Node(pre[preIndex++]);
+
+        // Leaf node
+        if (inStart == inEnd)
+            return root;
+
+        // Construct left subtree
+        root.left = buildTree(inOrder, pre, mp, inStart,
+                              inIndex - 1, ref preIndex);
+
+        // Construct right subtree
+        root.right = buildTree(inOrder, pre, mp, inIndex + 1,
+                               inEnd, ref preIndex);
+
+        return root;
+    }
+
+    /* Compare generated postorder with given postorder */
+    static int checkPostorder(Node root, int[] post,
+                              int index)
+    {
+        if (root == null)
+            return index;
+
+        index = checkPostorder(root.left, post, index);
+
+        if (index == -1)
+            return -1;
+
+        index = checkPostorder(root.right, post, index);
+
+        if (index == -1)
+            return -1;
+
+        // Compare current node
+        if (index < post.Length && root.data == post[index])
+            return index + 1;
+
+        return -1;
+    }
+
+    static bool checktree(int[] pre, int[] inOrder,
+                          int[] post)
+    {
+        int n = inOrder.Length;
+
+        // Traversals must have same size
+        if (pre.Length != n || post.Length != n)
+            return false;
+
+        /* Build hash map to store
+           indices of inorder elements */
+        Dictionary<int, int> mp
+            = new Dictionary<int, int>();
+
+        for (int i = 0; i < n; i++) {
+            mp[inOrder[i]] = i;
+        }
+
+        int preIndex = 0;
+
+        // Build tree from inorder
+        // and preorder
+        Node root = buildTree(inOrder, pre, mp, 0, n - 1,
+                              ref preIndex);
+
+        // Invalid tree construction
+        if (root == null && n > 0)
+            return false;
+
+        // Compare generated postorder
+        // with given postorder
+        int index = checkPostorder(root, post, 0);
+
+        return (index == n);
+    }
+
+    static void Main()
+    {
+        int[] inOrder = { 4, 2, 5, 1, 3 };
+        int[] pre = { 1, 2, 4, 5, 3 };
+        int[] post = { 4, 5, 2, 3, 1 };
+
+        Console.WriteLine(
+            checktree(pre, inOrder, post) ? "true" : "false");
+    }
+}
+
+JavaScript
+
+class Node {
+    constructor(val)
+    {
+        this.data = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+/* Build tree using inorder and preorder */
+function buildTree(inOrder, pre, mp, inStart, inEnd, preIndex)
+{
+    if (inStart > inEnd)
+        return null;
+
+    // Traversal exhausted
+    if (preIndex.value >= pre.length)
+        return null;
+
+    let rootVal = pre[preIndex.value];
+
+    // Root not present
+    if (!mp.has(rootVal))
+        return null;
+
+    let inIndex = mp.get(rootVal);
+
+    // Root index does not belong
+    // to current subtree
+    if (inIndex < inStart || inIndex > inEnd)
+        return null;
+
+    // Create current node
+    let root = new Node(pre[preIndex.value++]);
+
+    // Leaf node
+    if (inStart === inEnd)
+        return root;
+
+    // Construct left subtree
+    root.left = buildTree(inOrder, pre, mp, inStart,
+                          inIndex - 1, preIndex);
+
+    // Construct right subtree
+    root.right = buildTree(inOrder, pre, mp, inIndex + 1,
+                           inEnd, preIndex);
+
+    return root;
+}
+
+/* Compare generated postorder with given postorder */
+function checkPostorder(root, post, index)
+{
+    if (root === null)
+        return index;
+
+    index = checkPostorder(root.left, post, index);
+
+    if (index === -1)
+        return -1;
+
+    index = checkPostorder(root.right, post, index);
+
+    if (index === -1)
+        return -1;
+
+    // Compare current node
+    if (index < post.length && root.data === post[index])
+        return index + 1;
+
+    return -1;
+}
+
+function checktree(pre, inOrder, post)
+{
+    let n = inOrder.length;
+
+    // Traversals must have same size
+    if (pre.length !== n || post.length !== n)
+        return false;
+
+    /* Build hash map to store
+       indices of inorder elements */
+    let mp = new Map();
+
+    for (let i = 0; i < n; i++) {
+        mp.set(inOrder[i], i);
+    }
+
+    let preIndex = {value : 0};
+
+    // Build tree from inorder
+    // and preorder
+    let root
+        = buildTree(inOrder, pre, mp, 0, n - 1, preIndex);
+
+    // Invalid tree construction
+    if (root === null && n > 0)
+        return false;
+
+    // Compare generated postorder
+    // with given postorder
+    let index = checkPostorder(root, post, 0);
+
+    return index === n;
+}
+
+// Driver Code
+let inOrder = [ 4, 2, 5, 1, 3 ];
+let pre = [ 1, 2, 4, 5, 3 ];
+let post = [ 4, 5, 2, 3, 1 ];
+
+console.log(checktree(pre, inOrder, post) ? "true" : "false");
+
+Output
+
+true
+
+### [Expected Approach] Without Constructing Tree - O(n) Time and O(n) Space
+
+> The idea is to avoid constructing the binary tree explicitly. Since the first element of preorder is the root, locate it in the inorder traversal to determine the left and right subtree boundaries. Using these boundaries, recursively verify the corresponding parts of preorder, inorder, and postorder traversals. If every subtree satisfies the conditions, then all three traversals belong to the same tree.
+
+- Check if the sizes of preorder, inorder, and postorder traversals are equal. If not, return false.
+- Store the indices of all elements from the inorder traversal in a hash map for constant-time lookup.
+- Take the first element of the current preorder range as the root of the subtree.
+- Find the root position in inorder using the hash map and determine the size of the left subtree.
+- Verify whether the root matches the last element of the current postorder range, then recursively validate the left and right subtrees.
+- If all recursive checks succeed, return true; otherwise return false.
+
+C++
+
+#include <bits/stdc++.h>
+using namespace std;
+
+bool solve(vector<int> &pre, vector<int> &in, vector<int> &post, unordered_map<int, int> &mp,
+           int ps, int pe, int is, int ie, int pos, int poe)
+{
+    // if the array lengths are 0,
+    // then all of them are obviously equal
+    if (ps > pe)
+        return true;
+
+    // if array lengths are 1,
+    // then check if all of them are equal
+    if (ps == pe)
+    {
+        return (pre[ps] == in[is]) && (in[is] == post[pos]);
+    }
+
+    // Root of current subtree
+    int root = pre[ps];
+
+    // Check whether root exists
+    // in inorder traversal
+    if (mp.find(root) == mp.end())
+        return false;
+
+    // Find root index in O(1)
+    int idx = mp[root];
+
+    // Root index should belong
+    // to current subtree
+    if (idx < is || idx > ie)
+        return false;
+
+    // Check whether root exists
+    // at the current postorder root position
+    if (root != post[poe])
+        return false;
+
+    // Calculate left subtree size
+    int leftSize = idx - is;
+
+    // check for the left subtree
+    bool ret1 =
+        solve(pre, in, post, mp, ps + 1, ps + leftSize, is, idx - 1, pos, pos + leftSize - 1);
+
+    // check for the right subtree
+    bool ret2 =
+        solve(pre, in, post, mp, ps + leftSize + 1, pe, idx + 1, ie, pos + leftSize, poe - 1);
+
+    // return true only if both are correct
+    return (ret1 && ret2);
+}
+
+bool checktree(vector<int> &pre, vector<int> &in, vector<int> &post)
+{
+    int n = in.size();
+
+    // Check if all the array lengths are equal
+    if (pre.size() != n || post.size() != n)
+        return false;
+
+    /* Build hash map to store
+       indices of inorder elements */
+    unordered_map<int, int> mp;
+
+    for (int i = 0; i < n; i++)
+    {
+        mp[in[i]] = i;
+    }
+
+    return solve(pre, in, post, mp, 0, n - 1, 0, n - 1, 0, n - 1);
+}
+
+int main()
+{
+    // Traversal Arrays
+    vector<int> in = {4, 2, 5, 1, 3};
+    vector<int> pre = {1, 2, 4, 5, 3};
+    vector<int> post = {4, 5, 2, 3, 1};
+
+    cout << (checktree(pre, in, post) ? "true" : "false");
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+class GFG {
+
+    static boolean solve(int[] pre, int[] in,
+                         int[] post,
+                         HashMap<Integer, Integer> mp,
+                         int ps, int pe, int is, int ie,
+                         int pos, int poe)
+    {
+        // if the array lengths are 0,
+        // then all of them are obviously equal
+        if (ps > pe)
+            return true;
+
+        // if array lengths are 1,
+        // then check if all of them are equal
+        if (ps == pe) {
+            return (pre[ps] == in[is])
+                && (in[is] == post[pos]);
+        }
+
+        // Root of current subtree
+        int root = pre[ps];
+
+        // Check whether root exists
+        // in inorder traversal
+        if (!mp.containsKey(root))
+            return false;
+
+        // Find root index in O(1)
+        int idx = mp.get(root);
+
+        // Root index should belong
+        // to current subtree
+        if (idx < is || idx > ie)
+            return false;
+
+        // Check whether root exists
+        // at the current postorder root position
+        if (root != post[poe])
+            return false;
+
+        // Calculate left subtree size
+        int leftSize = idx - is;
+
+        // check for the left subtree
+        boolean ret1
+            = solve(pre, in, post, mp,
+                    ps + 1, ps + leftSize, is, idx - 1, pos,
+                    pos + leftSize - 1);
+
+        // check for the right subtree
+        boolean ret2
+            = solve(pre, in, post, mp,
+                    ps + leftSize + 1, pe, idx + 1, ie,
+                    pos + leftSize, poe - 1);
+
+        // return true only if both are correct
+        return (ret1 && ret2);
+    }
+
+    static boolean checktree(int[] pre, int[] in,
+                             int[] post)
+    {
+        int n = in.length;
+
+        // Check if all the array lengths are equal
+        if (pre.length != n || post.length != n)
+            return false;
+
+        /* Build hash map to store
+           indices of inorder elements */
+        HashMap<Integer, Integer> mp = new HashMap<>();
+
+        for (int i = 0; i < n; i++) {
+            mp.put(in[i], i);
+        }
+
+        return solve(pre, in, post, mp, 0,
+                     n - 1, 0, n - 1, 0, n - 1);
+    }
+
+    public static void main(String[] args)
+    {
+        // Traversal Arrays
+        int[] in = { 4, 2, 5, 1, 3 };
+        int[] pre = { 1, 2, 4, 5, 3 };
+        int[] post = { 4, 5, 2, 3, 1 };
+
+        System.out.println(
+            checktree(pre, in, post)
+                ? "true"
+                : "false");
+    }
+}
+
+Python
+
+def solve(pre, inorder, post,
+          mp, ps, pe, is_, ie,
+          pos, poe):
+
+    # if the array lengths are 0,
+    # then all of them are obviously equal
+    if ps > pe:
+        return True
+
+    # if array lengths are 1,
+    # then check if all of them are equal
+    if ps == pe:
+        return (pre[ps] == inorder[is_]
+                and inorder[is_] == post[pos])
+
+    # Root of current subtree
+    root = pre[ps]
+
+    # Check whether root exists
+    # in inorder traversal
+    if root not in mp:
+        return False
+
+    # Find root index in O(1)
+    idx = mp[root]
+
+    # Root index should belong
+    # to current subtree
+    if idx < is_ or idx > ie:
+        return False
+
+    # Check whether root exists
+    # at the current postorder root position
+    if root != post[poe]:
+        return False
+
+    # Calculate left subtree size
+    leftSize = idx - is_
+
+    # check for the left subtree
+    ret1 = solve(pre, inorder, post, mp, ps + 1, ps + leftSize,
+        is_, idx - 1, pos, pos + leftSize - 1)
+
+    # check for the right subtree
+    ret2 = solve(pre, inorder, post, mp, ps + leftSize + 1, pe,
+        idx + 1, ie, pos + leftSize, poe - 1)
+
+    # return true only if both are correct
+    return ret1 and ret2
+
+def checktree(pre, inorder, post):
+
+    n = len(inorder)
+
+    # Check if all the array lengths are equal
+    if len(pre) != n or len(post) != n:
+        return False
+
+    """ Build hash map to store indices of inorder elements """
+    mp = {}
+
+    for i in range(n):
+        mp[inorder[i]] = i
+
+    return solve(pre, inorder, post, mp, 0, n - 1, 0, n - 1, 0, n - 1)
+
+# Driver Code
+if __name__ == "__main__":
+    inorder = [4, 2, 5, 1, 3]
+    pre = [1, 2, 4, 5, 3]
+    post = [4, 5, 2, 3, 1]
+
+    print("true" if checktree(
+        pre, inorder, post)
+        else "false")
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+class GFG {
+    static bool solve(int[] pre, int[] inorder,
+                      int[] post,
+                      Dictionary<int, int> mp, int ps,
+                      int pe, int is_, int ie, int pos,
+                      int poe)
+    {
+        // if the array lengths are 0,
+        // then all of them are obviously equal
+        if (ps > pe)
+            return true;
+
+        // if array lengths are 1,
+        // then check if all of them are equal
+        if (ps == pe) {
+            return (pre[ps] == inorder[is_])
+                && (inorder[is_] == post[pos]);
+        }
+
+        // Root of current subtree
+        int root = pre[ps];
+
+        // Check whether root exists
+        // in inorder traversal
+        if (!mp.ContainsKey(root))
+            return false;
+
+        // Find root index in O(1)
+        int idx = mp[root];
+
+        // Root index should belong
+        // to current subtree
+        if (idx < is_ || idx > ie)
+            return false;
+
+        // Check whether root exists
+        // at the current postorder root position
+        if (root != post[poe])
+            return false;
+
+        // Calculate left subtree size
+        int leftSize = idx - is_;
+
+        // check for the left subtree
+        bool ret1 = solve(pre, inorder, post, mp,
+                          ps + 1, ps + leftSize, is_,
+                          idx - 1, pos, pos + leftSize - 1);
+
+        // check for the right subtree
+        bool ret2 = solve(pre, inorder, post, mp,
+                          ps + leftSize + 1, pe, idx + 1,
+                          ie, pos + leftSize, poe - 1);
+
+        // return true only if both are correct
+        return (ret1 && ret2);
+    }
+
+    static bool checktree(int[] pre, int[] inorder,
+                          int[] post)
+    {
+        int n = inorder.Length;
+
+        // Check if all the array lengths are equal
+        if (pre.Length != n || post.Length != n)
+            return false;
+
+        /* Build hash map to store
+           indices of inorder elements */
+        Dictionary<int, int> mp
+            = new Dictionary<int, int>();
+
+        for (int i = 0; i < n; i++) {
+            mp[inorder[i]] = i;
+        }
+
+        return solve(pre, inorder, post, mp, 0,
+                     n - 1, 0, n - 1, 0, n - 1);
+    }
+
+    static void Main()
+    {
+        // Traversal Arrays
+        int[] inorder = { 4, 2, 5, 1, 3 };
+        int[] pre = { 1, 2, 4, 5, 3 };
+        int[] post = { 4, 5, 2, 3, 1 };
+
+        Console.WriteLine(
+            checktree(pre, inorder, post)
+                ? "true"
+                : "false");
+    }
+}
+
+JavaScript
+
+function solve(pre, inorder, post, mp, ps, pe,
+               is_, ie, pos, poe)
+{
+    // if the array lengths are 0,
+    // then all of them are obviously equal
+    if (ps > pe)
+        return true;
+
+    // if array lengths are 1,
+    // then check if all of them are equal
+    if (ps === pe) {
+        return (pre[ps] === inorder[is_])
+               && (inorder[is_] === post[pos]);
+    }
+
+    // Root of current subtree
+    let root = pre[ps];
+
+    // Check whether root exists
+    // in inorder traversal
+    if (!mp.has(root))
+        return false;
+
+    // Find root index in O(1)
+    let idx = mp.get(root);
+
+    // Root index should belong
+    // to current subtree
+    if (idx < is_ || idx > ie)
+        return false;
+
+    // Check whether root exists
+    // at the current postorder root position
+    if (root !== post[poe])
+        return false;
+
+    // Calculate left subtree size
+    let leftSize = idx - is_;
+
+    // check for the left subtree
+    let ret1 = solve(pre, inorder, post, mp,
+                     ps + 1, ps + leftSize, is_, idx - 1,
+                     pos, pos + leftSize - 1);
+
+    // check for the right subtree
+    let ret2 = solve(pre, inorder, post, mp,
+                     ps + leftSize + 1, pe, idx + 1, ie,
+                     pos + leftSize, poe - 1);
+
+    // return true only if both are correct
+    return (ret1 && ret2);
+}
+
+function checktree(pre, inorder, post)
+{
+    let n = inorder.length;
+
+    // Check if all the array lengths are equal
+    if (pre.length !== n || post.length !== n)
+        return false;
+
+    /* Build hash map to store
+       indices of inorder elements */
+    let mp = new Map();
+
+    for (let i = 0; i < n; i++) {
+        mp.set(inorder[i], i);
+    }
+
+    return solve(pre, inorder, post, mp, 0, n - 1,
+                 0, n - 1, 0, n - 1);
+}
+
+// Driver Code
+let inorder = [ 4, 2, 5, 1, 3 ];
+let pre = [ 1, 2, 4, 5, 3 ];
+let post = [ 4, 5, 2, 3, 1 ];
+
+console.log(checktree(pre, inorder, post)
+                ? "true"
+                : "false");
+
+Output
+
+true

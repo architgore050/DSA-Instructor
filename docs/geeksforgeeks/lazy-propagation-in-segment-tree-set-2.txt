@@ -1,0 +1,2109 @@
+Source: https://www.geeksforgeeks.org/dsa/lazy-propagation-in-segment-tree-set-2/
+Title: Lazy Propagation in Segment Tree | Set 2
+Extractor: 2
+
+Given an array arr[] of size N . There are two types of operations:
+
+1. Update(l, r, x) : Increment the a[i] (l <= i <= r) with value x.
+2. Query(l, r) : Find the maximum value in the array in a range l to r (both are included).
+
+Examples:
+
+> Input: arr[] = {1, 2, 3, 4, 5} Update(0, 3, 4) Query(1, 4) Output: 8 After applying the update operation in the given range with given value array becomes {5, 6, 7, 8, 5}. Then the maximum value in the range 1 to 4 is 8. Input: arr[] = {1, 2, 3, 4, 5} Update(0, 0, 10) Query(0, 4) Output: 11
+
+Approach: A detailed explanation about the lazy propagation in the segment tree is explained previously . The only thing that needed to change in the question is to return a maximum value between two child nodes when the parent node query is called. See the code for better understanding. Below is the implementation of the above approach:
+
+C++
+
+// C++ implementation of the approach
+#include <bits/stdc++.h>
+using namespace std;
+#define MAX 1000
+
+// Ideally, we should not use global variables and large
+// constant-sized arrays, we have done it here for simplicity
+
+// To store segment tree
+int tree[MAX] = { 0 };
+
+// To store pending updates
+int lazy[MAX] = { 0 };
+
+// si -> index of current node in segment tree
+// ss and se -> Starting and ending indexes of
+// elements for which current nodes stores sum
+// us and ue -> starting and ending indexes of update query
+// diff -> which we need to add in the range us to ue
+void updateRangeUtil(int si, int ss, int se, int us,
+                     int ue, int diff)
+{
+    // If lazy value is non-zero for current node of segment
+    // tree, then there are some pending updates. So we need
+    // to make sure that the pending updates are done before
+    // making new updates. Because this value may be used by
+    // parent after recursive calls (See last line of this
+    // function)
+    if (lazy[si] != 0) {
+        // Make pending updates using value stored in lazy
+        // nodes
+        tree[si] += lazy[si];
+
+        // Checking if it is not leaf node because if
+        // it is leaf node then we cannot go further
+        if (ss != se) {
+            // We can postpone updating children we don't
+            // need their new values now.
+            // Since we are not yet updating children of si,
+            // we need to set lazy flags for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+        }
+
+        // Set the lazy value for current node as 0 as it
+        // has been updated
+        lazy[si] = 0;
+    }
+
+    // Out of range
+    if (ss > se || ss > ue || se < us)
+        return;
+
+    // Current segment is fully in range
+    if (ss >= us && se <= ue) {
+        // Add the difference to current node
+        tree[si] += diff;
+
+        // Same logic for checking leaf node or not
+        if (ss != se) {
+            // This is where we store values in lazy nodes,
+            // rather than updating the segment tree itself
+            // Since we don't need these updated values now
+            // we postpone updates by storing values in lazy[]
+            lazy[si * 2 + 1] += diff;
+            lazy[si * 2 + 2] += diff;
+        }
+        return;
+    }
+
+    // If not completely in range, but overlaps
+    // recur for children
+    int mid = (ss + se) / 2;
+    updateRangeUtil(si * 2 + 1, ss, mid, us, ue, diff);
+    updateRangeUtil(si * 2 + 2, mid + 1, se, us, ue, diff);
+
+    // And use the result of children calls
+    // to update this node
+    tree[si] = max(tree[si * 2 + 1], tree[si * 2 + 2]);
+}
+
+// Function to update a range of values in segment
+// tree
+// us and eu -> starting and ending indexes of update query
+// ue -> ending index of update query
+// diff -> which we need to add in the range us to ue
+void updateRange(int n, int us, int ue, int diff)
+{
+    updateRangeUtil(0, 0, n - 1, us, ue, diff);
+}
+
+// A recursive function to get the max of values in given
+// a range of the array. The following are the parameters
+// for this function
+// si --> Index of the current node in the segment tree
+// Initially, 0 is passed as root is always at index 0
+// ss & se --> Starting and ending indexes of the
+// segment represented by current node
+// i.e., tree[si]
+// qs & qe --> Starting and ending indexes of query
+// range
+int getMaxUtil(int ss, int se, int qs, int qe, int si)
+{
+
+    // If lazy flag is set for current node of segment tree
+    // then there are some pending updates. So we need to
+    // make sure that the pending updates are done before
+    // processing the sub sum query
+    if (lazy[si] != 0) {
+
+        // Make pending updates to this node. Note that this
+        // node represents sum of elements in arr[ss..se] and
+        // all these elements must be increased by lazy[si]
+        tree[si] += lazy[si];
+
+        // Checking if it is not leaf node because if
+        // it is leaf node then we cannot go further
+        if (ss != se) {
+            // Since we are not yet updating children os si,
+            // we need to set lazy values for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+        }
+
+        // Unset the lazy value for current node as it has
+        // been updated
+        lazy[si] = 0;
+    }
+
+    // Out of range
+    if (ss > se || ss > qe || se < qs)
+        return 0;
+
+    // At this point, we are sure that pending lazy updates
+    // are done for current node. So we can return value
+    // (same as it was for a query in our previous post)
+
+    // If this segment lies in range
+    if (ss >= qs && se <= qe)
+        return tree[si];
+
+    // If a part of this segment overlaps with the given
+    // range
+    int mid = (ss + se) / 2;
+    return max(getMaxUtil(ss, mid, qs, qe, 2 * si + 1),
+               getMaxUtil(mid + 1, se, qs, qe, 2 * si + 2));
+}
+
+// Return max of elements in range from index qs (query
+// start) to qe (query end). It mainly uses getSumUtil()
+int getMax(int n, int qs, int qe)
+{
+    // Check for erroneous input values
+    if (qs < 0 || qe > n - 1 || qs > qe) {
+        printf("Invalid Input");
+        return -1;
+    }
+
+    return getMaxUtil(0, n - 1, qs, qe, 0);
+}
+
+// A recursive function that constructs Segment Tree for
+// array[ss..se]. si is index of current node in segment
+// tree st.
+void constructSTUtil(int arr[], int ss, int se, int si)
+{
+    // out of range as ss can never be greater than se
+    if (ss > se)
+        return;
+
+    // If there is one element in array, store it in
+    // current node of segment tree and return
+    if (ss == se) {
+        tree[si] = arr[ss];
+        return;
+    }
+
+    // If there are more than one elements, then recur
+    // for left and right subtrees and store the sum
+    // of values in this node
+    int mid = (ss + se) / 2;
+    constructSTUtil(arr, ss, mid, si * 2 + 1);
+    constructSTUtil(arr, mid + 1, se, si * 2 + 2);
+
+    tree[si] = max(tree[si * 2 + 1], tree[si * 2 + 2]);
+}
+
+// Function to construct a segment tree from a given array
+// This function allocates memory for segment tree and
+// calls constructSTUtil() to fill the allocated memory
+void constructST(int arr[], int n)
+{
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, 0);
+}
+
+// Driver code
+int main()
+{
+    int arr[] = { 1, 2, 3, 4, 5 };
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    // Build segment tree from given array
+    constructST(arr, n);
+
+    // Add 4 to all nodes in index range [0, 3]
+    updateRange(n, 0, 3, 4);
+
+    // Print maximum element in index range [1, 4]
+    cout << getMax(n, 1, 4);
+
+    return 0;
+}
+
+Java
+
+// Java implementation of the approach
+
+class GFG
+{
+
+static int MAX =1000;
+
+// Ideally, we should not use global variables and large
+// constant-sized arrays, we have done it here for simplicity
+
+// To store segment tree
+static int tree[] = new int[MAX];
+
+// To store pending updates
+static int lazy[] = new int[MAX];
+
+// si -> index of current node in segment tree
+// ss and se -> Starting and ending indexes of
+// elements for which current nodes stores sum
+// us and ue -> starting and ending indexes of update query
+// diff -> which we need to add in the range us to ue
+static void updateRangeUtil(int si, int ss, int se, int us,
+                    int ue, int diff)
+{
+    // If lazy value is non-zero for current node of segment
+    // tree, then there are some pending updates. So we need
+    // to make sure that the pending updates are done before
+    // making new updates. Because this value may be used by
+    // parent after recursive calls (See last line of this
+    // function)
+    if (lazy[si] != 0)
+    {
+        // Make pending updates using value stored in lazy
+        // nodes
+        tree[si] += lazy[si];
+
+        // Checking if it is not leaf node because if
+        // it is leaf node then we cannot go further
+        if (ss != se)
+        {
+            // We can postpone updating children we don't
+            // need their new values now.
+            // Since we are not yet updating children of si,
+            // we need to set lazy flags for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+        }
+
+        // Set the lazy value for current node as 0 as it
+        // has been updated
+        lazy[si] = 0;
+    }
+
+    // Out of range
+    if (ss > se || ss > ue || se < us)
+        return;
+
+    // Current segment is fully in range
+    if (ss >= us && se <= ue)
+    {
+        // Add the difference to current node
+        tree[si] += diff;
+
+        // Same logic for checking leaf node or not
+        if (ss != se)
+        {
+            // This is where we store values in lazy nodes,
+            // rather than updating the segment tree itself
+            // Since we don't need these updated values now
+            // we postpone updates by storing values in lazy[]
+            lazy[si * 2 + 1] += diff;
+            lazy[si * 2 + 2] += diff;
+        }
+        return;
+    }
+
+    // If not completely in range, but overlaps
+    // recur for children
+    int mid = (ss + se) / 2;
+    updateRangeUtil(si * 2 + 1, ss, mid, us, ue, diff);
+    updateRangeUtil(si * 2 + 2, mid + 1, se, us, ue, diff);
+
+    // And use the result of children calls
+    // to update this node
+    tree[si] = Math.max(tree[si * 2 + 1], tree[si * 2 + 2]);
+}
+
+// Function to update a range of values in segment
+// tree
+// us and eu -> starting and ending indexes of update query
+// ue -> ending index of update query
+// diff -> which we need to add in the range us to ue
+static void updateRange(int n, int us, int ue, int diff)
+{
+    updateRangeUtil(0, 0, n - 1, us, ue, diff);
+}
+
+// A recursive function to get the sum of values in given
+// a range of the array. The following are the parameters
+// for this function
+// si --> Index of the current node in the segment tree
+// Initially, 0 is passed as root is always at index 0
+// ss & se --> Starting and ending indexes of the
+// segment represented by current node
+// i.e., tree[si]
+// qs & qe --> Starting and ending indexes of query
+// range
+static int getSumUtil(int ss, int se, int qs, int qe, int si)
+{
+
+    // If lazy flag is set for current node of segment tree
+    // then there are some pending updates. So we need to
+    // make sure that the pending updates are done before
+    // processing the sub sum query
+    if (lazy[si] != 0)
+    {
+
+        // Make pending updates to this node. Note that this
+        // node represents sum of elements in arr[ss..se] and
+        // all these elements must be increased by lazy[si]
+        tree[si] += lazy[si];
+
+        // Checking if it is not leaf node because if
+        // it is leaf node then we cannot go further
+        if (ss != se)
+        {
+            // Since we are not yet updating children os si,
+            // we need to set lazy values for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+        }
+
+        // Unset the lazy value for current node as it has
+        // been updated
+        lazy[si] = 0;
+    }
+
+    // Out of range
+    if (ss > se || ss > qe || se < qs)
+        return 0;
+
+    // At this point, we are sure that pending lazy updates
+    // are done for current node. So we can return value
+    // (same as it was for a query in our previous post)
+
+    // If this segment lies in range
+    if (ss >= qs && se <= qe)
+        return tree[si];
+
+    // If a part of this segment overlaps with the given
+    // range
+    int mid = (ss + se) / 2;
+    return Math.max(getSumUtil(ss, mid, qs, qe, 2 * si + 1),
+            getSumUtil(mid + 1, se, qs, qe, 2 * si + 2));
+}
+
+// Return sum of elements in range from index qs (query
+// start) to qe (query end). It mainly uses getSumUtil()
+static int getSum(int n, int qs, int qe)
+{
+    // Check for erroneous input values
+    if (qs < 0 || qe > n - 1 || qs > qe)
+    {
+        System.out.print("Invalid Input");
+        return -1;
+    }
+
+    return getSumUtil(0, n - 1, qs, qe, 0);
+}
+
+// A recursive function that constructs Segment Tree for
+// array[ss..se]. si is index of current node in segment
+// tree st.
+static void constructSTUtil(int arr[], int ss, int se, int si)
+{
+    // out of range as ss can never be greater than se
+    if (ss > se)
+        return;
+
+    // If there is one element in array, store it in
+    // current node of segment tree and return
+    if (ss == se)
+    {
+        tree[si] = arr[ss];
+        return;
+    }
+
+    // If there are more than one elements, then recur
+    // for left and right subtrees and store the sum
+    // of values in this node
+    int mid = (ss + se) / 2;
+    constructSTUtil(arr, ss, mid, si * 2 + 1);
+    constructSTUtil(arr, mid + 1, se, si * 2 + 2);
+
+    tree[si] = Math.max(tree[si * 2 + 1], tree[si * 2 + 2]);
+}
+
+// Function to construct a segment tree from a given array
+// This function allocates memory for segment tree and
+// calls constructSTUtil() to fill the allocated memory
+static void constructST(int arr[], int n)
+{
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, 0);
+}
+
+// Driver code
+public static void main(String[] args)
+{
+    int arr[] = { 1, 2, 3, 4, 5 };
+    int n = arr.length;
+
+    // Build segment tree from given array
+    constructST(arr, n);
+
+    // Add 4 to all nodes in index range [0, 3]
+    updateRange(n, 0, 3, 4);
+
+    // Print maximum element in index range [1, 4]
+    System.out.println(getSum(n, 1, 4));
+}
+}
+
+/* This code contributed by PrinciRaj1992 */
+
+Python3
+
+# Python3 implementation of the approach
+MAX = 1000
+
+# Ideally, we should not use global variables
+# and large constant-sized arrays,
+# we have done it here for simplicity
+
+# To store segment tree
+tree = [0] * MAX;
+
+# To store pending updates
+lazy = [0] * MAX;
+
+# si -> index of current node in segment tree
+# ss and se -> Starting and ending indexes of
+# elements for which current nodes stores sum
+# us and ue -> starting and ending indexes of update query
+# diff -> which we need to add in the range us to ue
+def updateRangeUtil(si, ss, se, us, ue, diff) :
+
+    # If lazy value is non-zero for current node
+    # of segment tree, then there are some
+    # pending updates. So we need to make sure that
+    # the pending updates are done before making
+    # new updates. Because this value may be used by
+    # parent after recursive calls (See last line of this
+    # function)
+    if (lazy[si] != 0) :
+
+        # Make pending updates using value
+        # stored in lazy nodes
+        tree[si] += lazy[si];
+
+        # Checking if it is not leaf node because if
+        # it is leaf node then we cannot go further
+        if (ss != se) :
+
+            # We can postpone updating children
+            # we don't need their new values now.
+            # Since we are not yet updating children of si,
+            # we need to set lazy flags for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+
+        # Set the lazy value for current node
+        # as 0 as it has been updated
+        lazy[si] = 0;
+
+    # Out of range
+    if (ss > se or ss > ue or se < us) :
+        return;
+
+    # Current segment is fully in range
+    if (ss >= us and se <= ue) :
+
+        # Add the difference to current node
+        tree[si] += diff;
+
+        # Same logic for checking leaf node or not
+        if (ss != se) :
+
+            # This is where we store values in lazy nodes,
+            # rather than updating the segment tree itself
+            # Since we don't need these updated values now
+            # we postpone updates by storing values in lazy[]
+            lazy[si * 2 + 1] += diff;
+            lazy[si * 2 + 2] += diff;
+
+        return;
+
+    # If not completely in range, but overlaps
+    # recur for children
+    mid = (ss + se) // 2;
+    updateRangeUtil(si * 2 + 1, ss,
+                    mid, us, ue, diff);
+    updateRangeUtil(si * 2 + 2, mid + 1,
+                    se, us, ue, diff);
+
+    # And use the result of children calls
+    # to update this node
+    tree[si] = max(tree[si * 2 + 1],
+                   tree[si * 2 + 2]);
+
+# Function to update a range of values
+# in segment tree
+# us and eu -> starting and ending
+#              indexes of update query
+# ue -> ending index of update query
+# diff -> which we need to add in the range us to ue
+def updateRange(n, us, ue, diff) :
+
+    updateRangeUtil(0, 0, n - 1, us, ue, diff);
+
+# A recursive function to get the sum of values
+# in a given range of the array. The following
+# are the parameters for this function
+# si --> Index of the current node in the segment tree
+# Initially, 0 is passed as root is always at index 0
+# ss & se --> Starting and ending indexes of the
+# segment represented by current node
+# i.e., tree[si]
+# qs & qe --> Starting and ending indexes of query
+# range
+def getSumUtil(ss, se, qs, qe, si) :
+
+    # If lazy flag is set for current node
+    # of segment tree then there are some
+    # pending updates. So we need to make sure
+    # that the pending updates are done before
+    # processing the sub sum query
+    if (lazy[si] != 0) :
+
+        # Make pending updates to this node.
+        # Note that this node represents sum of
+        # elements in arr[ss..se] and all these
+        # elements must be increased by lazy[si]
+        tree[si] += lazy[si];
+
+        # Checking if it is not leaf node because if
+        # it is leaf node then we cannot go further
+        if (ss != se) :
+
+            # Since we are not yet updating children os si,
+            # we need to set lazy values for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+
+        # Unset the lazy value for current node
+        # as it has been updated
+        lazy[si] = 0;
+
+    # Out of range
+    if (ss > se or ss > qe or se < qs) :
+        return 0;
+
+    # At this point, we are sure that pending lazy updates
+    # are done for current node. So we can return value
+    # (same as it was for a query in our previous post)
+
+    # If this segment lies in range
+    if (ss >= qs and se <= qe) :
+        return tree[si];
+
+    # If a part of this segment overlaps
+    # with the given range
+    mid = (ss + se) // 2;
+    return max(getSumUtil(ss, mid, qs, qe, 2 * si + 1),
+               getSumUtil(mid + 1, se, qs, qe, 2 * si + 2));
+
+# Return sum of elements in range from index qs (query
+# start) to qe (query end). It mainly uses getSumUtil()
+def getSum(n, qs, qe) :
+
+    # Check for erroneous input values
+    if (qs < 0 or qe > n - 1 or qs > qe) :
+        print("Invalid Input", end = "");
+        return -1;
+
+    return getSumUtil(0, n - 1, qs, qe, 0);
+
+# A recursive function that constructs
+# Segment Tree for array[ss..se].
+# si is index of current node in segment
+# tree st.
+def constructSTUtil(arr, ss, se, si) :
+
+    # out of range as ss can never be
+    # greater than se
+    if (ss > se) :
+        return;
+
+    # If there is one element in array,
+    # store it in current node of segment
+    # tree and return
+    if (ss == se) :
+        tree[si] = arr[ss];
+        return;
+
+    # If there are more than one elements,
+    # then recur for left and right subtrees
+    # and store the sum of values in this node
+    mid = (ss + se) // 2;
+    constructSTUtil(arr, ss, mid, si * 2 + 1);
+    constructSTUtil(arr, mid + 1, se, si * 2 + 2);
+
+    tree[si] = max(tree[si * 2 + 1], tree[si * 2 + 2]);
+
+# Function to construct a segment tree
+# from a given array. This function allocates
+# memory for segment tree and calls
+# constructSTUtil() to fill the allocated memory
+def constructST(arr, n) :
+
+    # Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, 0);
+
+# Driver code
+if __name__ == "__main__" :
+
+    arr = [ 1, 2, 3, 4, 5 ];
+    n = len(arr) ;
+
+    # Build segment tree from given array
+    constructST(arr, n);
+
+    # Add 4 to all nodes in index range [0, 3]
+    updateRange(n, 0, 3, 4);
+
+    # Print maximum element in index range [1, 4]
+    print(getSum(n, 1, 4));
+
+# This code is contributed by AnkitRai01
+
+C#
+
+// C# implementation of the approach
+using System;
+
+class GFG
+{
+
+static int MAX =1000;
+
+// Ideally, we should not use global variables and large
+// constant-sized arrays, we have done it here for simplicity
+
+// To store segment tree
+static int []tree = new int[MAX];
+
+// To store pending updates
+static int []lazy = new int[MAX];
+
+// si -> index of current node in segment tree
+// ss and se -> Starting and ending indexes of
+// elements for which current nodes stores sum
+// us and ue -> starting and ending indexes of update query
+// diff -> which we need to add in the range us to ue
+static void updateRangeUtil(int si, int ss, int se, int us,
+                    int ue, int diff)
+{
+    // If lazy value is non-zero for current node of segment
+    // tree, then there are some pending updates. So we need
+    // to make sure that the pending updates are done before
+    // making new updates. Because this value may be used by
+    // parent after recursive calls (See last line of this
+    // function)
+    if (lazy[si] != 0)
+    {
+        // Make pending updates using value stored in lazy
+        // nodes
+        tree[si] += lazy[si];
+
+        // Checking if it is not leaf node because if
+        // it is leaf node then we cannot go further
+        if (ss != se)
+        {
+            // We can postpone updating children we don't
+            // need their new values now.
+            // Since we are not yet updating children of si,
+            // we need to set lazy flags for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+        }
+
+        // Set the lazy value for current node as 0 as it
+        // has been updated
+        lazy[si] = 0;
+    }
+
+    // Out of range
+    if (ss > se || ss > ue || se < us)
+        return;
+
+    // Current segment is fully in range
+    if (ss >= us && se <= ue)
+    {
+        // Add the difference to current node
+        tree[si] += diff;
+
+        // Same logic for checking leaf node or not
+        if (ss != se)
+        {
+            // This is where we store values in lazy nodes,
+            // rather than updating the segment tree itself
+            // Since we don't need these updated values now
+            // we postpone updates by storing values in lazy[]
+            lazy[si * 2 + 1] += diff;
+            lazy[si * 2 + 2] += diff;
+        }
+        return;
+    }
+
+    // If not completely in range, but overlaps
+    // recur for children
+    int mid = (ss + se) / 2;
+    updateRangeUtil(si * 2 + 1, ss, mid, us, ue, diff);
+    updateRangeUtil(si * 2 + 2, mid + 1, se, us, ue, diff);
+
+    // And use the result of children calls
+    // to update this node
+    tree[si] = Math.Max(tree[si * 2 + 1], tree[si * 2 + 2]);
+}
+
+// Function to update a range of values in segment
+// tree
+// us and eu -> starting and ending indexes of update query
+// ue -> ending index of update query
+// diff -> which we need to add in the range us to ue
+static void updateRange(int n, int us, int ue, int diff)
+{
+    updateRangeUtil(0, 0, n - 1, us, ue, diff);
+}
+
+// A recursive function to get the sum of values in given
+// a range of the array. The following are the parameters
+// for this function
+// si --> Index of the current node in the segment tree
+// Initially, 0 is passed as root is always at index 0
+// ss & se --> Starting and ending indexes of the
+// segment represented by current node
+// i.e., tree[si]
+// qs & qe --> Starting and ending indexes of query
+// range
+static int getSumUtil(int ss, int se, int qs, int qe, int si)
+{
+
+    // If lazy flag is set for current node of segment tree
+    // then there are some pending updates. So we need to
+    // make sure that the pending updates are done before
+    // processing the sub sum query
+    if (lazy[si] != 0)
+    {
+
+        // Make pending updates to this node. Note that this
+        // node represents sum of elements in arr[ss..se] and
+        // all these elements must be increased by lazy[si]
+        tree[si] += lazy[si];
+
+        // Checking if it is not leaf node because if
+        // it is leaf node then we cannot go further
+        if (ss != se)
+        {
+            // Since we are not yet updating children os si,
+            // we need to set lazy values for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+        }
+
+        // Unset the lazy value for current node as it has
+        // been updated
+        lazy[si] = 0;
+    }
+
+    // Out of range
+    if (ss > se || ss > qe || se < qs)
+        return 0;
+
+    // At this point, we are sure that pending lazy updates
+    // are done for current node. So we can return value
+    // (same as it was for a query in our previous post)
+
+    // If this segment lies in range
+    if (ss >= qs && se <= qe)
+        return tree[si];
+
+    // If a part of this segment overlaps with the given
+    // range
+    int mid = (ss + se) / 2;
+    return Math.Max(getSumUtil(ss, mid, qs, qe, 2 * si + 1),
+            getSumUtil(mid + 1, se, qs, qe, 2 * si + 2));
+}
+
+// Return sum of elements in range from index qs (query
+// start) to qe (query end). It mainly uses getSumUtil()
+static int getSum(int n, int qs, int qe)
+{
+    // Check for erroneous input values
+    if (qs < 0 || qe > n - 1 || qs > qe)
+    {
+        Console.Write("Invalid Input");
+        return -1;
+    }
+
+    return getSumUtil(0, n - 1, qs, qe, 0);
+}
+
+// A recursive function that constructs Segment Tree for
+// array[ss..se]. si is index of current node in segment
+// tree st.
+static void constructSTUtil(int []arr, int ss, int se, int si)
+{
+    // out of range as ss can never be greater than se
+    if (ss > se)
+        return;
+
+    // If there is one element in array, store it in
+    // current node of segment tree and return
+    if (ss == se)
+    {
+        tree[si] = arr[ss];
+        return;
+    }
+
+    // If there are more than one elements, then recur
+    // for left and right subtrees and store the sum
+    // of values in this node
+    int mid = (ss + se) / 2;
+    constructSTUtil(arr, ss, mid, si * 2 + 1);
+    constructSTUtil(arr, mid + 1, se, si * 2 + 2);
+
+    tree[si] = Math.Max(tree[si * 2 + 1], tree[si * 2 + 2]);
+}
+
+// Function to construct a segment tree from a given array
+// This function allocates memory for segment tree and
+// calls constructSTUtil() to fill the allocated memory
+static void constructST(int []arr, int n)
+{
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, 0);
+}
+
+// Driver code
+public static void Main(String[] args)
+{
+    int []arr = { 1, 2, 3, 4, 5 };
+    int n = arr.Length;
+
+    // Build segment tree from given array
+    constructST(arr, n);
+
+    // Add 4 to all nodes in index range [0, 3]
+    updateRange(n, 0, 3, 4);
+
+    // Print maximum element in index range [1, 4]
+    Console.WriteLine(getSum(n, 1, 4));
+}
+}
+// This code has been contributed by 29AjayKumar
+
+JavaScript
+
+<script>
+
+// JavaScript implementation of the approach
+var MAX = 1000;
+
+// Ideally, we should not use global variables and large
+// constant-sized arrays, we have done it here for simplicity
+
+// To store segment tree
+var tree = Array(MAX).fill(0);
+
+// To store pending updates
+var lazy = Array(MAX).fill(0);
+
+// si -> index of current node in segment tree
+// ss and se -> Starting and ending indexes of
+// elements for which current nodes stores sum
+// us and ue -> starting and ending indexes of update query
+// diff -> which we need to add in the range us to ue
+function updateRangeUtil(si, ss, se, us, ue, diff)
+{
+    // If lazy value is non-zero for current node of segment
+    // tree, then there are some pending updates. So we need
+    // to make sure that the pending updates are done before
+    // making new updates. Because this value may be used by
+    // parent after recursive calls (See last line of this
+    // function)
+    if (lazy[si] != 0) {
+        // Make pending updates using value stored in lazy
+        // nodes
+        tree[si] += lazy[si];
+
+        // Checking if it is not leaf node because if
+        // it is leaf node then we cannot go further
+        if (ss != se) {
+            // We can postpone updating children we don't
+            // need their new values now.
+            // Since we are not yet updating children of si,
+            // we need to set lazy flags for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+        }
+
+        // Set the lazy value for current node as 0 as it
+        // has been updated
+        lazy[si] = 0;
+    }
+
+    // Out of range
+    if (ss > se || ss > ue || se < us)
+        return;
+
+    // Current segment is fully in range
+    if (ss >= us && se <= ue) {
+        // Add the difference to current node
+        tree[si] += diff;
+
+        // Same logic for checking leaf node or not
+        if (ss != se) {
+            // This is where we store values in lazy nodes,
+            // rather than updating the segment tree itself
+            // Since we don't need these updated values now
+            // we postpone updates by storing values in lazy[]
+            lazy[si * 2 + 1] += diff;
+            lazy[si * 2 + 2] += diff;
+        }
+        return;
+    }
+
+    // If not completely in range, but overlaps
+    // recur for children
+    var mid = parseInt((ss + se) / 2);
+    updateRangeUtil(si * 2 + 1, ss, mid, us, ue, diff);
+    updateRangeUtil(si * 2 + 2, mid + 1, se, us, ue, diff);
+
+    // And use the result of children calls
+    // to update this node
+    tree[si] = Math.max(tree[si * 2 + 1], tree[si * 2 + 2]);
+}
+
+// Function to update a range of values in segment
+// tree
+// us and eu -> starting and ending indexes of update query
+// ue -> ending index of update query
+// diff -> which we need to add in the range us to ue
+function updateRange( n, us, ue, diff)
+{
+    updateRangeUtil(0, 0, n - 1, us, ue, diff);
+}
+
+// A recursive function to get the max of values in given
+// a range of the array. The following are the parameters
+// for this function
+// si --> Index of the current node in the segment tree
+// Initially, 0 is passed as root is always at index 0
+// ss & se --> Starting and ending indexes of the
+// segment represented by current node
+// i.e., tree[si]
+// qs & qe --> Starting and ending indexes of query
+// range
+function getSumUtil(ss, se, qs, qe, si)
+{
+
+    // If lazy flag is set for current node of segment tree
+    // then there are some pending updates. So we need to
+    // make sure that the pending updates are done before
+    // processing the sub sum query
+    if (lazy[si] != 0) {
+
+        // Make pending updates to this node. Note that this
+        // node represents sum of elements in arr[ss..se] and
+        // all these elements must be increased by lazy[si]
+        tree[si] += lazy[si];
+
+        // Checking if it is not leaf node because if
+        // it is leaf node then we cannot go further
+        if (ss != se) {
+            // Since we are not yet updating children os si,
+            // we need to set lazy values for the children
+            lazy[si * 2 + 1] += lazy[si];
+            lazy[si * 2 + 2] += lazy[si];
+        }
+
+        // Unset the lazy value for current node as it has
+        // been updated
+        lazy[si] = 0;
+    }
+
+    // Out of range
+    if (ss > se || ss > qe || se < qs)
+        return 0;
+
+    // At this point, we are sure that pending lazy updates
+    // are done for current node. So we can return value
+    // (same as it was for a query in our previous post)
+
+    // If this segment lies in range
+    if (ss >= qs && se <= qe)
+        return tree[si];
+
+    // If a part of this segment overlaps with the given
+    // range
+    var mid = (ss + se) / 2;
+    return Math.max(getSumUtil(ss, mid, qs, qe, 2 * si + 1),
+               getSumUtil(mid + 1, se, qs, qe, 2 * si + 2));
+}
+
+// Return max of elements in range from index qs (query
+// start) to qe (query end). It mainly uses getSumUtil()
+function getSum(n, qs, qe)
+{
+    // Check for erroneous input values
+    if (qs < 0 || qe > n - 1 || qs > qe) {
+        document.write("Invalid Input");
+        return -1;
+    }
+
+    return getSumUtil(0, n - 1, qs, qe, 0);
+}
+
+// A recursive function that constructs Segment Tree for
+// array[ss..se]. si is index of current node in segment
+// tree st.
+function constructSTUtil(arr, ss, se, si)
+{
+    // out of range as ss can never be greater than se
+    if (ss > se)
+        return;
+
+    // If there is one element in array, store it in
+    // current node of segment tree and return
+    if (ss == se) {
+        tree[si] = arr[ss];
+        return;
+    }
+
+    // If there are more than one elements, then recur
+    // for left and right subtrees and store the sum
+    // of values in this node
+    var mid = parseInt((ss + se) / 2);
+    constructSTUtil(arr, ss, mid, si * 2 + 1);
+    constructSTUtil(arr, mid + 1, se, si * 2 + 2);
+
+    tree[si] = Math.max(tree[si * 2 + 1], tree[si * 2 + 2]);
+}
+
+// Function to construct a segment tree from a given array
+// This function allocates memory for segment tree and
+// calls constructSTUtil() to fill the allocated memory
+function constructST(arr, n)
+{
+    // Fill the allocated memory st
+    constructSTUtil(arr, 0, n - 1, 0);
+}
+
+// Driver code
+var arr = [1, 2, 3, 4, 5];
+var n = arr.length;
+// Build segment tree from given array
+constructST(arr, n);
+// Add 4 to all nodes in index range [0, 3]
+updateRange(n, 0, 3, 4);
+// Print maximum element in index range [1, 4]
+document.write( getSum(n, 1, 4));
+
+</script>
+
+Output
+
+8
+
+Another Version : Above was implementation in which while performing range update queries we add difference to each node in segment tree,
+
+Another approach could be to set all values in range with given value.
+
+Below is the implementation of the approach :
+
+C++
+
+#include<bits/stdc++.h>
+#define int long long
+using namespace std;
+
+class LazySegmentTreeWithSetUpdate{
+    int n=0;
+    int MYSIZE=0;
+    vector<long long> tree,lazy,stamp;
+    vector<bool> pending;
+    vector<long long> arr;
+    int tm=0;
+    public:
+    void init(int n){
+        this->n=n;
+        this->MYSIZE=4*n+10;
+        tree.assign(MYSIZE,0LL);
+        lazy.assign(MYSIZE,0LL);
+        arr.assign(MYSIZE,0LL);
+        stamp.assign(MYSIZE,0LL);
+        pending.assign(MYSIZE,false);
+    }
+    void post_init(){
+        this->constructST();
+    }
+    LazySegmentTreeWithSetUpdate(vector<int> & v){
+        int n=v.size();
+        init(n);
+        for(int i=0;i<n;i++){
+            arr[i]=v[i];
+        }
+        post_init();
+    }
+    LazySegmentTreeWithSetUpdate(int v[],int n){
+        init(n);
+        for(int i=0;i<n;i++){
+            arr[i]=v[i];
+        }
+        post_init();
+    }
+    LazySegmentTreeWithSetUpdate(int n){
+        init(n);
+        post_init();
+    }
+    void updateRangeUtil(int si, int ss, int se, int us,
+                         int ue, int diff,int stamp_value)
+    {
+        if (pending[si])
+        {
+            tree[si] = (se-ss+1)*lazy[si];
+            if (ss != se)
+            {
+                if(stamp[si*2+1]<=stamp[si]){
+                    lazy[si*2 + 1]   = lazy[si];
+                    stamp[si*2 + 1]   = stamp[si];
+                    pending[si*2+1]=true;
+                }
+                if(stamp[si*2+2]<=stamp[si]){
+                    lazy[si*2 + 2]   = lazy[si];
+                    stamp[si*2 + 2]   = stamp[si];
+                    pending[si*2+2]=true;
+                }
+            }
+            pending[si]=false;
+        }
+        if (ss>se || ss>ue || se<us)
+            return ;
+        if (ss>=us && se<=ue)
+        {
+            tree[si] = (se-ss+1)*diff;
+            if (ss != se)
+            {
+                if(stamp[si*2+1]<=stamp_value){
+                    lazy[si*2 + 1]   = diff;
+                    stamp[si*2 + 1]   = stamp_value;
+                    pending[si*2+1]=true;
+                }
+                if(stamp[si*2+2]<=stamp_value){
+                    lazy[si*2 + 2]   = diff;
+                    stamp[si*2 + 2]   = stamp_value;
+                    pending[si*2+2]=true;
+                }
+            }
+            stamp[si]=stamp_value;
+            return;
+        }
+        int mid = (ss+se)/2;
+        updateRangeUtil(si*2+1, ss, mid, us, ue, diff,stamp_value);
+        updateRangeUtil(si*2+2, mid+1, se, us, ue, diff,stamp_value);
+        tree[si] = tree[si*2+1] + tree[si*2+2];
+    }
+    void updateRange(int us, int ue, int diff)
+    {
+       ++tm;
+       updateRangeUtil(0, 0, n-1, us, ue, diff,tm);
+    }
+    void update(int us,int ue,int diff){
+        updateRange(us,ue,diff);
+    }
+    int getSumUtil(int ss, int se, int qs, int qe, int si)
+    {
+        if (pending[si])
+        {
+
+            tree[si] = (se-ss+1)*lazy[si];
+            if (ss != se)
+            {
+                if(stamp[si*2+1]<=stamp[si]){
+                    lazy[si*2+1] = lazy[si];
+                    stamp[si*2+1]=stamp[si];
+                    pending[si*2+1]=true;
+                }
+                if(stamp[si*2+2]<=stamp[si]){
+                    lazy[si*2+2] = lazy[si];
+                    stamp[si*2+2]=stamp[si];
+                    pending[si*2+2]=true;
+                }
+            }
+            pending[si]=false;
+        }
+        if (ss>se || ss>qe || se<qs)
+            return 0;
+        if (ss>=qs && se<=qe)
+            return tree[si];
+        int mid = (ss + se)/2;
+        return getSumUtil(ss, mid, qs, qe, 2*si+1) +
+               getSumUtil(mid+1, se, qs, qe, 2*si+2);
+    }
+    int getSum(int qs, int qe)
+    {
+        if (qs < 0 || qe > n-1 || qs > qe)
+        {
+            printf("Invalid Input");
+            return -1;
+        }
+        return getSumUtil(0, n-1, qs, qe, 0);
+    }
+    int query(int qs,int qe){
+        return getSum(qs,qe);
+    }
+    void constructSTUtil(int ss, int se, int si)
+    {
+        if (ss > se)
+            return ;
+        if (ss == se){
+            tree[si] = arr[ss];
+            return;
+        }
+        int mid = (ss + se)/2;
+        if(ss<=mid) constructSTUtil(ss, mid, si*2+1);
+        if(mid+1<=se) constructSTUtil(mid+1, se, si*2+2);
+        tree[si] = tree[si*2 + 1] + tree[si*2 + 2];
+    }
+    void constructST(){
+        constructSTUtil(0, n-1, 0);
+    }
+    static void how_to_use(){
+        vector<int> arr={1,2,3,4};
+        LazySegmentTreeWithSetUpdate *mylst=new LazySegmentTreeWithSetUpdate(arr);
+        mylst->update(0,3,0);
+        mylst->update(2,3,2);
+        mylst->update(0,2,10);
+        int ans=mylst->query(1,2);
+        cout<<ans<<endl;
+    }
+};
+
+signed main(){
+    vector<int> arr={1,2,3,4};
+    LazySegmentTreeWithSetUpdate *mylst=new LazySegmentTreeWithSetUpdate(arr);
+    mylst->update(0,3,0);
+    cout<<"updating range from "<<0<<" to "<<3<<" with value : "<<0<<endl;
+    mylst->update(2,3,2);
+    cout<<"updating range from "<<2<<" to "<<3<<" with value : "<<2<<endl;
+    mylst->update(0,2,10);
+    cout<<"updating range from "<<0<<" to "<<2<<" with value : "<<10<<endl;
+    int ans=mylst->query(1,2);
+    cout<<"sum in range : "<<1<<" to "<<2<<" : "<<ans<<endl;
+    return 0;
+}
+
+Java
+
+public class LazySegmentTreeWithSetUpdate {
+    private int n;
+    private int MYSIZE;
+    private int[] tree;
+    private int[] lazy;
+    private int[] arr;
+    private int[] stamp;
+    private boolean[] pending;
+    private int tm;
+
+    public LazySegmentTreeWithSetUpdate(int[] v) {
+        // Constructor: Initializes the segment tree parameters
+        n = 0;
+        MYSIZE = 0;
+        tree = null;
+        lazy = null;
+        arr = null;
+        stamp = null;
+        pending = null;
+        tm = 0;
+        init(v.length);
+
+        // Copy the input array to the internal array
+        System.arraycopy(v, 0, arr, 0, v.length);
+
+        // Post initialization to construct the segment tree
+        postInit();
+    }
+
+    private void init(int n) {
+        // Initializes the segment tree parameters
+        this.n = n;
+        MYSIZE = 4 * n + 10;
+
+        // Initialize arrays for the segment tree
+        tree = new int[MYSIZE];
+        lazy = new int[MYSIZE];
+        arr = new int[MYSIZE];
+        stamp = new int[MYSIZE];
+        pending = new boolean[MYSIZE];
+    }
+
+    private void postInit() {
+        // Constructs the segment tree
+        constructST();
+    }
+
+    private void updateRangeUtil(int si, int ss, int se, int us, int ue, int diff, int stampValue) {
+        // Utility function to update a range lazily
+        if (pending[si]) {
+            // Update the tree value if there is a pending update
+            tree[si] = (se - ss + 1) * lazy[si];
+            if (ss != se) {
+                // Propagate the update to the children
+                if (stamp[2 * si + 1] <= stampValue) {
+                    lazy[2 * si + 1] = lazy[si];
+                    stamp[2 * si + 1] = stampValue;
+                    pending[2 * si + 1] = true;
+                }
+                if (stamp[2 * si + 2] <= stampValue) {
+                    lazy[2 * si + 2] = lazy[si];
+                    stamp[2 * si + 2] = stampValue;
+                    pending[2 * si + 2] = true;
+                }
+            }
+            pending[si] = false;
+        }
+
+        // Check for out of bounds or no overlap
+        if (ss > se || ss > ue || se < us)
+            return;
+
+        // Total overlap, update the current node
+        if (ss >= us && se <= ue) {
+            tree[si] = (se - ss + 1) * diff;
+            if (ss != se) {
+                // Propagate the update to the children
+                if (stamp[2 * si + 1] <= stampValue) {
+                    lazy[2 * si + 1] = diff;
+                    stamp[2 * si + 1] = stampValue;
+                    pending[2 * si + 1] = true;
+                }
+                if (stamp[2 * si + 2] <= stampValue) {
+                    lazy[2 * si + 2] = diff;
+                    stamp[2 * si + 2] = stampValue;
+                    pending[2 * si + 2] = true;
+                }
+            }
+            stamp[si] = stampValue;
+            return;
+        }
+
+        // Partial overlap, update children
+        int mid = (ss + se) / 2;
+        updateRangeUtil(2 * si + 1, ss, mid, us, ue, diff, stampValue);
+        updateRangeUtil(2 * si + 2, mid + 1, se, us, ue, diff, stampValue);
+
+        // Update the current node based on children
+        tree[si] = tree[2 * si + 1] + tree[2 * si + 2];
+    }
+
+    public void updateRange(int us, int ue, int diff) {
+        // Update a range in the segment tree
+        tm++;
+        updateRangeUtil(0, 0, n - 1, us, ue, diff, tm);
+    }
+
+    public void update(int us, int ue, int diff) {
+        // Update function, same as updateRange
+        updateRange(us, ue, diff);
+    }
+
+    private int getSumUtil(int ss, int se, int qs, int qe, int si) {
+        // Utility function to get the sum in a range
+        if (pending[si]) {
+            // Update the tree value if there is a pending update
+            tree[si] = (se - ss + 1) * lazy[si];
+            if (ss != se) {
+                // Propagate the update to the children
+                if (stamp[2 * si + 1] <= stamp[si]) {
+                    lazy[2 * si + 1] = lazy[si];
+                    stamp[2 * si + 1] = stamp[si];
+                    pending[2 * si + 1] = true;
+                }
+                if (stamp[2 * si + 2] <= stamp[si]) {
+                    lazy[2 * si + 2] = lazy[si];
+                    stamp[2 * si + 2] = stamp[si];
+                    pending[2 * si + 2] = true;
+                }
+            }
+            pending[si] = false;
+        }
+
+        // Check for out of bounds or no overlap
+        if (ss > se || ss > qe || se < qs)
+            return 0;
+
+        // Total overlap, return the value of the current node
+        if (ss >= qs && se <= qe)
+            return tree[si];
+
+        // Partial overlap, get sum from children
+        int mid = (ss + se) / 2;
+        return getSumUtil(ss, mid, qs, qe, 2 * si + 1) + getSumUtil(mid + 1, se, qs, qe, 2 * si + 2);
+    }
+
+    public int getSum(int qs, int qe) {
+        // Get the sum in a range
+        if (qs < 0 || qe > n - 1 || qs > qe) {
+            System.out.println("Invalid Input");
+            return -1;
+        }
+
+        return getSumUtil(0, n - 1, qs, qe, 0);
+    }
+
+    public int query(int qs, int qe) {
+        // Query function, same as getSum
+        return getSum(qs, qe);
+    }
+
+    private void constructSTUtil(int ss, int se, int si) {
+        // Utility function to construct the segment tree
+        if (ss > se)
+            return;
+
+        if (ss == se) {
+            tree[si] = arr[ss];
+            return;
+        }
+
+        int mid = (ss + se) / 2;
+        if (ss <= mid)
+            constructSTUtil(ss, mid, 2 * si + 1);
+
+        if (mid + 1 <= se)
+            constructSTUtil(mid + 1, se, 2 * si + 2);
+
+        // Update the current node based on children
+        tree[si] = tree[2 * si + 1] + tree[2 * si + 2];
+    }
+
+    private void constructST() {
+        // Construct the segment tree
+        constructSTUtil(0, n - 1, 0);
+    }
+
+    public static void howToUse() {
+        // Example usage
+        int[] arr = {1, 2, 3, 4};
+        LazySegmentTreeWithSetUpdate myLST = new LazySegmentTreeWithSetUpdate(arr);
+        myLST.update(0, 3, 0);
+        System.out.println("Updating range from 0 to 3 with value: 0");
+        myLST.update(2, 3, 2);
+        System.out.println("Updating range from 2 to 3 with value: 2");
+        myLST.update(0, 2, 10);
+        System.out.println("Updating range from 0 to 2 with value: 10");
+        int ans = myLST.query(1, 2);
+        System.out.println("Sum in range 1 to 2: " + ans);
+    }
+
+    public static void main(String[] args) {
+        howToUse();
+    }
+}
+
+// This code is contributed by Dwaipayan Bandyopadhyay
+
+Python3
+
+class LazySegmentTreeWithSetUpdate:
+    def __init__(self, v):
+        # Constructor: Initializes the segment tree parameters
+        self.n = 0
+        self.MYSIZE = 0
+        self.tree = []
+        self.lazy = []
+        self.stamp = []
+        self.pending = []
+        self.arr = []
+        self.tm = 0
+        self.init(len(v))
+        # Copy the input array to the internal array
+        for i in range(len(v)):
+            self.arr[i] = v[i]
+        # Post initialization to construct the segment tree
+        self.post_init()
+
+    def init(self, n):
+        # Initializes the segment tree parameters
+        self.n = n
+        self.MYSIZE = 4 * n + 10
+        # Initialize arrays for the segment tree
+        self.tree = [0] * self.MYSIZE
+        self.lazy = [0] * self.MYSIZE
+        self.arr = [0] * self.MYSIZE
+        self.stamp = [0] * self.MYSIZE
+        self.pending = [False] * self.MYSIZE
+
+    def post_init(self):
+        # Constructs the segment tree
+        self.constructST()
+
+    def updateRangeUtil(self, si, ss, se, us, ue, diff, stamp_value):
+        # Utility function to update a range lazily
+        if self.pending[si]:
+            # Update the tree value if there is a pending update
+            self.tree[si] = (se - ss + 1) * self.lazy[si]
+            if ss != se:
+                # Propagate the update to the children
+                if self.stamp[si * 2 + 1] <= stamp_value:
+                    self.lazy[si * 2 + 1] = self.lazy[si]
+                    self.stamp[si * 2 + 1] = stamp_value
+                    self.pending[si * 2 + 1] = True
+                if self.stamp[si * 2 + 2] <= stamp_value:
+                    self.lazy[si * 2 + 2] = self.lazy[si]
+                    self.stamp[si * 2 + 2] = stamp_value
+                    self.pending[si * 2 + 2] = True
+            self.pending[si] = False
+        # Check for out of bounds or no overlap
+        if ss > se or ss > ue or se < us:
+            return
+        # Total overlap, update the current node
+        if ss >= us and se <= ue:
+            self.tree[si] = (se - ss + 1) * diff
+            if ss != se:
+                # Propagate the update to the children
+                if self.stamp[si * 2 + 1] <= stamp_value:
+                    self.lazy[si * 2 + 1] = diff
+                    self.stamp[si * 2 + 1] = stamp_value
+                    self.pending[si * 2 + 1] = True
+                if self.stamp[si * 2 + 2] <= stamp_value:
+                    self.lazy[si * 2 + 2] = diff
+                    self.stamp[si * 2 + 2] = stamp_value
+                    self.pending[si * 2 + 2] = True
+            self.stamp[si] = stamp_value
+            return
+        # Partial overlap, update children
+        mid = (ss + se) // 2
+        self.updateRangeUtil(2 * si + 1, ss, mid, us, ue, diff, stamp_value)
+        self.updateRangeUtil(2 * si + 2, mid + 1, se, us, ue, diff, stamp_value)
+        # Update the current node based on children
+        self.tree[si] = self.tree[2 * si + 1] + self.tree[2 * si + 2]
+
+    def updateRange(self, us, ue, diff):
+        # Update a range in the segment tree
+        self.tm += 1
+        self.updateRangeUtil(0, 0, self.n - 1, us, ue, diff, self.tm)
+
+    def update(self, us, ue, diff):
+        # Update function, same as updateRange
+        self.updateRange(us, ue, diff)
+
+    def getSumUtil(self, ss, se, qs, qe, si):
+        # Utility function to get the sum in a range
+        if self.pending[si]:
+            # Update the tree value if there is a pending update
+            self.tree[si] = (se - ss + 1) * self.lazy[si]
+            if ss != se:
+                # Propagate the update to the children
+                if self.stamp[si * 2 + 1] <= self.stamp[si]:
+                    self.lazy[si * 2 + 1] = self.lazy[si]
+                    self.stamp[si * 2 + 1] = self.stamp[si]
+                    self.pending[si * 2 + 1] = True
+                if self.stamp[si * 2 + 2] <= self.stamp[si]:
+                    self.lazy[si * 2 + 2] = self.lazy[si]
+                    self.stamp[si * 2 + 2] = self.stamp[si]
+                    self.pending[si * 2 + 2] = True
+            self.pending[si] = False
+        # Check for out of bounds or no overlap
+        if ss > se or ss > qe or se < qs:
+            return 0
+        # Total overlap, return the value of the current node
+        if ss >= qs and se <= qe:
+            return self.tree[si]
+        # Partial overlap, get sum from children
+        mid = (ss + se) // 2
+        return self.getSumUtil(ss, mid, qs, qe, 2 * si + 1) + self.getSumUtil(mid + 1, se, qs, qe, 2 * si + 2)
+
+    def getSum(self, qs, qe):
+        # Get the sum in a range
+        if qs < 0 or qe > self.n - 1 or qs > qe:
+            print("Invalid Input")
+            return -1
+        return self.getSumUtil(0, self.n - 1, qs, qe, 0)
+
+    def query(self, qs, qe):
+        # Query function, same as getSum
+        return self.getSum(qs, qe)
+
+    def constructSTUtil(self, ss, se, si):
+        # Utility function to construct the segment tree
+        if ss > se:
+            return
+        if ss == se:
+            self.tree[si] = self.arr[ss]
+            return
+        mid = (ss + se) // 2
+        if ss <= mid:
+            self.constructSTUtil(ss, mid, 2 * si + 1)
+        if mid + 1 <= se:
+            self.constructSTUtil(mid + 1, se, 2 * si + 2)
+        # Update the current node based on children
+        self.tree[si] = self.tree[2 * si + 1] + self.tree[2 * si + 2]
+
+    def constructST(self):
+        # Construct the segment tree
+        self.constructSTUtil(0, self.n - 1, 0)
+
+    @staticmethod
+    def how_to_use():
+        # Example usage
+        arr = [1, 2, 3, 4]
+        mylst = LazySegmentTreeWithSetUpdate(arr)
+        mylst.update(0, 3, 0)
+        print("updating range from", 0, "to", 3, "with value:", 0)
+        mylst.update(2, 3, 2)
+        print("updating range from", 2, "to", 3, "with value:", 2)
+        mylst.update(0, 2, 10)
+        print("updating range from", 0, "to", 2, "with value:", 10)
+        ans = mylst.query(1, 2)
+        print("sum in range:", 1, "to", 2, ":", ans)
+
+if __name__ == "__main__":
+    LazySegmentTreeWithSetUpdate.how_to_use()
+
+# This code is contributed by arindam369
+
+C#
+
+using System;
+
+class LazySegmentTreeWithSetUpdate
+{
+    private int n;
+    private int MYSIZE;
+    private int[] tree;
+    private int[] lazy;
+    private int[] arr;
+    private int[] stamp;
+    private bool[] pending;
+    private int tm;
+
+    public LazySegmentTreeWithSetUpdate(int[] v)
+    {
+        // Constructor: Initializes the segment tree parameters
+        n = 0;
+        MYSIZE = 0;
+        tree = null;
+        lazy = null;
+        arr = null;
+        stamp = null;
+        pending = null;
+        tm = 0;
+        Init(v.Length);
+
+        // Copy the input array to the internal array
+        Array.Copy(v, arr, v.Length);
+
+        // Post initialization to construct the segment tree
+        PostInit();
+    }
+
+    private void Init(int n)
+    {
+        // Initializes the segment tree parameters
+        this.n = n;
+        MYSIZE = 4 * n + 10;
+
+        // Initialize arrays for the segment tree
+        tree = new int[MYSIZE];
+        lazy = new int[MYSIZE];
+        arr = new int[MYSIZE];
+        stamp = new int[MYSIZE];
+        pending = new bool[MYSIZE];
+    }
+
+    private void PostInit()
+    {
+        // Constructs the segment tree
+        ConstructST();
+    }
+
+    private void UpdateRangeUtil(int si, int ss, int se, int us, int ue, int diff, int stampValue)
+    {
+        // Utility function to update a range lazily
+        if (pending[si])
+        {
+            // Update the tree value if there is a pending update
+            tree[si] = (se - ss + 1) * lazy[si];
+            if (ss != se)
+            {
+                // Propagate the update to the children
+                if (stamp[2 * si + 1] <= stampValue)
+                {
+                    lazy[2 * si + 1] = lazy[si];
+                    stamp[2 * si + 1] = stampValue;
+                    pending[2 * si + 1] = true;
+                }
+                if (stamp[2 * si + 2] <= stampValue)
+                {
+                    lazy[2 * si + 2] = lazy[si];
+                    stamp[2 * si + 2] = stampValue;
+                    pending[2 * si + 2] = true;
+                }
+            }
+            pending[si] = false;
+        }
+
+        // Check for out of bounds or no overlap
+        if (ss > se || ss > ue || se < us)
+            return;
+
+        // Total overlap, update the current node
+        if (ss >= us && se <= ue)
+        {
+            tree[si] = (se - ss + 1) * diff;
+            if (ss != se)
+            {
+                // Propagate the update to the children
+                if (stamp[2 * si + 1] <= stampValue)
+                {
+                    lazy[2 * si + 1] = diff;
+                    stamp[2 * si + 1] = stampValue;
+                    pending[2 * si + 1] = true;
+                }
+                if (stamp[2 * si + 2] <= stampValue)
+                {
+                    lazy[2 * si + 2] = diff;
+                    stamp[2 * si + 2] = stampValue;
+                    pending[2 * si + 2] = true;
+                }
+            }
+            stamp[si] = stampValue;
+            return;
+        }
+
+        // Partial overlap, update children
+        int mid = (ss + se) / 2;
+        UpdateRangeUtil(2 * si + 1, ss, mid, us, ue, diff, stampValue);
+        UpdateRangeUtil(2 * si + 2, mid + 1, se, us, ue, diff, stampValue);
+
+        // Update the current node based on children
+        tree[si] = tree[2 * si + 1] + tree[2 * si + 2];
+    }
+
+    public void UpdateRange(int us, int ue, int diff)
+    {
+        // Update a range in the segment tree
+        tm++;
+        UpdateRangeUtil(0, 0, n - 1, us, ue, diff, tm);
+    }
+
+    public void Update(int us, int ue, int diff)
+    {
+        // Update function, same as UpdateRange
+        UpdateRange(us, ue, diff);
+    }
+
+    private int GetSumUtil(int ss, int se, int qs, int qe, int si)
+    {
+        // Utility function to get the sum in a range
+        if (pending[si])
+        {
+            // Update the tree value if there is a pending update
+            tree[si] = (se - ss + 1) * lazy[si];
+            if (ss != se)
+            {
+                // Propagate the update to the children
+                if (stamp[2 * si + 1] <= stamp[si])
+                {
+                    lazy[2 * si + 1] = lazy[si];
+                    stamp[2 * si + 1] = stamp[si];
+                    pending[2 * si + 1] = true;
+                }
+                if (stamp[2 * si + 2] <= stamp[si])
+                {
+                    lazy[2 * si + 2] = lazy[si];
+                    stamp[2 * si + 2] = stamp[si];
+                    pending[2 * si + 2] = true;
+                }
+            }
+            pending[si] = false;
+        }
+
+        // Check for out of bounds or no overlap
+        if (ss > se || ss > qe || se < qs)
+            return 0;
+
+        // Total overlap, return the value of the current node
+        if (ss >= qs && se <= qe)
+            return tree[si];
+
+        // Partial overlap, get sum from children
+        int mid = (ss + se) / 2;
+        return GetSumUtil(ss, mid, qs, qe, 2 * si + 1) + GetSumUtil(mid + 1, se, qs, qe, 2 * si + 2);
+    }
+
+    public int GetSum(int qs, int qe)
+    {
+        // Get the sum in a range
+        if (qs < 0 || qe > n - 1 || qs > qe)
+        {
+            Console.WriteLine("Invalid Input");
+            return -1;
+        }
+
+        return GetSumUtil(0, n - 1, qs, qe, 0);
+    }
+
+    public int Query(int qs, int qe)
+    {
+        // Query function, same as GetSum
+        return GetSum(qs, qe);
+    }
+
+    private void ConstructSTUtil(int ss, int se, int si)
+    {
+        // Utility function to construct the segment tree
+        if (ss > se)
+            return;
+
+        if (ss == se)
+        {
+            tree[si] = arr[ss];
+            return;
+        }
+
+        int mid = (ss + se) / 2;
+        if (ss <= mid)
+            ConstructSTUtil(ss, mid, 2 * si + 1);
+
+        if (mid + 1 <= se)
+            ConstructSTUtil(mid + 1, se, 2 * si + 2);
+
+        // Update the current node based on children
+        tree[si] = tree[2 * si + 1] + tree[2 * si + 2];
+    }
+
+    private void ConstructST()
+    {
+        // Construct the segment tree
+        ConstructSTUtil(0, n - 1, 0);
+    }
+
+    public static void HowToUse()
+    {
+        // Example usage
+        int[] arr = { 1, 2, 3, 4 };
+        LazySegmentTreeWithSetUpdate mylst = new LazySegmentTreeWithSetUpdate(arr);
+        mylst.Update(0, 3, 0);
+        Console.WriteLine($"Updating range from 0 to 3 with value: 0");
+        mylst.Update(2, 3, 2);
+        Console.WriteLine($"Updating range from 2 to 3 with value: 2");
+        mylst.Update(0, 2, 10);
+        Console.WriteLine($"Updating range from 0 to 2 with value: 10");
+        int ans = mylst.Query(1, 2);
+        Console.WriteLine($"Sum in range 1 to 2: {ans}");
+    }
+
+    public static void Main()
+    {
+        LazySegmentTreeWithSetUpdate.HowToUse();
+    }
+}
+
+JavaScript
+
+class LazySegmentTreeWithSetUpdate {
+    constructor(v) {
+        this.n = 0;
+        this.MYSIZE = 0;
+        this.tree = [];
+        this.lazy = [];
+        this.stamp = [];
+        this.pending = [];
+        this.arr = [];
+        this.tm = 0;
+        this.init(v.length);
+
+        for (let i = 0; i < v.length; i++) {
+            this.arr[i] = v[i];
+        }
+
+        this.post_init();
+    }
+
+    init(n) {
+        this.n = n;
+        this.MYSIZE = 4 * n + 10;
+        this.tree = Array(this.MYSIZE).fill(0);
+        this.lazy = Array(this.MYSIZE).fill(0);
+        this.arr = Array(this.MYSIZE).fill(0);
+        this.stamp = Array(this.MYSIZE).fill(0);
+        this.pending = Array(this.MYSIZE).fill(false);
+    }
+
+    post_init() {
+        this.constructST();
+    }
+
+    updateRangeUtil(si, ss, se, us, ue, diff, stampValue) {
+        if (this.pending[si]) {
+            this.tree[si] = (se - ss + 1) * this.lazy[si];
+            if (ss !== se) {
+                if (this.stamp[si * 2 + 1] <= this.stamp[si]) {
+                    this.lazy[si * 2 + 1] = this.lazy[si];
+                    this.stamp[si * 2 + 1] = this.stamp[si];
+                    this.pending[si * 2 + 1] = true;
+                }
+                if (this.stamp[si * 2 + 2] <= this.stamp[si]) {
+                    this.lazy[si * 2 + 2] = this.lazy[si];
+                    this.stamp[si * 2 + 2] = this.stamp[si];
+                    this.pending[si * 2 + 2] = true;
+                }
+            }
+            this.pending[si] = false;
+        }
+
+        if (ss > se || ss > ue || se < us) {
+            return;
+        }
+
+        if (ss >= us && se <= ue) {
+            this.tree[si] = (se - ss + 1) * diff;
+            if (ss !== se) {
+                if (this.stamp[si * 2 + 1] <= stampValue) {
+                    this.lazy[si * 2 + 1] = diff;
+                    this.stamp[si * 2 + 1] = stampValue;
+                    this.pending[si * 2 + 1] = true;
+                }
+                if (this.stamp[si * 2 + 2] <= stampValue) {
+                    this.lazy[si * 2 + 2] = diff;
+                    this.stamp[si * 2 + 2] = stampValue;
+                    this.pending[si * 2 + 2] = true;
+                }
+            }
+            this.stamp[si] = stampValue;
+            return;
+        }
+
+        let mid = Math.floor((ss + se) / 2);
+        this.updateRangeUtil(2 * si + 1, ss, mid, us, ue, diff, stampValue);
+        this.updateRangeUtil(2 * si + 2, mid + 1, se, us, ue, diff, stampValue);
+        this.tree[si] = this.tree[2 * si + 1] + this.tree[2 * si + 2];
+    }
+
+    updateRange(us, ue, diff) {
+        this.tm++;
+        this.updateRangeUtil(0, 0, this.n - 1, us, ue, diff, this.tm);
+    }
+
+    update(us, ue, diff) {
+        this.updateRange(us, ue, diff);
+    }
+
+    getSumUtil(ss, se, qs, qe, si) {
+        if (this.pending[si]) {
+            this.tree[si] = (se - ss + 1) * this.lazy[si];
+            if (ss !== se) {
+                if (this.stamp[si * 2 + 1] <= this.stamp[si]) {
+                    this.lazy[si * 2 + 1] = this.lazy[si];
+                    this.stamp[si * 2 + 1] = this.stamp[si];
+                    this.pending[si * 2 + 1] = true;
+                }
+                if (this.stamp[si * 2 + 2] <= this.stamp[si]) {
+                    this.lazy[si * 2 + 2] = this.lazy[si];
+                    this.stamp[si * 2 + 2] = this.stamp[si];
+                    this.pending[si * 2 + 2] = true;
+                }
+            }
+            this.pending[si] = false;
+        }
+
+        if (ss > se || ss > qe || se < qs) {
+            return 0;
+        }
+
+        if (ss >= qs && se <= qe) {
+            return this.tree[si];
+        }
+
+        let mid = Math.floor((ss + se) / 2);
+        return (
+            this.getSumUtil(ss, mid, qs, qe, 2 * si + 1) +
+            this.getSumUtil(mid + 1, se, qs, qe, 2 * si + 2)
+        );
+    }
+
+    getSum(qs, qe) {
+        if (qs < 0 || qe > this.n - 1 || qs > qe) {
+            console.log("Invalid Input");
+            return -1;
+        }
+        return this.getSumUtil(0, this.n - 1, qs, qe, 0);
+    }
+
+    query(qs, qe) {
+        return this.getSum(qs, qe);
+    }
+
+    constructSTUtil(ss, se, si) {
+        if (ss > se) {
+            return;
+        }
+        if (ss === se) {
+            this.tree[si] = this.arr[ss];
+            return;
+        }
+
+        let mid = Math.floor((ss + se) / 2);
+        if (ss <= mid) this.constructSTUtil(ss, mid, 2 * si + 1);
+        if (mid + 1 <= se) this.constructSTUtil(mid + 1, se, 2 * si + 2);
+        this.tree[si] = this.tree[2 * si + 1] + this.tree[2 * si + 2];
+    }
+
+    constructST() {
+        this.constructSTUtil(0, this.n - 1, 0);
+    }
+
+    static how_to_use() {
+        const arr = [1, 2, 3, 4];
+        const mylst = new LazySegmentTreeWithSetUpdate(arr);
+        console.log("updating range from 0 to 3 with value : 0");
+        mylst.update(0, 3, 0);
+        console.log("updating range from 2 to 3 with value : 2");
+        mylst.update(2, 3, 2);
+        console.log("updating range from 0 to 2 with value : 10");
+        mylst.update(0, 2, 10);
+        const ans = mylst.query(1, 2);
+        console.log("Sum in range 1 to 2:", ans);
+    }
+}
+
+// Example usage
+LazySegmentTreeWithSetUpdate.how_to_use();
+
+Output
+
+updating range from 0 to 3 with value : 0
+updating range from 2 to 3 with value : 2
+updating range from 0 to 2 with value : 10
+sum in range : 1 to 2 : 20
+
+The implementation class has following members :
+
+- n: The size of the input array.
+- MYSIZE: The size of the Segment Tree array.
+- tree: The Segment Tree array used to store the sum of the values of the input array over a range of indices.
+- lazy: The lazy array used to store the updates to be propagated to the Segment Tree.
+- stamp: The stamp array is used to store the timestamp of the update.
+- pending: A boolean array to keep track of pending updates in the Segment Tree.
+- arr: The input array of integers.
+
+The class has the following  member functions:
+
+- init(int n): Initializes the data members of the class with the input size n.
+- post_init(): Constructs the Segment Tree using the input array.
+- updateRangeUtil(int si, int ss, int se, int us, int ue, int diff,int stamp_value): A utility function that updates the Segment Tree using lazy propagation technique.
+- updateRange(int us, int ue, int diff): A function that updates the input array over a range of indices.
+- update(int us, int ue, int diff): A function that updates the input array over a range of indices.
+- getSumUtil(int ss, int se, int qs, int qe, int si): A utility function that returns the sum of the values of the input array over a range of    indices.
+- getSum(int qs, int qe): A function that returns the sum of the values of the input array over a range of indices.
+- query(int qs, int qe): A function that returns the sum of the values of the input array over a range of indices.
+
+Related Topic: Segment Tree

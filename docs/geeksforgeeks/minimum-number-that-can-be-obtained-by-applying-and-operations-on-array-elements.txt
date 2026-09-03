@@ -1,0 +1,582 @@
+Source: https://www.geeksforgeeks.org/dsa/minimum-number-that-can-be-obtained-by-applying-and-operations-on-array-elements/
+Title: Minimum number that can be obtained by applying '+' and '*' operations on array elements
+Extractor: 2
+
+Given an array arr[] consisting of N positive integers and a string S of length (N - 1) , containing characters '+' and '*' , the task is to find the smallest number that can be obtained after applying the arithmetic operations mentioned in the string S on the array elements in any order.
+
+Examples:
+
+> Input: A[] ={2, 2, 2, 2}, S = "**+" Output: 8 Explanation: Operation 1: Perform the multiplication operation on the first two elements operation i.e., arr[0]*arr[1] = 2*2 = 4. Now the array modifies to {4, 2, 2}. Operation 2: Perform the multiplication operation on the remaining two elements i.e., arr[1]*arr[2] = 2*2 = 4. Now the array modifies to {4, 4}. Operation 3: Perform the addition operation on the remaining elements arr[0] + arr[1] = 4 + 4 = 8. Now the array modifies to {8}. Therefore, the result of the operation performed is 8, which is minimum. Input: A[] = {1, 2, 3, 4}, S = "*++" Output: 9
+
+Approach: The given problem can be solved using bit-masking . Follow the steps below to solve the problem:
+
+- Store the count of the multiplication and addition operation in the string S in variables, say mul and add respectively.
+- Now, the operation applied on the elements of the array can be encoded in a mask(binary string) such that if the i th bit of mask is set then it is equal to '1' , and multiplication operation has to be performed. Otherwise, perform addition.
+- Initialize a variable, say ans as INT_MAX that stores the minimum value of the result.
+- So, create all masks in the range [0, 2 (N - 1) ] and find the number of set bits in the mask and perform the following steps: If the number of set bits in the mask is equal to mul , then apply this mask on the array A[] i.e., if the i th bit of mask is '1' then perform multiplication operation on the i th element and (i + 1) th element. Otherwise, perform addition. Update the value of ans to the minimum of the ans and the calculated value in the above step.
+- After completing the above steps, print the value of ans as the result.
+
+Below is the implementation of the above approach:
+
+C++
+
+// C++ program for the above approach
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to find the smallest number
+// that can  be obtained after applying
+// the arithmetic operations mentioned
+// in the string S
+int minimumSum(int A[], int N, string S)
+{
+    // Stores the count of multiplication
+    // operator in the string
+    int mul = 0;
+    for (int i = 0;
+         i < (int)S.size(); i++) {
+        if (S[i] == '*')
+            mul += 1;
+    }
+
+    // Store the required result
+    int ans = 1000000;
+
+    // Iterate in the range to
+    // create the mask
+    for (int i = 0;
+         i < (1 << (N - 1)); i++) {
+        int cnt = 0;
+        vector<char> v;
+
+        // Checking the number of bits
+        // that are set in the mask
+        for (int j = 0; j < N - 1; j++) {
+
+            if ((1 << j) & (i)) {
+                cnt += 1;
+                v.push_back('*');
+            }
+            else {
+                v.push_back('+');
+            }
+        }
+
+        // Check if the number of bits
+        // that are set in the mask is
+        // multiplication operation
+        if (cnt == mul) {
+
+            // Storing the elements
+            // that is to be added
+            deque<int> d;
+            d.push_back(A[0]);
+
+            // Apply the multiplications
+            // operation first
+            for (int j = 0; j < N - 1; j++) {
+
+                // If sign is '*', then
+                // multiply last element
+                // of deque with arr[i]
+                if (v[j] == '*') {
+
+                    int x = d.back();
+                    d.pop_back();
+                    x = x * A[j + 1];
+
+                    // Push last multiplied
+                    // element in the deque
+                    d.push_back(x);
+                }
+                else {
+
+                    // If the element is to
+                    // be added, then add
+                    // it to the deque
+                    d.push_back(A[j + 1]);
+                }
+            }
+
+            int sum = 0;
+
+            // Add all the element of
+            // the deque
+            while (d.size() > 0) {
+                int x = d.front();
+                sum += x;
+                d.pop_front();
+            }
+
+            // Minimize the answer with
+            // the given sum
+            ans = min(ans, sum);
+        }
+    }
+
+    return ans;
+}
+
+// Driver Code
+int main()
+{
+    int A[] = { 2, 2, 2, 2 };
+    string S = "**+";
+    int N = sizeof(A) / sizeof(A[0]);
+    cout << minimumSum(A, N, S);
+
+    return 0;
+}
+
+Java
+
+// Java program for the above approach
+import java.util.*;
+
+class GFG{
+
+// Function to find the smallest number
+// that can  be obtained after applying
+// the arithmetic operations mentioned
+// in the String S
+static int minimumSum(int A[], int N, String S)
+{
+
+    // Stores the count of multiplication
+    // operator in the String
+    int mul = 0;
+    for(int i = 0;
+            i < (int)S.length(); i++)
+    {
+        if (S.charAt(i) == '*')
+            mul += 1;
+    }
+
+    // Store the required result
+    int ans = 1000000;
+
+    // Iterate in the range to
+    // create the mask
+    for(int i = 0;
+            i < (1 << (N - 1)); i++)
+    {
+        int cnt = 0;
+        Vector<Character> v = new Vector<Character>();
+
+        // Checking the number of bits
+        // that are set in the mask
+        for(int j = 0; j < N - 1; j++)
+        {
+            if (((1 << j) & (i)) > 0)
+            {
+                cnt += 1;
+                v.add('*');
+            }
+            else
+            {
+                v.add('+');
+            }
+        }
+
+        // Check if the number of bits
+        // that are set in the mask is
+        // multiplication operation
+        if (cnt == mul)
+        {
+
+            // Storing the elements
+            // that is to be added
+            LinkedList<Integer> d = new LinkedList<Integer>();
+            d.add(A[0]);
+
+            // Apply the multiplications
+            // operation first
+            for(int j = 0; j < N - 1; j++)
+            {
+
+                // If sign is '*', then
+                // multiply last element
+                // of deque with arr[i]
+                if (v.get(j) == '*')
+                {
+                    int x = d.getLast();
+                    d.removeLast();
+                    x = x * A[j + 1];
+
+                    // Push last multiplied
+                    // element in the deque
+                    d.add(x);
+                }
+                else
+                {
+
+                    // If the element is to
+                    // be added, then add
+                    // it to the deque
+                    d.add(A[j + 1]);
+                }
+            }
+            int sum = 0;
+
+            // Add all the element of
+            // the deque
+            while (d.size() > 0)
+            {
+                int x = d.peek();
+                sum += x;
+                d.removeFirst();
+            }
+
+            // Minimize the answer with
+            // the given sum
+            ans = Math.min(ans, sum);
+        }
+    }
+    return ans;
+}
+
+// Driver Code
+public static void main(String[] args)
+{
+    int A[] = { 2, 2, 2, 2 };
+    String S = "**+";
+    int N = A.length;
+
+    System.out.print(minimumSum(A, N, S));
+}
+}
+
+// This code is contributed by shikhasingrajput
+
+Python3
+
+# Python3 program for the above approach
+
+# Function to find the smallest number
+# that can be obtained after applying
+# the arithmetic operations mentioned
+# in the string S
+def minimumSum(A, N, S):
+
+    # Stores the count of multiplication
+    # operator in the string
+    mul = 0
+    for i in range(len(S)):
+        if (S[i] == "*"):
+            mul += 1
+
+    # Store the required result
+    ans = 1000000
+
+    # Iterate in the range to
+    # create the mask
+    for i in range(1 << (N - 1)):
+        cnt = 0
+        v = []
+
+        # Checking the number of bits
+        # that are set in the mask
+        for j in range(N - 1):
+            if ((1 << j) & i):
+                cnt += 1
+                v.append("*")
+            else:
+                v.append("+")
+
+        # Check if the number of bits
+        # that are set in the mask is
+        # multiplication operation
+        if (cnt == mul):
+
+            # Storing the elements
+            # that is to be added
+            d = []
+            d.append(A[0])
+
+            # Apply the multiplications
+            # operation first
+            for j in range(N - 1):
+
+                # If sign is '*', then
+                # multiply last element
+                # of deque with arr[i]
+                if (v[j] == "*"):
+                    x = d[len(d) - 1]
+                    d.pop()
+                    x = x * A[j + 1]
+
+                    # append last multiplied
+                    # element in the deque
+                    d.append(x)
+                else:
+
+                    # If the element is to
+                    # be added, then add
+                    # it to the deque
+                    d.append(A[j + 1])
+
+            sum = 0
+
+            # Add all the element of
+            # the deque
+            while (len(d) > 0):
+                x = d[0]
+                sum += x
+                d.pop(0)
+
+            # Minimize the answer with
+            # the given sum
+            ans = min(ans, sum)
+
+    return ans
+
+# Driver Code
+A = [ 2, 2, 2, 2 ]
+S = "**+"
+N = len(A)
+
+print(minimumSum(A, N, S))
+
+# This code is contributed by gfgking
+
+C#
+
+// C# program for the above approach
+using System;
+using System.Collections.Generic;
+
+public class GFG{
+
+// Function to find the smallest number
+// that can  be obtained after applying
+// the arithmetic operations mentioned
+// in the String S
+static int minimumSum(int []A, int N, String S)
+{
+
+    // Stores the count of multiplication
+    // operator in the String
+    int mul = 0;
+    for(int i = 0;
+            i < (int)S.Length; i++)
+    {
+        if (S[i] == '*')
+            mul += 1;
+    }
+
+    // Store the required result
+    int ans = 1000000;
+
+    // Iterate in the range to
+    // create the mask
+    for(int i = 0;
+            i < (1 << (N - 1)); i++)
+    {
+        int cnt = 0;
+        List<char> v = new List<char>();
+
+        // Checking the number of bits
+        // that are set in the mask
+        for(int j = 0; j < N - 1; j++)
+        {
+            if (((1 << j) & (i)) > 0)
+            {
+                cnt += 1;
+                v.Add('*');
+            }
+            else
+            {
+                v.Add('+');
+            }
+        }
+
+        // Check if the number of bits
+        // that are set in the mask is
+        // multiplication operation
+        if (cnt == mul)
+        {
+
+            // Storing the elements
+            // that is to be added
+            List<int> d = new List<int>();
+            d.Add(A[0]);
+
+            // Apply the multiplications
+            // operation first
+            for(int j = 0; j < N - 1; j++)
+            {
+
+                // If sign is '*', then
+                // multiply last element
+                // of deque with arr[i]
+                if (v[j] == '*')
+                {
+                    int x = d[d.Count-1];
+                    d.RemoveAt(d.Count-1);
+                    x = x * A[j + 1];
+
+                    // Push last multiplied
+                    // element in the deque
+                    d.Add(x);
+                }
+                else
+                {
+
+                    // If the element is to
+                    // be added, then add
+                    // it to the deque
+                    d.Add(A[j + 1]);
+                }
+            }
+            int sum = 0;
+
+            // Add all the element of
+            // the deque
+            while (d.Count > 0)
+            {
+                int x = d[0];
+                sum += x;
+                d.RemoveAt(0);
+            }
+
+            // Minimize the answer with
+            // the given sum
+            ans = Math.Min(ans, sum);
+        }
+    }
+    return ans;
+}
+
+// Driver Code
+public static void Main(String[] args)
+{
+    int []A = { 2, 2, 2, 2 };
+    String S = "**+";
+    int N = A.Length;
+
+    Console.Write(minimumSum(A, N, S));
+}
+}
+
+// This code contributed by shikhasingrajput
+
+JavaScript
+
+<script>
+
+// Javascript program for the above approach
+
+// Function to find the smallest number
+// that can  be obtained after applying
+// the arithmetic operations mentioned
+// in the string S
+function minimumSum(A, N, S)
+{
+
+    // Stores the count of multiplication
+    // operator in the string
+    let mul = 0;
+    for(let i = 0; i < S.length; i++)
+    {
+        if (S[i] == "*")
+            mul += 1;
+    }
+
+    // Store the required result
+    let ans = 1000000;
+
+    // Iterate in the range to
+    // create the mask
+    for(let i = 0; i < 1 << (N - 1); i++)
+    {
+        let cnt = 0;
+        let v = [];
+
+        // Checking the number of bits
+        // that are set in the mask
+        for(let j = 0; j < N - 1; j++)
+        {
+            if ((1 << j) & i)
+            {
+                cnt += 1;
+                v.push("*");
+            } else
+            {
+                v.push("+");
+            }
+        }
+
+        // Check if the number of bits
+        // that are set in the mask is
+        // multiplication operation
+        if (cnt == mul)
+        {
+
+            // Storing the elements
+            // that is to be added
+            let d = [];
+            d.push(A[0]);
+
+            // Apply the multiplications
+            // operation first
+            for(let j = 0; j < N - 1; j++)
+            {
+
+                // If sign is '*', then
+                // multiply last element
+                // of deque with arr[i]
+                if (v[j] == "*")
+                {
+                    let x = d[d.length - 1];
+                    d.pop();
+                    x = x * A[j + 1];
+
+                    // Push last multiplied
+                    // element in the deque
+                    d.push(x);
+                }
+                else
+                {
+                    // If the element is to
+                    // be added, then add
+                    // it to the deque
+                    d.push(A[j + 1]);
+                }
+            }
+
+            let sum = 0;
+
+            // Add all the element of
+            // the deque
+            while (d.length > 0)
+            {
+                let x = d[0];
+                sum += x;
+                d.shift();
+            }
+
+            // Minimize the answer with
+            // the given sum
+            ans = Math.min(ans, sum);
+        }
+    }
+    return ans;
+}
+
+// Driver Code
+let A = [ 2, 2, 2, 2 ];
+let S = "**+";
+let N = A.length;
+
+document.write(minimumSum(A, N, S));
+
+// This code is contributed by gfgking
+
+</script>
+
+Output:
+
+8
+
+Time Complexity: O(2 (N - 1) *N) Auxiliary Space: O(N)

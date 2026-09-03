@@ -1,0 +1,1129 @@
+Source: https://www.geeksforgeeks.org/dsa/box-stacking-problem-dp-22/
+Title: Box Stacking Problem
+Extractor: 2
+
+Given three arrays height[] , width[] , and length[] of size n, where height[i], width[i], and length[i] represent the dimensions of the ith box, find the maximum possible height of a stack formed using these boxes.
+
+- A box can be rotated so that any of its dimensions becomes its height.
+- A box can be placed on top of another only if both dimensions of its base are strictly smaller than those of the box below.
+- Multiple instances of the same box can be used.
+
+Example:
+
+> Input: height[] = [4, 1, 4, 10], width[] = [6, 2, 5, 12], length[] = [7, 3, 6, 32] Output: 60 Explanation: Note that there can be multiple instances of boxes. One possible arrangement of the boxes from bottom to top is shown below: Hence, the total height of this stack is 10 + 32 + 4 + 4 + 6 + 1 + 3 = 60. No other combination of boxes produces a height greater than this. Input: height[] = [1, 4, 3], width[] = [2, 5, 4], length[] = [3, 6, 1] Output: 15 Explanation: One possible arrangement of the boxes from bottom to top is shown below: Hence, the total height of this stack is 4 + 6 + 1 + 1 + 3 = 15. No other combination of boxes produces a height greater than this.
+
+Table of Content
+
+- [Naive Approach] Recursion - Exponential Time and O(n) Auxiliary Space
+- [Better Approach] Top-Down DP (Memoization) - O(n^2) Time and O(n) Auxiliary Space
+- [Expected Approach] Using Bottom-Up DP (Tabulation) - O(n^2) Time and O(n) Space
+
+### [Naive Approach] Recursion - Exponential Time and O(n) Auxiliary Space
+
+This problem can be viewed as a 2D Weighted Longest Increasing Subsequence . The length and width of the base determine whether two orientations can form a valid sequence, similar to LIS. However, instead of maximizing the length of the sequence, we maximize the sum of heights, where the height of each orientation acts as its weight.
+
+> The idea is to generate all six orientations of each box, store each as (length, width, height), and sort them in descending order of their base dimensions. For a given box  orientation i, the recursive relation is based on two conditions: We check if i can be placed on top of any previously considered j, meaning the base of box i must be strictly smaller than the base of box j. We compute the maximum stack height by choosing the best possible prior box to place under box i. The r ecurrence relation for maximum height with base as i is. maxHeight(i) = max⁡(height-of-i + maxHeight(j)) for all boxes j where base of  i > base of j)
+
+- For orientation i, orientation j can be placed above it if: boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]
+- Since the orientations are sorted in descending order, we only consider j > i.
+- For every valid j, recursively calculate the maximum stack height and add it to the height of orientation i.
+- The recurrence is: maxHeight(i) = max(boxes[i][2], boxes[i][2] + maxHeight(j))
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <array>
+#include <algorithm>
+using namespace std;
+
+// Function to find the maximum height
+// with box i as base.
+int maxHeightRecur(int i, vector<array<int,3>>& boxes) {
+    int ans = boxes[i][2];
+
+    // Check all the boxes that can be placed above box i
+    for (int j = i + 1; j < boxes.size(); j++) {
+
+        // If dimensions of box j are less
+        // than that size of box i
+        if (boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]) {
+            ans = max(ans, boxes[i][2] + maxHeightRecur(j, boxes));
+        }
+    }
+
+    return ans;
+}
+
+int maxHeight(vector<int>& height, vector<int>& width, vector<int>& length) {
+    int n = height.size();
+
+    vector<array<int,3>> boxes(n * 6);
+    int index = 0;
+
+    for (int i = 0; i < n; i++) {
+        int a = height[i], b = width[i], c = length[i];
+
+        boxes[index++] = {a, b, c};
+        boxes[index++] = {a, c, b};
+        boxes[index++] = {b, a, c};
+        boxes[index++] = {b, c, a};
+        boxes[index++] = {c, a, b};
+        boxes[index++] = {c, b, a};
+    }
+
+    // Sort the boxes in descending
+    // order of length and width.
+    sort(boxes.begin(), boxes.end(), [](auto &box1, auto &box2) {
+        if (box1[0] == box2[0]) {
+            if (box1[1] == box2[1])
+                return box1[2] > box2[2];
+            else
+                return box1[1] > box2[1];
+        }
+        return box1[0] > box2[0];
+    });
+
+    int ans = 0;
+
+    // Check for all boxes starting as base.
+    for (int i = 0; i < boxes.size(); i++) {
+        ans = max(ans, maxHeightRecur(i, boxes));
+    }
+
+    return ans;
+}
+
+int main() {
+    vector<int> height = {4, 1, 4, 10};
+    vector<int> width  = {6, 2, 5, 12};
+    vector<int> length = {7, 3, 6, 32};
+
+    cout << maxHeight(height, width, length);
+}
+
+Java
+
+import java.util.Arrays;
+
+class GFG {
+
+    // Function to find the maximum height
+    // with box i as base.
+    static int maxHeightRecur(int i, int[][] boxes) {
+        int ans = boxes[i][2];
+
+        // Check all the boxes that can be placed above box i
+        for (int j = i + 1; j < boxes.length; j++) {
+
+            // If dimensions of box j are less
+            // than that size of box i
+            if (boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]) {
+                ans = Math.max(ans, boxes[i][2] + maxHeightRecur(j, boxes));
+            }
+        }
+
+        return ans;
+    }
+
+    static int maxHeight(int[] height, int[] width, int[] length) {
+        int n = height.length;
+
+        // Create a 2d array to store all
+        // orientations of boxes in (l, b, h)
+        // manner.
+        int[][] boxes = new int[n * 6][3];
+        int index = 0;
+
+        for (int i = 0; i < n; i++) {
+            int a = height[i], b = width[i], c = length[i];
+
+            boxes[index++] = new int[]{a, b, c};
+            boxes[index++] = new int[]{a, c, b};
+            boxes[index++] = new int[]{b, a, c};
+            boxes[index++] = new int[]{b, c, a};
+            boxes[index++] = new int[]{c, a, b};
+            boxes[index++] = new int[]{c, b, a};
+        }
+
+        // Sort the boxes in descending
+        // order of length and width.
+        Arrays.sort(boxes, (box1, box2) -> {
+            if (box1[0] == box2[0]) {
+                if( box1[1] == box2[1])
+                    return Integer.compare(box1[2], box2[2]);
+                else
+                    return Integer.compare(box2[1], box1[1]);
+            }
+            return Integer.compare(box2[0], box1[0]);
+        });
+
+        int ans = 0;
+
+        // Check for all boxes starting as base.
+        for (int i = 0; i < boxes.length; i++) {
+            ans = Math.max(ans, maxHeightRecur(i, boxes));
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int[] height = {4, 1, 4, 10};
+        int[] width =  {6, 2, 5, 12};
+        int[] length = {7, 3, 6, 32};
+
+        System.out.println(maxHeight(height, width, length));
+    }
+}
+
+Python
+
+# Function to find the maximum height
+# with box i as base.
+def maxHeightRecur(i, boxes):
+    ans = boxes[i][2]
+
+    # Check all the boxes that can be placed above box i
+    for j in range(i + 1, len(boxes)):
+
+        # If dimensions of box j are less
+        # than that size of box i
+        if boxes[i][0] > boxes[j][0] and boxes[i][1] > boxes[j][1]:
+            ans = max(ans, boxes[i][2] + maxHeightRecur(j, boxes))
+
+    return ans
+
+def maxHeight(height, width, length):
+    n = len(height)
+
+    boxes = []
+    for i in range(n):
+        a, b, c = height[i], width[i], length[i]
+        boxes += [
+            [a, b, c],
+            [a, c, b],
+            [b, a, c],
+            [b, c, a],
+            [c, a, b],
+            [c, b, a]
+        ]
+
+    # Sort the boxes in descending
+    # order of length and width.
+    boxes.sort(key=lambda box: (-box[0], -box[1], -box[2]))
+
+    ans = 0
+
+    # Check for all boxes starting as base.
+    for i in range(len(boxes)):
+        ans = max(ans, maxHeightRecur(i, boxes))
+
+    return ans
+
+if __name__ == "__main__":
+    height = [4, 1, 4, 10]
+    width = [6, 2, 5, 12]
+    length = [7, 3, 6, 32]
+
+    print(maxHeight(height, width, length))
+
+C#
+
+using System;
+
+class GFG {
+
+    // Function to find the maximum height
+    // with box i as base.
+    static int maxHeightRecur(int i, int[][] boxes) {
+        int ans = boxes[i][2];
+
+        // Check all the boxes that can be placed above box i
+        for (int j = i + 1; j < boxes.Length; j++) {
+
+            // If dimensions of box j are less
+            // than that size of box i
+            if (boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]) {
+                ans = Math.Max(ans, boxes[i][2] + maxHeightRecur(j, boxes));
+            }
+        }
+
+        return ans;
+    }
+
+    static int maxHeight(int[] height, int[] width, int[] length) {
+        int n = height.Length;
+
+        int[][] boxes = new int[n * 6][];
+        int index = 0;
+
+        for (int i = 0; i < n; i++) {
+            int a = height[i], b = width[i], c = length[i];
+
+            boxes[index++] = new int[]{a, b, c};
+            boxes[index++] = new int[]{a, c, b};
+            boxes[index++] = new int[]{b, a, c};
+            boxes[index++] = new int[]{b, c, a};
+            boxes[index++] = new int[]{c, a, b};
+            boxes[index++] = new int[]{c, b, a};
+        }
+
+        // Sort the boxes in descending
+        // order of length and width.
+        Array.Sort(boxes, (box1, box2) => {
+            if (box1[0] == box2[0]) {
+                if (box1[1] == box2[1])
+                    return box1[2].CompareTo(box2[2]);
+                else
+                    return box2[1].CompareTo(box1[1]);
+            }
+            return box2[0].CompareTo(box1[0]);
+        });
+
+        int ans = 0;
+
+        // Check for all boxes starting as base.
+        for (int i = 0; i < boxes.Length; i++) {
+            ans = Math.Max(ans, maxHeightRecur(i, boxes));
+        }
+
+        return ans;
+    }
+
+    public static void Main() {
+        int[] height = {4, 1, 4, 10};
+        int[] width  = {6, 2, 5, 12};
+        int[] length = {7, 3, 6, 32};
+
+        Console.WriteLine(maxHeight(height, width, length));
+    }
+}
+
+JavaScript
+
+// Function to find the maximum height
+// with box i as base.
+function maxHeightRecur(i, boxes) {
+    let ans = boxes[i][2];
+
+    // Check all the boxes that can be placed above box i
+    for (let j = i + 1; j < boxes.length; j++) {
+
+        // If dimensions of box j are less
+        // than that size of box i
+        if (boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]) {
+            ans = Math.max(ans, boxes[i][2] + maxHeightRecur(j, boxes));
+        }
+    }
+
+    return ans;
+}
+
+function maxHeight(height, width, length) {
+    const n = height.length;
+
+    const boxes = new Array(n * 6);
+    let index = 0;
+
+    for (let i = 0; i < n; i++) {
+        const a = height[i], b = width[i], c = length[i];
+
+        boxes[index++] = [a, b, c];
+        boxes[index++] = [a, c, b];
+        boxes[index++] = [b, a, c];
+        boxes[index++] = [b, c, a];
+        boxes[index++] = [c, a, b];
+        boxes[index++] = [c, b, a];
+    }
+
+    // Sort the boxes in descending
+    // order of length and width.
+    boxes.sort((box1, box2) => {
+        if (box1[0] === box2[0]) {
+            if (box1[1] === box2[1])
+                return box1[2] - box2[2];
+            else
+                return box2[1] - box1[1];
+        }
+        return box2[0] - box1[0];
+    });
+
+    let ans = 0;
+
+    // Check for all boxes starting as base.
+    for (let i = 0; i < boxes.length; i++) {
+        ans = Math.max(ans, maxHeightRecur(i, boxes));
+    }
+
+    return ans;
+}
+
+// Driver code
+const height = [4, 1, 4, 10];
+const width =  [6, 2, 5, 12];
+const length = [7, 3, 6, 32];
+
+console.log(maxHeight(height, width, length));
+
+Output
+
+60
+
+### [Better Approach] Top-Down DP (Memoization) - O(n^2) Time and O(n) Auxiliary Space
+
+> The idea is to use memoization to avoid calculating the maximum stack height for the same box orientation multiple times.
+
+In the recursive approach, the same orientation can be reached through different stacking paths. We store its result in a dp array so that it can be reused.
+
+For each orientation i, dp[i] represents the maximum height of the stack with orientation i as the bottom box.
+
+Initially: dp = [-1, -1, -1, ...]
+
+For each orientation i:
+
+- If dp[i] is already calculated, return it.
+- Start with the height of the current box.
+- Check all orientations that can be placed above it.
+- Recursively find the maximum height for each valid orientation.
+- Store the maximum result in dp[i].
+
+The recurrence is: dp[i] = max( boxes[i][2], boxes[i][2] + dp[j] ) where j is an orientation that can be placed above i.
+
+C++
+
+#include <vector>
+#include <algorithm>
+#include <iostream>
+using namespace std;
+
+// Function to find the maximum height
+// with box i as base.
+int maxHeightRecur(int i, vector<vector<int>>& boxes, vector<int>& dp) {
+
+    // If value is stored in dp array
+    if (dp[i] != -1) return dp[i];
+
+    int ans = boxes[i][2];
+
+    // Check all the boxes that can be placed above box i
+    for (int j = i + 1; j < boxes.size(); j++) {
+
+        // If dimensions of box j are less
+        // than that size of box i
+        if (boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]) {
+            ans = max(ans, boxes[i][2] + maxHeightRecur(j, boxes, dp));
+        }
+    }
+
+    return dp[i] = ans;
+}
+
+int maxHeight(vector<int>& height, vector<int>& width, vector<int>& length) {
+    int n = height.size();
+
+    // Create a 2d array to store all
+    // orientations of boxes in (l, b, h)
+    // manner.
+    vector<vector<int>> boxes(n * 6, vector<int>(3));
+    int idx = 0;
+
+    for (int i = 0; i < n; i++) {
+        int a = height[i], b = width[i], c = length[i];
+
+        boxes[idx++] = {a, b, c};
+        boxes[idx++] = {a, c, b};
+        boxes[idx++] = {b, a, c};
+        boxes[idx++] = {b, c, a};
+        boxes[idx++] = {c, a, b};
+        boxes[idx++] = {c, b, a};
+    }
+
+    // Sort the boxes in descending
+    // order of length and width.
+    sort(boxes.begin(), boxes.end(), [](auto &box1, auto &box2) {
+        if (box1[0] == box2[0]) {
+            if (box1[1] == box2[1])
+                return box1[2] > box2[2];
+            else
+                return box1[1] > box2[1];
+        }
+        return box1[0] > box2[0];
+    });
+
+    vector<int> dp(boxes.size(), -1);
+
+    int ans = 0;
+
+    // Check for all boxes starting as base.
+    for (int i = 0; i < boxes.size(); i++) {
+        ans = max(ans, maxHeightRecur(i, boxes, dp));
+    }
+
+    return ans;
+}
+
+int main() {
+    vector<int> height = {4, 1, 4, 10};
+    vector<int> width  = {6, 2, 5, 12};
+    vector<int> length = {7, 3, 6, 32};
+
+    cout << maxHeight(height, width, length);
+}
+
+Java
+
+import java.util.Arrays;
+
+class GFG {
+
+    // Function to find the maximum height
+    // with box i as base.
+    static int maxHeightRecur(int i, int[][] boxes, int[] dp) {
+
+        // If value is stored in dp array
+        if (dp[i] != -1) return dp[i];
+
+        int ans = boxes[i][2];
+
+        // Check all the boxes that can be placed above box i
+        for (int j = i + 1; j < boxes.length; j++) {
+
+            // If dimensions of box j are less
+            // than that size of box i
+            if (boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]) {
+                ans = Math.max(ans, boxes[i][2] + maxHeightRecur(j, boxes, dp));
+            }
+        }
+
+        return dp[i] = ans;
+    }
+
+    static int maxHeight(int[] height, int[] width, int[] length) {
+        int n = height.length;
+
+        // Create a 2d array to store all
+        // orientations of boxes in (l, b, h)
+        // manner.
+        int[][] boxes = new int[n * 6][3];
+        int idx = 0;
+
+        for (int i = 0; i < n; i++) {
+            int a = height[i], b = width[i], c = length[i];
+
+            boxes[idx++] = new int[] {a, b, c};
+            boxes[idx++] = new int[] {a, c, b};
+            boxes[idx++] = new int[] {b, a, c};
+            boxes[idx++] = new int[] {b, c, a};
+            boxes[idx++] = new int[] {c, a, b};
+            boxes[idx++] = new int[] {c, b, a};
+        }
+
+        // Sort the boxes in descending
+        // order of length and width.
+        Arrays.sort(boxes, (box1, box2) -> {
+            if (box1[0] == box2[0]) {
+                if( box1[1] == box2[1])
+                    return Integer.compare(box1[2], box1[2]);
+                else
+                    return Integer.compare(box2[1], box1[1]);
+            }
+            return Integer.compare(box2[0], box1[0]);
+        });
+
+        int[] dp = new int[boxes.length];
+        Arrays.fill(dp, -1);
+
+        int ans = 0;
+
+        // Check for all boxes starting as base.
+        for (int i = 0; i < boxes.length; i++) {
+            ans = Math.max(ans, maxHeightRecur(i, boxes, dp));
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int[] height = {4, 1, 4, 10};
+        int[] width = {6, 2, 5, 12};
+        int[] length = {7, 3, 6, 32};
+
+        System.out.println(maxHeight(height, width, length));
+    }
+}
+
+Python
+
+# Function to find the maximum height
+# with box i as base.
+def maxHeightRecur(i, boxes, dp):
+
+    # If value is stored in dp array
+    if dp[i] != -1:
+        return dp[i]
+
+    ans = boxes[i][2]
+
+    # Check all the boxes that can be placed above box i
+    for j in range(i + 1, len(boxes)):
+
+        # If dimensions of box j are less
+        # than that size of box i
+        if boxes[i][0] > boxes[j][0] and boxes[i][1] > boxes[j][1]:
+            ans = max(ans, boxes[i][2] + maxHeightRecur(j, boxes, dp))
+
+    dp[i] = ans
+    return ans
+
+def maxHeight(height, width, length):
+    n = len(height)
+
+    # Create a 2d array to store all
+    # orientations of boxes in (l, b, h)
+    # manner.
+    boxes = []
+    for i in range(n):
+        a, b, c = height[i], width[i], length[i]
+
+        boxes.append([a, b, c])
+        boxes.append([a, c, b])
+        boxes.append([b, a, c])
+        boxes.append([b, c, a])
+        boxes.append([c, a, b])
+        boxes.append([c, b, a])
+
+    # Sort the boxes in descending
+    # order of length and width.
+    boxes.sort(key=lambda box: (-box[0], -box[1], -box[2]))
+
+    dp = [-1] * len(boxes)
+
+    ans = 0
+
+    # Check for all boxes starting as base.
+    for i in range(len(boxes)):
+        ans = max(ans, maxHeightRecur(i, boxes, dp))
+
+    return ans
+
+if __name__ == "__main__":
+    height = [4, 1, 4, 10]
+    width = [6, 2, 5, 12]
+    length = [7, 3, 6, 32]
+
+    print(maxHeight(height, width, length))
+
+C#
+
+using System;
+
+class GFG {
+
+    // Function to find the maximum height
+    // with box i as base.
+    static int maxHeightRecur(int i, int[][] boxes, int[] dp) {
+
+        // If value is stored in dp array
+        if (dp[i] != -1) return dp[i];
+
+        int ans = boxes[i][2];
+
+        // Check all the boxes that can be placed above box i
+        for (int j = i + 1; j < boxes.Length; j++) {
+
+            // If dimensions of box j are less
+            // than that size of box i
+            if (boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]) {
+                ans = Math.Max(ans, boxes[i][2] + maxHeightRecur(j, boxes, dp));
+            }
+        }
+
+        return dp[i] = ans;
+    }
+
+    static int maxHeight(int[] height, int[] width, int[] length) {
+        int n = height.Length;
+
+        // Create a 2d array to store all
+        // orientations of boxes in (l, b, h)
+        // manner.
+        int[][] boxes = new int[n * 6][];
+        int idx = 0;
+
+        for (int i = 0; i < n; i++) {
+            int a = height[i], b = width[i], c = length[i];
+
+            boxes[idx++] = new int[]{a, b, c};
+            boxes[idx++] = new int[]{a, c, b};
+            boxes[idx++] = new int[]{b, a, c};
+            boxes[idx++] = new int[]{b, c, a};
+            boxes[idx++] = new int[]{c, a, b};
+            boxes[idx++] = new int[]{c, b, a};
+        }
+
+        // Sort the boxes in descending
+        // order of length and width.
+        Array.Sort(boxes, (box1, box2) => {
+            if (box1[0] == box2[0]) {
+                if (box1[1] == box2[1])
+                    return box1[2].CompareTo(box2[2]);
+                else
+                    return box2[1].CompareTo(box1[1]);
+            }
+            return box2[0].CompareTo(box1[0]);
+        });
+
+        int[] dp = new int[boxes.Length];
+        Array.Fill(dp, -1);
+
+        int ans = 0;
+
+        // Check for all boxes starting as base.
+        for (int i = 0; i < boxes.Length; i++) {
+            ans = Math.Max(ans, maxHeightRecur(i, boxes, dp));
+        }
+
+        return ans;
+    }
+
+    public static void Main() {
+        int[] height = {4, 1, 4, 10};
+        int[] width  = {6, 2, 5, 12};
+        int[] length = {7, 3, 6, 32};
+
+        Console.WriteLine(maxHeight(height, width, length));
+    }
+}
+
+JavaScript
+
+// Function to find the maximum height
+// with box i as base.
+function maxHeightRecur(i, boxes, dp) {
+
+    // If value is stored in dp array
+    if (dp[i] !== -1) return dp[i];
+
+    let ans = boxes[i][2];
+
+    // Check all the boxes that can be placed above box i
+    for (let j = i + 1; j < boxes.length; j++) {
+
+        // If dimensions of box j are less
+        // than that size of box i
+        if (boxes[i][0] > boxes[j][0] && boxes[i][1] > boxes[j][1]) {
+            ans = Math.max(ans, boxes[i][2] + maxHeightRecur(j, boxes, dp));
+        }
+    }
+
+    return dp[i] = ans;
+}
+
+function maxHeight(height, width, length) {
+    const n = height.length;
+
+    // Create a 2d array to store all
+    // orientations of boxes in (l, b, h)
+    // manner.
+    const boxes = new Array(n * 6);
+    let idx = 0;
+
+    for (let i = 0; i < n; i++) {
+        const a = height[i], b = width[i], c = length[i];
+
+        boxes[idx++] = [a, b, c];
+        boxes[idx++] = [a, c, b];
+        boxes[idx++] = [b, a, c];
+        boxes[idx++] = [b, c, a];
+        boxes[idx++] = [c, a, b];
+        boxes[idx++] = [c, b, a];
+    }
+
+    // Sort the boxes in descending
+    // order of length and width.
+    boxes.sort((box1, box2) => {
+        if (box1[0] === box2[0]) {
+            if (box1[1] === box2[1])
+                return box1[2] - box2[2];
+            else
+                return box2[1] - box1[1];
+        }
+        return box2[0] - box1[0];
+    });
+
+    const dp = new Array(boxes.length).fill(-1);
+
+    let ans = 0;
+
+    // Check for all boxes starting as base.
+    for (let i = 0; i < boxes.length; i++) {
+        ans = Math.max(ans, maxHeightRecur(i, boxes, dp));
+    }
+
+    return ans;
+}
+
+// Driver code
+const height = [4, 1, 4, 10];
+const width  = [6, 2, 5, 12];
+const length = [7, 3, 6, 32];
+
+console.log(maxHeight(height, width, length));
+
+Output
+
+60
+
+### [Expected Approach] Using Bottom-Up DP (Tabulation) - O(n^2) Time and O(n) Space
+
+> The idea is to fill the DP table from bottom to up. The table is filled in an iterative manner from i = n-1 to i = 0. For each box i, the dynamic programming relation is as follows: set dp[i] = height-of-i For j > i and base of j is smaller than base of i, set dp[i] = max(dp[i], height(-of-i + dp[j]).
+
+For an orientation i, let dp[i] represent the maximum stack height when orientation i is the bottom box.
+
+- Initialize dp[i] with the height of the current box.
+- Check every orientation j that comes after i.
+- If both base dimensions of j are strictly smaller than those of i, it can be placed above i.
+- Update dp[i] as: dp[i] = max(dp[i], boxes[i][2] + dp[j])
+
+The maximum value in dp is the answer.
+
+C++
+
+#include <vector>
+#include <algorithm>
+#include <iostream>
+using namespace std;
+
+// Function to find the maximum height
+// with box i as base.
+int maxHeight(vector<int>& height, vector<int>& width, vector<int>& length) {
+    int n = height.size();
+
+    // Create a 2d array to store all
+    // orientations of boxes in (l, b, h)
+    // manner.
+    vector<vector<int>> boxes;
+    boxes.reserve(n * 6);
+
+    for (int i = 0; i < n; i++) {
+        int a = height[i], b = width[i], c = length[i];
+
+        boxes.push_back({a, b, c});
+        boxes.push_back({a, c, b});
+        boxes.push_back({b, a, c});
+        boxes.push_back({b, c, a});
+        boxes.push_back({c, a, b});
+        boxes.push_back({c, b, a});
+    }
+
+    // Sort the boxes in descending
+    // order of length and width.
+    sort(boxes.begin(), boxes.end(), [](auto &box1, auto &box2) {
+        if (box1[0] == box2[0]) {
+            if (box1[1] == box2[1])
+                return box1[2] > box2[2];
+            else
+                return box1[1] > box2[1];
+        }
+        return box1[0] > box2[0];
+    });
+
+    vector<int> dp(boxes.size());
+    int ans = 0;
+
+    // Check for all boxes starting as base.
+    for (int i = boxes.size() - 1; i >= 0; i--) {
+        dp[i] = boxes[i][2];
+
+        // Check all the boxes that can be placed above box i
+        for (int j = i + 1; j < boxes.size(); j++) {
+
+            // If dimensions of box j are less
+            // than that size of box i
+            if (boxes[i][0] > boxes[j][0] &&
+                boxes[i][1] > boxes[j][1]) {
+                dp[i] = max(dp[i], boxes[i][2] + dp[j]);
+            }
+        }
+
+        ans = max(ans, dp[i]);
+    }
+
+    return ans;
+}
+
+int main() {
+    vector<int> height = {4, 1, 4, 10};
+    vector<int> width  = {6, 2, 5, 12};
+    vector<int> length = {7, 3, 6, 32};
+
+    cout << maxHeight(height, width, length);
+}
+
+Java
+
+import java.util.Arrays;
+
+class GFG {
+
+    // Function to find the maximum height
+    // with box i as base.
+    static int maxHeight(int[] height, int[] width, int[] length) {
+        int n = height.length;
+
+        // Create a 2d array to store all
+        // orientations of boxes in (l, b, h)
+        // manner.
+        int[][] boxes = new int[n * 6][3];
+        int idx = 0;
+
+        for (int i = 0; i < n; i++) {
+            int a = height[i], b = width[i], c = length[i];
+
+            boxes[idx++] = new int[] {a, b, c};
+            boxes[idx++] = new int[] {a, c, b};
+            boxes[idx++] = new int[] {b, a, c};
+            boxes[idx++] = new int[] {b, c, a};
+            boxes[idx++] = new int[] {c, a, b};
+            boxes[idx++] = new int[] {c, b, a};
+        }
+
+        // Sort the boxes in descending
+        // order of length and width.
+        Arrays.sort(boxes, (box1, box2) -> {
+            if (box1[0] == box2[0]) {
+                if (box1[1] == box2[1])
+                    return Integer.compare(box1[2], box2[2]);
+                else
+                    return Integer.compare(box2[1], box1[1]);
+            }
+            return Integer.compare(box2[0], box1[0]);
+        });
+
+        int[] dp = new int[boxes.length];
+
+        int ans = 0;
+
+        // Check for all boxes starting as base.
+        for (int i = boxes.length - 1; i >= 0; i--) {
+            dp[i] = boxes[i][2];
+
+            // Check all the boxes that can be placed above box i
+            for (int j = i + 1; j < boxes.length; j++) {
+
+                // If dimensions of box j are less
+                // than that size of box i
+                if (boxes[i][0] > boxes[j][0] &&
+                    boxes[i][1] > boxes[j][1]) {
+                    dp[i] = Math.max(dp[i], boxes[i][2] + dp[j]);
+                }
+            }
+
+            ans = Math.max(ans, dp[i]);
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int[] height = {4, 1, 4, 10};
+        int[] width  = {6, 2, 5, 12};
+        int[] length = {7, 3, 6, 32};
+
+        System.out.println(maxHeight(height, width, length));
+    }
+}
+
+Python
+
+# Function to find the maximum height
+# with box i as base.
+def maxHeight(height, width, length):
+    n = len(height)
+
+    # Create a 2d array to store all
+    # orientations of boxes in (l, b, h)
+    # manner.
+    boxes = []
+    for i in range(n):
+        a, b, c = height[i], width[i], length[i]
+
+        boxes.append([a, b, c])
+        boxes.append([a, c, b])
+        boxes.append([b, a, c])
+        boxes.append([b, c, a])
+        boxes.append([c, a, b])
+        boxes.append([c, b, a])
+
+    # Sort the boxes in descending
+    # order of length and width.
+    boxes.sort(key=lambda box: (-box[0], -box[1], -box[2]))
+
+    dp = [0] * len(boxes)
+    ans = 0
+
+    # Check for all boxes starting as base.
+    for i in range(len(boxes) - 1, -1, -1):
+        dp[i] = boxes[i][2]
+
+        # Check all the boxes that can be placed above box i
+        for j in range(i + 1, len(boxes)):
+
+            # If dimensions of box j are less
+            # than that size of box i
+            if boxes[i][0] > boxes[j][0] and boxes[i][1] > boxes[j][1]:
+                dp[i] = max(dp[i], boxes[i][2] + dp[j])
+
+        ans = max(ans, dp[i])
+
+    return ans
+
+if __name__ == "__main__":
+    height = [4, 1, 4, 10]
+    width = [6, 2, 5, 12]
+    length = [7, 3, 6, 32]
+
+    print(maxHeight(height, width, length))
+
+C#
+
+using System;
+
+// Function to find the maximum height
+// with box i as base.
+class GFG {
+    static int maxHeight(int[] height, int[] width, int[] length) {
+        int n = height.Length;
+
+        // Create a 2d array to store all
+        // orientations of boxes in (l, b, h)
+        // manner.
+        int[][] boxes = new int[n * 6][];
+        int idx = 0;
+
+        for (int i = 0; i < n; i++) {
+            int a = height[i], b = width[i], c = length[i];
+
+            boxes[idx++] = new int[]{a, b, c};
+            boxes[idx++] = new int[]{a, c, b};
+            boxes[idx++] = new int[]{b, a, c};
+            boxes[idx++] = new int[]{b, c, a};
+            boxes[idx++] = new int[]{c, a, b};
+            boxes[idx++] = new int[]{c, b, a};
+        }
+
+        // Sort the boxes in descending
+        // order of length and width.
+         Array.Sort(boxes, (box1, box2) => {
+            if (box1[0] == box2[0]) {
+                if (box1[1] == box2[1])
+                    return box1[2].CompareTo(box2[2]);
+                else
+                    return box2[1].CompareTo(box1[1]);
+            }
+            return box2[0].CompareTo(box1[0]);
+        });
+
+        int[] dp = new int[boxes.Length];
+        int ans = 0;
+
+        // Check for all boxes starting as base.
+        for (int i = boxes.Length - 1; i >= 0; i--) {
+            dp[i] = boxes[i][2];
+
+            // Check all the boxes that can be placed above box i
+            for (int j = i + 1; j < boxes.Length; j++) {
+
+                // If dimensions of box j are less
+                // than that size of box i
+                if (boxes[i][0] > boxes[j][0] &&
+                    boxes[i][1] > boxes[j][1]) {
+                    dp[i] = Math.Max(dp[i], boxes[i][2] + dp[j]);
+                }
+            }
+
+            ans = Math.Max(ans, dp[i]);
+        }
+
+        return ans;
+    }
+
+    public static void Main() {
+        int[] height = {4, 1, 4, 10};
+        int[] width  = {6, 2, 5, 12};
+        int[] length = {7, 3, 6, 32};
+
+        Console.WriteLine(maxHeight(height, width, length));
+    }
+}
+
+JavaScript
+
+// Function to find the maximum height
+// with box i as base.
+function maxHeight(height, width, length) {
+    const n = height.length;
+
+    // Create a 2d array to store all
+    // orientations of boxes in (l, b, h)
+    // manner.
+    const boxes = [];
+
+    for (let i = 0; i < n; i++) {
+        const a = height[i], b = width[i], c = length[i];
+
+        boxes.push([a, b, c]);
+        boxes.push([a, c, b]);
+        boxes.push([b, a, c]);
+        boxes.push([b, c, a]);
+        boxes.push([c, a, b]);
+        boxes.push([c, b, a]);
+    }
+
+    // Sort the boxes in descending
+    // order of length and width.
+    boxes.sort((box1, box2) => {
+        if (box1[0] === box2[0]) {
+            if (box1[1] === box2[1])
+                return box1[2] - box2[2];
+            else
+                return box2[1] - box1[1];
+        }
+        return box2[0] - box1[0];
+    });
+
+    const dp = new Array(boxes.length).fill(0);
+    let ans = 0;
+
+    // Check for all boxes starting as base.
+    for (let i = boxes.length - 1; i >= 0; i--) {
+        dp[i] = boxes[i][2];
+
+        // Check all the boxes that can be placed above box i
+        for (let j = i + 1; j < boxes.length; j++) {
+
+            // If dimensions of box j are less
+            // than that size of box i
+            if (boxes[i][0] > boxes[j][0] &&
+                boxes[i][1] > boxes[j][1]) {
+                dp[i] = Math.max(dp[i], boxes[i][2] + dp[j]);
+            }
+        }
+
+        ans = Math.max(ans, dp[i]);
+    }
+
+    return ans;
+}
+
+// Driver code
+const height = [4, 1, 4, 10];
+const width  = [6, 2, 5, 12];
+const length = [7, 3, 6, 32];
+
+console.log(maxHeight(height, width, length));
+
+Output
+
+60

@@ -1,0 +1,285 @@
+Source: https://www.geeksforgeeks.org/dsa/how-to-check-if-a-given-point-lies-inside-a-polygon/
+Title: Point Inside Polygon
+Extractor: 2
+
+Given a point (x, y) and a polygon represented by its vertices, determine whether the point lies inside the polygon. The polygon is represented by an array arr[][] , where arr[i] = [xi, yi] denotes the coordinates of the i-th vertex. Return true if the point lies inside the polygon; otherwise, return false. Note: A point lying on the boundary (edge or vertex) of the polygon is also considered inside the polygon.
+
+Examples:
+
+> Input: arr[][] = [[0, 0], [10, 0], [10, 10], [0, 10]], x = 20, y = 20 Output: false Explanation: The polygon forms a square with vertices (0,0), (10,0), (10,10), and (0,10). The point (20, 20) lies outside the region enclosed by the polygon. Therefore, the output is false. Input: arr[][] = [[0, 0], [5, 5], [5, 0], x = 3, y = 3 Output: true Explanation: The point (3, 3) lies inside the triangular region formed by the vertices (0,0), (5,5), and (5,0). Therefore, the output is true.
+
+### [Expected Approach] Using Ray Casting Algorithm - O(n) Time and O(1) Space
+
+> This approach is based on the Even-Odd Rule (Ray Casting Principle), which states that a point lies inside a polygon if a ray originating from the point intersects the polygon boundary an odd number of times. Points lying on the boundary are considered inside.
+
+Step-by-Step Illustration:
+
+- Draw a horizontal ray from the given point towards the right and extend it to infinity.
+- Count the number of times this ray intersects the edges of the polygon.
+- If the point lies exactly on an edge or a vertex of the polygon, it is considered inside the polygon
+- If the number of intersections is odd, the point lies inside the polygon; otherwise, it lies outside the polygon.
+
+Why does this approach work?
+
+- A polygon divides the plane into an inside region and an outside region.
+- A horizontal ray starting from the given point crosses the polygon boundary whenever it moves between these two regions.
+- Therefore, an odd number of intersections indicates that the point lies inside the polygon.
+- An even number of intersections indicates that the point lies outside the polygon.
+- Points lying exactly on an edge or a vertex are treated separately and considered inside the polygon.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+bool onSegment(long long x1, long long y1, long long x2, long long y2,
+               long long x, long long y) {
+    long long c = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1);
+
+    if (c != 0)
+        return false;
+
+    return min(x1, x2) <= x && x <= max(x1, x2) &&
+           min(y1, y2) <= y && y <= max(y1, y2);
+}
+
+bool isInside(vector<vector<int>> &arr, int x, int y) {
+    int n = arr.size();
+    bool inside = false;
+
+    for (int i = 0, j = n - 1; i < n; j = i++) {
+        long long x1 = arr[i][0], y1 = arr[i][1];
+        long long x2 = arr[j][0], y2 = arr[j][1];
+
+        // Point lies on the current edge
+        if (onSegment(x1, y1, x2, y2, x, y))
+            return true;
+
+        // Check whether the horizontal ray from (x, y)
+        // intersects the current edge
+        bool intersect =
+            ((y1 > y) != (y2 > y)) &&
+            (x < (double)(x2 - x1) * (y - y1) / (y2 - y1) + x1);
+
+        if (intersect)
+            inside = !inside;
+    }
+
+    return inside;
+}
+
+int main() {
+    vector<vector<int>> arr = {{0, 0}, {10, 0}, {10, 10}, {0, 10}};
+    int x = 20, y = 20;
+
+    cout << boolalpha << isInside(arr, x, y);
+
+    return 0;
+}
+
+Java
+
+class GFG {
+
+    private static boolean onSegment(long x1, long y1, long x2, long y2,
+                                     long x, long y) {
+        long c = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1);
+
+        if (c != 0)
+            return false;
+
+        return Math.min(x1, x2) <= x && x <= Math.max(x1, x2) &&
+               Math.min(y1, y2) <= y && y <= Math.max(y1, y2);
+    }
+
+    static boolean isInside(int[][] arr, int x, int y) {
+        int n = arr.length;
+        boolean inside = false;
+
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            long x1 = arr[i][0], y1 = arr[i][1];
+            long x2 = arr[j][0], y2 = arr[j][1];
+
+            // Point lies on the current edge
+            if (onSegment(x1, y1, x2, y2, x, y))
+                return true;
+
+            // Check whether the horizontal ray from (x, y)
+            // intersects the current edge
+            boolean intersect =
+                ((y1 > y) != (y2 > y)) &&
+                (x < (double)(x2 - x1) * (y - y1) / (y2 - y1) + x1);
+
+            if (intersect)
+                inside = !inside;
+        }
+
+        return inside;
+    }
+
+    public static void main(String[] args) {
+        int[][] arr = {
+            {0, 0},
+            {10, 0},
+            {10, 10},
+            {0, 10}
+        };
+
+        int x = 20, y = 20;
+
+        System.out.println(isInside(arr, x, y));
+    }
+}
+
+Python
+
+def on_segment(x1, y1, x2, y2, x, y):
+    c = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1)
+
+    if c != 0:
+        return False
+
+    return (min(x1, x2) <= x <= max(x1, x2) and
+            min(y1, y2) <= y <= max(y1, y2))
+
+def isInside(arr, x, y):
+    n = len(arr)
+    inside = False
+
+    j = n - 1
+
+    for i in range(n):
+        x1, y1 = arr[i]
+        x2, y2 = arr[j]
+
+        # Point lies on the current edge
+        if on_segment(x1, y1, x2, y2, x, y):
+            return True
+
+        # Check whether the horizontal ray from (x, y)
+        # intersects the current edge
+        intersect = ((y1 > y) != (y2 > y) and
+                     x < (x2 - x1) * (y - y1) / (y2 - y1) + x1)
+
+        if intersect:
+            inside = not inside
+
+        j = i
+
+    return inside
+
+arr = [[0, 0], [10, 0], [10, 10], [0, 10]]
+x, y = 20, 20
+
+print(isInside(arr, x, y))
+
+C#
+
+using System;
+
+class GFG
+{
+    private static bool OnSegment(long x1, long y1, long x2, long y2,
+                                  long x, long y)
+    {
+        long c = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1);
+
+        if (c != 0)
+            return false;
+
+        return Math.Min(x1, x2) <= x && x <= Math.Max(x1, x2) &&
+               Math.Min(y1, y2) <= y && y <= Math.Max(y1, y2);
+    }
+
+    static bool isInside(int[][] arr, int x, int y)
+    {
+        int n = arr.Length;
+        bool inside = false;
+
+        for (int i = 0, j = n - 1; i < n; j = i++)
+        {
+            long x1 = arr[i][0], y1 = arr[i][1];
+            long x2 = arr[j][0], y2 = arr[j][1];
+
+            // Point lies on the current edge
+            if (OnSegment(x1, y1, x2, y2, x, y))
+                return true;
+
+            // Check whether the horizontal ray from (x, y)
+            // intersects the current edge
+            bool intersect =
+                ((y1 > y) != (y2 > y)) &&
+                (x < (double)(x2 - x1) * (y - y1) / (y2 - y1) + x1);
+
+            if (intersect)
+                inside = !inside;
+        }
+
+        return inside;
+    }
+
+    static void Main()
+    {
+        int[][] arr =
+        {
+            new int[] {0, 0},
+            new int[] {10, 0},
+            new int[] {10, 10},
+            new int[] {0, 10}
+        };
+
+        int x = 20, y = 20;
+
+        Console.WriteLine(isInside(arr, x, y).ToString().ToLower());
+    }
+}
+
+JavaScript
+
+function onSegment(x1, y1, x2, y2, x, y) {
+    let c = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1);
+
+    if (c !== 0)
+        return false;
+
+    return Math.min(x1, x2) <= x && x <= Math.max(x1, x2) &&
+           Math.min(y1, y2) <= y && y <= Math.max(y1, y2);
+}
+
+function isInside(arr, x, y) {
+    let n = arr.length;
+    let inside = false;
+
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+        let [x1, y1] = arr[i];
+        let [x2, y2] = arr[j];
+
+        // Point lies on the current edge
+        if (onSegment(x1, y1, x2, y2, x, y))
+            return true;
+
+        // Check whether the horizontal ray from (x, y)
+        // intersects the current edge
+        let intersect =
+            ((y1 > y) !== (y2 > y)) &&
+            (x < (x2 - x1) * (y - y1) / (y2 - y1) + x1);
+
+        if (intersect)
+            inside = !inside;
+    }
+
+    return inside;
+}
+
+// Driver Code
+const arr = [[0, 0], [10, 0], [10, 10], [0, 10]];
+const x = 20;
+const y = 20;
+
+console.log(isInside(arr, x, y));
+
+Output
+
+false

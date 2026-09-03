@@ -1,0 +1,783 @@
+Source: https://www.geeksforgeeks.org/dsa/sum-elements-k1th-k2th-smallest-elements/
+Title: Sum of all elements between k1'th and k2'th smallest elements
+Extractor: 2
+
+Given an array of integers and two numbers k1 and k2. Find the sum of all elements between given two k1'th and k2'th smallest elements of the array. It may be assumed that (1 <= k1 < k2 <= n) and all elements of array are distinct.
+
+Examples :
+
+> Input : arr[] = [20, 8, 22, 4, 12, 10, 14] k1 = 3,  k2 = 6 Output : 26 3rd smallest element is 10. 6th smallest element is 20. Sum of all element between k1 & k2 is 12 + 14 = 26 Input : arr[] = [10, 2, 50, 12, 48, 13], k1 = 2, k2 = 6 Output : 73
+
+Table of Content
+
+- [Naive Approach] Using Sorting - O(n log(n)) Time and O(1) Space
+- [Expected Approach] Using Min-Heap
+- [Alternate Approach] Using Max-Heap
+
+### [Naive Approach] Using Sorting - O(n log(n)) Time and O(1) Space
+
+> The simplest approach is to sort the array, sum the elements lying between the k1-th and k2-th smallest elements, and return the result..
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <numeric>
+
+using namespace std;
+
+int sumBetween(vector<int>& arr, int k1, int k2)
+{
+    // Sort the vector
+    sort(arr.begin(), arr.end());
+
+    // Sum elements between k1-th and k2-th smallest
+    return accumulate(arr.begin() + k1, arr.begin() + k2 - 1, 0);
+}
+
+// Driver program
+int main()
+{
+    vector<int> arr = {20, 8, 22, 4, 12, 10, 14};
+    int k1 = 3, k2 = 6;
+
+    cout << sumBetween(arr, k1, k2);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+import java.util.stream.IntStream;
+
+public class SumBetween {
+
+    // Function to find sum of elements between k1-th and k2-th smallest
+    static int sumBetween(int[] arr, int k1, int k2) {
+        // Sort the array
+        Arrays.sort(arr);
+
+        // Sum elements between k1-th and k2-th smallest
+        return IntStream.range(k1, k2 - 1)
+                        .map(i -> arr[i])
+                        .sum();
+    }
+
+    // Driver program
+    public static void main(String[] args) {
+        int[] arr = {20, 8, 22, 4, 12, 10, 14};
+        int k1 = 3, k2 = 6;
+
+        System.out.println(sumBetween(arr, k1, k2));
+    }
+}
+
+Python
+
+def sum_between(arr, k1, k2):
+    # Sort the list
+    arr.sort()
+
+    # Sum elements between k1-th and k2-th smallest
+    return sum(arr[k1:k2-1])
+
+# Driver code
+arr = [20, 8, 22, 4, 12, 10, 14]
+k1, k2 = 3, 6
+
+print(sum_between(arr, k1, k2))
+
+C#
+
+using System;
+using System.Linq;
+
+class SumBetweenProgram
+{
+    // Function to find sum of elements between k1-th and k2-th smallest
+    static int SumBetween(int[] arr, int k1, int k2)
+    {
+        // Sort the array
+        Array.Sort(arr);
+
+        // Sum elements between k1-th and k2-th smallest
+        return arr.Skip(k1).Take(k2 - k1 - 1).Sum();
+    }
+
+    // Driver program
+    static void Main()
+    {
+        int[] arr = {20, 8, 22, 4, 12, 10, 14};
+        int k1 = 3, k2 = 6;
+
+        Console.WriteLine(SumBetween(arr, k1, k2));
+    }
+}
+
+JavaScript
+
+function sumBetween(arr, k1, k2) {
+    // Sort the array
+    arr.sort((a, b) => a - b);
+
+    // Sum elements between k1-th and k2-th smallest
+    return arr.slice(k1, k2 - 1).reduce((acc, val) => acc + val, 0);
+}
+
+// Driver code
+const arr = [20, 8, 22, 4, 12, 10, 14];
+const k1 = 3, k2 = 6;
+
+console.log(sumBetween(arr, k1, k2));
+
+PHP
+
+<?php
+function sumBetween($arr, $k1, $k2) {
+    // Sort the array
+    sort($arr);
+
+    // Sum elements between k1-th and k2-th smallest
+    $sum = 0;
+    for ($i = $k1; $i < $k2 - 1; $i++) {
+        $sum += $arr[$i];
+    }
+    return $sum;
+}
+
+// Driver code
+$arr = [20, 8, 22, 4, 12, 10, 14];
+$k1 = 3;
+$k2 = 6;
+
+echo sumBetween($arr, $k1, $k2);
+?>
+
+Output
+
+26
+
+### [Expected Approach] Using Min-Heap
+
+> The idea is to use a min-heap to efficiently extract the smallest elements and sum the elements strictly between the k1-th and k2-th smallest.
+
+Steps:
+
+- Build a min-heap with all elements of the array. This ensures the smallest element is always at the top.
+- Extract the minimum element k1 times. These elements are smaller than or equal to the k1-th smallest, so we skip them.
+- Extract and sum the next k2 - k1 - 1 elements. These are the elements strictly between the k1-th and k2-th smallest.
+- Return the sum as the final answer.
+
+C++
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+// Min-heapify function
+void minheapify(vector<int>& a, int index, int heapSize)
+{
+    int small = index;
+    int l = 2 * index + 1;
+    int r = 2 * index + 2;
+
+    if (l < heapSize && a[l] < a[small])
+        small = l;
+
+    if (r < heapSize && a[r] < a[small])
+        small = r;
+
+    if (small != index) {
+        swap(a[small], a[index]);
+        minheapify(a, small, heapSize);
+    }
+}
+
+// Function to calculate sum of elements between k1-th and k2-th smallest
+int sumBetweenK1K2(vector<int>& arr, int k1, int k2)
+{
+    int heapSize = arr.size();
+    int ans = 0;
+
+    // Build the min-heap
+    for (int i = (heapSize / 2) - 1; i >= 0; i--) {
+        minheapify(arr, i, heapSize);
+    }
+
+    // Adjust for 0-based indexing
+    k1--;
+    k2--;
+
+    // Step 1: Extract minimum k1 times (skip these elements)
+    for (int i = 0; i <= k1; i++) {
+        arr[0] = arr[heapSize - 1];
+        heapSize--;
+        minheapify(arr, 0, heapSize);
+    }
+
+    /* Step 2: Extract minimum k2 – k1 – 1 times and sum all
+       extracted elements. */
+    for (int i = k1 + 1; i < k2; i++) {
+        ans += arr[0];
+        arr[0] = arr[heapSize - 1];
+        heapSize--;
+        minheapify(arr, 0, heapSize);
+    }
+
+    return ans;
+}
+
+// Driver function
+int main()
+{
+    vector<int> arr = {20, 8, 22, 4, 12, 10, 14};
+    int k1 = 3, k2 = 6;
+
+    cout << sumBetweenK1K2(arr, k1, k2);
+
+    return 0;
+}
+
+Java
+
+import java.util.*;
+
+public class MinHeapK1K2 {
+
+    // Min-heapify function
+    static void minHeapify(int[] a, int index, int heapSize) {
+        int small = index;
+        int l = 2 * index + 1;
+        int r = 2 * index + 2;
+
+        if (l < heapSize && a[l] < a[small])
+            small = l;
+
+        if (r < heapSize && a[r] < a[small])
+            small = r;
+
+        if (small != index) {
+            int temp = a[small];
+            a[small] = a[index];
+            a[index] = temp;
+            minHeapify(a, small, heapSize);
+        }
+    }
+
+    // Function to calculate sum of elements between k1-th and k2-th smallest
+    static int sumBetweenK1K2(int[] arr, int k1, int k2) {
+        int heapSize = arr.length;
+        int ans = 0;
+
+        // Build the min-heap
+        for (int i = (heapSize / 2) - 1; i >= 0; i--) {
+            minHeapify(arr, i, heapSize);
+        }
+
+        // Adjust for 0-based indexing
+        k1--;
+        k2--;
+
+        // Step 1: Extract minimum k1 times (skip these elements)
+        for (int i = 0; i <= k1; i++) {
+            arr[0] = arr[heapSize - 1];
+            heapSize--;
+            minHeapify(arr, 0, heapSize);
+        }
+
+        // Step 2: Extract minimum k2 – k1 – 1 times and sum all extracted elements
+        for (int i = k1 + 1; i < k2; i++) {
+            ans += arr[0];
+            arr[0] = arr[heapSize - 1];
+            heapSize--;
+            minHeapify(arr, 0, heapSize);
+        }
+
+        return ans;
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {20, 8, 22, 4, 12, 10, 14};
+        int k1 = 3, k2 = 6;
+
+        System.out.println(sumBetweenK1K2(arr, k1, k2));
+    }
+}
+
+Python
+
+# Min-heapify function
+def minheapify(a, index, heapSize):
+    small = index
+    l = 2 * index + 1
+    r = 2 * index + 2
+
+    if l < heapSize and a[l] < a[small]:
+        small = l
+    if r < heapSize and a[r] < a[small]:
+        small = r
+
+    if small != index:
+        a[small], a[index] = a[index], a[small]
+        minheapify(a, small, heapSize)
+
+# Function to calculate sum of elements between k1-th and k2-th smallest
+def sumBetweenK1K2(arr, k1, k2):
+    heapSize = len(arr)
+    ans = 0
+
+    # Build the min-heap
+    for i in range((heapSize // 2) - 1, -1, -1):
+        minheapify(arr, i, heapSize)
+
+    # Adjust for 0-based indexing
+    k1 -= 1
+    k2 -= 1
+
+    # Step 1: Extract minimum k1 times (skip these elements)
+    for i in range(k1 + 1):
+        arr[0] = arr[heapSize - 1]
+        heapSize -= 1
+        minheapify(arr, 0, heapSize)
+
+    # Step 2: Extract minimum k2 – k1 – 1 times and sum all extracted elements
+    for i in range(k1 + 1, k2):
+        ans += arr[0]
+        arr[0] = arr[heapSize - 1]
+        heapSize -= 1
+        minheapify(arr, 0, heapSize)
+
+    return ans
+
+# Driver code
+arr = [20, 8, 22, 4, 12, 10, 14]
+k1 = 3
+k2 = 6
+print(sumBetweenK1K2(arr, k1, k2))
+
+C#
+
+using System;
+
+class MinHeapK1K2 {
+
+    // Min-heapify function
+    static void MinHeapify(int[] a, int index, int heapSize) {
+        int small = index;
+        int l = 2 * index + 1;
+        int r = 2 * index + 2;
+
+        if (l < heapSize && a[l] < a[small])
+            small = l;
+        if (r < heapSize && a[r] < a[small])
+            small = r;
+
+        if (small != index) {
+            int temp = a[small];
+            a[small] = a[index];
+            a[index] = temp;
+            MinHeapify(a, small, heapSize);
+        }
+    }
+
+    // Function to calculate sum of elements between k1-th and k2-th smallest
+    static int SumBetweenK1K2(int[] arr, int k1, int k2) {
+        int heapSize = arr.Length;
+        int ans = 0;
+
+        // Build the min-heap
+        for (int i = (heapSize / 2) - 1; i >= 0; i--) {
+            MinHeapify(arr, i, heapSize);
+        }
+
+        // Adjust for 0-based indexing
+        k1--;
+        k2--;
+
+        // Step 1: Extract minimum k1 times (skip these elements)
+        for (int i = 0; i <= k1; i++) {
+            arr[0] = arr[heapSize - 1];
+            heapSize--;
+            MinHeapify(arr, 0, heapSize);
+        }
+
+        // Step 2: Extract minimum k2 – k1 – 1 times and sum all extracted elements
+        for (int i = k1 + 1; i < k2; i++) {
+            ans += arr[0];
+            arr[0] = arr[heapSize - 1];
+            heapSize--;
+            MinHeapify(arr, 0, heapSize);
+        }
+
+        return ans;
+    }
+
+    static void Main() {
+        int[] arr = {20, 8, 22, 4, 12, 10, 14};
+        int k1 = 3, k2 = 6;
+
+        Console.WriteLine(SumBetweenK1K2(arr, k1, k2));
+    }
+}
+
+JavaScript
+
+// Min-heapify function
+function minHeapify(a, index, heapSize) {
+    let small = index;
+    let l = 2 * index + 1;
+    let r = 2 * index + 2;
+
+    if (l < heapSize && a[l] < a[small]) small = l;
+    if (r < heapSize && a[r] < a[small]) small = r;
+
+    if (small !== index) {
+        [a[small], a[index]] = [a[index], a[small]];
+        minHeapify(a, small, heapSize);
+    }
+}
+
+// Function to calculate sum of elements between k1-th and k2-th smallest
+function sumBetweenK1K2(arr, k1, k2) {
+    let a = [...arr];
+    let heapSize = a.length;
+    let ans = 0;
+
+    // Build the min-heap
+    for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+        minHeapify(a, i, heapSize);
+    }
+
+    // Adjust for 0-based indexing
+    k1--;
+    k2--;
+
+    // Step 1: Extract minimum k1 times (skip these elements)
+    for (let i = 0; i <= k1; i++) {
+        a[0] = a[heapSize - 1];
+        heapSize--;
+        minHeapify(a, 0, heapSize);
+    }
+
+    // Step 2: Extract minimum k2 – k1 – 1 times and sum all extracted elements
+    for (let i = k1 + 1; i < k2; i++) {
+        ans += a[0];
+        a[0] = a[heapSize - 1];
+        heapSize--;
+        minHeapify(a, 0, heapSize);
+    }
+
+    return ans;
+}
+
+// Driver code
+const arr = [20, 8, 22, 4, 12, 10, 14];
+const k1 = 3, k2 = 6;
+
+console.log(sumBetweenK1K2(arr, k1, k2)); // Output: 26
+
+Output
+
+26
+
+Time Complexity : O(n + k2 × log n) Building the min-heap takes O(n), and extracting the first k2 elements (including skipped k1 elements and summed elements) requires O(k2 × log n) because each extraction involves re-heapifying. In the worst case, when k2 is close to n, this becomes O(n log n). Auxiliary Space: O(1)
+
+### [Alternate Approach] Using Max-Heap
+
+> The idea is to first find the K2th Smallest.  Then just keep an popping the elements until the size of heap is K1, and make sure to add the elements to a variable before popping the elements.
+
+C++
+
+// C++ program to find sum of all element between
+// to K1'th and k2'th smallest elements in array
+#include <bits/stdc++.h>
+using namespace std;
+long long sumBetweenTwoKth(long long A[], long long N,
+                           long long K1, long long K2)
+{
+    // Using max heap to find K1'th and K2'th smallest
+    // elements
+    priority_queue<long long> maxH;
+
+    // Using this for loop we eliminate the extra elements
+    // which are greater than K2'th smallest element as they
+    // are not required for us
+
+    for (int i = 0; i < N; i++) {
+
+        maxH.push(A[i]);
+
+        if (maxH.size() > K2) {
+            maxH.pop();
+        }
+    }
+    // popping out the K2'th smallest element
+    maxH.pop();
+
+    long long ans = 0;
+    // adding the elements to ans until we reach the K1'th
+    // smallest element
+    while (maxH.size() > K1) {
+
+        ans += maxH.top();
+        maxH.pop();
+    }
+
+    return ans;
+}
+
+int main()
+{
+    long long arr[] = { 20, 8, 22, 4, 12, 10, 14 };
+    long long k1 = 3, k2 = 6;
+    long long n = sizeof(arr) / sizeof(arr[0]);
+    cout << sumBetweenTwoKth(arr, n, k1, k2);
+    return 0;
+}
+
+Java
+
+// Java program to find sum of all element between
+// to K1'th and k2'th smallest elements in array
+import java.util.*;
+public class GFG {
+  static long sumBetweenTwoKth(long A[], long N, long K1,
+                               long K2)
+  {
+    // Using max heap to find K1'th and K2'th smallest
+    // elements
+    PriorityQueue<Long> maxH = new PriorityQueue<>(
+      Collections.reverseOrder());
+
+    // Using this for loop we eliminate the extra
+    // elements which are greater than K2'th smallest
+    // element as they are not required for us
+
+    for (int i = 0; i < N; i++) {
+
+      maxH.add(A[i]);
+
+      if (maxH.size() > K2) {
+        maxH.remove();
+      }
+    }
+    // popping out the K2'th smallest element
+    maxH.remove();
+
+    long ans = 0;
+    // adding the elements to ans until we reach the
+    // K1'th smallest element
+    while (maxH.size() > K1) {
+
+      ans += maxH.peek();
+      maxH.remove();
+    }
+
+    return ans;
+  }
+
+  public static void main(String[] args)
+  {
+    long arr[] = { 20, 8, 22, 4, 12, 10, 14 };
+    long k1 = 3, k2 = 6;
+    long n = arr.length;
+    System.out.println(
+      sumBetweenTwoKth(arr, n, k1, k2));
+  }
+}
+// This code is contributed by karandeep1234
+
+Python
+
+# Python3 program to find sum of all element between
+# to K1'th and k2'th smallest elements in array
+def sumBetweenTwoKth(A, N, K1, K2):
+
+    # Using max heap to find K1'th and K2'th smallest
+    # elements
+    maxH = []
+
+    # Using this for loop we eliminate the extra elements
+    # which are greater than K2'th smallest element as they
+    # are not required for us
+
+    for i in range(0,N):
+        maxH.append(A[i])
+        maxH.sort(reverse=True)
+
+        if (len(maxH) > K2):
+            maxH.pop(0)
+    # popping out the K2'th smallest element
+    maxH.pop(0)
+
+    ans = 0
+    # adding the elements to ans until we reach the K1'th
+    # smallest element
+    while (len(maxH) > K1):
+        ans += maxH[0]
+        maxH.pop(0)
+
+    return ans
+
+arr = [ 20, 8, 22, 4, 12, 10, 14 ]
+k1 = 3
+k2 = 6
+n = len(arr)
+print(sumBetweenTwoKth(arr, n, k1, k2))
+
+# This code is contributed by akashish__
+
+C#
+
+using System;
+using System.Collections.Generic;
+
+public class GFG {
+  public static long sumBetweenTwoKth(long[] A, long N,
+                                      long K1, long K2)
+  {
+
+    // Using max heap to find K1'th and K2'th smallest
+    // elements
+    SortedSet<long> maxH = new SortedSet<long>();
+
+    // Using this for loop we eliminate the extra
+    // elements which are greater than K2'th smallest
+    // element as they are not required for us
+
+    for (int i = 0; i < N; i++) {
+
+      maxH.Add(A[i]);
+
+      if (maxH.Count > K2) {
+        maxH.Remove(maxH.Max);
+      }
+    }
+    // popping out the K2'th smallest element
+    maxH.Remove(maxH.Max);
+
+    long ans = 0;
+
+    // adding the elements to ans until we reach the
+    // K1'th smallest element
+    while (maxH.Count > K1) {
+
+      ans += maxH.Max;
+      maxH.Remove(maxH.Max);
+    }
+
+    return ans;
+  }
+
+  static public void Main()
+  {
+
+    long[] arr = { 20, 8, 22, 4, 12, 10, 14 };
+    long k1 = 3, k2 = 6;
+    long n = arr.Length;
+    Console.WriteLine(sumBetweenTwoKth(arr, n, k1, k2));
+  }
+}
+
+// This code is contributed by akashish__
+
+JavaScript
+
+// JS program to find sum of all element between
+// to K1'th and k2'th smallest elements in array
+
+function PriorityQueue () {
+    let collection = [];
+    this.printCollection = function() {
+      (console.log(collection));
+    };
+    this.enqueue = function(element){
+        if (this.isEmpty()){
+            collection.push(element);
+        } else {
+            let added = false;
+            for (let i=0; i<collection.length; i++){
+                 if (element[1] < collection[i][1]){ //checking priorities
+                    collection.splice(i,0,element);
+                    added = true;
+                    break;
+                }
+            }
+            if (!added){
+                collection.push(element);
+            }
+        }
+    };
+    this.dequeue = function() {
+        let value = collection.shift();
+        return value[0];
+    };
+    this.front = function() {
+        return collection[0];
+    };
+    this.size = function() {
+        return collection.length;
+    };
+    this.isEmpty = function() {
+        return (collection.length === 0);
+    };
+}
+
+function sumBetweenTwoKth(A, N, K1, K2)
+{
+    // Using max heap to find K1'th and K2'th smallest
+    // elements
+    let maxH = new PriorityQueue();
+
+    // Using this for loop we eliminate the extra elements
+    // which are greater than K2'th smallest element as they
+    // are not required for us
+
+    for (let i = 0; i < N; i++) {
+
+        maxH.enqueue(A[i]);
+
+        if (maxH.size() > K2) {
+            maxH.dequeue();
+        }
+    }
+    // popping out the K2'th smallest element
+    maxH.dequeue();
+
+    let ans = 0;
+    // adding the elements to ans until we reach the K1'th
+    // smallest element
+    while (maxH.size() > K1) {
+
+        ans += maxH.front();
+        maxH.dequeue();
+    }
+
+    return ans;
+}
+
+let arr = [ 20, 8, 22, 4, 12, 10, 14 ];
+let k1 = 3, k2 = 6;
+let n = arr.length;
+console.log(sumBetweenTwoKth(arr, n, k1, k2));
+
+// This code is contributed by akashish__
+
+Output
+
+26
+
+Time Complexity: ( N * log K2 ) + ( (K2-K1) * log (K2-K1) ) + O(N) = O(NLogK2) (Dominant Term)
+
+Reasons:
+
+- The Traversal O(N) in the function
+- Time Complexity for finding K2'th smallest element is ( N * log K2 )
+- Time Complexity for popping ( K2-K1 ) elements is ( (K2-K1) * log (K2-K1) )
+- As 1 Insertion takes O(LogK) where K is the size of Heap.
+- As 1 Deletion takes  O(LogK) where K is the size of Heap.
+
+Extra Space Complexity: O(K2), As we use Heap / Priority Queue and we only store at max K elements, not more than that.
