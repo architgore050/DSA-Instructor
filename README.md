@@ -1,8 +1,224 @@
 # DSA Mentor
 
-A hierarchical, adaptive RAG system for DSA tutoring — designed to study when retrieval improves algorithmic reasoning across models of different capabilities.
+> A hierarchical, adaptive RAG system for algorithmic reasoning — built to study when and how retrieval improves DSA tutoring across models of different capabilities.
 
-The system preserves the natural hierarchy of DSA textbooks, retrieves from coarse to fine granularity, dynamically determines the amount of paragraph-level evidence using similarity-score knee detection, and allows the language model to issue additional retrieval queries when its initial evidence is insufficient.
+---
+
+## What It Is
+
+DSA Mentor is a retrieval-augmented generation (RAG) system built specifically for teaching Data Structures & Algorithms. Unlike generic chatbots that rely on parametric knowledge alone, DSA Mentor:
+
+- **Preserves the natural hierarchy** of DSA textbooks (Book → Chapter → Topic → Subtopic → Paragraph)
+- **Retrieves from coarse to fine granularity**, narrowing the search space at each level
+- **Dynamically determines evidence volume** using similarity-score knee detection — broad queries get broad context, narrow queries get precise citations
+- **Allows the LLM to perform follow-up searches** when initial evidence is insufficient (agentic retrieval)
+- **Is fully observable** — every retrieval decision, similarity score, and knee selection is inspectable
+
+The system was built around a central research question: *When does retrieval materially improve algorithmic reasoning, and how does the effect vary with model capability?*
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        USER QUERY                                   │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  QUERY UNDERSTANDING                                                │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │ Regex-based breadth classifier: BROAD / MODERATE / NARROW   │    │
+│  │ 690+ narrow technical terms · 30 DSA concept names          │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────────────────────────────┐
+│  HIERARCHICAL RETRIEVAL (5 levels × 5 FAISS indices)                           │
+│                                                                                │
+│  Book Index     → top-k books     → knee detection                             │
+│       ↓                                                                        │
+│  Chapter Index  → top-k chapters  → knee detection (dedup across books)        │
+│       ↓                                                                        │
+│  Topic Index    → top-k topics    → knee detection (dedup across chapters)     │
+│       ↓                                                                        │
+│  Subtopic Index → top-k subtopics → knee detection                             │
+│       ↓                                                                        │
+│  Paragraph Index → top-k paragraphs → knee detection (flat fallback if <3)     │
+│                                                                                │
+│  Each level: FAISS cosine search → similarity curve → elbow detection          │
+└────────────────────────────┬───────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  CONTEXT EXPANSION                                                  │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │ Topic Expansion: populate full_text for selected topics     │    │
+│  │   BROAD → all · MODERATE → top 3 · NARROW → top 1           │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │ Neighbor Expansion: ±2 paragraphs within same topic         │    │
+│  │ Provides surrounding context (definitions, examples, proofs)│    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │ Context Budget: ~20,000 token ceiling, truncate lowest-sim  │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+                             ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│  AGENTIC LLM LOOP                                                     │
+│  ┌───────────────────────────────────────────────────────────────┐    │
+│  │ 1. Build context: system prompt + retrieved knowledge + query │    │
+│  │ 2. Offer search_knowledge(query, scope, max_results) tool     │    │
+│  │ 3. Model calls tool → results appended → repeat (max 3)       │    │
+│  │ 4. Budget exhausted → force final answer without tools        │    │
+│  └───────────────────────────────────────────────────────────────┘    │
+└────────────────────────────┬──────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  RESPONSE + RETRIEVAL INSPECTOR                                     │
+│  Grounded answer with source citations · Full retrieval trace       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Component Breakdown
+
+#### 1. Knowledge Ingestion Pipeline
+
+Documents in `docs/` are parsed into a **5-level hierarchy** with unique IDs, parent-child links, and provenance metadata:
+
+| Level | Embedding Strategy | FAISS Index |
+|---|---|---|
+| **Book** | Aggregated from child chapters | `IndexFlatIP` (cosine) |
+| **Chapter** | Title + section headings | `IndexFlatIP` (cosine) |
+| **Topic** | Title + full_text body | `IndexFlatIP` (cosine) |
+| **Subtopic** | Title + content | `IndexFlatIP` (cosine) |
+| **Paragraph** | Content (1,500 char chunks, 200 char overlap) | `IndexFlatIP` (cosine) |
+
+Three parsers handle different source formats:
+- **PDF parser** — page-by-page extraction via pypdf, heading detection via regex + uppercase-ratio heuristic
+- **Markdown parser** — heading-based subtopic boundaries, fenced code block preservation
+- **Text parser** — GfG article format with Source/Title/Extractor headers
+
+The output is `knowledge_base.json` containing all hierarchy nodes plus a `KnowledgeManifest` with SHA-256 file hashes for integrity verification.
+
+#### 2. Embedding Engine
+
+Three swappable backends with automatic fallback:
+
+```
+OpenAI-compatible HTTP endpoint  →  sentence-transformers (all-MiniLM-L6-v2)  →  TF-IDF (scikit-learn)
+```
+
+All backends return **L2-normalized vectors** so that dot product in FAISS equals cosine similarity. Batch processing (64 docs per batch) with lazy model loading.
+
+#### 3. FAISS Index Layer
+
+- **`FAISSIndex`** — thin wrapper with GPU auto-detection (`GpuIndexFlatIP` when CUDA is available, `IndexFlatIP` otherwise), save/load with CPU serialization
+- **`MultiIndexManager`** — manages all 5 indices, maintains metadata mappings (id → node, node_id → position), scoped search with parent-id filtering
+
+#### 4. Knee Detection (Core Innovation)
+
+At each hierarchy level, instead of using a fixed `top_k`, the system computes the **similarity-score curve** and finds the elbow point:
+
+1. Take top `candidate_k` sorted scores
+2. Compute first differences: `Δᵢ = sᵢ - sᵢ₊₁`
+3. Normalize by `max(scores)`
+4. Find index with maximum normalized drop → **knee position**
+5. If max drop ≥ threshold (0.02): select all items through the knee
+6. Else: select all scores ≥ `similarity_threshold` (0.15)
+7. Enforce `[minimum, maximum]` bounds from config
+
+This means a broad query like "explain sorting" might select 5 books, 8 chapters, 10 topics, 25 paragraphs — while a narrow query like "settled vertex invariant in Dijkstra" might select 1 book, 1 chapter, 1 topic, 3 paragraphs.
+
+#### 5. Query Breadth Classification
+
+A regex-based classifier (no LLM dependency) categorizes queries:
+
+| Category | Trigger | Behavior |
+|---|---|---|
+| **NARROW** | 1+ technical term from 690-term lexicon | Top 1 topic, minimal expansion |
+| **MODERATE** | 1-2 concept names, short query | Top 3 topics, ±2 neighbors |
+| **BROAD** | General starters ("explain", "teach"), 3+ concepts | All topics, full expansion |
+
+#### 6. Agentic Retrieval Tool Loop
+
+The LLM can call `search_knowledge(query, scope, max_results)` where scope is `all`, `book`, `chapter`, or `topic`. The loop:
+
+1. Sends initial context with tool schema
+2. Model responds with tool calls or text answer
+3. Each tool call executes a scoped FAISS search, appends results
+4. After `max_tool_calls` (3) executions, tool is removed — model is forced to answer from gathered evidence
+5. Tool failures are caught and returned as error strings for model recovery
+
+#### 7. Context Builder
+
+Assembles the final prompt with:
+- System prompt (varies by RAG mode and tool availability)
+- Conversation context (last 5 turns)
+- Retrieved knowledge formatted as `[TOPIC]` / `[SUBTOPIC]` sections
+- Instructions for the model
+
+Deduplication, diversity constraints (max 6 paragraphs per source), and token budget enforcement are applied.
+
+#### 8. Streamlit UI
+
+Three interaction modes:
+- **Learn** — standard Q&A with hierarchical retrieval
+- **Hint** — progressive hints for LeetCode-style problems (max 4 levels)
+- **Explain** — code analysis: correctness, bugs, invariants, complexity, alternatives
+
+Features:
+- Streaming responses (character-by-character yield)
+- Retrieval inspector (expandable panel with all scores, knee selections, tool calls)
+- Source citations appended below responses
+- RAG toggle, model selector, index build controls
+- `<thinking>` tag extraction → collapsible grey block
+
+#### 9. Benchmark & Ablation Suite
+
+**Experimental matrix:** 3 model tiers × 2 RAG states × 5 retrieval methods = 30 runs
+
+| Metric | Method |
+|---|---|
+| **Correctness** (0–4) | Required claims coverage + forbidden claims penalty |
+| **Groundedness** (0–1) | Answer claim overlap with retrieved text |
+| **Recall@K / Precision@K** | Set overlap of retrieved vs relevant paragraphs |
+| **Rescue Matrix** | 5-way classification: baseline correct/relevant, baseline correct/irrelevant, RAG rescue, unavoidable failure, generation failure |
+
+**6 ablation levels** trace the contribution of each architectural choice:
+
+| Level | Configuration | Tests |
+|---|---|---|
+| A | LLM only (RAG OFF) | Parametric knowledge baseline |
+| B | Flat paragraph RAG | Dense similarity alone |
+| C | Hierarchical + fixed top-k | Document structure value |
+| D | Hierarchical + knee detection | Dynamic evidence selection |
+| E | D + topic/neighbor expansion | Topic-aware context |
+| F | E + agentic tool calling | Active retrieval |
+
+Additional evaluation modules:
+- **RAGAS retrieval eval** — 20 questions with gold context, context precision/recall/faithfulness
+- **System profiler** — per-stage timing (embedding, FAISS, knee, expansion), query complexity analysis, system health reporting
+
+---
+
+## Corpus
+
+| Source | Type | Files | Role |
+|---|---|---:|---|
+| Open Data Structures (Morin et al.) | PDF | 1 | Primary textbook |
+| Introduction to Computer Science (OpenStax) | PDF | 1 | Primary textbook |
+| CP-Algorithms | Markdown | 164 | Algorithm reference |
+| JavaScript Algorithms | Markdown | 236 | Data structure reference |
+| The Algorithms (Python) | Markdown | 22 | Category overviews |
+| GeeksforGeeks DSA Tutorial | Text | 1,505 | Tutorial corroboration |
+
+**~85 MB total** — deliberately small but deep. Quality over quantity.
 
 ---
 
@@ -10,236 +226,60 @@ The system preserves the natural hierarchy of DSA textbooks, retrieves from coar
 
 ### Prerequisites
 
-- **Python 3.11+**
-- **GPU (optional)** — CUDA with `faiss-gpu` for faster embedding and search. CPU-only works with `faiss-cpu`.
-- **~4 GB disk** for the knowledge base, vector indices, and model cache
-
-### Step-by-step setup
+- Python 3.11+
+- GPU (optional) — CUDA with `faiss-gpu` for faster search
+- ~4 GB disk for knowledge base, indices, and model cache
 
 ```bash
-# 1. Navigate to the project
 cd "DSA Instructor"
 
-# 2. Create and activate a virtual environment
-python -m venv venv
-venv\Scripts\activate              # Windows
-# source venv/bin/activate         # Linux / macOS
-
-# 3. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 4. Build the knowledge base AND vector index (one command)
+# Build knowledge base + vector index
 python -m dsa_mentor.ingestion.build --index
 
-# 5. Launch the chat UI
+# Launch the chat UI
 streamlit run app/streamlit_app.py
 ```
 
-Open the Streamlit URL shown in the terminal (usually `http://localhost:8501`).
+Open the Streamlit URL (usually `http://localhost:8501`).
 
-### GPU setup (optional)
-
-If you have a CUDA-capable GPU, replace `faiss-cpu` with `faiss-gpu` after step 3:
+### GPU Setup
 
 ```bash
-pip uninstall -y faiss-cpu
-pip install faiss-gpu
-# Rebuild indices to use GPU
+pip uninstall -y faiss-cpu && pip install faiss-gpu
 python -m dsa_mentor.ingestion.build --index --force
 ```
 
-The project auto-detects CUDA at runtime — no config changes needed.
+Auto-detects CUDA at runtime — no config changes needed.
 
 ---
 
 ## Configuration
 
-All tunables live in `config.json`:
+All tunables live in `config.json` — nothing is hardcoded:
 
 ```jsonc
 {
   "llm": {
-    "base_url": "http://26.50.165.63:1234/v1",
-    "models": { "large": "...", "medium": "...", "small": "..." },
-    "sampling": { "temperature": 0.7, "top_p": 0.95, "top_k": 40, "max_tokens": 8192 }
+    "base_url": "http://localhost:1234/v1",
+    "models": { "large": "qwen3.6-35b-a3b-mtp", "medium": "phi-4-reasoning-plus", "small": "gemma-4-e4b-it" }
   },
   "retrieval": {
-    "similarity_threshold": 0.35,
-    "max_context_tokens": 16000,
-    "paragraph_max_chars": 1800,
-    "paragraph_overlap_chars": 250,
-    "book_knee":     { "candidate_k": 10, "minimum": 1, "maximum": 4 },
-    "chapter_knee":  { "candidate_k": 15, "minimum": 1, "maximum": 6 },
-    "topic_knee":    { "candidate_k": 20, "minimum": 1, "maximum": 8 },
-    "paragraph_knee":{ "candidate_k": 40, "minimum": 3, "maximum": 20 }
+    "similarity_threshold": 0.15,
+    "max_context_tokens": 20000,
+    "paragraph_max_chars": 1500,
+    "paragraph_overlap_chars": 200,
+    "book_knee":     { "candidate_k": 10, "minimum": 1, "maximum": 5 },
+    "chapter_knee":  { "candidate_k": 20, "minimum": 1, "maximum": 8 },
+    "topic_knee":    { "candidate_k": 30, "minimum": 1, "maximum": 10 },
+    "subtopic_knee": { "candidate_k": 40, "minimum": 1, "maximum": 15 },
+    "paragraph_knee":{ "candidate_k": 50, "minimum": 1, "maximum": 25 }
   },
-  "agentic_retrieval": { "enabled": true, "max_tool_calls": 3 },
-  "diversity": { "max_paragraphs_per_source": 6 }
+  "agentic_retrieval": { "enabled": true, "max_tool_calls": 3 }
 }
 ```
-
-Key settings:
-- **`llm.base_url`** — OpenAI-compatible API endpoint for your LLM server
-- **`llm.models`** — model names for large / medium / small tiers
-- **`retrieval.max_context_tokens`** — total token budget for retrieved context
-- **`agentic_retrieval.enabled`** — set `false` to disable tool-based follow-up queries
-
----
-
-## How It Works
-
-```
-USER QUERY
-    ↓
-Query Understanding (breadth classification: BROAD / MODERATE / NARROW)
-    ↓
-Book Retrieval ──→ knee detection
-    ↓
-Chapter Retrieval ──→ knee detection
-    ↓
-Topic Retrieval ──→ knee detection
-    ↓
-Full Topic Text + Global Paragraph Vector Search
-    ↓
-Topic Expansion + Neighbor Selection
-    ↓
-Context Builder (dedup, budget, diversity)
-    ↓
-LLM (with optional tool-based retrieval loop)
-```
-
-1. **Documents in `docs/`** are parsed into a 5-level hierarchy: Book → Chapter → Topic → Subtopic → Paragraph.
-2. **`--index`** builds 4 FAISS vector indices (book, chapter, topic, paragraph) in the `index/` directory using pre-normalized vectors for cosine similarity.
-3. **Streamlit app** auto-loads existing indices from `index/` and provides the chat interface.
-4. **RAG retrieval** uses knee detection on the similarity-score curve at each hierarchy level to dynamically determine how many items to keep — broad queries get more evidence, narrow queries get precise evidence.
-5. **Agentic mode** lets the LLM call `search_knowledge(query, scope, max_results)` up to 3 times when initial evidence is insufficient.
-
----
-
-## CLI Reference
-
-### Build command
-
-```bash
-python -m dsa_mentor.ingestion.build              # Parse docs/ → knowledge_base.json only
-python -m dsa_mentor.ingestion.build --index      # Parse + vectorize + build FAISS indices
-python -m dsa_mentor.ingestion.build --index --force  # Force rebuild indices (skip existing)
-python -m dsa_mentor.ingestion.build --verbose    # Enable debug logging
-```
-
-| Flag | Description |
-|---|---|
-| *(none)* | Parse documents and save `knowledge_base.json` (no vector indexing) |
-| `--index` | Parse documents, embed, and build all 4 FAISS indices |
-| `--force` | Rebuild indices even if they already exist |
-| `--verbose` | Print detailed parsing and embedding progress |
-
-### Benchmark command
-
-```bash
-python -m benchmark                     # Single run: large model, RAG ON, knee detection
-python -m benchmark --model medium --rag off --method fixed_top_10
-python -m benchmark --full              # Full matrix: 3 models × 2 RAG × 5 methods = 30 runs
-```
-
----
-
-## Running Benchmarks
-
-The benchmark suite evaluates retrieval quality and answer correctness across models and retrieval methods.
-
-### Single Run
-
-```bash
-# RAG ON, large model, knee detection (default)
-python -m benchmark
-
-# Specify options
-python -m benchmark --model medium --rag off --method fixed_top_10
-
-# Custom questions and output
-python -m benchmark --questions benchmark/sample_questions.jsonl --output my_results.jsonl
-```
-
-### Full Experiment Matrix
-
-```bash
-python -m benchmark --full
-```
-
-Output files:
-- `benchmark/results.jsonl` — per-question results for the last run
-- `benchmark/results_{model}_{rag}_{method}.jsonl` — individual result files from `--full`
-- `benchmark/results.json` — full experiment results (only from `--full`)
-
-### Ablation Studies
-
-```python
-from benchmark.ablations import AblationStudy
-
-# Run all ablation levels
-AblationStudy.run_all(config_path="config.json")
-
-# Run a specific level
-AblationStudy.run_level_A(config_path="config.json")  # LLM only (RAG OFF)
-AblationStudy.run_level_D(config_path="config.json")  # Hierarchical + knee detection
-```
-
----
-
-## Corpus
-
-The knowledge base (~85 MB) consists of:
-
-| Source | Type | Files | Size | Role |
-|---|---|---:|---:|---|
-| *Open Data Structures* (Morin et al.) | PDF | 1 | 1.7 MB | Primary book |
-| *Introduction to Computer Science* (OpenStax) | PDF | 1 | 56 MB | Primary book |
-| CP-Algorithms | Markdown | 164 | 1.6 MB | Supplementary reference |
-| JavaScript Algorithms | Markdown | 236 | 0.7 MB | Supplementary reference |
-| The Algorithms (Python) | Markdown | 22 | 41 KB | Category overviews |
-| GeeksforGeeks DSA Tutorial | Text | 1505 | 24 MB | Tutorial corroboration |
-
-See `knowledge_base_strategy.md` for full source details, curation decisions, and licensing notes.
-
----
-
-## UI Features
-
-The Streamlit app provides:
-
-- **Learn mode** — conceptual explanations with hierarchical retrieval
-- **Hint mode** — progressive hints for LeetCode-style problems
-- **Explain mode** — code analysis (correctness, bugs, invariants, complexity, alternatives)
-- **Retrieval Inspector** — expandable panel showing books, chapters, topics, paragraphs with similarity scores and knee detection results
-- **RAG toggle** — switch between RAG ON (retrieval + tool calling) and RAG OFF (model parametric knowledge only)
-- **Model selector** — Large / Medium / Small
-
----
-
-## Architecture
-
-```
-LAYER 1 — KNOWLEDGE
-  Books → Chapters → Topics → Subtopics → Paragraphs
-
-LAYER 2 — RETRIEVAL
-  Broad retrieval → hierarchical narrowing → dynamic paragraph selection → local expansion
-
-LAYER 3 — REASONING
-  LLM → grounded answer → optional retrieval tool → iterative evidence gathering
-
-LAYER 4 — SCIENCE
-  RAG OFF vs RAG ON → small vs frontier models → fixed vs dynamic retrieval → flat vs hierarchical → passive vs agentic
-```
-
-### Key Design Decisions
-
-- **Paragraph-level retrieval** — the atomic evidence unit is the paragraph, not arbitrary token chunks. This preserves document structure (definition with qualification, theorem with proof, algorithm with complexity).
-- **Dynamic evidence selection** — knee detection on the similarity-score curve determines how many candidates to keep at each level, rather than using a fixed `top_k`. This adapts to query breadth: broad queries get more evidence, narrow queries get precise evidence.
-- **Hierarchical filtering** — four separate FAISS indices (book, chapter, topic, paragraph) enable coarse-to-fine retrieval. Each level narrows the search space before passing to the next.
-- **Agentic retrieval** — the model can call `search_knowledge(query, scope, max_results)` to request additional evidence when initial retrieval is insufficient (max 3 tool calls).
-- **RAG OFF is a first-class mode** — when disabled, there is no retrieval tool either. This enables clean experimental comparison between parametric knowledge and retrieval-augmented reasoning.
 
 ---
 
@@ -248,126 +288,88 @@ LAYER 4 — SCIENCE
 ```
 DSA Instructor/
 ├── config.json                  # All tunables (models, retrieval, budgets)
-├── spec.md                      # Technical blueprint (source of truth)
-├── knowledge_base_strategy.md   # Corpus sources & curation strategy
-├── EXECUTION_NOTES.md           # Session-by-session build log
+├── spec.md                      # Technical blueprint
+├── knowledge_base_strategy.md   # Corpus sources & curation
+├── knowledge_base.json          # Parsed corpus (5-level hierarchy)
 │
-├── docs/                        # Corpus sources (see knowledge_base_strategy.md)
+├── docs/                        # Source documents (85 MB)
 │   ├── *.pdf                    # 2 primary books
 │   ├── cp-algorithms/           # 164 md articles
 │   ├── javascript-algorithms/   # 236 md docs
 │   ├── thealgorithms/           # 22 category READMEs
-│   └── geeksforgeeks/           # 1505 txt articles
+│   └── geeksforgeeks/           # 1,505 txt articles
 │
-├── dsa_mentor/                  # Python package
-│   ├── config.py                # Config loader (typed, validated)
-│   ├── llm.py                   # OpenAI-compatible client + tool loop
-│   ├── embeddings.py            # Embedding client (3 backends)
-│   ├── models.py                # Dataclasses: Book/Chapter/Topic/Paragraph/RetrievalResult
+├── dsa_mentor/                  # Core Python package
+│   ├── config.py                # Typed config loader with validation
+│   ├── models.py                # Dataclasses: Book/Chapter/Topic/Subtopic/Paragraph/RetrievalResult
+│   ├── llm.py                   # OpenAI-compatible client + agentic tool loop
+│   ├── embeddings.py            # 3-backend embedding client (HTTP → ST → TF-IDF)
 │   ├── prompts.py               # System prompts (RAG ON/OFF, tool enabled/disabled)
 │   ├── context.py               # Context builder (dedup, budget, diversity)
-│   ├── ingestion/               # Parsers: pdf, md, txt → hierarchy nodes
-│   ├── index/                   # FAISS indices: base, flat, multi, hierarchy
-│   └── retrieval/               # Knee detection, expand, tools
+│   ├── ingestion/               # PDF/MD/TXT parsers → hierarchy nodes
+│   ├── index/                   # FAISS indices (base, flat, multi, hierarchy)
+│   └── retrieval/               # Knee detection, breadth expansion, tools
 │
-├── app/                         # Streamlit chat UI
-│   └── streamlit_app.py         # Main application
+├── app/
+│   └── streamlit_app.py         # Chat UI with retrieval inspector
 │
-└── benchmark/                   # Evaluation
-    ├── dataset.py               # Dataset loader + sample questions
-    ├── scoring.py               # Correctness, grounding, recall/precision@k, rescue matrix
-    ├── runner.py                # RAG on/off runner + full experiment matrix
-    └── ablations.py             # 6 ablation levels (A–F), pairwise deltas, report
+├── benchmark/
+│   ├── dataset.py               # Dataset loader + sample questions
+│   ├── scoring.py               # Correctness, grounding, recall/precision@k, rescue matrix
+│   ├── runner.py                # Experiment runner (3×2×5 matrix)
+│   ├── ablations.py             # 6 ablation levels (A–F), pairwise deltas, report
+│   ├── ragas_retrieval.py       # RAGAS retrieval evaluation
+│   └── system_logging.py        # Pipeline profiler + system health
+│
+├── index/                       # Built FAISS indices (5 subdirectories)
+└── benchmark/results/           # Saved experiment outputs
 ```
 
 ---
 
-## Research Questions
+## Key Design Decisions
 
-The system is designed to answer:
-
-> **When does retrieval materially improve DSA reasoning, and how does the effect vary with model capability?**
-
-### Hypotheses
-
-- **H1 (Structure):** Preserving textbook hierarchy improves retrieval over flat paragraph retrieval.
-- **H2 (Adaptivity):** Dynamic evidence selection based on the similarity distribution provides a better relevance/context tradeoff than fixed `top_k` retrieval.
-- **H3 (Model Dependence):** Retrieval provides greater marginal benefit to weaker models than to frontier models on difficult DSA reasoning tasks.
-- **H4 (Agentic Retrieval):** Allowing the model to perform additional targeted searches improves multi-hop and evidence-deficient queries more than straightforward conceptual questions.
-
-### Ablation Sequence
-
-| Level | System | What it tests |
-|---|---|---|
-| A | LLM only (RAG OFF) | Baseline parametric knowledge |
-| B | Flat paragraph RAG | Dense similarity alone |
-| C | Hierarchical RAG (fixed top-k) | Document structure |
-| D | Hierarchical + knee detection | Dynamic evidence selection |
-| E | D + topic expansion + neighbors | Topic-aware context |
-| F | E + agentic tool calling | Active retrieval |
-
-The full experimental matrix covers 3 model tiers × 2 RAG states × 5 retrieval methods (spec §53).
-
----
-
-## Metrics
-
-| Metric | Description |
+| Decision | Rationale |
 |---|---|
-| **Correctness** (0–4) | Based on required_claims coverage and forbidden_claims penalty |
-| **Groundedness** (0.0–1.0) | Overlap between answer claims and retrieved evidence |
-| **Recall@K** | Relevant retrieved / all relevant evidence |
-| **Precision@K** | Relevant retrieved / retrieved evidence |
-| **Rescue Matrix** | 5-way classification: baseline correct/relevant, baseline correct/irrelevant, RAG rescue, unavoidable failure, generation failure |
+| **Paragraph-level evidence** | Preserves document structure — definitions with qualifications, theorems with proofs, algorithms with complexity |
+| **Dynamic evidence selection** | Knee detection adapts to query breadth; no manual `top_k` tuning per query type |
+| **Hierarchical filtering** | Each level narrows the search space before the next, reducing noise and improving precision |
+| **Agentic tool loop** | Model can request targeted follow-ups when initial evidence is insufficient (hard budget: 3 calls) |
+| **Config-driven everything** | Every tunable in `config.json` — models, knees, budgets, flags. Zero hardcoded values in code |
+| **Swappable embeddings** | HTTP endpoint → sentence-transformers → TF-IDF fallback chain |
+| **GPU auto-detection** | `GpuIndexFlatIP` when CUDA available, `IndexFlatIP` otherwise — no config flag needed |
+| **RAG OFF = no tool** | Clean experimental separation between parametric and retrieval-augmented reasoning |
 
 ---
 
-## Troubleshooting
+## CLI Reference
 
-| Issue | Solution |
+### Build
+
+```bash
+python -m dsa_mentor.ingestion.build              # Parse docs → knowledge_base.json
+python -m dsa_mentor.ingestion.build --index      # Parse + embed + build FAISS indices
+python -m dsa_mentor.ingestion.build --index --force  # Force rebuild
+```
+
+### Benchmark
+
+```bash
+python -m benchmark                     # Single run: large model, RAG ON, knee
+python -m benchmark --full              # Full matrix: 3 models × 2 RAG × 5 methods
+python -m benchmark --model medium --rag off --method fixed_top_10
+```
+
+---
+
+## Tech Stack
+
+| Component | Technology |
 |---|---|
-| **No GPU / CUDA not found** | Uses `faiss-cpu` automatically. Ensure `faiss-cpu` is installed (not `faiss-gpu`). |
-| **Embedding model fails** | Falls back: HTTP OpenAI API → `sentence-transformers` (`all-MiniLM-L6-v2`) → TF-IDF. Check which backends are installed. |
-| **Index already exists** | Use `--force` to rebuild: `python -m dsa_mentor.ingestion.build --index --force` |
-| **Streamlit won't start** | Ensure virtual environment is activated and `streamlit` is installed in it. |
-| **LLM connection refused** | Verify `config.json` `llm.base_url` matches your running LLM server. |
-| **OneDrive PermissionError during ingestion** | The scraper retries on lock. Move `docs/` out of OneDrive sync if issues persist. |
-| **GeeksforGeeks scraper artifacts** | Files matching `_*.py`, `_*.txt`, `_*.json`, `_*.log`, `_*.html` are excluded automatically. |
-
----
-
-## Dependencies
-
-All dependencies are listed in `requirements.txt`. Install with `pip install -r requirements.txt`.
-
-| Package | Purpose |
-|---|---|
-| `torch` | GPU detection for FAISS and embeddings (required, even for CPU-only setups) |
-| `faiss-cpu` | Vector similarity search (CPU; install `faiss-gpu` instead if CUDA is available) |
-| `faiss-gpu` | GPU-accelerated vector search (alternative to `faiss-cpu` when CUDA is available) |
-| `sentence-transformers` | Local embedding model (`all-MiniLM-L6-v2`) |
-| `scikit-learn` | TF-IDF fallback embedding backend |
-| `pypdf` | PDF text extraction |
-| `streamlit` | Chat UI |
-| `requests` | HTTP client for LLM API |
-| `numpy` | Numerical operations |
-
----
-
-## License Notes
-
-| Source | License |
-|---|---|
-| Open Data Structures | Open/CC (verify exact terms in PDF) |
-| Introduction to Computer Science (OpenStax) | CC BY-NC-SA 4.0 |
-| The Algorithms / JavaScript Algorithms | MIT |
-| CP-Algorithms | Verify repo license |
-| GeeksforGeeks | Proprietary — personal/research use only |
-
----
-
-## References
-
-- Technical specification: `spec.md`
-- Corpus strategy: `knowledge_base_strategy.md`
-- Build log: `EXECUTION_NOTES.md`
+| **Language** | Python 3.11 |
+| **Vector Search** | FAISS (CPU or GPU) |
+| **Embeddings** | sentence-transformers / OpenAI-compatible HTTP / TF-IDF |
+| **LLM Interface** | OpenAI-compatible HTTP API |
+| **UI** | Streamlit |
+| **PDF Parsing** | pypdf |
+| **Evaluation** | Custom scoring + RAGAS |

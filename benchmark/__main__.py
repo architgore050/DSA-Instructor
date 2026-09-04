@@ -40,8 +40,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -105,6 +107,122 @@ def build_retriever(config_path: str = "config.json"):
     return retriever, emb_client, cfg
 
 
+def _create_run_directory(base_output_path: str, run_type: str) -> str:
+    """Create a timestamped results directory and save run metadata.
+
+    Directory structure:
+        benchmark/results/
+            YYYYMMDD_HHMMSS_<run_type>/
+                metadata.json           # config, dataset hash, CLI args, timestamp
+                full_results.json       # aggregated results (full experiments)
+                results_<config>.jsonl  # per-configuration JSONL files
+                questions.jsonl         # copy of input questions used
+                config.json             # copy of config.json used
+                summary.txt             # human-readable summary
+
+    Parameters
+    ----------
+    base_output_path : str
+        The base output path from CLI.
+    run_type : str
+        One of: "single", "full", "ragas", "system", "health"
+
+    Returns
+    -------
+    str
+        Path to the created results directory.
+    """
+    results_base = os.path.join(os.path.dirname(base_output_path), "results")
+    os.makedirs(results_base, exist_ok=True)
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    run_dir = os.path.join(results_base, f"{timestamp}_{run_type}")
+    os.makedirs(run_dir, exist_ok=True)
+
+    return run_dir
+
+
+def _save_run_metadata(run_dir: str, run_type: str,
+                       config_path: str, questions_path: str,
+                       extra_info: Optional[Dict] = None) -> None:
+    """Save comprehensive run metadata to the results directory.
+
+    Parameters
+    ----------
+    run_dir : str
+        Results directory path.
+    run_type : str
+        One of: "single", "full", "ragas", "system", "health"
+    config_path : str
+        Path to config.json.
+    questions_path : str
+        Path to questions JSONL.
+    extra_info : dict or None
+        Additional metadata (model tier, rag, method, etc.).
+    """
+    # Read config
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_data = json.load(f)
+    except Exception:
+        config_data = {"error": "could not read config"}
+
+    # Copy config file
+    import shutil
+    try:
+        shutil.copy2(config_path, os.path.join(run_dir, "config.json"))
+    except Exception:
+        pass
+
+    # Copy questions file
+    try:
+        shutil.copy2(questions_path, os.path.join(run_dir, "questions.jsonl"))
+    except Exception:
+        pass
+
+    # Compute dataset hash
+    try:
+        import hashlib
+        with open(questions_path, "rb") as f:
+            dataset_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+    except Exception:
+        dataset_hash = "unknown"
+
+    # Build metadata
+    metadata = {
+        "run_type": run_type,
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "config_path": config_path,
+        "questions_path": questions_path,
+        "dataset_hash": dataset_hash,
+        "config": config_data,
+        "extra": extra_info or {},
+    }
+
+    with open(os.path.join(run_dir, "metadata.json"), "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2, ensure_ascii=False, default=str)
+
+    # Write human-readable summary header
+    with open(os.path.join(run_dir, "summary.txt"), "w", encoding="utf-8") as f:
+        f.write(f"DSA Mentor Benchmark Results\n")
+        f.write(f"{'=' * 60}\n")
+        f.write(f"Run type:      {run_type}\n")
+        f.write(f"Timestamp:     {metadata['timestamp_utc']}\n")
+        f.write(f"Config:        {config_path}\n")
+        f.write(f"Questions:     {questions_path}\n")
+        f.write(f"Dataset hash:  {dataset_hash}\n")
+        if extra_info:
+            f.write(f"\nRun configuration:\n")
+            for k, v in extra_info.items():
+                f.write(f"  {k}: {v}\n")
+        f.write(f"\nFiles in this directory:\n")
+        for fname in sorted(os.listdir(run_dir)):
+            fpath = os.path.join(run_dir, fname)
+            size = os.path.getsize(fpath)
+            f.write(f"  {fname:>30}  ({size:>10,} bytes)\n")
+        f.write(f"\n{'=' * 60}\n")
+
+
 def run_single(config_path: str, output_path: str, question_file: str,
                model_tier: str, rag_enabled: bool, retrieval_method: str) -> None:
     """Run a single configuration."""
@@ -112,8 +230,8 @@ def run_single(config_path: str, output_path: str, question_file: str,
     retriever, emb_client, cfg = build_retriever(config_path)
 
     print(f"Loading questions from {question_file}...")
-    dataset = BenchmarkDataset(question_file)
-    questions = list(dataset)
+    dataset = BenchmarkDataset()
+    questions = dataset.load(question_file)
     print(f"  {len(questions)} questions loaded")
 
     runner = BenchmarkRunner(cfg, retriever, emb_client)
@@ -130,10 +248,20 @@ def run_single(config_path: str, output_path: str, question_file: str,
         results.append(result)
         if _HAS_TQDM:
             tqdm.write(f"  [{i+1}/{len(questions)}] {question.get('id', '?')}: "
-                      f"correctness={result['scores']['correctness']}, "
-                      f"groundedness={result['scores']['groundedness']:.2f}")
+                       f"correctness={result['scores']['correctness']}, "
+                       f"groundedness={result['scores']['groundedness']:.2f}")
 
-    runner.save_results(results, output_path)
+    # Save to results directory with metadata
+    results_dir = _create_run_directory(output_path, "single")
+    save_path = os.path.join(results_dir, "results.jsonl")
+    runner.save_results(results, save_path)
+
+    # Save metadata
+    _save_run_metadata(results_dir, "single", config_path, question_file, {
+        "model": model_tier,
+        "rag": "on" if rag_enabled else "off",
+        "method": retrieval_method,
+    })
 
     # Print summary
     correct = sum(1 for r in results if r["scores"]["correctness"] >= 3)
@@ -141,7 +269,7 @@ def run_single(config_path: str, output_path: str, question_file: str,
     avg_latency = sum(r["latency"] for r in results) / len(results) if results else 0
 
     print(f"\n{'=' * 60}")
-    print(f"Results saved to: {output_path}")
+    print(f"Results saved to: {results_dir}/")
     print(f"Questions: {len(results)}")
     print(f"Correct (>=3): {correct}/{len(results)}")
     print(f"Avg groundedness: {avg_grounding:.2f}")
@@ -154,14 +282,11 @@ def run_full_experiment(config_path: str, output_path: str, question_file: str) 
     retriever, emb_client, cfg = build_retriever(config_path)
 
     print(f"Loading questions from {question_file}...")
-    dataset = BenchmarkDataset(question_file)
-    questions = list(dataset)
+    dataset = BenchmarkDataset()
+    questions = dataset.load(question_file)
     print(f"  {len(questions)} questions loaded")
 
     runner = BenchmarkRunner(cfg, retriever, emb_client)
-
-    output_dir = Path(output_path).parent
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\nRunning full experiment matrix:")
     print(f"  Models: {', '.join(MODEL_TIERS)}")
@@ -201,14 +326,17 @@ def run_full_experiment(config_path: str, output_path: str, question_file: str) 
                 # Print per-method summary
                 correct = sum(1 for r in results if r["scores"]["correctness"] >= 3)
                 avg_grounding = sum(r["scores"]["groundedness"] for r in results) / len(results) if results else 0
-                print(f"    ✓ Done: {len(results)} questions, "
+                print(f"    Done: {len(results)} questions, "
                       f"correct={correct}/{len(results)}, "
                       f"groundedness={avg_grounding:.2f}")
 
     elapsed = time.time() - start
 
-    # Save full results
-    with open(output_path, "w", encoding="utf-8") as f:
+    # Save full results to results directory
+    results_dir = _create_run_directory(output_path, "full")
+
+    # Save full results JSON
+    with open(os.path.join(results_dir, "full_results.json"), "w", encoding="utf-8") as f:
         json.dump(all_results, f, indent=2, default=str)
 
     # Save per-run JSONL files
@@ -219,12 +347,11 @@ def run_full_experiment(config_path: str, output_path: str, question_file: str) 
                     continue
                 results = all_results[model_tier][rag_key].get(method, [])
                 if results:
-                    per_run_path = str(output_dir / f"results_{model_tier}_{rag_key}_{method}.jsonl")
+                    per_run_path = os.path.join(results_dir, f"results_{model_tier}_{rag_key}_{method}.jsonl")
                     runner.save_results(results, per_run_path)
 
     print(f"\n{'=' * 60}")
-    print(f"Full experiment results saved to: {output_path}")
-    print(f"Per-run results saved to: {output_dir}/")
+    print(f"Full experiment results saved to: {results_dir}/")
     print(f"Total time: {elapsed:.1f}s")
 
 
@@ -255,7 +382,29 @@ def run_ragas_benchmark(
     print(f"  Dataset size: {len(dataset)} questions")
     print(f"  Categories: {', '.join(sorted(set(q['category'] for q in dataset)))}")
 
-    results = benchmark.run(dataset=dataset, save_path=output_path)
+    # Write dataset to temp file for metadata tracking
+    tmp_dataset_path = os.path.join(os.path.dirname(output_path), "_ragas_builtin.jsonl")
+    with open(tmp_dataset_path, "w", encoding="utf-8") as f:
+        for q in dataset:
+            f.write(json.dumps(q, ensure_ascii=False) + "\n")
+
+    results = benchmark.run(dataset=dataset, save_path=None)
+
+    # Save to results directory
+    results_dir = _create_run_directory(output_path, "ragas")
+    results_file = os.path.join(results_dir, "ragas_results.json")
+    with open(results_file, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False, default=str)
+
+    # Save metadata
+    _save_run_metadata(results_dir, "ragas", config_path, tmp_dataset_path, {
+        "dataset": "built-in DSA retrieval dataset",
+        "dataset_size": len(dataset),
+        "categories": ", ".join(sorted(set(q['category'] for q in dataset))),
+    })
+
+    # Clean up temp file
+    os.remove(tmp_dataset_path)
 
     mode = results.get("mode", "unknown")
     aggregate = results.get("aggregate_metrics", {})
@@ -275,7 +424,7 @@ def run_ragas_benchmark(
         else:
             print(f"  {metric_name}: {metric_data}")
 
-    print(f"\nResults saved to: {output_path}")
+    print(f"\nResults saved to: {results_dir}/")
 
 
 def run_system_benchmark(
@@ -300,14 +449,28 @@ def run_system_benchmark(
     # Load questions
     if questions_path:
         dataset = BenchmarkDataset().load(questions_path)
+        q_path = questions_path
     else:
-        dataset = BenchmarkDataset().load(str(_PROJECT_ROOT / "benchmark" / "sample_questions.jsonl"))
+        default_q = str(_PROJECT_ROOT / "benchmark" / "sample_questions.jsonl")
+        dataset = BenchmarkDataset().load(default_q)
+        q_path = default_q
 
     print(f"  Questions: {len(dataset)}")
 
     print(f"Running system logging benchmark...")
     profiler = PipelineProfiler(cfg, retriever, emb_client)
-    report = profiler.profile_dataset(dataset, save_path=output_path)
+    report = profiler.profile_dataset(dataset, save_path=None)
+
+    # Save to results directory
+    results_dir = _create_run_directory(output_path, "system")
+    report_file = os.path.join(results_dir, "system_report.json")
+    with open(report_file, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False, default=str)
+
+    # Save metadata
+    _save_run_metadata(results_dir, "system", config_path, q_path, {
+        "questions_count": len(dataset),
+    })
 
     aggregate = report.get("aggregate", {})
 
@@ -351,7 +514,7 @@ def run_system_benchmark(
         print(f"  Avg similarity:      {quality.get('avg_similarity', 'N/A')}")
         print(f"  Avg paragraphs:      {quality.get('avg_paragraphs', 'N/A')}")
 
-    print(f"\nResults saved to: {output_path}")
+    print(f"\nResults saved to: {results_dir}/")
 
 
 def run_health_report(
@@ -373,6 +536,17 @@ def run_health_report(
     print("Generating system health report...")
     health = SystemHealthReport(cfg, retriever)
     report = health.generate()
+
+    # Save to results directory
+    results_dir = _create_run_directory(output_path, "health")
+    report_file = os.path.join(results_dir, "health_report.json")
+    with open(report_file, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False, default=str)
+
+    # Save metadata
+    _save_run_metadata(results_dir, "health", config_path, "", {
+        "report_type": "system_health",
+    })
 
     # Print summary
     print(f"\n{'=' * 60}")
@@ -401,13 +575,7 @@ def run_health_report(
         for rec in recommendations:
             print(f"  - {rec}")
 
-    # Save report
-    path_obj = Path(output_path)
-    path_obj.parent.mkdir(parents=True, exist_ok=True)
-    with open(path_obj, "w", encoding="utf-8") as fh:
-        json.dump(report, fh, indent=2, ensure_ascii=False, default=str)
-
-    print(f"\nHealth report saved to: {output_path}")
+    print(f"\nHealth report saved to: {results_dir}/")
 
 
 def main() -> None:
