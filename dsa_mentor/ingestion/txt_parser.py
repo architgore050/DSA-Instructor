@@ -127,7 +127,8 @@ def parse_paragraphs(
             continue
 
         # Try to extract ### subtopic blocks from body text (GfG uses h3 for sections)
-        subtopic_blocks = _extract_subtopic_blocks(body_text, heading_level=3)
+        # min_heading_level=2 skips single '#' lines (C/Python code comments)
+        subtopic_blocks = _extract_subtopic_blocks(body_text, heading_level=3, min_heading_level=2)
 
         if subtopic_blocks:
             # GfG files with ### headings — multiple subtopics
@@ -136,7 +137,8 @@ def parse_paragraphs(
             )
         else:
             # No ### headings — create one implicit subtopic from the whole file
-            blocks = _extract_blocks(body_text)
+            # min_heading_level=2 skips single '#' lines (C/Python code comments)
+            blocks = _extract_blocks(body_text, min_heading_level=2)
             implicit_st = [_SubtopicBlock(heading=None, sub_blocks=blocks)]
             paragraphs = _subtopics_to_paragraphs(
                 implicit_st, fpath, file_meta, paragraph_max_chars, paragraph_overlap_chars

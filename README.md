@@ -8,170 +8,47 @@ The system preserves the natural hierarchy of DSA textbooks, retrieves from coar
 
 ## Quick Start
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# GPU-only: install faiss-gpu (replaces faiss-cpu in requirements.txt)
-pip install faiss-gpu
-
-# Build the knowledge base (ingests docs/ → knowledge_base.json)
-python -m dsa_mentor.ingestion.build
-
-# Build FAISS indices (required before launching the chat UI)
-# This is done automatically the first time you click "Build Index" in the UI,
-# or you can run it manually:
-streamlit run app/streamlit_app.py
-# Then click "Build Index" in the sidebar
-
-# Launch the chat UI
-streamlit run app/streamlit_app.py
-```
-
-The UI provides:
-
-- **Learn mode** — conceptual explanations with hierarchical retrieval
-- **Hint mode** — progressive hints for LeetCode-style problems
-- **Explain mode** — code analysis (correctness, bugs, invariants, complexity, alternatives)
-- **Retrieval Inspector** — expandable panel showing books, chapters, topics, paragraphs with similarity scores and knee detection results
-- **RAG toggle** — switch between RAG ON (retrieval + tool calling) and RAG OFF (model parametric knowledge only)
-- **Model selector** — Large / Medium / Small
-
----
-
-## Running Benchmarks
-
-The benchmark suite evaluates retrieval quality and answer correctness across models and retrieval methods.
-
 ### Prerequisites
 
-The FAISS index must be built before running benchmarks (see Quick Start above).
+- **Python 3.11+**
+- **GPU (optional)** — CUDA with `faiss-gpu` for faster embedding and search. CPU-only works with `faiss-cpu`.
+- **~4 GB disk** for the knowledge base, vector indices, and model cache
 
-### Single Run
-
-Run one model × one RAG state × one retrieval method:
-
-```bash
-# RAG ON, large model, knee detection (default)
-python -m benchmark
-
-# Specify options
-python -m benchmark --model medium --rag off --method fixed_top_10
-
-# Custom questions and output
-python -m benchmark --questions benchmark/sample_questions.jsonl --output my_results.jsonl
-```
-
-### Full Experiment Matrix
-
-Run all combinations (3 models × 2 RAG states × 5 retrieval methods = 30 runs):
+### Step-by-step setup
 
 ```bash
-python -m benchmark --full
+# 1. Navigate to the project
+cd "DSA Instructor"
+
+# 2. Create and activate a virtual environment
+python -m venv venv
+venv\Scripts\activate              # Windows
+# source venv/bin/activate         # Linux / macOS
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Build the knowledge base AND vector index (one command)
+python -m dsa_mentor.ingestion.build --index
+
+# 5. Launch the chat UI
+streamlit run app/streamlit_app.py
 ```
 
-Output files:
-- `benchmark/results.jsonl` — per-question results for the last run
-- `benchmark/results_{model}_{rag}_{method}.jsonl` — individual result files from `--full`
-- `benchmark/results.json` — full experiment results (only from `--full`)
+Open the Streamlit URL shown in the terminal (usually `http://localhost:8501`).
 
-### Available Options
+### GPU setup (optional)
 
-| Option | Values | Default |
-|---|---|---|
-| `--model` | `large`, `medium`, `small` | `large` |
-| `--rag` | `on`, `off` | `on` |
-| `--method` | `knee`, `fixed_top_5`, `fixed_top_10`, `fixed_top_20`, `flat` | `knee` |
-| `--questions` | Path to JSONL file | `benchmark/sample_questions.jsonl` |
-| `--output` | Output file path | `benchmark/results.jsonl` |
-| `--full` | Flag — run full matrix | off |
+If you have a CUDA-capable GPU, replace `faiss-cpu` with `faiss-gpu` after step 3:
 
-### Ablation Studies
-
-Run individual ablation levels (A–F) programmatically:
-
-```python
-from benchmark.ablations import AblationStudy
-
-# Run all ablation levels
-AblationStudy.run_all(config_path="config.json")
-
-# Run a specific level
-AblationStudy.run_level_A(config_path="config.json")  # LLM only (RAG OFF)
-AblationStudy.run_level_D(config_path="config.json")  # Hierarchical + knee detection
+```bash
+pip uninstall -y faiss-cpu
+pip install faiss-gpu
+# Rebuild indices to use GPU
+python -m dsa_mentor.ingestion.build --index --force
 ```
 
----
-
-## Architecture
-
-```
-LAYER 1 — KNOWLEDGE
-  Books → Chapters → Topics → Subtopics → Paragraphs
-
-LAYER 2 — RETRIEVAL
-  Broad retrieval → hierarchical narrowing → dynamic paragraph selection → local expansion
-
-LAYER 3 — REASONING
-  LLM → grounded answer → optional retrieval tool → iterative evidence gathering
-
-LAYER 4 — SCIENCE
-  RAG OFF vs RAG ON → small vs frontier models → fixed vs dynamic retrieval → flat vs hierarchical → passive vs agentic
-```
-
-### Retrieval Pipeline
-
-```
-USER QUERY
-    ↓
-Query Understanding (breadth classification: BROAD / MODERATE / NARROW)
-    ↓
-Book Retrieval ──→ knee detection
-    ↓
-Chapter Retrieval ──→ knee detection
-    ↓
-Topic Retrieval ──→ knee detection
-    ↓
-┌──────────────┐
-│ Full Topic   │  +  Global Paragraph Vector Search
-│ Text         │
-└──────┬───────┘
-       ↓
-┌──────────────┐
-│ Topic        │  +  Paragraph Selection
-│ Expansion    │
-│ + Neighbors  │
-└──────┬───────┘
-       ↓
-Context Builder (dedup, budget, diversity)
-       ↓
-LLM (with optional tool-based retrieval loop)
-```
-
-### Key Design Decisions
-
-- **Paragraph-level retrieval** — the atomic evidence unit is the paragraph, not arbitrary token chunks. This preserves document structure (definition with qualification, theorem with proof, algorithm with complexity).
-- **Dynamic evidence selection** — knee detection on the similarity-score curve determines how many candidates to keep at each level, rather than using a fixed `top_k`. This adapts to query breadth: broad queries get more evidence, narrow queries get precise evidence.
-- **Hierarchical filtering** — four separate FAISS indices (book, chapter, topic, paragraph) enable coarse-to-fine retrieval. Each level narrows the search space before passing to the next.
-- **Agentic retrieval** — the model can call `search_knowledge(query, scope, max_results)` to request additional evidence when initial retrieval is insufficient (max 3 tool calls).
-- **RAG OFF is a first-class mode** — when disabled, there is no retrieval tool either. This enables clean experimental comparison between parametric knowledge and retrieval-augmented reasoning.
-
----
-
-## Corpus
-
-The knowledge base (~85 MB) consists of:
-
-| Source | Type | Files | Size | Role |
-|---|---|---:|---:|---|
-| *Open Data Structures* (Morin et al.) | PDF | 1 | 1.7 MB | Primary book |
-| *Introduction to Computer Science* (OpenStax) | PDF | 1 | 56 MB | Primary book |
-| CP-Algorithms | Markdown | 164 | 1.6 MB | Supplementary reference |
-| JavaScript Algorithms | Markdown | 236 | 0.7 MB | Supplementary reference |
-| The Algorithms (Python) | Markdown | 22 | 41 KB | Category overviews |
-| GeeksforGeeks DSA Tutorial | Text | 1505 | 24 MB | Tutorial corroboration |
-
-See `knowledge_base_strategy.md` for full source details, curation decisions, and licensing notes.
+The project auto-detects CUDA at runtime — no config changes needed.
 
 ---
 
@@ -200,6 +77,169 @@ All tunables live in `config.json`:
   "diversity": { "max_paragraphs_per_source": 6 }
 }
 ```
+
+Key settings:
+- **`llm.base_url`** — OpenAI-compatible API endpoint for your LLM server
+- **`llm.models`** — model names for large / medium / small tiers
+- **`retrieval.max_context_tokens`** — total token budget for retrieved context
+- **`agentic_retrieval.enabled`** — set `false` to disable tool-based follow-up queries
+
+---
+
+## How It Works
+
+```
+USER QUERY
+    ↓
+Query Understanding (breadth classification: BROAD / MODERATE / NARROW)
+    ↓
+Book Retrieval ──→ knee detection
+    ↓
+Chapter Retrieval ──→ knee detection
+    ↓
+Topic Retrieval ──→ knee detection
+    ↓
+Full Topic Text + Global Paragraph Vector Search
+    ↓
+Topic Expansion + Neighbor Selection
+    ↓
+Context Builder (dedup, budget, diversity)
+    ↓
+LLM (with optional tool-based retrieval loop)
+```
+
+1. **Documents in `docs/`** are parsed into a 5-level hierarchy: Book → Chapter → Topic → Subtopic → Paragraph.
+2. **`--index`** builds 4 FAISS vector indices (book, chapter, topic, paragraph) in the `index/` directory using pre-normalized vectors for cosine similarity.
+3. **Streamlit app** auto-loads existing indices from `index/` and provides the chat interface.
+4. **RAG retrieval** uses knee detection on the similarity-score curve at each hierarchy level to dynamically determine how many items to keep — broad queries get more evidence, narrow queries get precise evidence.
+5. **Agentic mode** lets the LLM call `search_knowledge(query, scope, max_results)` up to 3 times when initial evidence is insufficient.
+
+---
+
+## CLI Reference
+
+### Build command
+
+```bash
+python -m dsa_mentor.ingestion.build              # Parse docs/ → knowledge_base.json only
+python -m dsa_mentor.ingestion.build --index      # Parse + vectorize + build FAISS indices
+python -m dsa_mentor.ingestion.build --index --force  # Force rebuild indices (skip existing)
+python -m dsa_mentor.ingestion.build --verbose    # Enable debug logging
+```
+
+| Flag | Description |
+|---|---|
+| *(none)* | Parse documents and save `knowledge_base.json` (no vector indexing) |
+| `--index` | Parse documents, embed, and build all 4 FAISS indices |
+| `--force` | Rebuild indices even if they already exist |
+| `--verbose` | Print detailed parsing and embedding progress |
+
+### Benchmark command
+
+```bash
+python -m benchmark                     # Single run: large model, RAG ON, knee detection
+python -m benchmark --model medium --rag off --method fixed_top_10
+python -m benchmark --full              # Full matrix: 3 models × 2 RAG × 5 methods = 30 runs
+```
+
+---
+
+## Running Benchmarks
+
+The benchmark suite evaluates retrieval quality and answer correctness across models and retrieval methods.
+
+### Single Run
+
+```bash
+# RAG ON, large model, knee detection (default)
+python -m benchmark
+
+# Specify options
+python -m benchmark --model medium --rag off --method fixed_top_10
+
+# Custom questions and output
+python -m benchmark --questions benchmark/sample_questions.jsonl --output my_results.jsonl
+```
+
+### Full Experiment Matrix
+
+```bash
+python -m benchmark --full
+```
+
+Output files:
+- `benchmark/results.jsonl` — per-question results for the last run
+- `benchmark/results_{model}_{rag}_{method}.jsonl` — individual result files from `--full`
+- `benchmark/results.json` — full experiment results (only from `--full`)
+
+### Ablation Studies
+
+```python
+from benchmark.ablations import AblationStudy
+
+# Run all ablation levels
+AblationStudy.run_all(config_path="config.json")
+
+# Run a specific level
+AblationStudy.run_level_A(config_path="config.json")  # LLM only (RAG OFF)
+AblationStudy.run_level_D(config_path="config.json")  # Hierarchical + knee detection
+```
+
+---
+
+## Corpus
+
+The knowledge base (~85 MB) consists of:
+
+| Source | Type | Files | Size | Role |
+|---|---|---:|---:|---|
+| *Open Data Structures* (Morin et al.) | PDF | 1 | 1.7 MB | Primary book |
+| *Introduction to Computer Science* (OpenStax) | PDF | 1 | 56 MB | Primary book |
+| CP-Algorithms | Markdown | 164 | 1.6 MB | Supplementary reference |
+| JavaScript Algorithms | Markdown | 236 | 0.7 MB | Supplementary reference |
+| The Algorithms (Python) | Markdown | 22 | 41 KB | Category overviews |
+| GeeksforGeeks DSA Tutorial | Text | 1505 | 24 MB | Tutorial corroboration |
+
+See `knowledge_base_strategy.md` for full source details, curation decisions, and licensing notes.
+
+---
+
+## UI Features
+
+The Streamlit app provides:
+
+- **Learn mode** — conceptual explanations with hierarchical retrieval
+- **Hint mode** — progressive hints for LeetCode-style problems
+- **Explain mode** — code analysis (correctness, bugs, invariants, complexity, alternatives)
+- **Retrieval Inspector** — expandable panel showing books, chapters, topics, paragraphs with similarity scores and knee detection results
+- **RAG toggle** — switch between RAG ON (retrieval + tool calling) and RAG OFF (model parametric knowledge only)
+- **Model selector** — Large / Medium / Small
+
+---
+
+## Architecture
+
+```
+LAYER 1 — KNOWLEDGE
+  Books → Chapters → Topics → Subtopics → Paragraphs
+
+LAYER 2 — RETRIEVAL
+  Broad retrieval → hierarchical narrowing → dynamic paragraph selection → local expansion
+
+LAYER 3 — REASONING
+  LLM → grounded answer → optional retrieval tool → iterative evidence gathering
+
+LAYER 4 — SCIENCE
+  RAG OFF vs RAG ON → small vs frontier models → fixed vs dynamic retrieval → flat vs hierarchical → passive vs agentic
+```
+
+### Key Design Decisions
+
+- **Paragraph-level retrieval** — the atomic evidence unit is the paragraph, not arbitrary token chunks. This preserves document structure (definition with qualification, theorem with proof, algorithm with complexity).
+- **Dynamic evidence selection** — knee detection on the similarity-score curve determines how many candidates to keep at each level, rather than using a fixed `top_k`. This adapts to query breadth: broad queries get more evidence, narrow queries get precise evidence.
+- **Hierarchical filtering** — four separate FAISS indices (book, chapter, topic, paragraph) enable coarse-to-fine retrieval. Each level narrows the search space before passing to the next.
+- **Agentic retrieval** — the model can call `search_knowledge(query, scope, max_results)` to request additional evidence when initial retrieval is insufficient (max 3 tool calls).
+- **RAG OFF is a first-class mode** — when disabled, there is no retrieval tool either. This enables clean experimental comparison between parametric knowledge and retrieval-augmented reasoning.
 
 ---
 
@@ -282,6 +322,20 @@ The full experimental matrix covers 3 model tiers × 2 RAG states × 5 retrieval
 
 ---
 
+## Troubleshooting
+
+| Issue | Solution |
+|---|---|
+| **No GPU / CUDA not found** | Uses `faiss-cpu` automatically. Ensure `faiss-cpu` is installed (not `faiss-gpu`). |
+| **Embedding model fails** | Falls back: HTTP OpenAI API → `sentence-transformers` (`all-MiniLM-L6-v2`) → TF-IDF. Check which backends are installed. |
+| **Index already exists** | Use `--force` to rebuild: `python -m dsa_mentor.ingestion.build --index --force` |
+| **Streamlit won't start** | Ensure virtual environment is activated and `streamlit` is installed in it. |
+| **LLM connection refused** | Verify `config.json` `llm.base_url` matches your running LLM server. |
+| **OneDrive PermissionError during ingestion** | The scraper retries on lock. Move `docs/` out of OneDrive sync if issues persist. |
+| **GeeksforGeeks scraper artifacts** | Files matching `_*.py`, `_*.txt`, `_*.json`, `_*.log`, `_*.html` are excluded automatically. |
+
+---
+
 ## Dependencies
 
 All dependencies are listed in `requirements.txt`. Install with `pip install -r requirements.txt`.
@@ -297,8 +351,6 @@ All dependencies are listed in `requirements.txt`. Install with `pip install -r 
 | `streamlit` | Chat UI |
 | `requests` | HTTP client for LLM API |
 | `numpy` | Numerical operations |
-
-**GPU support:** The project auto-detects CUDA at runtime. Install `faiss-gpu` (instead of `faiss-cpu`) and the embedding model + FAISS indices will run on GPU automatically. If no CUDA is available, everything falls back to CPU transparently — no config changes needed.
 
 ---
 

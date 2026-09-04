@@ -158,9 +158,10 @@ def _assign_hierarchical_ids(
 ) -> Dict[str, Tuple[str, str, str, str]]:
     """Assign corpus_id, book_id, chapter_id, topic_id to each source file.
 
-    Books are grouped into 2 canonical sources per spec:
-        - "textbooks" (book-001): PDF files (academic/curriculum material)
-        - "web-corpus" (book-002): All MD/TXT files from web repos
+    Books are grouped by their first directory level under docs/:
+        - Each source directory (e.g. cp-algorithms, geeksforgeeks, thealgorithms)
+          becomes its own Book node.
+        - PDFs are grouped under a "textbooks" book.
 
     Returns:
         Dict mapping source_file -> (corpus_id, book_id, chapter_id, topic_id).
@@ -173,27 +174,33 @@ def _assign_hierarchical_ids(
 
     _logger.info("assign_hierarchical_ids: %d files to process", len(file_list))
 
-    # Step 1: Group files into 2 canonical books
-    # PDFs → "textbooks", all MD/TXT → "web-corpus"
+    # Step 1: Group files by book root (first directory under docs/)
+    # PDFs → "textbooks", everything else → its source directory name
     pdf_files: List[str] = files_by_type.get(".pdf", [])
-    web_files: List[str] = files_by_type.get(".md", []) + files_by_type.get(".txt", [])
+    book_groups: Dict[str, List[str]] = {"textbooks": sorted(pdf_files)}
 
-    book_groups: Dict[str, List[str]] = {
-        "textbooks": sorted(pdf_files),
-        "web-corpus": sorted(web_files),
-    }
+    for ext in (".md", ".txt"):
+        for fpath in files_by_type.get(ext, []):
+            book_root = _detect_book_root(fpath, docs_dir)
+            book_groups.setdefault(book_root, []).append(fpath)
+
+    # Sort files within each group for deterministic IDs
+    for bname in book_groups:
+        book_groups[bname] = sorted(book_groups[bname])
 
     _logger.info("assign_hierarchical_ids: %d canonical books", len(book_groups))
     for bname, bfiles in book_groups.items():
         _logger.info("  book '%s': %d files", bname, len(bfiles))
 
-    # Step 2: Assign hierarchical IDs
-    book_id_map: Dict[str, str] = {
-        "textbooks": "book-001",
-        "web-corpus": "book-002",
-    }
+    # Step 2: Assign book IDs sequentially
+    book_names = sorted(book_groups.keys())
+    book_id_map: Dict[str, str] = {}
+    for idx, bname in enumerate(book_names, start=1):
+        book_id_map[bname] = f"book-{idx:03d}"
 
-    for book_name, book_files in book_groups.items():
+    # Step 3: Process each book
+    for book_name in book_names:
+        book_files = book_groups[book_name]
         book_id = book_id_map[book_name]
         corpus_id = book_name
 
@@ -205,14 +212,14 @@ def _assign_hierarchical_ids(
             chapter_counter = 0
             for fpath in book_files:
                 chapter_counter += 1
-                chapter_id = f"ch-001-{chapter_counter:03d}"
-                topic_id = f"topic-001-{chapter_counter:03d}-001"
+                chapter_id = f"ch-{int(book_id.replace('book-', '')):03d}-{chapter_counter:03d}"
+                topic_id = f"topic-{int(book_id.replace('book-', '')):03d}-{chapter_counter:03d}-001"
                 result[fpath] = (corpus_id, book_id, chapter_id, topic_id)
                 _logger.info("    PDF '%s' -> chapter=%s, topic=%s",
                              os.path.basename(fpath), chapter_id, topic_id)
 
         else:
-            # web-corpus: group by chapter (second directory level under docs/)
+            # Web corpus: group by chapter (second directory level under docs/)
             chapter_groups: Dict[str, List[str]] = {}
             for fpath in book_files:
                 chapter_name = _detect_chapter(fpath, docs_dir, book_name)
@@ -222,12 +229,13 @@ def _assign_hierarchical_ids(
             for cname in sorted(chapter_groups.keys()):
                 _logger.info("    chapter '%s': %d files", cname, len(chapter_groups[cname]))
 
-            # Assign chapter IDs
+            # Assign chapter IDs scoped to this book
+            book_prefix = book_id.replace("book-", "")
             chapter_counter = 0
             chapter_id_map_local: Dict[str, str] = {}
             for chapter_name in sorted(chapter_groups.keys()):
                 chapter_counter += 1
-                chapter_id = f"ch-002-{chapter_counter:03d}"
+                chapter_id = f"ch-{book_prefix}-{chapter_counter:03d}"
                 chapter_id_map_local[chapter_name] = chapter_id
 
             # Assign topic IDs (PER-FILE, scoped per chapter)
@@ -236,7 +244,7 @@ def _assign_hierarchical_ids(
                 file_counter = 0
                 for fpath in sorted(chapter_groups[chapter_name]):
                     file_counter += 1
-                    topic_id = f"topic-002-{chapter_counter:03d}-{file_counter:03d}"
+                    topic_id = f"topic-{book_prefix}-{chapter_counter:03d}-{file_counter:03d}"
                     result[fpath] = (corpus_id, book_id, chapter_id, topic_id)
 
             _logger.info("  book '%s': %d chapters, %d topics assigned",
@@ -252,12 +260,13 @@ def _assign_hierarchical_ids(
 
 def _build_metadata_map(
     files_by_type: Dict[str, List[str]],
+    docs_dir: str = "docs",
 ) -> Dict[str, Dict[str, str]]:
     """Build metadata dict for each file based on its path and type.
 
-    Assigns book_id based on file type:
-        - PDFs → "book-001" (textbooks)
-        - MD/TXT → "book-002" (web-corpus)
+    Assigns corpus_id based on first directory under docs/:
+        - Each source directory gets its own corpus_id (e.g. cp-algorithms, geeksforgeeks)
+        - PDFs get corpus_id from filename
 
     Returns:
         Dict mapping source_file -> metadata dict.
@@ -265,25 +274,19 @@ def _build_metadata_map(
     metadata_map: Dict[str, Dict[str, str]] = {}
 
     for fpath in files_by_type.get(".md", []):
-        rel = os.path.relpath(fpath, "docs")
-        parts = rel.split(os.sep)
-        corpus_id = parts[0] if parts else "uncategorized"
+        corpus_id = _detect_book_root(fpath, docs_dir)
         metadata_map[fpath] = {
             "source_type": "markdown",
             "corpus_id": corpus_id,
-            "book_id": "book-002",
             "license": None,
             "source_url": None,
         }
 
     for fpath in files_by_type.get(".txt", []):
-        rel = os.path.relpath(fpath, "docs")
-        parts = rel.split(os.sep)
-        corpus_id = parts[0] if parts else "geeksforgeeks"
+        corpus_id = _detect_book_root(fpath, docs_dir)
         metadata_map[fpath] = {
             "source_type": "text",
             "corpus_id": corpus_id,
-            "book_id": "book-002",
             "license": None,
             "source_url": None,
         }
@@ -294,7 +297,6 @@ def _build_metadata_map(
         metadata_map[fpath] = {
             "source_type": "pdf",
             "corpus_id": corpus_id,
-            "book_id": "book-001",
             "license": None,
             "source_url": None,
         }
@@ -386,12 +388,22 @@ def _build_hierarchy(
     # Track subtopic titles from paragraph data for better naming
     subtopic_title_map: Dict[str, str] = {}
 
+    # Readable titles for corpus sources
+    _BOOK_TITLES: Dict[str, str] = {
+        "textbooks": "Textbooks",
+        "cp-algorithms": "CP-Algorithms",
+        "geeksforgeeks": "GeeksforGeeks DSA Tutorial",
+        "javascript-algorithms": "JavaScript Algorithms",
+        "thealgorithms": "The Algorithms",
+    }
+
     for para in paragraphs:
         # Book
         if para.book_id and para.book_id not in books:
+            corpus = para.corpus_id or ""
             books[para.book_id] = Book(
                 id=para.book_id,
-                title=para.corpus_id or para.book_id,
+                title=_BOOK_TITLES.get(corpus, corpus.replace("-", " ").title() if corpus else para.book_id),
                 level="book",
                 parent_id=None,
                 children=[],
@@ -549,6 +561,7 @@ def build(
     output_path: Optional[str] = None,
     docs_dir: str = "docs",
     build_index: bool = False,
+    force: bool = False,
 ) -> None:
     """Run the full ingestion pipeline.
 
@@ -586,7 +599,7 @@ def build(
         return
 
     # Step 2: Build metadata map
-    metadata_map = _build_metadata_map(files_by_type)
+    metadata_map = _build_metadata_map(files_by_type, docs_dir)
 
     # Step 3: Assign hierarchical IDs
     _logger.info("=== Step 3: Assigning hierarchical IDs ===")
@@ -649,6 +662,7 @@ def build(
             config_path=config_path,
             kb_path=output_path,
             index_dir=os.path.join(os.path.dirname(os.path.abspath(config_path)), "index"),
+            force=force,
         )
         print("\nBuild complete with vector index.")
     else:
@@ -696,6 +710,7 @@ def _build_vector_index(
             os.path.join(index_dir, "books", "index.faiss"),
             os.path.join(index_dir, "chapters", "index.faiss"),
             os.path.join(index_dir, "topics", "index.faiss"),
+            os.path.join(index_dir, "subtopics", "index.faiss"),
             os.path.join(index_dir, "paragraphs", "index.faiss"),
         ]
         if all(os.path.exists(f) for f in faiss_files):
@@ -730,19 +745,10 @@ def _build_vector_index(
     books = [n for n in nodes.values() if isinstance(n, Book)]
     chapters = [n for n in nodes.values() if isinstance(n, Chapter)]
     topics = [n for n in nodes.values() if isinstance(n, Topic)]
+    subtopics = [n for n in nodes.values() if isinstance(n, Subtopic)]
 
     print(f"  Loaded: {len(books)} books, {len(chapters)} chapters, "
-          f"{len(topics)} topics, {len(paragraphs)} paragraphs")
-
-    # Build hierarchy dict for MultiIndexManager
-    hierarchy = {
-        "books": books,
-        "chapters": chapters,
-        "topics": topics,
-        "book_chapters": kb_data.get("book_chapters", {}),
-        "chapter_topics": kb_data.get("chapter_topics", {}),
-        "topic_paragraphs": kb_data.get("topic_paragraphs", {}),
-    }
+          f"{len(topics)} topics, {len(subtopics)} subtopics, {len(paragraphs)} paragraphs")
 
     # Initialize embedding client
     print("\nInitializing embedding client...")
@@ -753,27 +759,59 @@ def _build_vector_index(
     print("\nBuilding FAISS indices...")
     mgr = MultiIndexManager(embedding_client=emb_client)
 
-    # Build each level with progress bar
-    levels = [
-        ("book", books, mgr._build_book_index),
-        ("chapter", chapters, mgr._build_chapter_index),
-        ("topic", topics, mgr._build_topic_index),
-        ("paragraph", paragraphs, mgr._build_paragraph_index),
-    ]
+    # Derive hierarchy mappings from node children arrays
+    book_chapters: Dict[str, List[str]] = {}
+    chapter_topics: Dict[str, List[str]] = {}
+    topic_paragraphs: Dict[str, List[str]] = {}
+    subtopic_paragraphs: Dict[str, List[str]] = {}
 
-    for level_name, level_items, build_fn in levels:
-        if not level_items:
-            print(f"  [{level_name}] No items to index, skipping.")
-            continue
-        print(f"  [{level_name}] Indexing {len(level_items)} items...")
-        build_fn(level_items)
-        print(f"    -> {level_name} index built: {mgr._book_count() if level_name == 'book' else mgr._chapter_count() if level_name == 'chapter' else mgr._topic_count() if level_name == 'topic' else mgr._paragraph_count()} vectors")
+    for book in books:
+        children = getattr(book, "children", []) or []
+        if children:
+            book_chapters[book.id] = children
+
+    for ch in chapters:
+        children = getattr(ch, "children", []) or []
+        if children:
+            chapter_topics[ch.id] = children
+
+    for topic in topics:
+        children = getattr(topic, "children", []) or []
+        if children:
+            topic_paragraphs[topic.id] = children
+
+    for sub in subtopics:
+        children = getattr(sub, "children", []) or []
+        if children:
+            subtopic_paragraphs[sub.id] = children
+
+    # Build hierarchy dict expected by build_index
+    hierarchy = {
+        "books": books,
+        "chapters": chapters,
+        "topics": topics,
+        "subtopics": subtopics,
+        "book_chapters": book_chapters,
+        "chapter_topics": chapter_topics,
+        "topic_paragraphs": topic_paragraphs,
+        "subtopic_paragraphs": subtopic_paragraphs,
+    }
+
+    # Build all indices at once (this populates all internal dicts)
+    mgr.build_index(paragraphs, hierarchy)
+
+    print(f"  [book] Index built: {mgr._book_count()} vectors")
+    print(f"  [chapter] Index built: {mgr._chapter_count()} vectors")
+    print(f"  [topic] Index built: {mgr._topic_count()} vectors")
+    print(f"  [subtopic] Index built: {mgr._subtopic_count()} vectors")
+    print(f"  [paragraph] Index built: {mgr._paragraph_count()} vectors")
 
     # Save index to disk
     print(f"\nSaving index to {index_dir}/...")
     mgr.save(index_dir)
     print(f"Index saved: {len(books)} books, {len(chapters)} chapters, "
-          f"{len(topics)} topics, {mgr._paragraph_count()} paragraphs")
+          f"{len(topics)} topics, {mgr._subtopic_count()} subtopics, "
+          f"{mgr._paragraph_count()} paragraphs")
     _logger.info("vector index built: %s", index_dir)
 
 
@@ -805,6 +843,10 @@ def main() -> None:
         "--index", action="store_true",
         help="Also build FAISS vector indices after saving knowledge base",
     )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="Force rebuild of vector indices even if they already exist",
+    )
     args = parser.parse_args()
 
     _setup_logging(verbose=args.verbose)
@@ -814,6 +856,7 @@ def main() -> None:
         output_path=args.output,
         docs_dir=args.docs_dir,
         build_index=args.index,
+        force=args.force,
     )
 
 

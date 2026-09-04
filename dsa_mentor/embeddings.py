@@ -114,7 +114,12 @@ def _embed_st(texts: List[str], model_name: str = "all-MiniLM-L6-v2",
 
     # Lazy load to avoid cold-start cost on every import
     if not hasattr(_embed_st, "_model"):
-        _embed_st._model = _ST(model_name, device="auto")
+        try:
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        except ImportError:
+            device = "cpu"
+        _embed_st._model = _ST(model_name, device=device)
 
     model: Any = _embed_st._model
     all_embeddings: List[np.ndarray] = []

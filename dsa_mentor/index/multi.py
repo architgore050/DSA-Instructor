@@ -1,6 +1,6 @@
 """Multi-level index manager for hierarchical retrieval.
 
-Implements spec §8 (four vector indices: book/chapter/topic/paragraph) and
+Implements spec §8 (five vector indices: book/chapter/topic/subtopic/paragraph) and
 spec §87 Phase 3 (hierarchical retrieval architecture).
 
 Manages separate FAISS indices at each hierarchy level, with metadata
@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from ..embeddings import EmbeddingClient
-from ..models import Book, Chapter, Paragraph, Topic
+from ..models import Book, Chapter, Paragraph, Subtopic, Topic
 from .base import FAISSIndex
 
 logger = logging.getLogger(__name__)
@@ -43,9 +43,9 @@ class _NodeVector:
 # ---------------------------------------------------------------------------
 
 class MultiIndexManager:
-    """Manages book/chapter/topic/paragraph FAISS indices.
+    """Manages book/chapter/topic/subtopic/paragraph FAISS indices.
 
-    Builds and maintains four separate FAISS indices, one per hierarchy level.
+    Builds and maintains five separate FAISS indices, one per hierarchy level.
     Each index stores:
       - FAISS index object
       - metadata: node_id -> node mapping
@@ -61,28 +61,32 @@ class MultiIndexManager:
         self._embedding_client = embedding_client
         self._dimensions: Optional[int] = None
 
-        # Four indices
+        # Five indices
         self._book_index: Optional[FAISSIndex] = None
         self._chapter_index: Optional[FAISSIndex] = None
         self._topic_index: Optional[FAISSIndex] = None
+        self._subtopic_index: Optional[FAISSIndex] = None
         self._paragraph_index: Optional[FAISSIndex] = None
 
         # Metadata: node_id -> node
         self._books: Dict[str, Book] = {}
         self._chapters: Dict[str, Chapter] = {}
         self._topics: Dict[str, Topic] = {}
+        self._subtopics: Dict[str, Subtopic] = {}
         self._paragraphs: Dict[str, Paragraph] = {}
 
         # Reverse mapping: node_id -> FAISS index position
         self._book_pos: Dict[str, int] = {}
         self._chapter_pos: Dict[str, int] = {}
         self._topic_pos: Dict[str, int] = {}
+        self._subtopic_pos: Dict[str, int] = {}
         self._paragraph_pos: Dict[str, int] = {}
 
         # Hierarchy structure
         self._book_chapters: Dict[str, List[str]] = {}    # book_id -> [chapter_ids]
         self._chapter_topics: Dict[str, List[str]] = {}   # chapter_id -> [topic_ids]
         self._topic_paragraphs: Dict[str, List[str]] = {} # topic_id -> [paragraph_ids]
+        self._subtopic_paragraphs: Dict[str, List[str]] = {}  # subtopic_id -> [paragraph_ids]
 
     @property
     def embedding_client(self) -> EmbeddingClient:
@@ -97,7 +101,7 @@ class MultiIndexManager:
 
     def build_index(self, paragraphs: List[Paragraph],
                     hierarchy: Dict[str, Any]) -> None:
-        """Build all four hierarchy-level indices.
+        """Build all five hierarchy-level indices.
 
         Parameters
         ----------
@@ -108,17 +112,21 @@ class MultiIndexManager:
               - "books": list of Book objects
               - "chapters": list of Chapter objects
               - "topics": list of Topic objects
+              - "subtopics": list of Subtopic objects
               - "book_chapters": {book_id: [chapter_ids]}
               - "chapter_topics": {chapter_id: [topic_ids]}
               - "topic_paragraphs": {topic_id: [paragraph_ids]}
+              - "subtopic_paragraphs": {subtopic_id: [paragraph_ids]}
         """
         books = hierarchy.get("books", [])
         chapters = hierarchy.get("chapters", [])
         topics = hierarchy.get("topics", [])
+        subtopics = hierarchy.get("subtopics", [])
 
         self._book_chapters = hierarchy.get("book_chapters", {})
         self._chapter_topics = hierarchy.get("chapter_topics", {})
         self._topic_paragraphs = hierarchy.get("topic_paragraphs", {})
+        self._subtopic_paragraphs = hierarchy.get("subtopic_paragraphs", {})
 
         # Store all nodes
         for book in books:
@@ -127,6 +135,8 @@ class MultiIndexManager:
             self._chapters[chapter.id] = chapter
         for topic in topics:
             self._topics[topic.id] = topic
+        for subtopic in subtopics:
+            self._subtopics[subtopic.id] = subtopic
         for para in paragraphs:
             self._paragraphs[para.id] = para
 
@@ -134,12 +144,14 @@ class MultiIndexManager:
         self._build_book_index(books)
         self._build_chapter_index(chapters)
         self._build_topic_index(topics)
+        self._build_subtopic_index(subtopics)
         self._build_paragraph_index(paragraphs)
 
         logger.info("MultiIndexManager built: %d books, %d chapters, "
-                     "%d topics, %d paragraphs",
-                     self._book_count(), self._chapter_count(),
-                     self._topic_count(), self._paragraph_count())
+                      "%d topics, %d subtopics, %d paragraphs",
+                      self._book_count(), self._chapter_count(),
+                      self._topic_count(), self._subtopic_count(),
+                      self._paragraph_count())
 
     def _build_book_index(self, books: List[Book]) -> None:
         """Build the book-level index. Each book gets an embedding from its
@@ -218,8 +230,6 @@ class MultiIndexManager:
             topic_text = topic.title
             if topic.full_text:
                 topic_text += f"\n\n{topic.full_text}"
-            elif topic.content:
-                topic_text += f"\n\n{topic.content}"
             texts.append(topic_text)
             nodes.append(_NodeVector(
                 node_id=topic.id,
@@ -235,6 +245,37 @@ class MultiIndexManager:
 
         for i, node in enumerate(nodes):
             self._topic_pos[node.node_id] = i
+
+    def _build_subtopic_index(self, subtopics: List[Subtopic]) -> None:
+        """Build the subtopic-level index. Each subtopic gets an embedding from
+        its title + full text of all child paragraphs."""
+        if not subtopics:
+            logger.warning("No subtopics to index")
+            return
+
+        texts = []
+        nodes = []
+        for subtopic in subtopics:
+            subtopic_text = subtopic.title
+            for para_id in subtopic.children:
+                para = self._paragraphs.get(para_id)
+                if para and para.content:
+                    subtopic_text += f"\n\n{para.content}"
+            texts.append(subtopic_text)
+            nodes.append(_NodeVector(
+                node_id=subtopic.id,
+                title=subtopic.title,
+                text=subtopic_text,
+                node=subtopic,
+                parent_id=subtopic.topic_id,
+            ))
+
+        vectors = self._embed_texts(texts)
+        self._subtopic_index = FAISSIndex(vectors.shape[1], metric="cosine")
+        self._subtopic_index.add_with_ids(vectors, [n.node_id for n in nodes])
+
+        for i, node in enumerate(nodes):
+            self._subtopic_pos[node.node_id] = i
 
     def _build_paragraph_index(self, paragraphs: List[Paragraph]) -> None:
         """Build the paragraph-level index. One vector per paragraph
@@ -395,6 +436,48 @@ class MultiIndexManager:
         results.sort(key=lambda x: x[1], reverse=True)
         return results
 
+    def search_subtopic(self, query: str, topic_ids: Optional[List[str]] = None,
+                        k: int = 10) -> List[Tuple[Subtopic, float]]:
+        """Search the subtopic index, restricted to given topic_ids.
+
+        Parameters
+        ----------
+        query : str
+            Query text.
+        topic_ids : list[str] or None
+            If provided, only return subtopics belonging to these topics.
+        k : int
+            Number of results.
+
+        Returns
+        -------
+        list[tuple[Subtopic, float]]
+            (subtopic, similarity) sorted by descending similarity.
+            Returns empty list if index is not built or empty.
+        """
+        if self._subtopic_index is None or self._subtopic_index.count() == 0:
+            return []
+
+        query_vec = self.embedding_client.embed([query])
+        distances, indices = self._subtopic_index.search(query_vec, k=k)
+
+        results: List[Tuple[Subtopic, float]] = []
+        for j in range(distances.shape[1]):
+            idx = int(indices[0, j])
+            dist = float(distances[0, j])
+            if idx == -1:
+                continue
+            subtopic_id = self._subtopic_index.metadata[idx]
+            subtopic = self._subtopics.get(subtopic_id)
+            if subtopic is None:
+                continue
+            if topic_ids is not None and subtopic.topic_id not in topic_ids:
+                continue
+            results.append((subtopic, dist))
+
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results
+
     def search_paragraph(self, query: str, topic_ids: Optional[List[str]] = None,
                          k: int = 15) -> List[Tuple[Paragraph, float]]:
         """Search the paragraph index, restricted to given topic_ids.
@@ -442,17 +525,17 @@ class MultiIndexManager:
     # ------------------------------------------------------------------
 
     def save(self, path: str) -> None:
-        """Persist all 4 indices + metadata to disk.
+        """Persist all 5 indices + metadata to disk.
 
         Parameters
         ----------
         path : str
             Directory path. Creates subdirectories:
-              books/, chapters/, topics/, paragraphs/
+              books/, chapters/, topics/, subtopics/, paragraphs/
             Each containing index.faiss and metadata.json.
             Also saves:
               - nodes.json (all node objects)
-              - hierarchy.json (book_chapters, chapter_topics, topic_paragraphs)
+              - hierarchy.json (book_chapters, chapter_topics, topic_paragraphs, subtopic_paragraphs)
         """
         p = Path(path)
         p.mkdir(parents=True, exist_ok=True)
@@ -463,6 +546,7 @@ class MultiIndexManager:
         for name, idx in [("books", self._book_index),
                           ("chapters", self._chapter_index),
                           ("topics", self._topic_index),
+                          ("subtopics", self._subtopic_index),
                           ("paragraphs", self._paragraph_index)]:
             if idx is not None:
                 save_dir = p / name
@@ -480,6 +564,7 @@ class MultiIndexManager:
             "books": {bid: b.to_dict() for bid, b in self._books.items()},
             "chapters": {cid: c.to_dict() for cid, c in self._chapters.items()},
             "topics": {tid: t.to_dict() for tid, t in self._topics.items()},
+            "subtopics": {sid: s.to_dict() for sid, s in self._subtopics.items()},
             "paragraphs": {pid: p.to_dict() for pid, p in self._paragraphs.items()},
         }
         with open(p / "nodes.json", "w", encoding="utf-8") as f:
@@ -490,6 +575,7 @@ class MultiIndexManager:
             "book_chapters": self._book_chapters,
             "chapter_topics": self._chapter_topics,
             "topic_paragraphs": self._topic_paragraphs,
+            "subtopic_paragraphs": self._subtopic_paragraphs,
         }
         with open(p / "hierarchy.json", "w", encoding="utf-8") as f:
             json.dump(hierarchy_data, f, indent=2)
@@ -499,6 +585,7 @@ class MultiIndexManager:
             "book_pos": self._book_pos,
             "chapter_pos": self._chapter_pos,
             "topic_pos": self._topic_pos,
+            "subtopic_pos": self._subtopic_pos,
             "paragraph_pos": self._paragraph_pos,
         }
         with open(p / "positions.json", "w", encoding="utf-8") as f:
@@ -533,6 +620,7 @@ class MultiIndexManager:
         for name, attr in [("books", "_book_index"),
                            ("chapters", "_chapter_index"),
                            ("topics", "_topic_index"),
+                           ("subtopics", "_subtopic_index"),
                            ("paragraphs", "_paragraph_index")]:
             save_dir = p / name
             faiss_path = save_dir / "index.faiss"
@@ -553,19 +641,22 @@ class MultiIndexManager:
         if nodes_path.exists():
             with open(nodes_path, "r", encoding="utf-8") as f:
                 nodes_data = json.load(f)
-            from ..models import Book, Chapter, Topic, Paragraph
+            from ..models import Book, Chapter, Topic, Subtopic, Paragraph
             for bid, data in nodes_data.get("books", {}).items():
                 instance._books[bid] = Book(**{k: v for k, v in data.items()
                                                if k in Book.__dataclass_fields__})
             for cid, data in nodes_data.get("chapters", {}).items():
                 instance._chapters[cid] = Chapter(**{k: v for k, v in data.items()
-                                                     if k in Chapter.__dataclass_fields__})
+                                                      if k in Chapter.__dataclass_fields__})
             for tid, data in nodes_data.get("topics", {}).items():
                 instance._topics[tid] = Topic(**{k: v for k, v in data.items()
                                                  if k in Topic.__dataclass_fields__})
+            for sid, data in nodes_data.get("subtopics", {}).items():
+                instance._subtopics[sid] = Subtopic(**{k: v for k, v in data.items()
+                                                        if k in Subtopic.__dataclass_fields__})
             for pid, data in nodes_data.get("paragraphs", {}).items():
                 instance._paragraphs[pid] = Paragraph(**{k: v for k, v in data.items()
-                                                         if k in Paragraph.__dataclass_fields__})
+                                                          if k in Paragraph.__dataclass_fields__})
 
         # Load hierarchy
         hier_path = p / "hierarchy.json"
@@ -575,6 +666,7 @@ class MultiIndexManager:
             instance._book_chapters = hier_data.get("book_chapters", {})
             instance._chapter_topics = hier_data.get("chapter_topics", {})
             instance._topic_paragraphs = hier_data.get("topic_paragraphs", {})
+            instance._subtopic_paragraphs = hier_data.get("subtopic_paragraphs", {})
 
         # Load positions
         pos_path = p / "positions.json"
@@ -584,6 +676,7 @@ class MultiIndexManager:
             instance._book_pos = pos_data.get("book_pos", {})
             instance._chapter_pos = pos_data.get("chapter_pos", {})
             instance._topic_pos = pos_data.get("topic_pos", {})
+            instance._subtopic_pos = pos_data.get("subtopic_pos", {})
             instance._paragraph_pos = pos_data.get("paragraph_pos", {})
 
         logger.info("Loaded MultiIndexManager from %s", p)
@@ -602,6 +695,9 @@ class MultiIndexManager:
     def _topic_count(self) -> int:
         return self._topic_index.count() if self._topic_index else 0
 
+    def _subtopic_count(self) -> int:
+        return self._subtopic_index.count() if self._subtopic_index else 0
+
     def _paragraph_count(self) -> int:
         return self._paragraph_index.count() if self._paragraph_index else 0
 
@@ -618,6 +714,10 @@ class MultiIndexManager:
         return dict(self._topics)
 
     @property
+    def subtopics(self) -> Dict[str, Subtopic]:
+        return dict(self._subtopics)
+
+    @property
     def paragraphs(self) -> Dict[str, Paragraph]:
         return dict(self._paragraphs)
 
@@ -632,3 +732,7 @@ class MultiIndexManager:
     @property
     def topic_paragraphs(self) -> Dict[str, List[str]]:
         return dict(self._topic_paragraphs)
+
+    @property
+    def subtopic_paragraphs(self) -> Dict[str, List[str]]:
+        return dict(self._subtopic_paragraphs)

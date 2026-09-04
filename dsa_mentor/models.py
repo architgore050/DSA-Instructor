@@ -219,6 +219,7 @@ class RetrievalResult:
     books: List[Any] = dataclasses.field(default_factory=list)
     chapters: List[Any] = dataclasses.field(default_factory=list)
     topics: List[Any] = dataclasses.field(default_factory=list)
+    subtopics: List[Any] = dataclasses.field(default_factory=list)
     paragraphs: List[Any] = dataclasses.field(default_factory=list)
     expanded_topics: List[Any] = dataclasses.field(default_factory=list)
     knee: Optional[KneeData] = None
@@ -236,6 +237,7 @@ class RetrievalResult:
             "books": self._serialize_list(self.books),
             "chapters": self._serialize_list(self.chapters),
             "topics": self._serialize_list(self.topics),
+            "subtopics": self._serialize_list(self.subtopics),
             "paragraphs": self._serialize_list(self.paragraphs),
             "expanded_topics": self._serialize_list(self.expanded_topics),
             "context_tokens": self.context_tokens,

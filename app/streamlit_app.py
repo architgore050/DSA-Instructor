@@ -10,6 +10,8 @@ Run with: ``streamlit run app/streamlit_app.py``
 from __future__ import annotations
 
 import json
+import logging
+import re
 import sys
 import time
 from dataclasses import asdict
@@ -65,7 +67,7 @@ def _index_exists() -> bool:
     if not _INDEX_DIR.is_dir():
         return False
     # Check for actual FAISS index files (not just empty JSON shells)
-    for sub in ("books", "chapters", "topics", "paragraphs"):
+    for sub in ("books", "chapters", "topics", "subtopics", "paragraphs"):
         faiss_path = _INDEX_DIR / sub / "index.faiss"
         if not faiss_path.exists():
             return False
@@ -286,16 +288,40 @@ def _render_source_citations(result: RetrievalResult) -> str:
 # Message formatting
 # ===================================================================
 
-def _format_message(content: str) -> str:
-    """Format message content for proper newline rendering in Streamlit.
+def _clean_message(content: str) -> str:
+    """Strip HTML tags and convert HTML entities to preserve newlines for markdown rendering.
 
-    Wraps content in a preformatted div that preserves whitespace and newlines,
-    while still allowing Markdown rendering for other syntax.
+    The LLM may return HTML-formatted text (e.g. <p>, <br>, <code>, <pre>, <ul>, <li>,
+    <b>, <i>, <strong>, <em>, <h1>-<h6>, <div>, <span>). This function:
+      1. Strips all HTML tags
+      2. Converts <br>/<br/>/<br /> to newlines
+      3. Converts &amp; &lt; &gt; &quot; entities back to characters
     """
     if not content:
         return ""
-    # Use HTML pre tag to preserve whitespace/newlines, then render as HTML
-    return f"<pre style='margin:0;padding:0;font-family:inherit;white-space:pre-wrap;word-wrap:break-word;'>{content}</pre>"
+    # Convert <br> variants to newlines BEFORE stripping tags
+    content = re.sub(r'<br\s*/?>', '\n', content, flags=re.IGNORECASE)
+    # Strip all remaining HTML tags
+    content = re.sub(r'<[^>]+>', '', content)
+    # Decode common HTML entities
+    content = content.replace('&amp;', '&')
+    content = content.replace('&lt;', '<')
+    content = content.replace('&gt;', '>')
+    content = content.replace('&quot;', '"')
+    content = content.replace('&#39;', "'")
+    content = content.replace('&nbsp;', ' ')
+    return content
+
+
+def _format_message(content: str) -> str:
+    """Clean message content for proper rendering via st.markdown().
+
+    Strips HTML tags and normalizes whitespace so st.markdown() renders
+    newlines and formatting correctly.
+    """
+    if not content:
+        return ""
+    return _clean_message(content)
 
 
 # ===================================================================
@@ -322,6 +348,7 @@ def _init_session_state() -> None:
             )
         except Exception:
             st.session_state.retriever = None
+            logging.getLogger(__name__).exception("Failed to load retriever")
 
 
 # ===================================================================
@@ -381,10 +408,12 @@ def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: boo
     # RAG ON
     if not retriever:
         st.error(
-            "Retriever not available. Please build the index first by running:\n"
-            "`python -m dsa_mentor.ingestion.build --index`"
+            "Retriever not available. The vector index could not be loaded. "
+            "Try rebuilding it:"
         )
+        st.code("python -m dsa_mentor.ingestion.build --index", language="bash")
         st.session_state.messages.pop()
+        st.session_state._retriever_error = True
         return
 
     # Step 1: Retrieve
@@ -435,6 +464,8 @@ def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: boo
     st.session_state.retrieval_result = retrieval_result
 
 
+# ===================================================================
+# Index building from UI
 # ===================================================================
 # UI Layout
 # ===================================================================
@@ -519,7 +550,10 @@ def _render_chat_area() -> None:
     if user_query and user_query.strip():
         mode, rag_enabled, model_tier = st.session_state._sidebar_values
         _process_query(user_query.strip(), mode, model_tier, rag_enabled)
-        st.rerun()
+        if not st.session_state.get("_retriever_error", False):
+            st.rerun()
+        else:
+            st.session_state._retriever_error = False
 
 
 # ===================================================================
@@ -551,7 +585,10 @@ def main() -> None:
     if not _index_exists():
         st.warning(
             "⚠️ **Vector index not found.** "
-            "Run `python -m dsa_mentor.ingestion.build --index` to build the knowledge base and FAISS indices.\n\n"
+            "Build it from the command line before launching the UI:\n\n"
+            "```bash\n"
+            "python -m dsa_mentor.ingestion.build --index\n"
+            "```\n\n"
             "Until then, RAG retrieval is disabled."
         )
 

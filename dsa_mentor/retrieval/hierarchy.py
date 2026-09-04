@@ -25,7 +25,7 @@ from ..index.base import FAISSIndex
 from ..index.flat import FlatRetriever
 from ..index.hierarchy import HierarchicalConfig, HierarchicalRetriever
 from ..index.multi import MultiIndexManager
-from ..models import Book, Chapter, KneeData, Paragraph, RetrievalResult, Topic
+from ..models import Book, Chapter, KneeData, Paragraph, RetrievalResult, Subtopic, Topic
 from .expand import (
     ParagraphNeighborExpander,
     QueryBroadtherClassifier,
@@ -53,6 +53,7 @@ class KneeHierarchicalConfig:
     k_book: int = 5
     k_chapter: int = 8
     k_topic: int = 6
+    k_subtopic: int = 10
     k_paragraph: int = 15
     flat_k: int = 15
 
@@ -63,6 +64,8 @@ class KneeHierarchicalConfig:
         default_factory=lambda: KneeParams(candidate_k=15, minimum=1, maximum=6))
     topic_knee: KneeParams = field(
         default_factory=lambda: KneeParams(candidate_k=20, minimum=1, maximum=8))
+    subtopic_knee: KneeParams = field(
+        default_factory=lambda: KneeParams(candidate_k=30, minimum=1, maximum=12))
     paragraph_knee: KneeParams = field(
         default_factory=lambda: KneeParams(candidate_k=40, minimum=3, maximum=20))
 
@@ -82,6 +85,7 @@ def _build_knee_config(config: Any) -> KneeHierarchicalConfig:
             book_knee=r.book_knee,
             chapter_knee=r.chapter_knee,
             topic_knee=r.topic_knee,
+            subtopic_knee=r.subtopic_knee,
             paragraph_knee=r.paragraph_knee,
             similarity_threshold=r.similarity_threshold,
             neighbor_window=r.neighbor_window,
@@ -292,11 +296,46 @@ class KneeHierarchicalRetriever:
             logger.info("Knee retrieve: no topics matched")
 
         logger.info("Knee retrieve: %d topics selected (knee at rank %d of %d)",
-                     len(top_topics), topic_knee.knee_index, topic_knee.candidate_k)
+                      len(top_topics), topic_knee.knee_index, topic_knee.candidate_k)
 
-        # Step 4: Paragraph retrieval with knee detection
-        paragraph_results = self._search_paragraphs_for_topics_knee(
-            query, top_topic_ids, self._knee_config.paragraph_knee.candidate_k)
+        # Step 4: Subtopic retrieval with knee detection
+        subtopic_results = self._search_subtopics_for_topics_knee(
+            query, top_topic_ids, self._knee_config.subtopic_knee.candidate_k)
+        subtopic_similarities = [s for _, s in subtopic_results]
+        if subtopic_results:
+            subtopic_knee = detect_knee(
+                subtopic_similarities,
+                candidate_k=self._knee_config.subtopic_knee.candidate_k,
+                minimum=self._knee_config.subtopic_knee.minimum,
+                maximum=self._knee_config.subtopic_knee.maximum,
+                similarity_threshold=self._knee_config.similarity_threshold,
+            )
+            subtopic_knee = KneeData(
+                index="subtopic",
+                candidate_k=subtopic_knee.candidate_k,
+                selected_k=subtopic_knee.selected_k,
+                knee_index=subtopic_knee.knee_index,
+                threshold=subtopic_knee.threshold,
+            )
+            knees["subtopic"] = subtopic_knee
+            top_subtopics = [sr for sr, _ in subtopic_results[:subtopic_knee.selected_k]]
+            top_subtopic_ids = [s.id for s in top_subtopics]
+        else:
+            subtopic_knee = KneeData(
+                index="subtopic", candidate_k=0, selected_k=0,
+                knee_index=0, threshold=self._knee_config.similarity_threshold,
+            )
+            knees["subtopic"] = subtopic_knee
+            top_subtopics = []
+            top_subtopic_ids = []
+            logger.info("Knee retrieve: no subtopics matched")
+
+        logger.info("Knee retrieve: %d subtopics selected (knee at rank %d of %d)",
+                      len(top_subtopics), subtopic_knee.knee_index, subtopic_knee.candidate_k)
+
+        # Step 5: Paragraph retrieval with knee detection
+        paragraph_results = self._search_paragraphs_for_subtopics_knee(
+            query, top_subtopic_ids, self._knee_config.paragraph_knee.candidate_k)
         paragraph_similarities = [s for _, s in paragraph_results]
         if paragraph_results:
             paragraph_knee = detect_knee(
@@ -327,7 +366,7 @@ class KneeHierarchicalRetriever:
                      len(top_paragraphs), paragraph_knee.knee_index,
                      paragraph_knee.candidate_k)
 
-        # Step 5: Query breadth classification → topic expansion → neighbor expansion → context budget
+        # Step 6: Query breadth classification → topic expansion → neighbor expansion → context budget
         breadth = self._breadth_classifier.classify(query)
         logger.info("Knee retrieve: query breadth = %s (query='%s')", breadth, query)
 
@@ -335,12 +374,12 @@ class KneeHierarchicalRetriever:
         expanded_topics = self._topic_expander.expand(top_topics, breadth)
         logger.info("Knee retrieve: expanded %d topics (breadth=%s)", len(expanded_topics), breadth)
 
-        # Build topic → paragraph id map for neighbor expansion (spec §17)
-        topic_paragraph_map: Dict[str, List[str]] = {}
+        # Build subtopic → paragraph id map for neighbor expansion (spec §17)
+        subtopic_paragraph_map: Dict[str, List[str]] = {}
         for para in top_paragraphs:
-            tid = para.topic_id
-            if tid:
-                topic_paragraph_map.setdefault(tid, []).append(para.id)
+            sid = para.subtopic_id
+            if sid:
+                subtopic_paragraph_map.setdefault(sid, []).append(para.id)
 
         # Also build a full id → paragraph map from all retrieved paragraphs
         all_para_by_id: Dict[str, Paragraph] = {p.id: p for p in top_paragraphs}
@@ -348,7 +387,7 @@ class KneeHierarchicalRetriever:
         # Paragraph neighbor expansion (spec §17)
         expanded_paras = self._neighbor_expander.expand(
             top_paragraphs,
-            topic_paragraph_map,
+            subtopic_paragraph_map,
             all_para_by_id,
         )
         logger.info("Knee retrieve: neighbor-expanded %d → %d paragraphs",
@@ -374,6 +413,7 @@ class KneeHierarchicalRetriever:
             books=top_books,
             chapters=top_chapters,
             topics=top_topics,
+            subtopics=top_subtopics,
             paragraphs=expanded_paras,
             expanded_topics=expanded_topics,
             knee=paragraph_knee,  # paragraph-level knee for backward compat
@@ -429,6 +469,42 @@ class KneeHierarchicalRetriever:
                 query, topic_ids=[topic_id], k=k_per_topic)
             for p, score in p_results:
                 if p.id not in seen_ids:
+                    seen_ids.add(p.id)
+                    all_results.append((p, score))
+
+        all_results.sort(key=lambda x: x[1], reverse=True)
+        return all_results
+
+    def _search_subtopics_for_topics_knee(
+        self, query: str, topic_ids: List[str], k_per_topic: int
+    ) -> List[Tuple[Subtopic, float]]:
+        """Search subtopics for given topics, deduplicated, sorted by score."""
+        all_results: List[Tuple[Subtopic, float]] = []
+        seen_ids: Set[str] = set()
+
+        for topic_id in topic_ids:
+            st_results = self._manager.search_subtopic(
+                query, topic_ids=[topic_id], k=k_per_topic)
+            for st, score in st_results:
+                if st.id not in seen_ids:
+                    seen_ids.add(st.id)
+                    all_results.append((st, score))
+
+        all_results.sort(key=lambda x: x[1], reverse=True)
+        return all_results
+
+    def _search_paragraphs_for_subtopics_knee(
+        self, query: str, subtopic_ids: List[str], k_per_subtopic: int
+    ) -> List[Tuple[Paragraph, float]]:
+        """Search paragraphs for given subtopics, deduplicated, sorted by score."""
+        all_results: List[Tuple[Paragraph, float]] = []
+        seen_ids: Set[str] = set()
+
+        for subtopic_id in subtopic_ids:
+            p_results = self._manager.search_paragraph(
+                query, topic_ids=None, k=k_per_subtopic)
+            for p, score in p_results:
+                if p.id not in seen_ids and p.subtopic_id == subtopic_id:
                     seen_ids.add(p.id)
                     all_results.append((p, score))
 

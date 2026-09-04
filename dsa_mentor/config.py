@@ -230,6 +230,7 @@ class RetrievalConfig:
     book_knee: KneeParams
     chapter_knee: KneeParams
     topic_knee: KneeParams
+    subtopic_knee: KneeParams
     paragraph_knee: KneeParams
 
     @classmethod
@@ -245,6 +246,7 @@ class RetrievalConfig:
             book_knee=_knee_params(data, "book_knee", where),
             chapter_knee=_knee_params(data, "chapter_knee", where),
             topic_knee=_knee_params(data, "topic_knee", where),
+            subtopic_knee=_knee_params(data, "subtopic_knee", where),
             paragraph_knee=_knee_params(data, "paragraph_knee", where),
         )
 

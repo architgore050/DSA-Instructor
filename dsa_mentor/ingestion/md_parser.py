@@ -122,13 +122,23 @@ def _read_file(path: str) -> str:
 # Block extraction
 # ---------------------------------------------------------------------------
 
-def _extract_blocks(text: str) -> List[_Block]:
+def _extract_blocks(
+    text: str,
+    *,
+    min_heading_level: int = 1,
+) -> List[_Block]:
     """Extract text blocks delimited by markdown headings.
 
     Handles:
     - Nested headings (deeper headings start new blocks)
     - Code blocks (preserved as-is, not split)
     - Empty sections
+    - Minimum heading level filter (headings below this level are treated as content)
+
+    Args:
+        text: Markdown text to parse.
+        min_heading_level: Only headings at this level or deeper trigger block splits.
+                          E.g., min_heading_level=2 skips single '#' lines (code comments).
     """
     lines = text.split("\n")
     blocks: List[_Block] = []
@@ -158,7 +168,7 @@ def _extract_blocks(text: str) -> List[_Block]:
             continue
 
         heading_match = _HEADING_RE.match(line)
-        if heading_match:
+        if heading_match and len(heading_match.group(1)) >= min_heading_level:
             # Save previous block
             blocks.append(_Block(current_heading, current_lines, current_start))
 
@@ -176,7 +186,12 @@ def _extract_blocks(text: str) -> List[_Block]:
     return blocks
 
 
-def _extract_subtopic_blocks(text: str, heading_level: int = 3) -> List[_SubtopicBlock]:
+def _extract_subtopic_blocks(
+    text: str,
+    heading_level: int = 3,
+    *,
+    min_heading_level: int = 1,
+) -> List[_SubtopicBlock]:
     """Extract subtopic blocks from markdown text.
 
     Subtopics are delimited by headings of the specified level.
@@ -185,6 +200,8 @@ def _extract_subtopic_blocks(text: str, heading_level: int = 3) -> List[_Subtopi
     Args:
         text: Markdown text to parse.
         heading_level: Heading level to treat as subtopic boundary (2 for ##, 3 for ###).
+        min_heading_level: Only headings at this level or deeper are recognized.
+                          E.g., min_heading_level=2 skips single '#' lines (code comments).
 
     Returns:
         List of subtopic blocks. Empty list if no headings of the specified level exist.
@@ -242,7 +259,7 @@ def _extract_subtopic_blocks(text: str, heading_level: int = 3) -> List[_Subtopi
             continue
 
         heading_match = _HEADING_RE.match(line)
-        if heading_match:
+        if heading_match and len(heading_match.group(1)) >= min_heading_level:
             level = len(heading_match.group(1))
             title = heading_match.group(2).strip()
 
