@@ -1,6 +1,7 @@
 """CLI entry point for running DSA Mentor benchmarks.
 
 Usage:
+    # LLM response benchmarking (existing)
     python -m benchmark [--config config.json] [--output results.jsonl]
                         [--questions sample_questions.jsonl]
                         [--model large|medium|small]
@@ -8,8 +9,25 @@ Usage:
                         [--method knee|fixed_top_5|fixed_top_10|fixed_top_20|flat]
                         [--full]
 
+    # RAGAS retrieval benchmarking (new)
+    python -m benchmark --ragas [--config config.json] [--output ragas_results.json]
+                         [--questions ragas_questions.jsonl]
+
+    # System logging / latency benchmark (new)
+    python -m benchmark --system [--config config.json] [--output system_report.json]
+                          [--questions system_questions.jsonl]
+
+    # System health report (new)
+    python -m benchmark --health [--config config.json] [--output health_report.json]
+
+    # Run all three benchmarks
+    python -m benchmark --full --ragas --system --health
+
 Options:
-    --full          Run the full experiment matrix (3 models x 2 RAG x 5 methods)
+    --full          Run LLM response benchmark (3 models x 2 RAG x 5 methods)
+    --ragas         Run RAGAS retrieval quality benchmark
+    --system        Run system logging / latency benchmark
+    --health        Generate system health report
     --model         Model tier: large, medium, or small (default: large)
     --rag           RAG mode: on or off (default: on)
     --method        Retrieval method (default: knee)
@@ -25,7 +43,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 try:
     from tqdm import tqdm
@@ -58,6 +76,9 @@ from dsa_mentor.retrieval.hierarchy import KneeHierarchicalRetriever
 
 from benchmark.dataset import BenchmarkDataset
 from benchmark.runner import BenchmarkRunner, MODEL_TIERS, RETRIEVAL_METHODS
+
+from benchmark.ragas_retrieval import RAGASRetrievalBenchmark, get_dsa_retrieval_dataset
+from benchmark.system_logging import PipelineProfiler, SystemHealthReport
 
 
 def build_retriever(config_path: str = "config.json"):
@@ -207,6 +228,188 @@ def run_full_experiment(config_path: str, output_path: str, question_file: str) 
     print(f"Total time: {elapsed:.1f}s")
 
 
+def run_ragas_benchmark(
+    config_path: str,
+    output_path: str,
+    questions_path: Optional[str] = None,
+) -> None:
+    """Run the RAGAS retrieval quality benchmark.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to config.json.
+    output_path : str
+        Output file path for results.
+    questions_path : str or None
+        Path to custom questions JSONL. Uses built-in DSA dataset if None.
+    """
+    print("Loading retriever for RAGAS benchmark...")
+    retriever, emb_client, cfg = build_retriever(config_path)
+
+    print(f"Running RAGAS retrieval benchmark...")
+    benchmark = RAGASRetrievalBenchmark(cfg, retriever, emb_client)
+
+    # Use built-in DSA dataset
+    dataset = get_dsa_retrieval_dataset()
+    print(f"  Dataset size: {len(dataset)} questions")
+    print(f"  Categories: {', '.join(sorted(set(q['category'] for q in dataset)))}")
+
+    results = benchmark.run(dataset=dataset, save_path=output_path)
+
+    mode = results.get("mode", "unknown")
+    aggregate = results.get("aggregate_metrics", {})
+
+    print(f"\n{'=' * 60}")
+    print(f"RAGAS Retrieval Benchmark Results")
+    print(f"{'=' * 60}")
+    print(f"Mode: {mode}")
+    print(f"Questions: {results.get('dataset_size', 0)}")
+    print(f"\nAggregate Metrics:")
+
+    for metric_name, metric_data in aggregate.items():
+        if isinstance(metric_data, dict):
+            mean_val = metric_data.get("mean", "N/A")
+            std_val = metric_data.get("std", "N/A")
+            print(f"  {metric_name}: mean={mean_val}, std={std_val}")
+        else:
+            print(f"  {metric_name}: {metric_data}")
+
+    print(f"\nResults saved to: {output_path}")
+
+
+def run_system_benchmark(
+    config_path: str,
+    output_path: str,
+    questions_path: Optional[str] = None,
+) -> None:
+    """Run the system logging / latency benchmark.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to config.json.
+    output_path : str
+        Output file path for results.
+    questions_path : str or None
+        Path to custom questions JSONL. Uses sample_questions.jsonl if None.
+    """
+    print("Loading retriever for system benchmark...")
+    retriever, emb_client, cfg = build_retriever(config_path)
+
+    # Load questions
+    if questions_path:
+        dataset = BenchmarkDataset().load(questions_path)
+    else:
+        dataset = BenchmarkDataset().load(str(_PROJECT_ROOT / "benchmark" / "sample_questions.jsonl"))
+
+    print(f"  Questions: {len(dataset)}")
+
+    print(f"Running system logging benchmark...")
+    profiler = PipelineProfiler(cfg, retriever, emb_client)
+    report = profiler.profile_dataset(dataset, save_path=output_path)
+
+    aggregate = report.get("aggregate", {})
+
+    print(f"\n{'=' * 60}")
+    print(f"System Logging Benchmark Results")
+    print(f"{'=' * 60}")
+
+    # Latency stats
+    latency = aggregate.get("latency", {})
+    if latency:
+        print(f"\nLatency Statistics:")
+        print(f"  Mean:      {latency.get('mean_seconds', 'N/A')}s")
+        print(f"  Median:    {latency.get('median_seconds', 'N/A')}s")
+        print(f"  P90:       {latency.get('p90_seconds', 'N/A')}s")
+        print(f"  P99:       {latency.get('p99_seconds', 'N/A')}s")
+        print(f"  Min:       {latency.get('min_seconds', 'N/A')}s")
+        print(f"  Max:       {latency.get('max_seconds', 'N/A')}s")
+
+    # Query complexity
+    complexity = aggregate.get("query_complexity", {})
+    if complexity:
+        print(f"\nQuery Complexity:")
+        print(f"  Avg word count:      {complexity.get('avg_word_count', 'N/A')}")
+        print(f"  Avg tech term density: {complexity.get('avg_tech_term_density', 'N/A')}")
+        print(f"  Multi-concept queries: {complexity.get('multi_concept_queries', 'N/A')} "
+              f"({complexity.get('multi_concept_pct', 'N/A')}%)")
+
+    # Context building
+    context = aggregate.get("context_building", {})
+    if context:
+        print(f"\nContext Building:")
+        print(f"  Avg paragraphs:      {context.get('avg_paragraphs', 'N/A')}")
+        print(f"  Avg tokens:          {context.get('avg_tokens', 'N/A')}")
+        print(f"  Budget utilization:  {context.get('avg_budget_utilization', 'N/A')}")
+        print(f"  Unique sources:      {context.get('avg_unique_sources', 'N/A')}")
+
+    # Retrieval quality
+    quality = aggregate.get("retrieval_quality", {})
+    if quality:
+        print(f"\nRetrieval Quality:")
+        print(f"  Avg similarity:      {quality.get('avg_similarity', 'N/A')}")
+        print(f"  Avg paragraphs:      {quality.get('avg_paragraphs', 'N/A')}")
+
+    print(f"\nResults saved to: {output_path}")
+
+
+def run_health_report(
+    config_path: str,
+    output_path: str,
+) -> None:
+    """Generate a system health report.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to config.json.
+    output_path : str
+        Output file path for the report.
+    """
+    print("Loading retriever for health report...")
+    retriever, emb_client, cfg = build_retriever(config_path)
+
+    print("Generating system health report...")
+    health = SystemHealthReport(cfg, retriever)
+    report = health.generate()
+
+    # Print summary
+    print(f"\n{'=' * 60}")
+    print(f"System Health Report")
+    print(f"{'=' * 60}")
+
+    # Index structure
+    index_structure = report.get("index_structure", {})
+    if index_structure and "error" not in index_structure:
+        print(f"\nIndex Structure:")
+        for level, info in index_structure.items():
+            print(f"  {level:>12}: {info.get('num_vectors', 0):>8,} vectors, "
+                  f"dim={info.get('dimension', 0)}")
+
+    # KB stats
+    kb_stats = report.get("knowledge_base_stats", {})
+    if kb_stats and "error" not in kb_stats:
+        print(f"\nKnowledge Base:")
+        for key, value in kb_stats.items():
+            print(f"  {key:>20}: {value:>8,}")
+
+    # Recommendations
+    recommendations = report.get("recommendations", [])
+    if recommendations:
+        print(f"\nRecommendations:")
+        for rec in recommendations:
+            print(f"  - {rec}")
+
+    # Save report
+    path_obj = Path(output_path)
+    path_obj.parent.mkdir(parents=True, exist_ok=True)
+    with open(path_obj, "w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=2, ensure_ascii=False, default=str)
+
+    print(f"\nHealth report saved to: {output_path}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="DSA Mentor — Benchmark Runner")
     parser.add_argument("--config", default=str(_PROJECT_ROOT / "config.json"),
@@ -222,15 +425,36 @@ def main() -> None:
     parser.add_argument("--method", choices=RETRIEVAL_METHODS, default="knee",
                         help="Retrieval method")
     parser.add_argument("--full", action="store_true",
-                        help="Run full experiment matrix")
+                        help="Run full experiment matrix (LLM response benchmarking)")
+    parser.add_argument("--ragas", action="store_true",
+                        help="Run RAGAS retrieval quality benchmark")
+    parser.add_argument("--system", action="store_true",
+                        help="Run system logging / latency benchmark")
+    parser.add_argument("--health", action="store_true",
+                        help="Generate system health report")
 
     args = parser.parse_args()
 
-    rag_enabled = args.rag == "on"
+    # RAGAS retrieval benchmark
+    if args.ragas:
+        ragas_output = str(_PROJECT_ROOT / "benchmark" / "ragas_results.json")
+        run_ragas_benchmark(args.config, ragas_output)
 
+    # System logging benchmark
+    if args.system:
+        system_output = str(_PROJECT_ROOT / "benchmark" / "system_report.json")
+        run_system_benchmark(args.config, system_output, args.questions)
+
+    # System health report
+    if args.health:
+        health_output = str(_PROJECT_ROOT / "benchmark" / "health_report.json")
+        run_health_report(args.config, health_output)
+
+    # LLM response benchmarking (existing behavior)
     if args.full:
         run_full_experiment(args.config, args.output, args.questions)
-    else:
+    elif not (args.ragas or args.system or args.health):
+        rag_enabled = args.rag == "on"
         run_single(args.config, args.output, args.questions,
                    args.model, rag_enabled, args.method)
 
