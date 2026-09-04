@@ -70,11 +70,12 @@ class KneeHierarchicalConfig:
         default_factory=lambda: KneeParams(candidate_k=40, minimum=3, maximum=20))
 
     # Global fallback threshold
-    similarity_threshold: float = 0.35
+    similarity_threshold: float = 0.15
+    knee_strongness_threshold: float = 0.02
 
     # Expansion settings (spec §14, §16, §17, §18)
-    neighbor_window: int = 1
-    max_context_tokens: int = 16000
+    neighbor_window: int = 2
+    max_context_tokens: int = 20000
 
 
 def _build_knee_config(config: Any) -> KneeHierarchicalConfig:
@@ -88,6 +89,7 @@ def _build_knee_config(config: Any) -> KneeHierarchicalConfig:
             subtopic_knee=r.subtopic_knee,
             paragraph_knee=r.paragraph_knee,
             similarity_threshold=r.similarity_threshold,
+            knee_strongness_threshold=getattr(r, "knee_strongness_threshold", 0.02),
             neighbor_window=r.neighbor_window,
             max_context_tokens=r.max_context_tokens,
         )
@@ -203,6 +205,7 @@ class KneeHierarchicalRetriever:
                 minimum=self._knee_config.book_knee.minimum,
                 maximum=self._knee_config.book_knee.maximum,
                 similarity_threshold=self._knee_config.similarity_threshold,
+                knee_strongness_threshold=self._knee_config.knee_strongness_threshold,
             )
             book_knee = KneeData(
                 index="book",
@@ -239,6 +242,7 @@ class KneeHierarchicalRetriever:
                 minimum=self._knee_config.chapter_knee.minimum,
                 maximum=self._knee_config.chapter_knee.maximum,
                 similarity_threshold=self._knee_config.similarity_threshold,
+                knee_strongness_threshold=self._knee_config.knee_strongness_threshold,
             )
             chapter_knee = KneeData(
                 index="chapter",
@@ -274,6 +278,7 @@ class KneeHierarchicalRetriever:
                 minimum=self._knee_config.topic_knee.minimum,
                 maximum=self._knee_config.topic_knee.maximum,
                 similarity_threshold=self._knee_config.similarity_threshold,
+                knee_strongness_threshold=self._knee_config.knee_strongness_threshold,
             )
             topic_knee = KneeData(
                 index="topic",
@@ -309,6 +314,7 @@ class KneeHierarchicalRetriever:
                 minimum=self._knee_config.subtopic_knee.minimum,
                 maximum=self._knee_config.subtopic_knee.maximum,
                 similarity_threshold=self._knee_config.similarity_threshold,
+                knee_strongness_threshold=self._knee_config.knee_strongness_threshold,
             )
             subtopic_knee = KneeData(
                 index="subtopic",
@@ -344,6 +350,7 @@ class KneeHierarchicalRetriever:
                 minimum=self._knee_config.paragraph_knee.minimum,
                 maximum=self._knee_config.paragraph_knee.maximum,
                 similarity_threshold=self._knee_config.similarity_threshold,
+                knee_strongness_threshold=self._knee_config.knee_strongness_threshold,
             )
             paragraph_knee = KneeData(
                 index="paragraph",
@@ -363,50 +370,79 @@ class KneeHierarchicalRetriever:
             top_paragraphs = []
 
         logger.info("Knee retrieve: %d paragraphs selected (knee at rank %d of %d)",
-                     len(top_paragraphs), paragraph_knee.knee_index,
-                     paragraph_knee.candidate_k)
+                      len(top_paragraphs), paragraph_knee.knee_index,
+                      paragraph_knee.candidate_k)
 
-        # Step 6: Query breadth classification → topic expansion → neighbor expansion → context budget
+        # Step 6: Flat search as complementary fallback (spec §87 Phase 2)
+        # Searches entire corpus, deduplicates against hierarchical results
+        hierarchical_ids: Set[str] = {p.id for p in top_paragraphs}
+        flat_paragraphs: List[Tuple[Paragraph, float]] = []
+
+        if not top_paragraphs or len(top_paragraphs) < 3:
+            flat_results = self._manager.search_paragraph(
+                query, k=self._knee_config.paragraph_knee.candidate_k)
+            for p, score in flat_results:
+                if p.id not in hierarchical_ids:
+                    flat_paragraphs.append((p, score))
+                    hierarchical_ids.add(p.id)
+
+        flat_paragraphs.sort(key=lambda x: x[1], reverse=True)
+        logger.info("Knee retrieve: flat fallback added %d paragraphs", len(flat_paragraphs))
+
+        # Merge flat results into paragraphs
+        all_paragraphs = list(top_paragraphs) + [p for p, _ in flat_paragraphs]
+
+        # Step 7: Query breadth classification → topic expansion → neighbor expansion → context budget
         breadth = self._breadth_classifier.classify(query)
         logger.info("Knee retrieve: query breadth = %s (query='%s')", breadth, query)
 
-        # Topic expansion (spec §14)
+        # Topic expansion (spec §14) — expand topics with full_text
         expanded_topics = self._topic_expander.expand(top_topics, breadth)
         logger.info("Knee retrieve: expanded %d topics (breadth=%s)", len(expanded_topics), breadth)
 
         # Build subtopic → paragraph id map for neighbor expansion (spec §17)
         subtopic_paragraph_map: Dict[str, List[str]] = {}
-        for para in top_paragraphs:
+        for para in all_paragraphs:
             sid = para.subtopic_id
             if sid:
                 subtopic_paragraph_map.setdefault(sid, []).append(para.id)
 
         # Also build a full id → paragraph map from all retrieved paragraphs
-        all_para_by_id: Dict[str, Paragraph] = {p.id: p for p in top_paragraphs}
+        all_para_by_id: Dict[str, Paragraph] = {p.id: p for p in all_paragraphs}
 
         # Paragraph neighbor expansion (spec §17)
         expanded_paras = self._neighbor_expander.expand(
-            top_paragraphs,
+            all_paragraphs,
             subtopic_paragraph_map,
             all_para_by_id,
         )
         logger.info("Knee retrieve: neighbor-expanded %d → %d paragraphs",
-                     len(top_paragraphs), len(expanded_paras))
+                      len(all_paragraphs), len(expanded_paras))
+
+        # Compute context tokens: paragraphs + expanded topic full_text
+        para_tokens = sum(estimate_tokens(p.content or "") for p in expanded_paras)
+        topic_tokens = 0
+        for t in expanded_topics:
+            if t.full_text and t.full_text.strip():
+                topic_tokens += estimate_tokens(t.full_text)
+        total_tokens = para_tokens + topic_tokens
+        logger.info("Knee retrieve: total context tokens = %d (para=%d, topics=%d, budget=%d)",
+                      total_tokens, para_tokens, topic_tokens, self._knee_config.max_context_tokens)
 
         # Context budget enforcement (spec §18)
-        total_tokens = sum(estimate_tokens(p.content or "") for p in expanded_paras)
-        logger.info("Knee retrieve: total context tokens = %d (budget=%d)",
-                     total_tokens, self._knee_config.max_context_tokens)
-
         if total_tokens > self._knee_config.max_context_tokens:
             expanded_paras = apply_context_budget(
                 expanded_paras, self._knee_config.max_context_tokens,
             )
             logger.info("Knee retrieve: truncated to %d paragraphs (budget=%d)",
-                         len(expanded_paras), self._knee_config.max_context_tokens)
+                          len(expanded_paras), self._knee_config.max_context_tokens)
 
         # Recompute final token count
         final_tokens = sum(estimate_tokens(p.content or "") for p in expanded_paras)
+        # Add topic full_text tokens (not subject to paragraph budget truncation)
+        for t in expanded_topics:
+            if t.full_text and t.full_text.strip():
+                final_tokens += estimate_tokens(t.full_text)
 
         return RetrievalResult(
             query=query,
@@ -500,11 +536,18 @@ class KneeHierarchicalRetriever:
         all_results: List[Tuple[Paragraph, float]] = []
         seen_ids: Set[str] = set()
 
-        for subtopic_id in subtopic_ids:
+        # Map subtopic_ids to parent topic_ids for scoped FAISS search
+        topic_ids: Set[str] = set()
+        for st in self._manager.subtopics.values():
+            if st.id in subtopic_ids and st.topic_id:
+                topic_ids.add(st.topic_id)
+
+        if topic_ids:
             p_results = self._manager.search_paragraph(
-                query, topic_ids=None, k=k_per_subtopic)
+                query, topic_ids=list(topic_ids),
+                k=k_per_subtopic * max(len(topic_ids), 1))
             for p, score in p_results:
-                if p.id not in seen_ids and p.subtopic_id == subtopic_id:
+                if p.id not in seen_ids and p.subtopic_id in subtopic_ids:
                     seen_ids.add(p.id)
                     all_results.append((p, score))
 
@@ -593,6 +636,7 @@ class KneeHierarchicalRetriever:
                 minimum=self._knee_config.paragraph_knee.minimum,
                 maximum=self._knee_config.paragraph_knee.maximum,
                 similarity_threshold=self._knee_config.similarity_threshold,
+                knee_strongness_threshold=self._knee_config.knee_strongness_threshold,
             )
             paragraph_knee = KneeData(
                 index="paragraph",

@@ -223,6 +223,7 @@ class RetrievalConfig:
 
     knee_method: str  # algorithm name placeholder; one universal method at all levels (§12)
     similarity_threshold: float  # fallback relevance floor when no strong knee exists (§13)
+    knee_strongness_threshold: float  # minimum normalized drop to consider a knee "strong" (§13)
     neighbor_window: int  # adjacent-paragraph expansion window (§17)
     max_context_tokens: int  # context budget for the LLM prompt (§18)
     paragraph_max_chars: int  # oversized-paragraph split threshold P (spec §6)
@@ -238,7 +239,8 @@ class RetrievalConfig:
         where = "retrieval"
         return cls(
             knee_method=_get_str(data, "knee_method", where),
-            similarity_threshold=_get_number(data, "similarity_threshold", where),
+            similarity_threshold=_get_number(data, "similarity_threshold", where) if "similarity_threshold" in data else 0.15,
+            knee_strongness_threshold=_get_number(data, "knee_strongness_threshold", where) if "knee_strongness_threshold" in data else 0.02,
             neighbor_window=_get_int(data, "neighbor_window", where),
             max_context_tokens=_get_int(data, "max_context_tokens", where),
             paragraph_max_chars=_get_int(data, "paragraph_max_chars", where),
@@ -382,6 +384,7 @@ def _validate_cross_field(cfg: Config) -> None:
 
     r = cfg.retrieval
     check(0 <= r.similarity_threshold <= 1, "retrieval.similarity_threshold must be in [0, 1]")
+    check(0 <= r.knee_strongness_threshold <= 1, "retrieval.knee_strongness_threshold must be in [0, 1]")
     check(r.neighbor_window >= 0, "retrieval.neighbor_window must be >= 0")
     check(r.max_context_tokens > 0, "retrieval.max_context_tokens must be > 0")
     check(r.paragraph_max_chars > 0, "retrieval.paragraph_max_chars must be > 0")

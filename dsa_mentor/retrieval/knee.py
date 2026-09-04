@@ -21,6 +21,7 @@ def detect_knee(
     minimum: int,
     maximum: int,
     similarity_threshold: Optional[float] = None,
+    knee_strongness_threshold: Optional[float] = None,
 ) -> KneeData:
     """Detect the knee (elbow) in a sorted similarity-score curve.
 
@@ -46,7 +47,9 @@ def detect_knee(
     maximum : int
         Maximum number of candidates to ever return.
     similarity_threshold : float or None
-        Fallback relevance floor. Defaults to 0.35.
+        Fallback relevance floor. Defaults to 0.15.
+    knee_strongness_threshold : float or None
+        Minimum normalized drop to consider a knee "strong". Defaults to 0.02.
 
     Returns
     -------
@@ -54,7 +57,9 @@ def detect_knee(
         Describes the detection result for this level.
     """
     if similarity_threshold is None:
-        similarity_threshold = 0.35
+        similarity_threshold = 0.15
+    if knee_strongness_threshold is None:
+        knee_strongness_threshold = 0.02
 
     # Edge case: empty list
     if not similarities:
@@ -133,8 +138,8 @@ def detect_knee(
     # The knee occurs AFTER index max_drop_idx, so we include indices 0..max_drop_idx
     knee_index_0based = max_drop_idx
 
-    # Check if the knee is "strong" (spec §13: threshold of 0.05)
-    if max_normalized_drop >= 0.05:
+    # Check if the knee is "strong" (configurable threshold, default 0.02)
+    if max_normalized_drop >= knee_strongness_threshold:
         # Strong knee detected — select through knee_index (inclusive)
         selected_count = knee_index_0based + 1  # inclusive
     else:

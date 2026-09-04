@@ -483,6 +483,25 @@ def _build_hierarchy(
                 subtopics[para.subtopic_id].children.append(para.id)
 
     _logger.info("hierarchy linking complete")
+
+    # Populate topic full_text from paragraph content (spec §7)
+    topic_paragraphs: Dict[str, List[Paragraph]] = {}
+    for para in paragraphs:
+        if para.topic_id:
+            topic_paragraphs.setdefault(para.topic_id, []).append(para)
+
+    for topic_id, para_list in topic_paragraphs.items():
+        if topic_id not in topics:
+            continue
+        # Sort paragraphs by their paragraph_id for consistent ordering
+        para_list.sort(key=lambda p: p.paragraph_id or "")
+        # Combine all paragraph contents into topic full_text
+        contents = [p.content or "" for p in para_list if p.content]
+        if contents:
+            topics[topic_id].full_text = "\n\n".join(contents)
+
+    _logger.info("populated full_text for %d topics", len(topic_paragraphs))
+
     return (
         list(books.values()),
         list(chapters.values()),

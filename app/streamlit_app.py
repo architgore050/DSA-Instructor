@@ -137,130 +137,141 @@ def _get_mode_system_prompt(cfg: Config, mode: str, rag_enabled: bool) -> str:
 # Retrieval inspector rendering (spec §30-§31)
 # ===================================================================
 
+# Cache for loading knowledge base hierarchy
+_retrieval_cache: Dict[str, Any] = {}
+
+
+def _load_kb_for_inspector() -> Dict[str, Any]:
+    """Load knowledge base hierarchy for readable name lookups."""
+    cache_key = str(_KB_FILE)
+    if cache_key in _retrieval_cache:
+        return _retrieval_cache[cache_key]
+
+    if not _KB_FILE.exists():
+        _retrieval_cache[cache_key] = {"books": {}, "chapters": {}, "topics": {}, "paragraphs": {}}
+        return _retrieval_cache[cache_key]
+
+    try:
+        with open(_KB_FILE, "r", encoding="utf-8") as f:
+            kb_data = json.load(f)
+
+        books = {b["id"]: b for b in kb_data.get("books", [])}
+        chapters = {c["id"]: c for c in kb_data.get("chapters", [])}
+        topics = {t["id"]: t for t in kb_data.get("topics", [])}
+        paragraphs = {p["id"]: p for p in kb_data.get("paragraphs", [])}
+
+        _retrieval_cache[cache_key] = {
+            "books": books,
+            "chapters": chapters,
+            "topics": topics,
+            "paragraphs": paragraphs,
+        }
+        return _retrieval_cache[cache_key]
+    except Exception:
+        _retrieval_cache[cache_key] = {"books": {}, "chapters": {}, "topics": {}, "paragraphs": {}}
+        return _retrieval_cache[cache_key]
+
+
+def _get_readable_book_name(book_id: str) -> str:
+    """Get a readable book name from ID."""
+    if not book_id:
+        return "Unknown"
+    kb = _load_kb_for_inspector()
+    if book_id in kb["books"]:
+        return kb["books"][book_id].get("title", book_id)
+    # Fallback: try to derive from corpus_id
+    corpus_map = {
+        "book-001": "Textbooks",
+        "book-002": "CP-Algorithms",
+        "book-003": "GeeksforGeeks DSA Tutorial",
+        "book-004": "JavaScript Algorithms",
+        "book-005": "The Algorithms",
+        "textbooks": "Textbooks",
+        "cp-algorithms": "CP-Algorithms",
+        "geeksforgeeks": "GeeksforGeeks DSA Tutorial",
+        "javascript-algorithms": "JavaScript Algorithms",
+        "thealgorithms": "The Algorithms",
+    }
+    return corpus_map.get(book_id, book_id.replace("-", " ").title())
+
+
+def _get_readable_chapter_name(chapter_id: str, book_id: str = "") -> str:
+    """Get a readable chapter name from ID."""
+    if not chapter_id:
+        return "Unknown"
+    kb = _load_kb_for_inspector()
+    if chapter_id in kb["chapters"]:
+        return kb["chapters"][chapter_id].get("title", chapter_id)
+    # Try to derive from book + chapter_id
+    if book_id:
+        book_title = _get_readable_book_name(book_id)
+        # Extract directory-like name from chapter_id
+        parts = chapter_id.replace("ch-", "").split("-")
+        if len(parts) >= 2:
+            return f"{book_title} - Chapter {parts[-1]}"
+    return chapter_id.replace("ch-", "Chapter ").replace("-", " ")
+
+
+def _get_readable_topic_name(topic_id: str) -> str:
+    """Get a readable topic name from ID."""
+    if not topic_id:
+        return "Unknown"
+    kb = _load_kb_for_inspector()
+    if topic_id in kb["topics"]:
+        return kb["topics"][topic_id].get("title", topic_id)
+    return topic_id.replace("topic-", "Topic ").replace("-", " ")
+
+
 def _render_retrieval_inspector(result: RetrievalResult) -> None:
-    """Render the retrieval inspector as a collapsible section."""
-    with st.expander("🔍 Retrieval Inspector", expanded=False):
+    """Render the retrieval inspector as a simple list of retrieved chunks."""
+    with st.expander("🔍 Retrieval Results", expanded=False):
         st.caption(f"**Query:** {result.query}")
-        st.divider()
+        st.caption(f"**Context tokens:** {result.context_tokens}")
 
-        # --- Books ---
-        if result.books:
-            st.subheader("Books", divider=True)
-            for i, book in enumerate(result.books, 1):
-                title = getattr(book, "title", "Unknown")
-                bid = getattr(book, "id", "")
-                score = getattr(book, "similarity", 0.0)
-                st.markdown(
-                    f"{i}. **{title}** &nbsp; {score:.2f} "
-                    f"{'✓ selected' if i else '✗ excluded'}"
-                )
-            knee = result.knees.get("book")
-            if knee:
-                st.caption(
-                    f"Knee: selected through rank {knee.knee_index} "
-                    f"of {knee.candidate_k} candidates"
-                )
-        else:
-            st.subheader("Books", divider=True)
-            st.caption("No books retrieved.")
-
-        st.divider()
-
-        # --- Chapters ---
-        if result.chapters:
-            st.subheader("Chapters", divider=True)
-            for i, ch in enumerate(result.chapters, 1):
-                title = getattr(ch, "title", "Unknown")
-                cid = getattr(ch, "id", "")
-                score = getattr(ch, "similarity", 0.0)
-                st.markdown(f"{i}. **{title}** &nbsp; {score:.2f} ✓ selected")
-            knee = result.knees.get("chapter")
-            if knee:
-                st.caption(
-                    f"Knee: selected through rank {knee.knee_index} "
-                    f"of {knee.candidate_k} candidates"
-                )
-        else:
-            st.subheader("Chapters", divider=True)
-            st.caption("No chapters retrieved.")
-
-        st.divider()
-
-        # --- Topics ---
-        if result.topics:
-            st.subheader("Topics", divider=True)
-            for i, topic in enumerate(result.topics, 1):
-                title = getattr(topic, "title", "Unknown")
-                tid = getattr(topic, "id", "")
-                score = getattr(topic, "similarity", 0.0)
-                st.markdown(f"{i}. **{title}** &nbsp; {score:.2f} ✓ selected")
-            knee = result.knees.get("topic")
-            if knee:
-                st.caption(
-                    f"Knee: selected through rank {knee.knee_index} "
-                    f"of {knee.candidate_k} candidates"
-                )
-        else:
-            st.subheader("Topics", divider=True)
-            st.caption("No topics retrieved.")
-
-        st.divider()
-
-        # --- Paragraphs ---
-        if result.paragraphs:
-            st.subheader("Paragraphs", divider=True)
-            for i, para in enumerate(result.paragraphs, 1):
-                title = getattr(para, "title", f"Paragraph {i}")
-                score = getattr(para, "similarity", 0.0)
-                book_id = getattr(para, "book_id", "")
-                chapter_id = getattr(para, "chapter_id", "")
-                topic_id = getattr(para, "topic_id", "")
-                citation_parts = [p for p in (book_id, chapter_id, topic_id) if p]
-                citation = " / ".join(citation_parts) if citation_parts else "Unknown"
-                st.markdown(
-                    f"{i}. **{title}** &nbsp; {score:.2f} ✓ selected "
-                    f"[_{citation}_]"
-                )
-            knee = result.knees.get("paragraph")
-            if knee:
-                st.caption(
-                    f"Knee: selected through rank {knee.knee_index} "
-                    f"of {knee.candidate_k} candidates"
-                )
-        else:
-            st.subheader("Paragraphs", divider=True)
-            st.caption("No paragraphs retrieved.")
-
-        st.divider()
-
-        # --- Tool calls ---
-        if result.tool_calls:
-            st.subheader("Tool Calls", divider=True)
-            for tc in result.tool_calls:
-                tc_dict = tc.to_dict() if hasattr(tc, "to_dict") else asdict(tc)
-                st.markdown(f"**Tool:** `search_knowledge`")
-                st.markdown(f"**Query:** {tc_dict.get('query', '')}")
-                results = tc_dict.get("results", [])
-                if isinstance(results, list):
-                    for r in results[:5]:
-                        if isinstance(r, dict):
-                            st.caption(
-                                f"- {r.get('title', r.get('heading', 'Result'))}"
-                            )
-                st.divider()
-
-        # --- Knee summary ---
         if result.knees:
-            st.subheader("Knee Summary", divider=True)
+            knee_parts = []
             for level, kd in result.knees.items():
-                st.caption(
-                    f"{level}: selected through rank {kd.knee_index} "
-                    f"of {kd.candidate_k} candidates "
+                knee_parts.append(
+                    f"{level}: {kd.selected_k}/{kd.candidate_k} "
                     f"(threshold={kd.threshold:.3f})"
                 )
+            st.caption(f"Knee selection: {' | '.join(knee_parts)}")
 
-        # --- Context budget ---
-        st.caption(f"Context tokens: {result.context_tokens}")
+        st.divider()
+
+        # --- All chunks as a simple list ---
+        has_any = result.books or result.chapters or result.topics or result.paragraphs
+
+        if not has_any:
+            st.warning("No chunks retrieved.")
+            return
+
+        for i, chunk in enumerate(result.books + result.chapters + result.topics + result.paragraphs, 1):
+            if hasattr(chunk, "to_dict"):
+                meta = chunk.to_dict()
+            elif isinstance(chunk, dict):
+                meta = chunk
+            else:
+                meta = {"id": str(chunk)}
+
+            chunk_type = meta.get("level", "unknown")
+            title = meta.get("title", meta.get("id", "Untitled"))
+            similarity = meta.get("similarity", None)
+
+            # Build a collapsible block for each chunk's full metadata
+            with st.expander(f"#{i} [{chunk_type}] {title}", expanded=False):
+                if similarity is not None:
+                    st.caption(f"Similarity: {similarity:.4f}")
+                for k, v in meta.items():
+                    if k == "similarity":
+                        continue
+                    if k in ("children",) and isinstance(v, list):
+                        st.caption(f"{k}: {len(v)} items")
+                    elif v is not None:
+                        val = str(v)
+                        if len(val) > 300:
+                            val = val[:300] + "…"
+                        st.text(f"{k}: {val}")
 
 
 # ===================================================================
@@ -282,6 +293,49 @@ def _render_source_citations(result: RetrievalResult) -> str:
     if citations:
         return "\n\n---\n**Sources:** " + " | ".join(citations[:10])
     return ""
+
+
+# ===================================================================
+# Thinking/reasoning extraction
+# ===================================================================
+
+_THINKING_PATTERN = re.compile(
+    r'<thinking[^>]*>(.*?)</thinking>', re.DOTALL | re.IGNORECASE
+)
+
+
+def _extract_thinking(content: str) -> Tuple[str, str]:
+    """Extract <thinking>...</thinking> block from content.
+
+    Returns (thinking_text, main_content) where thinking_text is empty
+    if no thinking block was found.
+    """
+    if not content:
+        return "", content
+    match = _THINKING_PATTERN.search(content)
+    if match:
+        thinking = match.group(1).strip()
+        main = content[:match.start()].strip() + content[match.end():].strip()
+        return thinking, main
+    return "", content
+
+
+def _format_thinking_html(thinking: str) -> str:
+    """Format thinking text as grey, collapsible HTML."""
+    if not thinking:
+        return ""
+    cleaned = thinking
+    cleaned = re.sub(r'<br\s*/?>', '\n', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'<[^>]+>', '', cleaned)
+    cleaned = cleaned.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+    cleaned = cleaned.replace('&quot;', '"').replace('&#39;', "'").replace('&nbsp;', ' ')
+    escaped = thinking.replace('"', '&quot;')
+    return (
+        f'<details open style="margin-bottom:12px">'
+        f'<summary style="cursor:pointer;color:#888;font-size:0.85em;font-style:italic">💭 Reasoning</summary>'
+        f'<div style="color:#777;font-size:0.9em;line-height:1.5;white-space:pre-wrap">{escaped}</div>'
+        f'</details>'
+    )
 
 
 # ===================================================================
@@ -322,6 +376,20 @@ def _format_message(content: str) -> str:
     if not content:
         return ""
     return _clean_message(content)
+
+
+def _format_user_message(content: str) -> str:
+    """Format user message preserving newlines with HTML <br> tags.
+
+    Streamlit's markdown collapses single newlines. We convert them to
+    <br> tags to preserve the user's line breaks.
+    """
+    if not content:
+        return ""
+    cleaned = _clean_message(content)
+    # Convert newlines to <br> to preserve line breaks in markdown
+    cleaned = cleaned.replace('\n', '<br>')
+    return cleaned
 
 
 # ===================================================================
@@ -394,14 +462,24 @@ def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: boo
         try:
             for token_delta, full_content in client.chat_stream(messages, model=model_tier):
                 streaming_content = full_content
-                assistant_placeholder.markdown(_format_message(full_content))
+                thinking_text, main_content = _extract_thinking(full_content)
+                if thinking_text:
+                    display_html = _format_thinking_html(thinking_text) + _format_message(main_content)
+                else:
+                    display_html = _format_message(main_content)
+                assistant_placeholder.markdown(display_html, unsafe_allow_html=True)
         except Exception as exc:
             error_msg = f"Error: {exc}"
             assistant_placeholder.markdown(_format_message(error_msg))
             streaming_content = error_msg
 
-        st.session_state.messages.append({"role": "assistant", "content": streaming_content})
-        st.session_state.conversation_history.append((user_query, streaming_content))
+        # Store with thinking tags if present
+        full_display = streaming_content
+        thinking_text, main_content = _extract_thinking(streaming_content)
+        if thinking_text:
+            full_display = f"<thinking>{thinking_text}</thinking>{main_content}"
+        st.session_state.messages.append({"role": "assistant", "content": full_display})
+        st.session_state.conversation_history.append((user_query, main_content if thinking_text else streaming_content))
         st.session_state.retrieval_result = None
         return
 
@@ -443,6 +521,14 @@ def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: boo
                 model=model_tier,
             )
             final_content = tool_result.content
+            # Fallback: if content is empty but transcript has assistant messages,
+            # extract the last non-empty assistant content from the transcript
+            if not final_content.strip() and tool_result.transcript:
+                for msg in reversed(tool_result.transcript):
+                    if msg.get("role") == "assistant" and msg.get("content"):
+                        final_content = msg["content"]
+                        if final_content.strip():
+                            break
         except Exception as exc:
             st.error(f"LLM call failed: {exc}")
             final_content = f"Error: {exc}"
@@ -450,16 +536,25 @@ def _process_query(user_query: str, mode: str, model_tier: str, rag_enabled: boo
     # Step 4: Stream the final answer
     assistant_placeholder = st.empty()
     streaming_content = ""
+    thinking_text, main_content = _extract_thinking(final_content)
 
     # Stream the final content character by character for UX
-    for i in range(0, len(final_content), 1):
-        chunk = final_content[:i+1]
+    for i in range(0, len(main_content), 1):
+        chunk = main_content[:i+1]
         streaming_content = chunk
-        assistant_placeholder.markdown(_format_message(chunk))
+        # Build display with thinking section if present
+        if thinking_text:
+            display_html = _format_thinking_html(thinking_text) + _format_message(chunk)
+        else:
+            display_html = _format_message(chunk)
+        assistant_placeholder.markdown(display_html, unsafe_allow_html=True)
         time.sleep(0.002)  # small delay for smooth streaming effect
 
-    # Store final results
-    st.session_state.messages.append({"role": "assistant", "content": streaming_content})
+    # Store final results (keep thinking+main together)
+    full_display = streaming_content
+    if thinking_text:
+        full_display = f"<thinking>{thinking_text}</thinking>{streaming_content}"
+    st.session_state.messages.append({"role": "assistant", "content": full_display})
     st.session_state.conversation_history.append((user_query, streaming_content))
     st.session_state.retrieval_result = retrieval_result
 
@@ -529,10 +624,15 @@ def _render_chat_area() -> None:
         content = msg["content"]
         if role == "user":
             with st.chat_message("user"):
-                st.markdown(_format_message(content))
+                st.markdown(_format_user_message(content), unsafe_allow_html=True)
         elif role == "assistant":
             with st.chat_message("assistant"):
-                st.markdown(_format_message(content))
+                thinking_text, main_content = _extract_thinking(content)
+                if thinking_text:
+                    display_html = _format_thinking_html(thinking_text) + _format_message(main_content)
+                    st.markdown(display_html, unsafe_allow_html=True)
+                else:
+                    st.markdown(_format_message(content))
                 # Show source citations if retrieval was used
                 rr = st.session_state.retrieval_result
                 if rr and rr.books:
